@@ -25,7 +25,8 @@
 ! xmodmap, you will apply these translations a second time
 ! and come out with gibberish!
 !
-keysym q = quoteright quotedbl
+!keysym q = quoteright quotedbl
+keysym q = quoteright at
 keysym w = comma less
 keysym e = period greater
 keysym r = p P
@@ -69,7 +70,7 @@ keysym slash = z Z
 ! plus", respectively.
 !
 keysym 1 = 1 exclam
-keysym 2 = 2 at
+!keysym 2 = 2 at
 keysym 3 = 3 numbersign
 keysym 4 = 4 dollar
 keysym 5 = 5 percent
