@@ -22,13 +22,17 @@ fi
 
 xset r rate 250 70
 
+run_wm () {
+  "$@" && kill $$ &
+}
+
 if [ "$ADAMS_WM" = 'windowmaker' ]; then
-  which wmaker >&/dev/null && exec wmaker
+  which wmaker >&/dev/null && run_wm wmaker
 elif [ "$ADAMS_WM" = 'enlightenment' ]; then
 # wmapm &
 # wmppp &
 
-  which enlightenment >&/dev/null && exec enlightenment
+  which enlightenment >&/dev/null && run_wm enlightenment
 elif [ "$ADAMS_WM" = 'sawfish' ]; then
   if which Esetroot >&/dev/null; then
     which retrieve_background >&/dev/null && retrieve_background
@@ -43,14 +47,22 @@ elif [ "$ADAMS_WM" = 'sawfish' ]; then
   export GGDIR=`cat ~/.ggdir`
 
   if which sawfish >&/dev/null; then
-    sawfish
+    run_wm sawfish
   elif which sawmill >&/dev/null; then
-    sawmill
+    run_wm sawmill
   else
     exit 1
   fi
 fi
 
+sleep 1
+
 which linpopup >&/dev/null && linpopup -min &
 
 [ -e ~/.xsession.local ] && . ~/.xsession.local
+
+# this script must not terminate, otherwise its callers assume
+# the X session has finished
+while /bin/true; do
+  sleep 999d
+done
