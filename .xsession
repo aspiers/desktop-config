@@ -13,6 +13,8 @@ else
   xset m 2 4
 fi
 
+xset r rate 250 70
+
 if [ -d /share/X_fonts/misc ] && echo "$DISPLAY" | grep -q mediaconsult; then
   xset fp+ /share/X_fonts/misc
 fi
