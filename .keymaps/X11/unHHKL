@@ -1,0 +1,3 @@
+! These reverse the effects of the HHKL-specific mapppings
+
+keycode 51 = numbersign asciitilde
