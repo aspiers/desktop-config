@@ -16,6 +16,8 @@ elif [ -e ~/.Xmodmap.local ]; then
   . ~/.Xmodmap.local
 fi
 
+[ -e ~/.Xresources/all.rdb ] && xrdb -merge ~/.Xresources/all.rdb
+
 [ -e ~/.xsession.local.pre       ] && . ~/.xsession.local.pre
 [ -e ~/.xsession.${HOST%%.*}.pre ] && . ~/.xsession.${HOST%%.*}.pre
 
