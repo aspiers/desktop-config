@@ -24,7 +24,7 @@ fi
 [ -x ~/bin/xwrits ] && ~/bin/xwrits &
 xscreensaver -no-splash &
 
-which xmms 2>/dev/null >/dev/null && xmms &
+#which xmms 2>/dev/null >/dev/null && xmms &
 
 if [ -e /etc/X11/XF86Config ] &&
    ls -l /etc/X11/XF86Config | grep -q 'TrackPoint';
