@@ -3,7 +3,7 @@ ADAMS_WM=sawfish
 [ -x ~/bin/xwrits ] && ~/bin/xwrits &
 xscreensaver -no-splash &
 
-#~/bin/xmms &
+which xmms >&/dev/null && xmms &
 
 if [ -e /etc/X11/XF86Config ] &&
    ls -l /etc/X11/XF86Config | grep -q 'TrackPoint';
@@ -22,12 +22,13 @@ fi
 if [ "$ADAMS_WM" = 'windowmaker' ]; then
   which wmaker >&/dev/null && exec wmaker
 elif [ "$ADAMS_WM" = 'enlightenment' ]; then
-#  wmapm &
-#  wmppp &
+# wmapm &
+# wmppp &
 
   which enlightenment >&/dev/null && exec enlightenment
 elif [ "$ADAMS_WM" = 'sawfish' ]; then
-  which randomise_background >&/dev/null && randomise_background
+  which retrieve_background >&/dev/null && retrieve_background
+# which randomise_background >&/dev/null && randomise_background
 
   which gkrellm >&/dev/null && gkrellm -geometry -0-0 &
   which Eterm >&/dev/null && Eterm -t watchlogs-system -g 200x12+0-0 &
