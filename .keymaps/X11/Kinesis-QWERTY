@@ -1,6 +1,6 @@
 !
 ! This is an `xmodmap' input file for Kinesis 120 key (XFree86; US) keyboards.
-! Automatically generated on Wed Jul 24 18:01:06 2002 by adams with
+! Automatically generated on Thu Jul 25 12:59:48 2002 by adams with
 ! XKeyCaps 2.46; Copyright (c) 1999 Jamie Zawinski <jwz@jwz.org>.
 ! http://www.jwz.org/xkeycaps/
 !
@@ -26,7 +26,7 @@
 ! The "I" key generates i, I, and less
 ! The "O" key generates o, O, and greater
 ! The "P" key generates p, P, and dollar
-! The "Caps Lock" key generates Meta_L, and the Mod1 modifier
+! The "Caps Lock" key generates minus and underscore, and has no modifiers
 ! The "A" key generates a, A, and semicolon
 ! The "S" key generates s, S, and slash
 ! The "D" key generates d, D, and minus
@@ -50,9 +50,10 @@
 ! The "? /" key generates slash, question, and 5
 ! The "UpArrow" key generates Down
 ! The "DownArrow" key generates Up
-! The "Alt" key generates Meta_L
+! The "Alt" key generates Delete, and has no modifiers
 ! The "Alt" key generates Meta_R
 ! The "Ctrl" key generates Hyper_R, and the Mod4 modifier
+! The "Delete" key generates Meta_L, and the Mod1 modifier
 ! The "Home" key generates Mode_switch, and the Mod2 modifier
 ! The "End" key generates Escape
 
@@ -96,7 +97,7 @@ keycode 0x1F =	i		I		less
 keycode 0x20 =	o		O		greater
 keycode 0x21 =	p		P		dollar
 keycode 0x33 =	backslash	bar
-keycode 0x42 =	Meta_L
+keycode 0x42 =	minus		underscore
 keycode 0x26 =	a		A		semicolon
 keycode 0x27 =	s		S		slash
 keycode 0x28 =	d		D		minus
@@ -129,11 +130,11 @@ keycode 0x68 =	Up
 keycode 0x22 =	bracketleft	braceleft
 keycode 0x23 =	bracketright	braceright
 keycode 0x25 =	Control_L
-keycode 0x40 =	Meta_L
+keycode 0x40 =	Delete
 keycode 0x71 =	Meta_R
 keycode 0x6D =	Hyper_R
 keycode 0x16 =	BackSpace
-keycode 0x6B =	Delete
+keycode 0x6B =	Meta_L
 keycode 0x61 =	Mode_switch
 keycode 0x63 =	Prior
 keycode 0x24 =	Return
@@ -152,7 +153,7 @@ clear Mod5
 
 add    Shift   = Shift_L Shift_R
 add    Control = Control_L
-add    Mod1    = Meta_L Meta_R Meta_R Meta_L
+add    Mod1    = Meta_L Meta_R Meta_R
 add    Mod2    = Mode_switch
 add    Mod3    = Super_L
 add    Mod4    = Hyper_R Hyper_R
