@@ -1,7 +1,7 @@
 !
 ! This is an `xmodmap' input file for 
 !   Microsoft `Natural Elite' 105 key (XFree86; UK) keyboards.
-! Automatically generated on Tue Mar 27 18:29:07 2001 by adams with
+! Automatically generated on Tue Mar 27 19:28:35 2001 by adams with
 ! XKeyCaps 2.46; Copyright (c) 1999 Jamie Zawinski <jwz@jwz.org>.
 ! http://www.jwz.org/xkeycaps/
 !
@@ -15,6 +15,7 @@
 ! The "K" key generates k, K, and Down
 ! The "L" key generates l, L, and Right
 ! The ": ;" key generates semicolon, colon, and Next
+! The "? /" key generates slash, question, and Insert
 ! The "Ctrl" key generates Caps_Lock, and the Lock modifier
 ! The "=/+/" key generates NoSymbol, and has no modifiers
 ! The "Alt" key generates Meta_L
@@ -108,7 +109,7 @@ keycode 0x39 =	n		N
 keycode 0x3A =	m		M
 keycode 0x3B =	comma		less
 keycode 0x3C =	period		greater
-keycode 0x3D =	slash		question
+keycode 0x3D =	slash		question	Insert
 keycode 0x3E =	Shift_R
 keycode 0x64 =	Left
 keycode 0x66 =	Right
