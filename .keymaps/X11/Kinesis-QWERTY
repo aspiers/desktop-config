@@ -1,6 +1,6 @@
 !
 ! This is an `xmodmap' input file for Kinesis 120 key (XFree86; US) keyboards.
-! Automatically generated on Wed Jul 24 16:42:21 2002 by adams with
+! Automatically generated on Wed Jul 24 18:01:06 2002 by adams with
 ! XKeyCaps 2.46; Copyright (c) 1999 Jamie Zawinski <jwz@jwz.org>.
 ! http://www.jwz.org/xkeycaps/
 !
@@ -48,6 +48,8 @@
 ! The "< ," key generates comma, less, and 3
 ! The "> ." key generates period, greater, and 4
 ! The "? /" key generates slash, question, and 5
+! The "UpArrow" key generates Down
+! The "DownArrow" key generates Up
 ! The "Alt" key generates Meta_L
 ! The "Alt" key generates Meta_R
 ! The "Ctrl" key generates Hyper_R, and the Mod4 modifier
@@ -122,8 +124,8 @@ keycode 0x31 =	grave		asciitilde
 keycode 0x6A =	Insert
 keycode 0x64 =	Left
 keycode 0x66 =	Right
-keycode 0x62 =	Up
-keycode 0x68 =	Down
+keycode 0x62 =	Down
+keycode 0x68 =	Up
 keycode 0x22 =	bracketleft	braceleft
 keycode 0x23 =	bracketright	braceright
 keycode 0x25 =	Control_L
