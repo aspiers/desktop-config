@@ -1,3 +1,8 @@
+[ -d ~/local/bin ] && PATH=~/local/bin:"$PATH"
+
+echo -n "X session started: "
+date
+
 ADAMS_WM=sawfish
 
 [ -e ~/.xsession.local.pre ] && . ~/.xsession.local.pre
@@ -25,8 +30,10 @@ elif [ "$ADAMS_WM" = 'enlightenment' ]; then
 
   which enlightenment >&/dev/null && exec enlightenment
 elif [ "$ADAMS_WM" = 'sawfish' ]; then
-  which retrieve_background >&/dev/null && retrieve_background
-# which randomise_background >&/dev/null && randomise_background
+  if which Esetroot >&/dev/null; then
+    which retrieve_background >&/dev/null && retrieve_background
+#   which randomise_background >&/dev/null && randomise_background
+  fi
 
   which gkrellm >&/dev/null && gkrellm -geometry -0-0 &
   which Eterm >&/dev/null && Eterm -t watchlogs-system -g 200x12+0-0 &
