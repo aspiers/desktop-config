@@ -4,6 +4,7 @@
 ! XKeyCaps 2.46; Copyright (c) 1999 Jamie Zawinski <jwz@jwz.org>.
 ! http://www.jwz.org/xkeycaps/, and then manually altered to support newer
 ! models with the different insert/backslash/bar key by aspiers.
+! Also tweaked Home to generate Alt_L for synergy.
 !
 ! This file makes the following changes:
 !
@@ -55,7 +56,7 @@
 ! The "Alt" key generates Meta_R
 ! The "Ctrl" key generates Hyper_R, and the Mod4 modifier
 ! The "Delete" key generates Meta_L, and the Mod1 modifier
-! The "Home" key generates Mode_switch, and the Mod2 modifier
+! The "Home" key generates Alt_L, and the Mod2 modifier, for synergy
 ! The "End" key generates Escape
 
 keycode 0x09 =	Escape
@@ -139,7 +140,7 @@ keycode 0x71 =	Meta_R
 keycode 0x6D =	Hyper_R
 keycode 0x16 =	BackSpace
 keycode 0x6B =	Meta_L
-keycode 0x61 =	Mode_switch
+keycode 0x61 =	Alt_L
 keycode 0x63 =	Prior
 keycode 0x24 =	Return
 keycode 0x41 =	space
@@ -158,5 +159,6 @@ clear Mod5
 add    Shift   = Shift_L Shift_R
 add    Control = Control_L
 add    Mod1    = Meta_L Meta_R
-add    Mod2    = Mode_switch
+!add   Mod2    = Mode_switch
+add    Mod2    = Alt_L Alt_R
 add    Mod4    = Hyper_R
