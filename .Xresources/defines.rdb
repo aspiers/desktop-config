@@ -13,12 +13,12 @@
 *customization: -color
 #endif
 
-#if WIDTH<800
+#if WIDTH <= 800
 #ifndef NO_SMALL_SCREEN
 #define SMALL_SCREEN
 #endif
 #endif
 
-#if WIDTH<=1024
+#if WIDTH <= 1024
 #define LAPTOP_SCREEN
 #endif
