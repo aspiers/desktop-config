@@ -5,7 +5,9 @@ xscreensaver -no-splash &
 
 #~/bin/xmms &
 
-if ls -l /etc/X11/XF86Config | grep -q 'TrackPoint'; then
+if [ -e /etc/X11/XF86Config ] &&
+   ls -l /etc/X11/XF86Config | grep -q 'TrackPoint';
+then
   xset m 4 5
 else
   xset m 2 4
