@@ -29,7 +29,8 @@ emacs.Foreground: RGB:F/F/E
 #  if OLD_GNU_EMACS
      emacs.geometry: 83x51
 #  else
-     emacs.geometry: 83x57
+! do this with default-frame-alist instead
+!    emacs.geometry: 83x57
 #  endif
 #endif
 
