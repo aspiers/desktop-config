@@ -17,10 +17,6 @@ fi
 
 xset r rate 250 70
 
-if [ -d /share/X_fonts/misc ] && echo "$DISPLAY" | grep -q mediaconsult; then
-  xset fp+ /share/X_fonts/misc
-fi
-
 if [ "$ADAMS_WM" = 'windowmaker' ]; then
   which wmaker >&/dev/null && exec wmaker
 elif [ "$ADAMS_WM" = 'enlightenment' ]; then
