@@ -10,10 +10,12 @@ date
 : ${HOST:=${HOSTNAME:={`hostname`}}}
 export HOST HOSTNAME
 
-if [ -e ~/.Xmodmap.${HOST%%.*} ]; then
-  . ~/.Xmodmap.${HOST%%.*}
-elif [ -e ~/.Xmodmap.local ]; then
-  . ~/.Xmodmap.local
+if [ -z "$VNCDESKTOP" ]; then
+  if [ -e ~/.Xmodmap.${HOST%%.*} ]; then
+    . ~/.Xmodmap.${HOST%%.*}
+  elif [ -e ~/.Xmodmap.local ]; then
+    . ~/.Xmodmap.local
+  fi
 fi
 
 [ -e ~/.Xresources/all.rdb ] && xrdb -merge ~/.Xresources/all.rdb
@@ -60,7 +62,9 @@ elif [ "$ADAMS_WM" = 'sawfish' ]; then
 #   which randomise_background 2>/dev/null >/dev/null && randomise_background
   fi
 
-  which gkrellm 2>/dev/null >/dev/null && gkrellm -geometry -0-0 &
+  if [ -z "$VNCDESKTOP" ]; then
+    which gkrellm 2>/dev/null >/dev/null && gkrellm -geometry -0-0 &
+  fi
 
   # something like this goes in local
   # which Eterm 2>/dev/null >/dev/null && Eterm -t watchlogs-system -g 100x12+770-0 &
