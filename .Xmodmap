@@ -1,5 +1,5 @@
 !
-! xmodmap $Id$	
+! $Id$	
 !
 ! for PC keyboards
 !
@@ -32,15 +32,3 @@ keycode 22 = BackSpace
 remove mod3 = Mode_switch
 keycode 113 = Hyper_R
 add mod4 = Hyper_R
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! HHKL only
-
-! backslash/pipe key
-keycode 51 = backslash bar
-
-! Left Alt
-keycode 115 = backslash bar
-
-! Right Alt
-keycode 116 = numbersign asciitilde
