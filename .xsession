@@ -58,7 +58,7 @@ fi
 
 sleep 1
 
-which linpopup >&/dev/null && linpopup -min &
+#which linpopup >&/dev/null && linpopup -min &
 
 [ -e ~/.xsession.local ] && . ~/.xsession.local
 
