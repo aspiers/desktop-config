@@ -60,6 +60,7 @@ sleep 1
 which linpopup >&/dev/null && linpopup -min &
 
 [ -e ~/.xsession.local ] && . ~/.xsession.local
+[ -e ~/.Xmodmap.local ]  && xmodmap ~/.Xmodmap.local
 
 # this script must not terminate, otherwise its callers assume
 # the X session has finished
