@@ -149,8 +149,9 @@ XTerm.vt100.translations: #override\n\
  <Btn5Down>,<Btn5Up>:scroll-forw(1,halfpage)\n\
 
 ! In the scrollbar we map buttons 5 & 4 to 1 and 2 otherwise, core
-dump ! This will move proportionally to cursor position, but we don't
-know how to ! program the same exact behavior as in the text widget.
+! dump.  This will move proportionally to cursor position, but we
+! don't know how to program the same exact behavior as in the text
+! widget.
 
 XTerm.vt100.Scrollbar.translations: #override\n\
      <Btn5Down>: StartScroll(Forward)\n\
