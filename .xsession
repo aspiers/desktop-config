@@ -1,5 +1,6 @@
 ADAMS_WM=sawfish
 
+[ -d ~/bin ] && PATH=~/bin:"$PATH"
 [ -d ~/local/bin ] && PATH=~/local/bin:"$PATH"
 
 echo -n "X session started: "
