@@ -1,5 +1,7 @@
 ADAMS_WM=sawfish
 
+[ -e ~/.xsession.local.pre ] && . ~/.xsession.local.pre
+
 [ -x ~/bin/xwrits ] && ~/bin/xwrits &
 xscreensaver -no-splash &
 
@@ -45,3 +47,5 @@ elif [ "$ADAMS_WM" = 'sawfish' ]; then
 fi
 
 which linpopup >&/dev/null && linpopup -min &
+
+[ -e ~/.xsession.local ] && . ~/.xsession.local
