@@ -29,7 +29,13 @@ emacs.Foreground: RGB:F/F/E
 #  if OLD_GNU_EMACS
      emacs.geometry: 83x51
 #  else
-! do this with default-frame-alist instead
+! do this with default-frame-alist instead, e.g. in ~/.emacs.local
+!   (setq default-frame-alist
+!         '((width . 83)
+!           (height . 57)
+!           (menu-bar-lines . 1)
+!           (tool-bar-lines . 0)))
+!
 !    emacs.geometry: 83x57
 #  endif
 #endif
