@@ -1,7 +1,7 @@
 !
 ! This is an `xmodmap' input file for 
 !   Microsoft `Natural Elite' 105 key (XFree86; UK) keyboards.
-! Automatically generated on Tue Mar 27 19:28:35 2001 by adams with
+! Automatically generated on Tue Mar 27 20:39:47 2001 by adams with
 ! XKeyCaps 2.46; Copyright (c) 1999 Jamie Zawinski <jwz@jwz.org>.
 ! http://www.jwz.org/xkeycaps/
 !
@@ -11,12 +11,11 @@
 ! The "I" key generates i, I, and Up
 ! The "P" key generates p, P, and Prior
 ! The "Caps Lock" key generates Control_L, and the Control modifier
-! The "J" key generates j, J, and Left
+! The "J" key generates j, J, Left, NoSymbol, NoSymbol, NoSymbol, and Left
 ! The "K" key generates k, K, and Down
-! The "L" key generates l, L, and Right
+! The "L" key generates l, L, Right, NoSymbol, NoSymbol, NoSymbol, and Right
 ! The ": ;" key generates semicolon, colon, and Next
 ! The "? /" key generates slash, question, and Insert
-! The "Ctrl" key generates Caps_Lock, and the Lock modifier
 ! The "=/+/" key generates NoSymbol, and has no modifiers
 ! The "Alt" key generates Meta_L
 ! The "Alt" key generates Mode_switch, and the Mod5 modifier
@@ -88,9 +87,9 @@ keycode 0x28 =	d		D
 keycode 0x29 =	f		F
 keycode 0x2A =	g		G
 keycode 0x2B =	h		H
-keycode 0x2C =	j		J		Left
+keycode 0x2C =	j		J		Left		NoSymbol	NoSymbol	NoSymbol	Left
 keycode 0x2D =	k		K		Down
-keycode 0x2E =	l		L		Right
+keycode 0x2E =	l		L		Right		NoSymbol	NoSymbol	NoSymbol	Right
 keycode 0x2F =	semicolon	colon		Next
 keycode 0x30 =	apostrophe	at
 keycode 0x33 =	numbersign	asciitilde
@@ -117,7 +116,7 @@ keycode 0x57 =	KP_1
 keycode 0x58 =	KP_2
 keycode 0x59 =	KP_3
 keycode 0x6C =	KP_Enter
-keycode 0x25 =	Caps_Lock
+keycode 0x25 =	Control_L
 keycode 0x73 =	NoSymbol
 keycode 0x40 =	Meta_L
 keycode 0x41 =	space
@@ -139,7 +138,6 @@ clear Mod4
 clear Mod5
 
 add    Shift   = Shift_L Shift_R
-add    Lock    = Caps_Lock
 add    Control = Control_L Control_R Control_L
 add    Mod1    = Meta_L
 add    Mod4    = Hyper_R
