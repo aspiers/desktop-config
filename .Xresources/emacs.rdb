@@ -1,0 +1,79 @@
+! Adam's emacs X resources
+!
+! $Id$
+
+! {{{ foreground/background
+
+#ifdef OLD_GNU_EMACS
+
+!emacs*Background: DarkSlateGray
+!emacs*Foreground: Wheat
+emacs.Background: Black
+emacs.Foreground: RGB:F/F/E
+
+#endif
+
+! }}} 
+! {{{ pointer/cursor
+
+!emacs*pointerColor: Orchid
+!emacs.pointerColor: Green
+!emacs.cursorColor: Coral
+
+! }}} 
+! {{{ geometry
+
+emacs.geometry: 83x54
+
+! }}} 
+! {{{ font
+
+#ifdef OLD_GNU_EMACS
+emacs*font: fixed
+#else
+!emacs.font: artsie
+!emacs.font: -schumacher-clean-medium-r-normal--16-*-*-*-c-80-iso8859-1
+!emacs.font: -Schumacher-Clean-Medium-R-Normal--*-160-*-*-*-*-*-*
+!emacs.font: -adobe-courier-medium-r-normal--18-180-75-75-m-110-iso8859-1
+#endif
+
+! }}} 
+! {{{ bitmapIcon
+
+!emacs*bitmapIcon: on
+
+! }}} 
+! {{{ menubar
+
+#ifdef OLD_GNU_EMACS
+
+emacs*menubar.font: -*-fixed-*-*-*-*-*-*-*-*-*-90-*-*
+emacs*menubar.background: DarkSlateGray
+emacs*menubar.foreground: White
+
+! dunno about this
+! emacs.pane.menubar.font: -*-fixed-*-*-*-*-*-*-*-*-*-90-*-*
+! emacs.pane.menubar.background: DarkSlateGray
+! emacs.pane.menubar.foreground: White
+
+#else
+
+! emacs 21 has nice default menubar
+
+#endif
+
+! }}} 
+! {{{ unused face settings
+
+! emacs.bold.attributeFont: 9x15
+! emacs.bold.attributeForeground: GreenYellow
+! emacs.italic.attributeForeground: #A0C0FF
+! emacs.bold-italic.attributeForeground: IndianRed
+! emacs.highlight.attributeForeground: DarkSlateGray
+! emacs.region.attributeForeground: DarkSlateGray
+! emacs.region.attributeBackground: Wheat
+! emacs.secondary-selection.attributeForeground: DarkSlateGray
+! emacs.underline.attributeForeground: Yellow
+
+! }}} 
+

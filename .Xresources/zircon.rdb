@@ -1,0 +1,42 @@
+zicon*font: 9x15
+zircon*operatorForeground: white
+zircon*operatorBackground: blue
+!zircon*speakerFont: 9x15
+zircon*speakerForeground: green
+!zircon*speakerBackground: blue
+!zircon*isonFont: 9x15bold
+!zircon*isonForeground: red
+!zircon*isonBackground: yellow
+
+! 
+! Setting channel characteristics
+!
+
+!zircon*#zircon*font: 9x15
+!zircon*#zircon*foreground: red
+!zircon*#zircon*background: white
+
+! You can also configure more specifically of course..
+
+zircon*lindsay*isonForeground: mango
+!zircon*#zircon*operatorForeground: pink
+
+! and per user....
+
+zircon*#zircon*lindsay*operatorColour: purple
+
+! You can configure the text as well
+
+zircon*#zircon*lindsayForeground: yellow
+zircon*#zircon*lindsayBackground: blue
+zircon*#zircon*lindsayFont: 8x13
+
+! You are called @me so that you are consistent over nick changes
+
+!zircon*#zircon*@meForeground: yellow
+!zircon*#zircon*@meBackground: blue
+!zircon*#zircon*@meFont: 8x13
+
+zircon*@meForeground: red
+!zircon*@meBackground: grey
+!zircon*@meFont: 8x13

@@ -1,0 +1,6 @@
+XDvi*background:        white
+XDvi*foreground:        black
+XDvi*expert:            true
+XDvi*shrinkFactor:      3
+XDvi*EPSFGrey:          true
+XDvi*noEPSF:            true

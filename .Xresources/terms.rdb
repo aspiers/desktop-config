@@ -1,0 +1,238 @@
+! {{{ foreground/background
+
+#ifdef BLACK_BG_XTERMS
+
+XTerm*background:   black
+nxterm*background:  black
+Rxvt*background:    black
+
+XTerm*foreground:   white
+nxterm*foreground:  white
+Rxvt*foreground:    white
+
+#else
+
+XTerm*background:   white
+nxterm*background:  white
+rxvt*background:    white
+
+XTerm*foreground:   black
+nxterm*foreground:  black
+rxvt*foreground:    black
+
+#endif
+
+! }}} 
+! {{{ bold/underline colours
+
+#ifdef BLACK_BG_XTERMS
+
+*VT100*colorBD:     white
+*VT100*colorUL:     yellow
+
+#else
+
+*VT100*colorBD:     black
+*VT100*colorUL:     blue
+
+#endif
+
+! }}} 
+! {{{ font
+
+#xterm*font:        10x20
+#nxterm*font:       10x20
+
+xterm*font:         9x15
+nxterm*font:        9x15
+
+! }}} 
+! {{{ cursor
+
+XTerm*cursorColor:  blue
+nxterm*cursorColor: blue
+
+xterm*fullCursor:   true
+nxterm*fullCursor:  true
+
+! }}} 
+
+! {{{ menus
+
+xterm*SimpleMenu.background:    gray50
+nxterm*SimpleMenu.background:   gray75
+
+xterm*SimpleMenu.foreground:    black
+nxterm*SimpleMenu.foreground:   black
+
+! {{{ font menu
+
+! Please email <gjb@cs.duke.edu> if you have a better
+! way of introducing a newline into a macro expansion
+! I get the NL by including an extra argument to the macro for which
+! I always use a literal newline as the argument
+#define FontAndLabel(cFont,sz,NL,lbl) \
+xterm*VT100*font/**/cFont/**/: sz/**/NL \
+xterm*fontMenu*font/**/cFont/**/*Label: lbl (/**/sz/**/)NL \
+nxterm*VT100*font/**/cFont/**/: sz/**/NL \
+nxterm*fontMenu*font/**/cFont/**/*Label: lbl (/**/sz/**/)NL
+
+#ifndef SMALL_SCREEN
+
+*SimpleMenu*font: *helvetica*r*normal*12*
+XDvi*font: *helvetica*r*normal*12*
+FontAndLabel(1,5x7,
+,Micro)
+FontAndLabel(2,5x8,
+,Tiny)
+FontAndLabel(3,6x10,
+,Small)
+FontAndLabel(4,fixed,
+,Medium)
+FontAndLabel(5,9x15,
+,Large)
+FontAndLabel(6,10x20,
+,Very Large)
+FontAndLabel(7,12x24,
+,Huge)
+
+#else
+
+*SimpleMenu*font: *helvetica*r*normal*10*
+XDvi*font: *helvetica*r*normal*10*
+FontAndLabel(1,5x7,
+,Micro)
+FontAndLabel(2,5x8,
+,Tiny)
+FontAndLabel(3,6x9,
+,Small)
+FontAndLabel(4,7x13,
+,Medium)
+FontAndLabel(5,9x15,
+,Large)
+FontAndLabel(6,10x20,
+,Huge)
+FontAndLabel(7,8x16,
+,Alternate Large)
+
+#endif
+
+! }}} 
+
+! }}} 
+
+! {{{ scrolling
+
+XTerm*saveLines:    1500
+nxterm*saveLines:   1500
+rxvt*saveLines:     1500
+
+XTerm*scrollBar:    true
+nxterm*scrollBar:   true
+
+*scrollTtyOutput:   False
+*scrollKey:     True
+Scrollbar.JumpCursor:   True
+
+xterm*VT100.JumpScroll:  true
+nxterm*VT100.JumpScroll: true
+
+! {{{ mouse wheel
+
+! Scrolling on wheel mouse: half a page normally, line per line with shift
+XTerm.vt100.translations: #override\n\
+ Shift<Btn4Down>,<Btn4Up>:scroll-back(1,line)\n\
+ Shift<Btn5Down>,<Btn5Up>:scroll-forw(1,line)\n\
+ Ctrl<Btn4Down>,<Btn4Up>:scroll-back(1,page)\n\
+ Ctrl<Btn5Down>,<Btn5Up>:scroll-forw(1,page)\n\
+ <Btn4Down>,<Btn4Up>:scroll-back(1,halfpage)\n\
+ <Btn5Down>,<Btn5Up>:scroll-forw(1,halfpage)\n\
+
+! In the scrollbar we map buttons 5 & 4 to 1 and 2 otherwise, core
+dump ! This will move proportionally to cursor position, but we don't
+know how to ! program the same exact behavior as in the text widget.
+
+XTerm.vt100.Scrollbar.translations: #override\n\
+     <Btn5Down>: StartScroll(Forward)\n\
+     <Btn4Down>: StartScroll(Backward)\n\
+
+! }}} 
+
+! }}} 
+! {{{ title bar
+
+xterm*titleBar:     false
+nxterm*titleBar:    false
+
+! }}} 
+
+! {{{ key bindings
+
+xterm*VT100.Translations: #override              \n\
+    <Key>BackSpace:   string(0x7F)               \n\
+Meta <Key>BackSpace:  string("hello")            \n\
+~Meta <Key>BackSpace: string("hello")            \n\
+    <Key>Delete:      string(0x04)               \n\
+    <Key>Home:        string(0x01)               \n\
+    <Key>End:         string(0x05)               \n\
+    <KeyPress>Prior:  scroll-back(1,page)        \n\
+    <KeyPress>Next:   scroll-forw(1,page)
+
+nxterm*VT100.Translations: #override            \n\
+    <Key>BackSpace:  string(0x7F)               \n\
+    <Key>Delete:     string(0x04)               \n\
+    <Key>Home:       string(0x01)               \n\
+    <Key>End:        string(0x05)               \n\
+    <KeyPress>Prior: scroll-back(1,page)        \n\
+    <KeyPress>Next:  scroll-forw(1,page)
+
+! }}} 
+! {{{ Meta key
+
+*eightBitInput: false
+*EightBitInput: false
+remotexterm*eightBitInput:  false
+
+! }}} 
+
+! {{{ bell
+
+xterm*visualBell:   true
+nxterm*visualBell:  true
+
+! }}} 
+! {{{ terminal type
+
+xterm*termName:          xterm-color
+nxterm*termName:         xterm-color
+
+! }}} 
+
+! {{{ AutoWrap
+
+xterm*VT100.AutoWrap:    true
+nxterm*VT100.AutoWrap:   true
+
+! }}} 
+! {{{ reverseWrap
+
+! what is this?
+xterm*reverseWrap:  true
+nxterm*reverseWrap: true
+
+! }}} 
+! {{{ pointer shape?
+
+nxterm*Cursor: xterm
+
+! }}} 
+
+! {{{ locale stuff
+
+! *numeric:           C
+! *displayLang:       C
+! *basicLocale:       C
+! *timeFormat:        C
+! *inputLang:         C
+
+! }}} 

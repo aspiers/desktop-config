@@ -1,0 +1,18 @@
+! default color for Xaw3d widget scrollbar
+#define XAW3DCOLOR gray75
+! dunno
+#define WINBACK_COLOR gray75
+
+/* #define RECOLOR_XPAINT */
+#define RECOLOR_GHOSTVIEW
+#define RECOLOR_XDVI
+
+#ifdef COLOR
+*customization: -color
+#endif
+
+#if WIDTH<800
+#ifndef NO_SMALL_SCREEN
+#define SMALL_SCREEN
+#endif
+#endif

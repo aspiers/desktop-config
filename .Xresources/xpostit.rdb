@@ -1,0 +1,84 @@
+!
+! Copyright 1991 by David A. Curry
+!
+! Permission to use, copy, modify, distribute, and sell this software and its
+! documentation for any purpose is hereby granted without fee, provided that
+! the above copyright notice appear in all copies and that both that copyright
+! notice and this permission notice appear in supporting documentation.  The
+! author makes no representations about the suitability of this software for
+! any purpose.  It is provided "as is" without express or implied warranty.
+!
+!
+! $Header$
+!
+! XPostit application defaults
+!
+! David A. Curry
+! Purdue University
+! Engineering Computer Network
+! West Lafayette, IN 47907
+! davy@ecn.purdue.edu
+!
+
+!
+! Fonts
+!
+XPostit*Command*font:	-adobe-helvetica-bold-r-normal--11-*-*-*-*-*-*-*
+XPostit*Menu*font:	-adobe-helvetica-medium-r-normal--12-*-*-*-*-*-*-*
+XPostit*Text*font: -b&h-lucidatypewriter-bold-r-normal-*-14-*-*-*-m-90-*-*
+
+!
+! Colors
+!
+XPostit*Background:		PeachPuff
+XPostit*Foreground:		NavyBlue
+XPostit*Text*Background:	Yellow
+XPostit*Text*Foreground:	Black
+XPostit*Plaid*Background:	Red
+XPostit*Plaid*Foreground:	Black
+
+!
+! Automatically wrap long lines at word boundaries.
+!
+XPostit*Text*wrap:		word
+
+!
+! Make the command buttons oval-shaped.
+!
+XPostit*Command*shapeStyle:	oval
+
+!
+! For some window managers like pswm under OpenWindows,
+! which don't pass the input focus.
+!
+XPostit*input:			true
+
+! Automatically save notes when exit -- I hope.
+XPostit*saveNotes:		true
+
+!
+! Keyboard accelerators.
+!
+XPostit*Note.Save.accelerators:       #override \n\
+	Alt<Key>s:      set() notify() reset() \n
+XPostit*Note.Title.accelerators:      #override \n\
+	Alt<Key>t:      set() notify() reset() \n
+XPostit.Title.Dialog.Okay.accelerators: #override\n\
+	<Key>Return: set() notify() reset() \n
+XPostit.Title.Dialog.Cancel.accelerators: #override\n\
+	<Key>Escape: set() notify() reset() \n
+
+!
+! Translations.
+!
+XPostit*Plaid.translations: #replace \n\
+	~Ctrl <Btn1Down>,<Btn1Up>:      raise() \n\
+	~Ctrl <Btn1Down>,<Leave>:       tearoff() \n\
+	~Ctrl <Btn2Down>,<Btn2Up>:      lower() \n\
+	Ctrl <Btn1Down>,<Btn1Up>:       show() \n\
+	Ctrl <Btn2Down>,<Btn2Up>:       hide() \n\
+	<Btn3Down>:     XawPositionSimpleMenu(Menu) MenuPopup(Menu) \n\
+	<Key> Q:                        quit() \n\
+	<Key> q:                        quit() \n
+
+
