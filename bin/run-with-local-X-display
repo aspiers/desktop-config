@@ -2,5 +2,10 @@
 
 host=${HOST:-${HOSTNAME:-`hostname`}}
 host=${host%%.*}
-export DISPLAY=`cat ~/.Xdisplay.$host`
-"$@"
+display_file=$HOME/.Xdisplay.$host
+if [ -e $display_file ]; then
+  export DISPLAY=`cat ~/.Xdisplay.$host`
+  "$@"
+else
+  echo "$display_file does not exist; aborting."
+fi
