@@ -43,4 +43,4 @@ elif [ "$ADAMS_WM" = 'sawfish' ]; then
   fi
 fi
 
-linpopup -min &
+which linpopup >&/dev/null && linpopup -min &
