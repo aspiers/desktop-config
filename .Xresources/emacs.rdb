@@ -4,7 +4,7 @@
 
 ! {{{ foreground/background
 
-#ifdef OLD_GNU_EMACS
+#if OLD_GNU_EMACS
 
 !emacs*Background: DarkSlateGray
 !emacs*Foreground: Wheat
@@ -23,19 +23,35 @@ emacs.Foreground: RGB:F/F/E
 ! }}} 
 ! {{{ geometry
 
-emacs.geometry: 83x54
+#ifdef LAPTOP_SCREEN
+   emacs.geometry: 80x39
+#else
+#  if OLD_GNU_EMACS
+     emacs.geometry: 83x51
+#  else
+     emacs.geometry: 83x54
+#  endif
+#endif
 
 ! }}} 
 ! {{{ font
 
-#ifdef OLD_GNU_EMACS
-emacs*font: fixed
+#ifdef LAPTOP_SCREEN
+   emacs*font: fixed
 #else
-!emacs.font: artsie
-!emacs.font: -schumacher-clean-medium-r-normal--16-*-*-*-c-80-iso8859-1
-!emacs.font: -Schumacher-Clean-Medium-R-Normal--*-160-*-*-*-*-*-*
-!emacs.font: -adobe-courier-medium-r-normal--18-180-75-75-m-110-iso8859-1
+#  if OLD_GNU_EMACS
+   emacs.font: -adobe-courier-medium-r-normal--*-120-*-*-*-*-iso8859-1
+!    FIXME
+#  else
+!    default is fine
+#  endif
 #endif
+
+! Fonts I have used in the past:
+!   emacs.font: artsie
+!   emacs.font: -schumacher-clean-medium-r-normal--16-*-*-*-c-80-iso8859-1
+!   emacs.font: -Schumacher-Clean-Medium-R-Normal--*-160-*-*-*-*-*-*
+!   emacs.font: -adobe-courier-medium-r-normal--18-180-75-75-m-110-iso8859-1
 
 ! }}} 
 ! {{{ bitmapIcon
@@ -45,7 +61,7 @@ emacs*font: fixed
 ! }}} 
 ! {{{ menubar
 
-#ifdef OLD_GNU_EMACS
+#if OLD_GNU_EMACS
 
 emacs*menubar.font: -*-fixed-*-*-*-*-*-*-*-*-*-90-*-*
 emacs*menubar.background: DarkSlateGray
