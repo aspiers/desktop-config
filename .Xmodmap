@@ -28,7 +28,9 @@ keysym Caps_Lock = Control_L
 ! BackSpace sends BackSpace code, not Delete code
 keycode 22 = BackSpace
 
+clear mod3
+
 ! Turn right Alt (AltGr or <> on HHKL) into Hyper 
-remove mod3 = Mode_switch
 keycode 113 = Hyper_R
+clear mod4
 add mod4 = Hyper_R
