@@ -1,3 +1,5 @@
+#define BLACK_BG_XTERMS 1
+
 ! default color for Xaw3d widget scrollbar
 #define XAW3DCOLOR gray75
 ! dunno
