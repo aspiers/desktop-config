@@ -1,0 +1,16 @@
+nxterm*fg:			RGB:F/F/E
+nxterm*bg:			RGB:0/0/0
+nxterm*font:		10x20
+!nxterm*geometry:		80x24+80+125
+!nxterm*visualBell:	true
+nxterm*scrollBar:		true
+nxterm*saveLines:		1024
+nxterm.VT100.Translations: #override \
+	<Key>Delete:    string(0x04)\n\
+	<Key>Home:      string(0x1b) string("[1~")\n\
+	<Key>End:       string(0x1b) string("[4~")
+nxterm.VT100.EightBitInput:	false
+nxterm.VT100.AutoWrap:	true
+nxterm.VT100.ReverseWrap:	true
+nxterm.VT100.JumpScroll:	true
+nxterm*termName:        xterm-color

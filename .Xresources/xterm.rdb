@@ -1,0 +1,14 @@
+XTerm*foreground:       RGB:F/F/E
+XTerm*background:       RGB:0/0/0
+XTerm*font:             10x20
+!XTerm*visualBell:       true
+XTerm*scrollBar:        true
+XTerm*saveLines:        1024
+XTerm.VT100.Translations: #override <Key>BackSpace: string(0x7F)\n\
+	<Key>Delete:    string(0x04)\n\
+	<Key>Home:      string(0x1b) string("[1~")\n\
+	<Key>End:       string(0x1b) string("[4~")
+XTerm.VT100.EightBitInput:	false
+XTerm.VT100.AutoWrap:	true
+XTerm.VT100.ReverseWrap:	true
+XTerm.VT100.JumpScroll:	true
