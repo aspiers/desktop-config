@@ -17,6 +17,12 @@ elif [ -e ~/.Xmodmap.local ]; then
 fi
 
 [ -e ~/.Xresources/all.rdb ] && xrdb -merge ~/.Xresources/all.rdb
+for dir in ~/.X_fonts ~/.truetype; do
+  if [ -d $dir ]; then
+    xset fp+ $dir
+  fi
+done
+xset fp rehash
 
 [ -e ~/.xsession.local.pre       ] && . ~/.xsession.local.pre
 [ -e ~/.xsession.${HOST%%.*}.pre ] && . ~/.xsession.${HOST%%.*}.pre
@@ -59,7 +65,7 @@ elif [ "$ADAMS_WM" = 'sawfish' ]; then
   # something like this goes in local
   # which Eterm 2>/dev/null >/dev/null && Eterm -t watchlogs-system -g 100x12+770-0 &
 
-  export GGDIR=`cat ~/.ggdir`
+  [ -f ~/.ggdir ] && export GGDIR=`cat ~/.ggdir`
 
   if which sawfish 2>/dev/null >/dev/null; then
     run_wm sawfish
