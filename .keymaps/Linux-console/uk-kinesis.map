@@ -56,7 +56,8 @@ keycode  53 = slash            question
 #	control	keycode  53 = Delete
 	control	keycode  53 = Control_underscore
 keycode  54 = Shift
-keycode  56 = Control_d
+#keycode  56 = Control_d
+keycode  56 = Alt
 keycode  57 = space
 	control	keycode  57 = nul
 keycode  58 = minus            underscore
@@ -67,6 +68,6 @@ keycode  103= Down
 keycode  107= Escape
 keycode  108= Up
 keycode  111= Alt
-
+         control alt keycode 111 = Boot
 
 
