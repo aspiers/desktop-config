@@ -35,7 +35,7 @@ else
 fi
 
 xset r rate 250 50
-xset r rate 250 70 # this one might get ignored
+xset r rate 200 90 # this one might get ignored
 
 run_wm () {
   "$@" && kill $$ &
