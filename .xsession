@@ -5,8 +5,17 @@ ADAMS_WM=sawfish
 echo -n "X session started: "
 date
 
-[ -e ~/.Xmodmap.local ] && . ~/.Xmodmap.local
-[ -e ~/.xsession.local.pre ] && . ~/.xsession.local.pre
+: ${HOST:=${HOSTNAME:={`hostname`}}}
+export HOST HOSTNAME
+
+if [ -e ~/.Xmodmap.${HOST%%.*} ]; then
+  . ~/.Xmodmap.${HOST%%.*}
+elif [ -e ~/.Xmodmap.local ]; then
+  . ~/.Xmodmap.local
+fi
+
+[ -e ~/.xsession.local.pre       ] && . ~/.xsession.local.pre
+[ -e ~/.xsession.${HOST%%.*}.pre ] && . ~/.xsession.${HOST%%.*}.pre
 
 [ -x ~/bin/xwrits ] && ~/bin/xwrits &
 xscreensaver -no-splash &
@@ -60,7 +69,8 @@ sleep 1
 
 #which linpopup >&/dev/null && linpopup -min &
 
-[ -e ~/.xsession.local ] && . ~/.xsession.local
+[ -e ~/.xsession.local       ] && . ~/.xsession.local
+[ -e ~/.xsession.${HOST%%.*} ] && . ~/.xsession.${HOST%%.*}
 
 # this script must not terminate, otherwise its callers assume
 # the X session has finished
