@@ -125,9 +125,9 @@ keycode 0x3D =	slash		question	5
 keycode 0x3E =	Shift_R
 keycode 0x31 =	grave		asciitilde
 ! Older models?
-keycode 0x6A =	Insert 
+keycode 0x6A =	Insert          Insert
 ! Newer models?
-keycode 0x5E =	Insert
+keycode 0x5E =	Insert          Insert
 keycode 0x64 =	Left
 keycode 0x66 =	Right
 keycode 0x62 =	Down
