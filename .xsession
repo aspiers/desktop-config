@@ -27,7 +27,7 @@ xset fp rehash
 [ -e ~/.xsession.${HOST%%.*}.pre ] && . ~/.xsession.${HOST%%.*}.pre
 
 [ -x ~/bin/xwrits ] && ~/bin/xwrits &
-which xscreensaver 2>/dev/null && xscreensaver -no-splash &
+which xscreensaver >/dev/null 2>&1 && xscreensaver -no-splash &
 
 #which xmms 2>/dev/null >/dev/null && xmms &
 
@@ -64,7 +64,8 @@ elif [ "$ADAMS_WM" = 'sawfish' ]; then
   fi
 
   # something like this goes in local
-  # which Eterm 2>/dev/null >/dev/null && Eterm -t watchlogs-system -g 100x12+770-0 &
+# which Eterm 2>/dev/null >/dev/null &&
+#   Eterm -t watchlogs-system -g 200x12+0-0 &
 
   if which sawfish 2>/dev/null >/dev/null; then
     run_wm sawfish
