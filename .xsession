@@ -23,7 +23,7 @@ elif [ "$ADAMS_WM" = 'enlightenment' ]; then
 
   which enlightenment >&/dev/null && exec enlightenment
 elif [ "$ADAMS_WM" = 'sawfish' ]; then
-  randomise_background
+  which randomise_background >&/dev/null && randomise_background
 
   which gkrellm >&/dev/null && gkrellm -geometry -0-0 &
   which Eterm >&/dev/null && Eterm -t watchlogs-system -g 200x12+0-0 &
