@@ -1,0 +1,6 @@
+#!/bin/sh
+
+host=${HOST:-${HOSTNAME:-`hostname`}}
+host=${host%%.*}
+export DISPLAY=`cat ~/.Xdisplay.$host`
+"$@"
