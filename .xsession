@@ -1,14 +1,11 @@
 ADAMS_WM=sawfish
 
-[ -d ~/bin ] && PATH=~/bin:"$PATH"
-[ -d ~/bin/backgrounds ] && PATH=~/bin/backgrounds:"$PATH"
-[ -d ~/local/bin ] && PATH=~/local/bin:"$PATH"
+. ~/.shared_env
 
 echo -n "X session started: "
 date
 
-: ${HOST:=${HOSTNAME:={`hostname`}}}
-export HOST HOSTNAME
+echo $DISPLAY > ~/.Xdisplay
 
 if [ -z "$VNCDESKTOP" ]; then
   if [ -e ~/.Xmodmap.${HOST%%.*} ]; then
