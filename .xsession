@@ -36,7 +36,9 @@ elif [ "$ADAMS_WM" = 'sawfish' ]; then
   fi
 
   which gkrellm >&/dev/null && gkrellm -geometry -0-0 &
-  which Eterm >&/dev/null && Eterm -t watchlogs-system -g 200x12+0-0 &
+
+  # something like this goes in local
+  # which Eterm >&/dev/null && Eterm -t watchlogs-system -g 100x12+770-0 &
 
   export GGDIR=`cat ~/.ggdir`
 
