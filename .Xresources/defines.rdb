@@ -16,3 +16,7 @@
 #define SMALL_SCREEN
 #endif
 #endif
+
+#if WIDTH<=1024
+#define LAPTOP_SCREEN
+#endif
