@@ -8,16 +8,18 @@
 !
 ! This file makes the following changes:
 !
-! The "F1" key generates F1 and F11
-! The "F2" key generates F2 and F12
-! The "F3" key generates F3 and F13
-! The "F4" key generates F4 and F14
-! The "F5" key generates F5 and F15
-! The "F6" key generates F6 and F16
-! The "F7 Data" key generates F7 and F17
-! The "F8 Delay" key generates F8 and F18
-! The "F9 Repeat" key generates F9 and F19
-! The "F10 Disable" key generates F10 and F20
+! The "F1" key generates F1 and XF86_Switch_VT_1
+! The "F2" key generates F2 and XF86_Switch_VT_2
+! The "F3" key generates F3 and XF86_Switch_VT_3
+! The "F4" key generates F4 and XF86_Switch_VT_4
+! The "F5" key generates F5 and XF86_Switch_VT_5
+! The "F6" key generates F6 and XF86_Switch_VT_6
+! The "F7 Data" key generates F7 and XF86_Switch_VT_7
+! The "F8 Delay" key generates F8 and XF86_Switch_VT_8
+! The "F9 Repeat" key generates F9 and XF86_Switch_VT_9
+! The "F10 Disable" key generates F10 and XF86_Switch_VT_10
+! The "F11 Macro" key generates F11 and XF86_Switch_VT_11
+! The "F12 Remap" key generates F12 and XF86_Switch_VT_12
 ! The "Scroll Lock" key generates Multi_key, and has no modifiers
 ! The "@ 2" key generates 2 and quotedbl
 ! The "Q" key generates q, Q, and braceleft
@@ -50,6 +52,7 @@
 ! The "< ," key generates comma, less, and 3
 ! The "> ." key generates period, greater, and 4
 ! The "? /" key generates slash, question, and 5
+! The "Insert" key generates Insert and Insert
 ! The "UpArrow" key generates Down
 ! The "DownArrow" key generates Up
 ! The "Alt" key generates Delete, and has no modifiers
@@ -60,18 +63,18 @@
 ! The "End" key generates Escape
 
 keycode 0x09 =	Escape
-keycode 0x43 =	F1		F11
-keycode 0x44 =	F2		F12
-keycode 0x45 =	F3		F13
-keycode 0x46 =	F4		F14
-keycode 0x47 =	F5		F15
-keycode 0x48 =	F6		F16
-keycode 0x49 =	F7		F17
-keycode 0x4A =	F8		F18
-keycode 0x4B =	F9		F19
-keycode 0x4C =	F10		F20
-keycode 0x5F =	F11
-keycode 0x60 =	F12
+keycode 0x43 =	F1		XF86_Switch_VT_1
+keycode 0x44 =	F2		XF86_Switch_VT_2
+keycode 0x45 =	F3		XF86_Switch_VT_3
+keycode 0x46 =	F4		XF86_Switch_VT_4
+keycode 0x47 =	F5		XF86_Switch_VT_5
+keycode 0x48 =	F6		XF86_Switch_VT_6
+keycode 0x49 =	F7		XF86_Switch_VT_7
+keycode 0x4A =	F8		XF86_Switch_VT_8
+keycode 0x4B =	F9		XF86_Switch_VT_9
+keycode 0x4C =	F10		XF86_Switch_VT_10
+keycode 0x5F =	F11		XF86_Switch_VT_11
+keycode 0x60 =	F12		XF86_Switch_VT_12
 keycode 0x6F =	Print		Execute
 keycode 0x4E =	Multi_key
 keycode 0x6E =	Pause
@@ -160,5 +163,6 @@ add    Shift   = Shift_L Shift_R
 add    Control = Control_L
 add    Mod1    = Meta_L Meta_R
 !add   Mod2    = Mode_switch
-add    Mod2    = Alt_L Alt_R
+!add    Mod2    = Alt_L Alt_R
+add    Mod2    = Alt_L
 add    Mod4    = Hyper_R
