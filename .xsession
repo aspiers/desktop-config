@@ -5,7 +5,7 @@ ADAMS_WM=sawfish
 echo -n "X session started: "
 date
 
-echo $DISPLAY > ~/.Xdisplay
+echo $DISPLAY > ~/.Xdisplay.${HOST%%.*}
 
 if [ -z "$VNCDESKTOP" ]; then
   if [ -e ~/.Xmodmap.${HOST%%.*} ]; then
