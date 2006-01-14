@@ -1,3 +1,5 @@
+exec 1>~/.xsession-errors 2>&1
+
 . ~/.shared_env
 
 echo -n "X session started: "
@@ -32,44 +34,20 @@ xset fp rehash
 [ -e ~/.xsession.local.pre       ] && . ~/.xsession.local.pre
 [ -e ~/.xsession.${HOST%%.*}.pre ] && . ~/.xsession.${HOST%%.*}.pre
 
-run_if_exists ~/bin/xwrits &
-run_if_exists workrave &
-run_if_exists xscreensaver -no-splash &
-#run_if_exists xmms &
-
-if [ -e /etc/X11/xorg.conf ] &&
-   ls -l /etc/X11/xorg.conf | grep -q 'TrackPoint';
-then
-  xset m 4 5
-else
-  xset m 2 4
-fi
-
+xset m 2 4
 xset r rate 180 50
 
 if executable_p Esetroot; then
-  run_if_exists retrieve_background
-#  run_if_exists randomise_background
+  run_if_executable retrieve_background
+#  run_if_executable randomise_background
 fi
+run_if_executable ~/bin/xwrits &
+run_if_executable workrave &
+run_if_executable xscreensaver -no-splash &
+run_if_executable watchlogs-system &
+#run_if_executable xmms &
+[ -z "$VNCDESKTOP" ] && run_if_executable gkrellm -geometry -0-0 &
 
-if [ -z "$VNCDESKTOP" ]; then
-  run_if_exists gkrellm -geometry -0-0 &
-fi
-
-# assume bash
-typeset -a dpy_geometry
-#dpy_geometry=$( xwininfo -root | awk '/-geometry/ {print $2}' )
-dpy_geometry=($( xprop -root -notype 32i ' $0 $1\n' _NET_DESKTOP_GEOMETRY ))
-dpy_width=${dpy_geometry[1]}
-dpy_height=${dpy_geometry[2]}
-echo $dpy_width x $dpy_height
-# Each char in smoothansi is 13 pixels high by 6 pixels wide.
-# Take 10% of height:
-watchlogs_height=$(( (dpy_height / 5) / 13 ))
-# Allow some space on the right for gkrellm:
-watchlogs_width=$(( (dpy_width - 90) / 6 ))
-run_if_exists \
-  Eterm -t watchlogs-system -g ${watchlogs_width}x${watchlogs_height}+0-0 &
 
 if executable_p sawfish; then
   export KDEWM=sawfish
