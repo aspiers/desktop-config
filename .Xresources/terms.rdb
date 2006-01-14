@@ -40,8 +40,8 @@ rxvt*foreground:    black
 ! }}} 
 ! {{{ font
 
-#xterm*font:        10x20
-#nxterm*font:       10x20
+!xterm*font:        10x20
+!nxterm*font:       10x20
 
 xterm*font:         9x15
 nxterm*font:        9x15
