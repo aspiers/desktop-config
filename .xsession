@@ -37,17 +37,6 @@ xset fp rehash
 xset m 2 4
 xset r rate 180 50
 
-if executable_p Esetroot; then
-  run_if_executable retrieve_background
-#  run_if_executable randomise_background
-fi
-run_if_executable ~/bin/xwrits &
-run_if_executable workrave &
-run_if_executable xscreensaver -no-splash &
-run_if_executable watchlogs-system &
-#run_if_executable xmms &
-[ -z "$VNCDESKTOP" ] && run_if_executable gkrellm -geometry -0-0 &
-
 
 if executable_p sawfish; then
   export KDEWM=sawfish
@@ -60,11 +49,13 @@ if executable_p startkde; then
   exec startkde
 fi
 
-exec sawfish
+sawfish &
+
+~/.xsession-progs &
 
 # oh fuck
-exec fvwm
-exec twm
+# exec fvwm
+# exec twm
 
 # this script must not terminate, otherwise its callers assume
 # the X session has finished
