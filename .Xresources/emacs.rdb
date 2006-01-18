@@ -102,10 +102,11 @@ emacs.pane.menubar.margin: 0
 ! }}} 
 ! {{{ turn off toolbar
 
-# GNU Emacs:
+! GNU Emacs:
 emacs.toolBar: 0
+Emacs.toolBar: 0
 
-# Xemacs:
+! Xemacs:
 Emacs.topToolBarHeight:       0
 Emacs.bottomToolBarHeight:    0
 Emacs.leftToolBarWidth:       0
