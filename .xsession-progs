@@ -14,10 +14,20 @@ if executable_p Esetroot; then
 fi
 
 #run_if_executable ~/bin/xwrits &
-#run_if_executable workrave &
+run_if_executable workrave &
 
-run_if_executable xscreensaver -no-splash &
+# FIXME
+#run_if_executable xscreensaver -no-splash &
+
 run_if_executable watchlogs-system &
-#run_if_executable xmms &
 [ -z "$VNCDESKTOP" ] && run_if_executable gkrellm -geometry -0-0 &
-run_if_executable 3ddesk &
+#run_if_executable 3ddesk &
+
+# Other programs to run:
+#   gaim / kopete
+#   xmms
+#   xchat
+#   kgpg
+#   
+run_local_hooks .xsession-progs &
+
