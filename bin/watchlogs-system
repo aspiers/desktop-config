@@ -1,0 +1,16 @@
+#!/bin/bash
+
+typeset -a dpy_geometry
+#dpy_geometry=$( xwininfo -root | awk '/-geometry/ {print $2}' )
+dpy_geometry=($( xprop -root -notype 32i ' $0 $1\n' _NET_DESKTOP_GEOMETRY ))
+
+dpy_width=${dpy_geometry[1]}
+dpy_height=${dpy_geometry[2]}
+
+# Each char in smoothansi is 13 pixels high by 6 pixels wide.
+# Take 10% of height:
+watchlogs_height=$(( (dpy_height / 5) / 13 ))
+# Allow some space on the right for gkrellm:
+watchlogs_width=$(( (dpy_width - 90) / 6 ))
+
+Eterm -t watchlogs-system -g ${watchlogs_width}x${watchlogs_height}+0-0
