@@ -1,6 +1,4 @@
-#include ".Xresources/local.rdb"
+! #include ".Xresources/local.rdb"
 #include ".Xresources/defines.rdb"
 #include ".Xresources/emacs.rdb"
-#include ".Xresources/netscape.rdb"
 #include ".Xresources/terms.rdb"
-#include ".Xresources/ytalk.rdb"
