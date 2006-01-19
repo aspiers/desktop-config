@@ -44,12 +44,13 @@ emacs.Foreground: RGB:F/F/E
 ! up being 84x44.
 
 #ifdef LAPTOP_SCREEN
-   emacs.geometry: 78x42
+   Emacs.geometry: 78x42
 #else
 #  if OLD_GNU_EMACS
-     emacs.geometry: 83x51
+     Emacs.geometry: 83x51
 #  else
-!    emacs.geometry: 83x57
+     emacs.geometry: 83x57
+     Emacs.geometry: 83x57
 #  endif
 #endif
 
@@ -96,6 +97,8 @@ emacs*menubar.foreground: White
 
 emacs.pane.menubar.height: 24
 emacs.pane.menubar.margin: 0
+Emacs.pane.menubar.height: 24
+Emacs.pane.menubar.margin: 0
 
 #endif
 
