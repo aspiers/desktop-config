@@ -1,0 +1,24 @@
+#autoload
+
+ksm-valid && return 0
+
+sock_dir=/tmp/.ICE-unix
+
+sockets=( $sock_dir/[0-9]*(=UN) )
+
+if (( $#sockets == 0 )); then
+    echo "No sockets found in $sock_dir" >&2
+    return 1
+fi
+
+if (( $#sockets > 1 )); then
+    echo "Found multiple sockets in $sock_dir; dunno what to do..."
+    return 1
+fi
+
+session_socket="${SESSION_MANAGER#*:}"
+SESSION_MANAGER="local/`hostname`:$sockets[0]"
+
+echo "Set SESSION_MANAGER=local/`hostname`:$sockets[0]"
+return 0
+

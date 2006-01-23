@@ -1,0 +1,20 @@
+#autoload
+
+if [[ -z "$SESSION_MANAGER" ]]; then
+    echo "\$SESSION_MANAGER not set!" >&2
+    return 1
+fi
+
+session_socket="${SESSION_MANAGER#*:}"
+
+if [[ ! -e "$session_socket" ]]; then
+    echo "$session_socket does not exist!" >&2
+    return 1
+fi
+
+if lsof $session_socket | grep -q ksmserver; then
+    return 0
+fi
+
+return 1
+
