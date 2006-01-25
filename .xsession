@@ -1,4 +1,6 @@
-exec 1>~/.xsession-errors 2>&1
+#!/bin/bash
+
+exec 1>~/.xsession-my-errors 2>&1
 
 . ~/.shared_env
 
