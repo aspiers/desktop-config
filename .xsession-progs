@@ -29,5 +29,5 @@ run_if_executable watchlogs-system &
 #   xchat
 #   kgpg
 #   
-. ${ZDOTDIR:-$HOME}/.zsh/functions/run_local_hooks .xsession-progs &
+. ${ZDOTDIR:-$HOME}/.zsh/functions/run_hooks .xsession-progs.d &
 
