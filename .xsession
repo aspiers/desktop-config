@@ -45,6 +45,8 @@ echo "### .xsession.local.pre ..."
 
 if executable_p sawfish; then
   export KDEWM=sawfish
+else
+  echo "sawfish not executable :-("
 fi
 
 echo "### .xsession.local ..."
@@ -53,10 +55,16 @@ echo "### .xsession.local ..."
 
 if executable_p startkde; then
   exec startkde
+else
+  echo "startkde not executable :-("
 fi
 
-echo "### sawfish ..."
-sawfish &
+if executable_p sawfish; then
+  echo "### sawfish ..."
+  sawfish &
+else
+  gnome-session &
+fi
 
 echo "### ~/.xsession-progs ..."
 ~/.xsession-progs &
