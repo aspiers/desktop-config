@@ -5,7 +5,11 @@ executable_p () {
 }
 
 run_if_executable () {
-    executable_p "$1" && "$@"
+    if executable_p "$1"; then
+        "$@"
+    else
+        echo "$1 not executable; skipping $*"
+    fi
 }
 
 if executable_p Esetroot; then
