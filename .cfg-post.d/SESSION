@@ -1,0 +1,10 @@
+#!/bin/bash
+
+touch ~/.Xresources/local.rdb
+if which startkde >&/dev/null; then
+  mkdir -p ~/.kde/Autostart
+  cd ~/.kde/Autostart
+  echo hi
+  [ -e ~/.kde/Autostart/xsession-progs ] ||
+    ln -s ../../.xsession-progs ~/.kde/Autostart/xsession-progs
+fi
