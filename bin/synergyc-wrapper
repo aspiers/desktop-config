@@ -71,7 +71,7 @@ _log_it () {
 
 _alertme () {
     if [ -n "$alertme" ]; then
-        alertme "$*"
+        alertme "$*" &
     else
         _log_it "$*"
     fi
@@ -104,19 +104,21 @@ ensure_correct_invocation_running () {
         _log_it "killing invocation pid $pid (has server IP $last_arg not $servername)"
         _kill "$pid"
     elif [ "${#pids[@]}" -gt 1 ]; then
-        _log_it "Multiple instances of $CLIENT_PROG running (${pids[@]}); killing all"
+        _log_it "multiple instances of $CLIENT_PROG running (${pids[@]}); killing all"
         _kill "${pids[@]}"
     fi
 
     # No client running now
     "$CLIENT_PROG" -n "$clientname" "$servername" &
+    pid=$!
 
     if [ $? != 0 ]; then
         _alertme "$CLIENT_PROG -n $clientname $servername failed"
+        pid=
         return 1
     fi
     
-    _log_it "launched $CLIENT_PROG -n $clientname $servername (pid $!)"
+    _log_it "launched $CLIENT_PROG -n $clientname $servername (pid $pid)"
     return 0
 }
 
