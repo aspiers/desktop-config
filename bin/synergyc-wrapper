@@ -56,12 +56,12 @@ is_host_up () {
         solaris*) 
             echo "FIXME: ping count option?" >&2
             exit 1
-            ping -s "$host" | tailfgrep -q 'bytes from' && host_up=yes
+            ping -s "$host" | grep -q 'bytes from' && host_up=yes
             ;;
 
         # FreeBSD and Linux
         *)
-            ping -c "$PING_COUNT" "$host" | tailfgrep -q 'bytes from' && host_up=yes
+            ping -c "$PING_COUNT" "$host" | grep -q 'bytes from' && host_up=yes
             ;; 
     esac
     [ -n "$host_up" ]
