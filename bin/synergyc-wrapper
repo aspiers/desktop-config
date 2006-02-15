@@ -49,6 +49,8 @@ is_host_up () {
     host="$1"
     shift
 
+#    _log_it "testing if $host is up"
+
     host_up=
     case "$OSTYPE" in
         solaris*) 
@@ -125,20 +127,17 @@ ensure_correct_invocation_running () {
 while true; do
     read_conf
 
-    if ! ensure_correct_invocation_running; then
-        sleep 60
-        continue
-    fi
-    
-#    _log_it "testing if $servername is up"
     if is_host_up "$servername"; then
-#        _log_it "$servername up"
-        :
+        _log_it "$servername up"
+        if ! ensure_correct_invocation_running; then
+            sleep 60
+            continue
+        fi
     else
-        _log_it "$servername down; restarting $CLIENT_PROG"
-        kill "$pid"
-        sleep 3
-        kill -9 "$pid"
+        if [ -n "$pid" ]; then
+            _log_it "$servername down; stopping $CLIENT_PROG"
+            _kill "$pid"
+        fi
     fi
 
     sleep 5
