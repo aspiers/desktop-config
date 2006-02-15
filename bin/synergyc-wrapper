@@ -80,7 +80,7 @@ _alertme () {
 }
 
 _kill () {
-    kill "$@"
+    kill "$@" 2>/dev/null
     sleep 3
     kill -9 "$@" 2>/dev/null
 }
@@ -128,7 +128,7 @@ while true; do
     read_conf
 
     if is_host_up "$servername"; then
-        _log_it "$servername up"
+#        _log_it "$servername up"
         if ! ensure_correct_invocation_running; then
             sleep 60
             continue
