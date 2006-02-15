@@ -105,6 +105,7 @@ ensure_correct_invocation_running () {
 
         _log_it "killing invocation pid $pid (has server IP $last_arg not $servername)"
         _kill "$pid"
+        pid=
     elif [ "${#pids[@]}" -gt 1 ]; then
         _log_it "multiple instances of $CLIENT_PROG running (${pids[@]}); killing all"
         _kill "${pids[@]}"
@@ -137,6 +138,7 @@ while true; do
         if [ -n "$pid" ]; then
             _log_it "$servername down; stopping $CLIENT_PROG"
             _kill "$pid"
+            pid=
         fi
     fi
 
