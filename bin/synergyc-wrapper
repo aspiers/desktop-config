@@ -1,0 +1,116 @@
+#!/bin/bash
+
+PING_COUNT=10
+CLIENT_PROG=synergyc
+
+me="`basename $0`"
+
+if [ $# -lt 1 ]; then
+  echo "Usage: $me [-a] <CLIENTNAME> <SERVERIP>"
+  exit 1
+fi
+
+if [ "$1" == '-a' ]; then
+  alertme=yes
+  shift
+fi
+
+clientname="$1"
+shift
+serverIP="$1"
+shift
+
+is_host_up () {
+    host="$1"
+    shift
+
+    host_up=
+    case "$OSTYPE" in
+        solaris*) 
+            echo "FIXME: ping count option?" >&2
+            exit 1
+            ping -s "$host" | tailfgrep -q 'bytes from' && host_up=yes
+            ;;
+
+        # FreeBSD and Linux
+        *)
+            ping -c "$PING_COUNT" "$host" | tailfgrep -q 'bytes from' && host_up=yes
+            ;; 
+    esac
+    [ -n "$host_up" ]
+}
+
+_log_it () {
+    logger "$me: $*"
+}
+
+_alertme () {
+    if [ -n "$alertme" ]; then
+        alertme "$*"
+    else
+        _log_it "$*"
+    fi
+}
+
+_kill () {
+    kill "$@"
+    sleep 3
+    kill -9 "$@" 2>/dev/null
+}
+
+ensure_correct_invocation_running () {
+    pids=( $(pgrep -u "$USERNAME" "^$CLIENT_PROG$") )
+
+    if [ "${#pids[@]}" == 1 ]; then
+        pid="${pids[0]}"
+#        _log_it "$CLIENT_PROG already running: pid $pid"
+
+        args=( $( ps --no-headers -o args -p "$pid" ) )
+        # bash--
+        nargs="${#args[@]}"
+        last_argn=$(( $nargs - 1 ))
+        last_arg="${args[$last_argn]}"
+        
+        if [ "$last_arg" = "$serverIP" ]; then
+            # We're pointing at the right server
+            return 0
+        fi
+
+        _log_it "killing invocation pid $pid (has server IP $last_arg not $serverIP)"
+        _kill "$pid"
+    elif [ "${#pids[@]}" -gt 1 ]; then
+        _log_it "Multiple instances of $CLIENT_PROG running (${pids[@]}); killing all"
+        _kill "${pids[@]}"
+    fi
+
+    # No client running now
+    "$CLIENT_PROG" -n "$clientname" "$serverIP" &
+
+    if [ $? != 0 ]; then
+        _alertme "$CLIENT_PROG -n $clientname $serverIP failed"
+        return 1
+    fi
+    
+    _log_it "launched $CLIENT_PROG -n $clientname $serverIP (pid $!)"
+    return 0
+}
+
+while true; do
+    if ! ensure_correct_invocation_running; then
+        sleep 60
+        continue
+    fi
+    
+#    _log_it "testing if $serverIP is up"
+    if is_host_up "$serverIP"; then
+#        _log_it "$serverIP up"
+        :
+    else
+        _log_it "$serverIP down; restarting $CLIENT_PROG"
+        kill "$pid"
+        sleep 3
+        kill -9 "$pid"
+    fi
+
+    sleep 5
+done
