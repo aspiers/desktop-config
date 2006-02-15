@@ -12,7 +12,7 @@ if [ $# -gt 1 ]; then
   exit 1
 fi
 
-if pgrep -f -u "$USERNAME" "$me" >/dev/null; then
+if pgrep -u "$USERNAME" "^$me\$" >/dev/null; then
     echo "$me already running; exiting." >&2
     exit 1
 fi
