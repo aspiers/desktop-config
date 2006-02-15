@@ -4,6 +4,7 @@ PING_COUNT=10
 CLIENT_PROG=synergyc
 CLIENT_NAME_FILE=$HOME/.synergy-client-name
 SERVER_NAME_FILE=$HOME/.synergy-server-name
+LOCK_DIR=$HOME/.synergy-lock
 
 me="`basename $0`"
 
@@ -12,10 +13,18 @@ if [ $# -gt 1 ]; then
   exit 1
 fi
 
-if pgrep -u "$USERNAME" "^$me\$" >/dev/null; then
-    echo "$me already running; exiting." >&2
+clean_up () {
+    rmdir "$LOCK_DIR"
+}
+
+if [ -d "$LOCK_DIR" ]; then
+    echo "$me already running or stale lock $LOCK_DIR; exiting." >&2
     exit 1
 fi
+
+trap clean_up HUP TERM QUIT EXIT
+
+mkdir "$LOCK_DIR"
 
 if [ "$1" == '-a' ]; then
   alertme=yes
