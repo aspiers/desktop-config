@@ -7,12 +7,12 @@ SERVER_NAME_FILE=$HOME/.synergy-server-name
 
 me="`basename $0`"
 
-if [ $# -lt 1 ]; then
+if [ $# -gt 1 ]; then
   echo "Usage: $me [-a]"
   exit 1
 fi
 
-if pgrep -u "$USERNAME" "^$me\$" >/dev/null; then
+if pgrep -f -u "$USERNAME" "$me" >/dev/null; then
     echo "$me already running; exiting." >&2
     exit 1
 fi
