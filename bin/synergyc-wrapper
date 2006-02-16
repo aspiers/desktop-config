@@ -13,12 +13,24 @@ if [ $# -gt 1 ]; then
   exit 1
 fi
 
+_log_it () {
+    logger "$me: $*"
+}
+
+_alertme () {
+    if [ -n "$alertme" ]; then
+        alertme "$*" &
+    else
+        _log_it "$*"
+    fi
+}
+
 clean_up () {
     rmdir "$LOCK_DIR"
 }
 
 if [ -d "$LOCK_DIR" ]; then
-    echo "$me already running or stale lock $LOCK_DIR; exiting." >&2
+    _log_it "$me already running or stale lock $LOCK_DIR; exiting." >&2
     exit 1
 fi
 
@@ -65,18 +77,6 @@ is_host_up () {
             ;; 
     esac
     [ -n "$host_up" ]
-}
-
-_log_it () {
-    logger "$me: $*"
-}
-
-_alertme () {
-    if [ -n "$alertme" ]; then
-        alertme "$*" &
-    else
-        _log_it "$*"
-    fi
 }
 
 _kill () {
