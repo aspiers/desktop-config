@@ -26,7 +26,7 @@ _alertme () {
 }
 
 clean_up () {
-    _log_it "synergyc-wrapper pid $$ shutting down"
+    _log_it "pid $$ shutting down"
     rmdir "$LOCK_DIR"
 }
 
@@ -126,7 +126,7 @@ ensure_correct_invocation_running () {
     return 0
 }
 
-_log_it "synergyc-wrapper pid $$ started up"
+_log_it "pid $$ started up"
 
 while true; do
     read_conf
