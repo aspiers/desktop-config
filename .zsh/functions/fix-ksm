@@ -12,7 +12,9 @@ if (( $#sockets == 0 )); then
 fi
 
 if (( $#sockets > 1 )); then
-    echo "Found multiple sockets in $sock_dir; dunno what to do..."
+    echo "Found multiple sockets in $sock_dir:"
+    echo "${(F@)sockets//(#s)/    }"
+    echo "Dunno what to do..."
     return 1
 fi
 
