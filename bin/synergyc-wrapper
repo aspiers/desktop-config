@@ -27,7 +27,7 @@ _alertme () {
 
 clean_up_and_exit () {
     _log_it "pid $$ shutting down"
-    rmdir "$LOCK_DIR"
+    [ -d "$LOCK_DIR" ] && rmdir "$LOCK_DIR"
     exit 0
 }
 
