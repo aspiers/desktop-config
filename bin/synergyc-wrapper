@@ -25,9 +25,30 @@ _alertme () {
     fi
 }
 
-clean_up () {
+clean_up_and_exit () {
     _log_it "pid $$ shutting down"
     rmdir "$LOCK_DIR"
+    exit 0
+}
+
+sighup () {
+    _log_it "pid $$ received HUP"
+    clean_up_and_exit
+}
+
+sigterm () {
+    _log_it "pid $$ received TERM"
+    clean_up_and_exit
+}
+
+sigquit () {
+    _log_it "pid $$ received QUIT"
+    clean_up_and_exit
+}
+
+sigexit () {
+    _log_it "pid $$ received EXIT"
+    clean_up_and_exit
 }
 
 if [ -d "$LOCK_DIR" ]; then
@@ -35,7 +56,10 @@ if [ -d "$LOCK_DIR" ]; then
     exit 1
 fi
 
-trap clean_up HUP TERM QUIT EXIT
+trap sighup  HUP
+trap sigterm TERM
+trap sigquit QUIT
+trap sigexit EXIT
 
 mkdir "$LOCK_DIR"
 
