@@ -1,6 +1,9 @@
 #!/bin/bash
 
 touch ~/.Xresources/local.rdb
+
+mkdir -p ~/.xsession-progs.d
+
 if which startkde >&/dev/null; then
   mkdir -p ~/.kde/Autostart
   cd ~/.kde/Autostart
