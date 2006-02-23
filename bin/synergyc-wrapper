@@ -31,21 +31,22 @@ clean_up_and_exit () {
 }
 
 sighup () {
-    _log_it "pid $$ received HUP; shutting down"
+    _log_it "pid $$ received SIGHUP"
     clean_up_and_exit
 }
 
 sigterm () {
-    _log_it "pid $$ received TERM; shutting down"
+    _log_it "pid $$ received SIGTERM"
     clean_up_and_exit
 }
 
 sigquit () {
-    _log_it "pid $$ received QUIT; shutting down"
+    _log_it "pid $$ received SIGQUIT"
     clean_up_and_exit
 }
 
 sigexit () {
+    _log_it "pid $$ shutting down"
     clean_up_and_exit
 }
 
