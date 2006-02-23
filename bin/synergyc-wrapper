@@ -26,28 +26,27 @@ _alertme () {
 }
 
 clean_up_and_exit () {
-    _log_it "pid $$ shutting down"
     [ -d "$LOCK_DIR" ] && rmdir "$LOCK_DIR"
     exit 0
 }
 
 sighup () {
-    _log_it "pid $$ received HUP"
+    _log_it "pid $$ received HUP; shutting down"
     clean_up_and_exit
 }
 
 sigterm () {
-    _log_it "pid $$ received TERM"
+    _log_it "pid $$ received TERM; shutting down"
     clean_up_and_exit
 }
 
 sigquit () {
-    _log_it "pid $$ received QUIT"
+    _log_it "pid $$ received QUIT; shutting down"
     clean_up_and_exit
 }
 
 sigexit () {
-    _log_it "pid $$ received EXIT"
+    _log_it "pid $$ received EXIT; shutting down"
     clean_up_and_exit
 }
 
