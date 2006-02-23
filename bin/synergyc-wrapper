@@ -46,7 +46,6 @@ sigquit () {
 }
 
 sigexit () {
-    _log_it "pid $$ received EXIT; shutting down"
     clean_up_and_exit
 }
 
