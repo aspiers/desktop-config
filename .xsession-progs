@@ -20,7 +20,7 @@ fi
 #run_if_executable ~/bin/xwrits &
 run_if_executable workrave &
 
-# FIXME
+# FIXME: issues relating to kde/sawfish combo?
 #run_if_executable xscreensaver -no-splash &
 
 run_if_executable watchlogs-system &
