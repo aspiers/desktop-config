@@ -92,12 +92,13 @@ is_host_up () {
         solaris*) 
             echo "FIXME: ping count option?" >&2
             exit 1
-            ping -s "$host" | grep -q 'bytes from' && host_up=yes
+            # redirect stderr to avoid "no route to host" type errors
+            ping -s "$host" 2>&1 | grep -q 'bytes from' && host_up=yes
             ;;
 
         # FreeBSD and Linux
         *)
-            ping -c "$PING_COUNT" "$host" | grep -q 'bytes from' && host_up=yes
+            ping -c "$PING_COUNT" "$host" 2>&1 | grep -q 'bytes from' && host_up=yes
             ;; 
     esac
     [ -n "$host_up" ]
