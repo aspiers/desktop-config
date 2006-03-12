@@ -4,7 +4,6 @@ PING_COUNT=10
 CLIENT_PROG=synergyc
 CLIENT_NAME_FILE=$HOME/.synergy-client-name
 SERVER_NAME_FILE=$HOME/.synergy-server-name
-LOCK_DIR=$HOME/.synergy-lock
 
 me="`basename $0`"
 
@@ -25,33 +24,24 @@ _alertme () {
     fi
 }
 
-clean_up_and_exit () {
-    [ -d "$LOCK_DIR" ] && rmdir "$LOCK_DIR"
-    exit 0
-}
-
 sighup () {
     _log_it "pid $$ received SIGHUP"
-    clean_up_and_exit
 }
 
 sigterm () {
     _log_it "pid $$ received SIGTERM"
-    clean_up_and_exit
 }
 
 sigquit () {
     _log_it "pid $$ received SIGQUIT"
-    clean_up_and_exit
 }
 
 sigexit () {
     _log_it "pid $$ shutting down"
-    clean_up_and_exit
 }
 
-if [ -d "$LOCK_DIR" ]; then
-    _log_it "$me already running or stale lock $LOCK_DIR; exiting." >&2
+if ps -ef | grep -v grep | grep -q synergyc-wrapper; then
+    _log_it "$me already running; exiting." >&2
     exit 1
 fi
 
@@ -59,8 +49,6 @@ trap sighup  HUP
 trap sigterm TERM
 trap sigquit QUIT
 trap sigexit EXIT
-
-mkdir "$LOCK_DIR"
 
 if [ "$1" == '-a' ]; then
   alertme=yes
