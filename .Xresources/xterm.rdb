@@ -1,5 +1,7 @@
+! These are what I had from ages ago
 XTerm*foreground:       RGB:F/F/E
 XTerm*background:       RGB:0/0/0
+
 XTerm*font:             10x20
 !XTerm*visualBell:       true
 XTerm*scrollBar:        true
@@ -12,3 +14,34 @@ XTerm.VT100.EightBitInput:	false
 XTerm.VT100.AutoWrap:	true
 XTerm.VT100.ReverseWrap:	true
 XTerm.VT100.JumpScroll:	true
+
+! These work in FC4
+xterm*foreground:       RGB:F/F/E
+xterm*background:       RGB:0/0/0
+xterm*rightScrollBar: true
+
+*xterm*color0: rgb:00/00/00
+*xterm*color1: rgb:aa/00/00
+*xterm*color2: rgb:00/88/00
+*xterm*color3: rgb:aa/55/22
+*xterm*color4: rgb:10/00/b6
+*xterm*color5: rgb:aa/00/aa
+!*xterm*color6: rgb:00/aa aa
+*xterm*color6: rgb:79/ae/a6
+*xterm*color7: rgb:e0/e0/e0
+*xterm*color8: rgb:55/55/55
+*xterm*color9: rgb:ff/44/44
+!*xterm*color10: rgb:44/ff/44
+*xterm*color10: rgb:9e/db/96
+!*xterm*color11: rgb:ff/ff/44
+*xterm*color11: rgb:f7/ff/a6
+!*xterm*color12: rgb:44/44/ff
+*xterm*color12: rgb:51/55/c8
+*xterm*color13: rgb:ff/44/ff
+!*xterm*color14: rgb:44/ff/ff
+*xterm*color14: rgb:be/eb/f4
+*xterm*color15: rgb:ff/ff/ff
+
+! Use color or bold/underline for bold/underline?
+*xterm*colorBDMode: off
+*xterm*colorULMode: on
