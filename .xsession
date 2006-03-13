@@ -19,7 +19,7 @@ echo $DISPLAY > ~/.Xdisplay.${HOST%%.*}
 
 echo "### Xmodmap ..."
 if [ -z "$VNCDESKTOP" ]; then
-  . $ZDOTDIR/.zsh/functions/run_hooks .Xmodmap.d
+  . $ZDOT_RUN_HOOKS .Xmodmap.d
 fi
 
 echo "### Xresources ..."
