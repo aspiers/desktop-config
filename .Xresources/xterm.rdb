@@ -2,7 +2,7 @@
 XTerm*foreground:       RGB:F/F/E
 XTerm*background:       RGB:0/0/0
 
-XTerm*font:             10x20
+!XTerm*font:             10x20
 !XTerm*visualBell:       true
 XTerm*scrollBar:        true
 XTerm*saveLines:        1024
@@ -31,8 +31,7 @@ XTerm*saveLines:        1024
 !   that shift-ctrl-alt-L will have the same definition as ctrl-alt-L)
 !   if you live in that world
 !
-! Can't get Ctrl-Shift-Prior/Next working in xterm.  In rxvt, it's
-! a bug which needs to be patched:
+! In rxvt, Ctrl-Shift-Prior/Next is a bug which needs to be patched:
 !
 ! http://lists.debian.org/debian-qa-packages/2005/10/msg00112.html
 ! http://bugs.donarmstrong.com/cgi-bin/bugreport.cgi?bug=226386
@@ -44,18 +43,18 @@ XTerm.vt100.translations: #override \
              <Key> Home:      string(0x1b) string("[1~")\n\
              <Key> End:       string(0x1b) string("[4~")\n\
 \
-  !Shift <Keypress> Prior:    scroll-back(1,halfpage)\n\
-  !Shift <Keypress> Next:     scroll-forw(1,halfpage)\n\
-  Ctrl Shift <Keypress> Prior:    string(0x1b) string("[5@")\n\
-  Ctrl Shift <Keypress> Next:     string(0x1b) string("[6@")\n\
-  Ctrl Meta  <Keypress> Prior:    string(0x1b) string("[5@")\n\
-  Ctrl Meta  <Keypress> Next:     string(0x1b) string("[6@")\n\
-       Meta  <Keypress> Prior:    string(0x1b) string("[5@")\n\
-       Meta  <Keypress> Next:     string(0x1b) string("[6@")\n\
-        None <Keypress> Prior:    string(0x1b) string("[5~")\n\
-        None <Keypress> Next:     string(0x1b) string("[6~")\n\
-       !Ctrl <Keypress> Prior:    string(0x1b) string("[5\^")\n\
-       !Ctrl <Keypress> Next:     string(0x1b) string("[6\^")\n\
+        None <Key> Prior:    string(0x1b) string("[5~")\n\
+        None <Key> Next:     string(0x1b) string("[6~")\n\
+      !Shift <Key> Prior:    scroll-back(1,halfpage)\n\
+      !Shift <Key> Next:     scroll-forw(1,halfpage)\n\
+       !Ctrl <Key> Prior:    string(0x1b) string("[5\^")\n\
+       !Ctrl <Key> Next:     string(0x1b) string("[6\^")\n\
+  Ctrl Shift <Key> Prior:    string(0x1b) string("[5@")\n\
+  Ctrl Shift <Key> Next:     string(0x1b) string("[6@")\n\
+  Ctrl Meta  <Key> Prior:    string(0x1b) string("[5@")\n\
+  Ctrl Meta  <Key> Next:     string(0x1b) string("[6@")\n\
+       Meta  <Key> Prior:    string(0x1b) string("[5@")\n\
+       Meta  <Key> Next:     string(0x1b) string("[6@")\n\
 \
              <Btn4Down>,<Btn4Up>: scroll-back(1,halfpage)\n\
              <Btn5Down>,<Btn5Up>: scroll-forw(1,halfpage)\n\
@@ -74,6 +73,13 @@ XTerm.VT100.JumpScroll: true
 xterm*foreground:       RGB:F/F/E
 xterm*background:       RGB:0/0/0
 xterm*rightScrollBar: true
+
+xterm*geometry: 92x40
+
+! gotta have this one to trim trailing whitespace:
+xterm*trimSelection: true
+! but not sure about this one:
+xterm*cutNewline: true
 
 *xterm*color0: rgb:00/00/00
 *xterm*color1: rgb:aa/00/00
