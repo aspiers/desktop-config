@@ -6,14 +6,68 @@ XTerm*font:             10x20
 !XTerm*visualBell:       true
 XTerm*scrollBar:        true
 XTerm*saveLines:        1024
-XTerm.VT100.Translations: #override <Key>BackSpace: string(0x7F)\n\
-	<Key>Delete:    string(0x04)\n\
-	<Key>Home:      string(0x1b) string("[1~")\n\
-	<Key>End:       string(0x1b) string("[4~")
-XTerm.VT100.EightBitInput:	false
-XTerm.VT100.AutoWrap:	true
-XTerm.VT100.ReverseWrap:	true
-XTerm.VT100.JumpScroll:	true
+
+! Good reference here:
+!   http://www.in-ulm.de/~mascheck/X11/xterm/XTerm
+! 
+! From
+! http://moat.nlanr.net/Software/OC3mon/DOSCoraldist19980317/REMCTL/XDEFAULT.UNX
+! :-
+!
+!   in case you are wondering, magic words like 
+!   "Prior" and "BackSpace" are all listed in 
+!   	/usr/local/X11R6/include/X11/keysymdef.h
+!   with "XK_" in front of the name you can use here
+!
+!   boy, is it frustrating to try guessing 'em!
+!
+!   apparently, tilde in front of a shift means "not this shift"
+!   and exclaimation point in front of a shift means "just this shift"
+!
+!   but the ~Shift somehow doesn't work on IRIX 6.3 X display
+!   in front of the lines that define ctrl-alt-L and ctrl-alt-X,
+!   even though it works fine for ctrl-alt-delete, so you need
+!   to take "~Shift" off the front of those definitions (which means
+!   that shift-ctrl-alt-L will have the same definition as ctrl-alt-L)
+!   if you live in that world
+!
+! Can't get Ctrl-Shift-Prior/Next working in xterm.  In rxvt, it's
+! a bug which needs to be patched:
+!
+! http://lists.debian.org/debian-qa-packages/2005/10/msg00112.html
+! http://bugs.donarmstrong.com/cgi-bin/bugreport.cgi?bug=226386
+! TODO: Check http://sourceforge.net/projects/rxvt
+
+XTerm.vt100.translations: #override <Key>BackSpace: string(0x7F)\n\
+             <Key>Delete:         string(0x04)\n\
+             <Key>Home:           string(0x1b) string("[1~")\n\
+             <Key>End:            string(0x1b) string("[4~")\n\
+\
+  !Shift <Keypress> Prior:    scroll-back(1,halfpage)\n\
+  !Shift <Keypress> Next:     scroll-forw(1,halfpage)\n\
+  Ctrl Shift <Keypress> Prior:    string(0x1b) string("[5@")\n\
+  Ctrl Shift <Keypress> Next:     string(0x1b) string("[6@")\n\
+  Ctrl Meta  <Keypress> Prior:    string(0x1b) string("[5@")\n\
+  Ctrl Meta  <Keypress> Next:     string(0x1b) string("[6@")\n\
+       Meta  <Keypress> Prior:    string(0x1b) string("[5@")\n\
+       Meta  <Keypress> Next:     string(0x1b) string("[6@")\n\
+        None <Keypress> Prior:    string(0x1b) string("[5~")\n\
+        None <Keypress> Next:     string(0x1b) string("[6~")\n\
+       !Ctrl <Keypress> Prior:    string(0x1b) string("[5\^")\n\
+       !Ctrl <Keypress> Next:     string(0x1b) string("[6\^")\n\
+\
+             <Btn4Down>,<Btn4Up>: scroll-back(1,halfpage)\n\
+             <Btn5Down>,<Btn5Up>: scroll-forw(1,halfpage)\n\
+  Shift      <Btn4Down>,<Btn4Up>: scroll-back(1,line)\n\
+  Shift      <Btn5Down>,<Btn5Up>: scroll-forw(1,line)\n\
+        Ctrl <Btn4Down>,<Btn4Up>: scroll-back(1,page)\n\
+        Ctrl <Btn5Down>,<Btn5Up>: scroll-forw(1,page)
+
+
+XTerm.VT100.EightBitInput:      false
+XTerm.VT100.AutoWrap:   true
+XTerm.VT100.ReverseWrap:        true
+XTerm.VT100.JumpScroll: true
 
 ! These work in FC4
 xterm*foreground:       RGB:F/F/E
