@@ -38,10 +38,11 @@ XTerm*saveLines:        1024
 ! http://bugs.donarmstrong.com/cgi-bin/bugreport.cgi?bug=226386
 ! TODO: Check http://sourceforge.net/projects/rxvt
 
-XTerm.vt100.translations: #override <Key>BackSpace: string(0x7F)\n\
-             <Key>Delete:         string(0x04)\n\
-             <Key>Home:           string(0x1b) string("[1~")\n\
-             <Key>End:            string(0x1b) string("[4~")\n\
+XTerm.vt100.translations: #override \
+             <Key> BackSpace: string(0x7F)\n\
+             <Key> Delete:    string(0x04)\n\
+             <Key> Home:      string(0x1b) string("[1~")\n\
+             <Key> End:       string(0x1b) string("[4~")\n\
 \
   !Shift <Keypress> Prior:    scroll-back(1,halfpage)\n\
   !Shift <Keypress> Next:     scroll-forw(1,halfpage)\n\
