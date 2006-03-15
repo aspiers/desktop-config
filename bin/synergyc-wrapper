@@ -40,7 +40,7 @@ sigexit () {
     _log_it "pid $$ shutting down"
 }
 
-if ps -ef | grep -v grep | grep -q synergyc-wrapper; then
+if ps -ef | egrep -v "grep| $$ " | grep -q "bash.*$0"; then
     _log_it "$me already running; exiting." >&2
     exit 1
 fi
