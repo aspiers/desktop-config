@@ -1,6 +1,9 @@
 ! WARNING!  This file should be used with my custom xrdb-cpp preprocessor,
 ! via:
 !        xrdb -cpp xrdb-cpp
+!
+! It should also be included via `all.rdb', which first loads
+! `defines.rdb'.
 
 !------------------------------------------------------------
 !
@@ -91,51 +94,55 @@ xterm*boldMode: false
 !        xrdb -cpp xrdb-cpp
 ! will substitute two @ signs for newlines.
 
-#define FontAndLabel(fontNum,size,label) \
-xterm*VT100*font##fontNum: size@@\
-xterm*fontMenu*font##fontNum*Label: label (size)@@\
-nxterm*VT100*font##fontNum: size@@\
-nxterm*fontMenu*font##fontNum*Label: label (size)
+#define FontAndLabel(fontNum,fontName,label) \
+xterm*VT100*font##fontNum:           fontName@@\
+xterm*fontMenu*font##fontNum*Label:  label (fontName)@@\
+nxterm*VT100*font##fontNum:          fontName@@\
+nxterm*fontMenu*font##fontNum*Label: label (fontName)
 
-#ifndef SMALL_SCREEN
+#ifdef SMALL_SCREEN
 *SimpleMenu*font: *helvetica*r*normal*12*
-XDvi*font: *helvetica*r*normal*12*
 
+! Note: the default font is automatically inserted into the order
+! according to its size.  That means we effectively have 7 font slots
+! to play around with. 
+xterm*font:  9x15
+nxterm*font: 9x15
 
-FontAndLabel(1,nil2,Unreadable)
-
-FontAndLabel(2,5x7,Micro)
-!F!ontAndLabel(2,5x8,Tiny)
-
-FontAndLabel(3,6x10,Small)
-
-!F!ontAndLabel(4,fixed,Medium)
-!F!ontAndLabel(4,9x15,Large)
-
-FontAndLabel(4,fkp,Large)
-
-FontAndLabel(5,10x20,Very Large)
-
-FontAndLabel(6,12x24,Huge)
-
-!xterm*font:        10x20
-!nxterm*font:       10x20
-
-xterm*font:         9x15
-nxterm*font:        9x15
+FontAndLabel(  1, nil2 ,      Unreadable)
+!F!ontAndLabel(?, 5x7  ,      Micro)
+!F!ontAndLabel(?, 5x8  ,      5x8)
+!F!ontAndLabel(?, 6x10 ,      6x10)
+FontAndLabel(  2, nexus,      nexus)
+FontAndLabel(  3, smoothansi, smoothansi)
+!F!ontAndLabel(?, kates,      kates)
+!F!ontAndLabel(?, fixed,      fixed)
+!F!ontAndLabel(?, 9x15,       9x15)   <--- default
+FontAndLabel  (4, fkp,        fkp)
+FontAndLabel  (5, 10x20,      10x20)
+!F!ontAndLabel(?, vga11x19,   vga11x19)
+FontAndLabel  (6, 12x24,      12x24)
 
 #else
 
 *SimpleMenu*font: *helvetica*r*normal*10*
-XDvi*font: *helvetica*r*normal*10*
 
-FontAndLabel(1,5x7,Micro)
-FontAndLabel(2,5x8,Tiny)
-FontAndLabel(3,6x9,Small)
-FontAndLabel(4,7x13,Medium)
-FontAndLabel(5,9x15,Large)
-FontAndLabel(6,10x20,Huge)
-FontAndLabel(7,8x16,Alternate Large)
+xterm*font:  smoothansi
+nxterm*font: smoothansi
+
+FontAndLabel(  1, nil2 ,      Unreadable)
+FontAndLabel(  2, 5x7  ,      Micro)
+!F!ontAndLabel(?, 5x8  ,      5x8)
+!F!ontAndLabel(?, 6x10 ,      6x10)
+FontAndLabel(  3, nexus,      nexus)
+!F!ontAndLabel(4, smoothansi, smoothansi)  <--- default
+!F!ontAndLabel(?, kates,      kates)
+!F!ontAndLabel(?, fixed,      fixed)
+FontAndLabel(  4, 9x15,       9x15)
+FontAndLabel  (5, fkp,        fkp)
+FontAndLabel  (6, 10x20,      10x20)
+!F!ontAndLabel(?, vga11x19,   vga11x19)
+!F!ontAndLabel(?, 12x24,      12x24)
 
 #endif
 
