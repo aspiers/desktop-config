@@ -1,0 +1,143 @@
+!
+! This is an `xmodmap' input file for Dell Latitude D600 (XFree86; UK) keyboards.
+! Automatically generated on Thu Mar 16 17:31:29 2006 by aspiers with
+! XKeyCaps 2.46; Copyright (c) 1999 Jamie Zawinski <jwz@jwz.org>.
+! http://www.jwz.org/xkeycaps/
+!
+! This file makes the following changes:
+!
+! The "Menu" key generates Return
+! The "¬ ` |" key generates q and Q
+! The "Backspace" key generates BackSpace
+! The "Q" key generates w and W
+! The "W" key generates e and E
+! The "E" key generates r and R
+! The "R" key generates t and T
+! The "T" key generates grave and asciitilde
+! The "I" key generates i, I, and Up
+! The "P" key generates p, P, and Prior
+! The "Caps Lock" key generates a and A, and has no modifiers
+! The "A" key generates s and S
+! The "S" key generates d and D
+! The "D" key generates f and F
+! The "F" key generates g and G
+! The "G" key generates backslash and bar
+! The "J" key generates j, J, Left, NoSymbol, NoSymbol, NoSymbol, and Left
+! The "K" key generates k, K, Down, NoSymbol, NoSymbol, NoSymbol, and Down
+! The "L" key generates l, L, Right, NoSymbol, NoSymbol, NoSymbol, and Right
+! The ": ;" key generates semicolon, colon, and Next
+! The "| \" key generates x and X
+! The "Z" key generates c and C
+! The "X" key generates v and V
+! The "C" key generates b and B
+! The "V" key generates b and B
+! The "? /" key generates slash, question, and Insert
+! The "Ctrl" key generates z and Z, and has no modifiers
+! The "Win" key generates Meta_L, and the Mod1 modifier
+! The "Alt" key generates Control_L, and the Control modifier
+! The "AltGr" key generates Return, and has no modifiers
+! The "Ctrl" key generates Super_R, and the Mod3 modifier
+
+keycode 0x75 =	Return
+keycode 0x6F =	Print		Execute
+keycode 0x4D =	Num_Lock
+keycode 0x6E =	Pause
+keycode 0x6A =	Insert
+keycode 0x61 =	Home
+keycode 0x63 =	Prior
+keycode 0x09 =	Escape
+keycode 0x43 =	F1		F11
+keycode 0x44 =	F2		F12
+keycode 0x45 =	F3		F13
+keycode 0x46 =	F4		F14
+keycode 0x47 =	F5		F15
+keycode 0x48 =	F6		F16
+keycode 0x49 =	F7		F17
+keycode 0x4A =	F8		F18
+keycode 0x4B =	F9		F19
+keycode 0x4C =	F10		F20
+keycode 0x5F =	F11
+keycode 0x60 =	F12
+keycode 0x6B =	Delete
+keycode 0x67 =	End
+keycode 0x69 =	Next
+keycode 0x31 =	q		Q
+keycode 0x0A =	1		exclam
+keycode 0x0B =	2		quotedbl
+keycode 0x0C =	3		sterling
+keycode 0x0D =	4		dollar
+keycode 0x0E =	5		percent
+keycode 0x0F =	6		asciicircum
+keycode 0x10 =	7		ampersand
+keycode 0x11 =	8		asterisk
+keycode 0x12 =	9		parenleft
+keycode 0x13 =	0		parenright
+keycode 0x14 =	minus		underscore
+keycode 0x15 =	equal		plus
+keycode 0x16 =	BackSpace
+keycode 0x17 =	Tab
+keycode 0x18 =	w		W
+keycode 0x19 =	e		E
+keycode 0x1A =	r		R
+keycode 0x1B =	t		T
+keycode 0x1C =	grave		asciitilde
+keycode 0x1D =	y		Y
+keycode 0x1E =	u		U
+keycode 0x1F =	i		I		Up
+keycode 0x20 =	o		O
+keycode 0x21 =	p		P		Prior
+keycode 0x22 =	bracketleft	braceleft
+keycode 0x23 =	bracketright	braceright
+keycode 0x24 =	Return
+keycode 0x42 =	a		A
+keycode 0x26 =	s		S
+keycode 0x27 =	d		D
+keycode 0x28 =	f		F
+keycode 0x29 =	g		G
+keycode 0x2A =	backslash	bar
+keycode 0x2B =	h		H
+keycode 0x2C =	j		J		Left		NoSymbol	NoSymbol	NoSymbol	Left
+keycode 0x2D =	k		K		Down		NoSymbol	NoSymbol	NoSymbol	Down
+keycode 0x2E =	l		L		Right		NoSymbol	NoSymbol	NoSymbol	Right
+keycode 0x2F =	semicolon	colon		Next
+keycode 0x30 =	apostrophe	at
+keycode 0x33 =	numbersign	asciitilde
+keycode 0x32 =	Shift_L
+keycode 0x5E =	x		X
+keycode 0x34 =	c		C
+keycode 0x35 =	v		V
+keycode 0x36 =	b		B
+keycode 0x37 =	b		B
+keycode 0x38 =	b		B
+keycode 0x39 =	n		N
+keycode 0x3A =	m		M
+keycode 0x3B =	comma		less
+keycode 0x3C =	period		greater
+keycode 0x3D =	slash		question	Insert
+keycode 0x3E =	Shift_R
+keycode 0x25 =	z		Z
+keycode 0x73 =	Meta_L
+keycode 0x40 =	Control_L
+keycode 0x41 =	space
+keycode 0x71 =	Return
+keycode 0x6D =	Super_R
+keycode 0x62 =	Up
+keycode 0x64 =	Left
+keycode 0x68 =	Down
+keycode 0x66 =	Right
+
+clear Shift
+clear Lock
+clear Control
+clear Mod1
+clear Mod2
+clear Mod3
+clear Mod4
+clear Mod5
+
+add    Shift   = Shift_L Shift_R
+add    Control = Control_L
+add    Mod1    = Meta_L 0x009C
+add    Mod2    = Mode_switch
+add    Mod3    = Super_R
+add    Mod4    = Hyper_R
