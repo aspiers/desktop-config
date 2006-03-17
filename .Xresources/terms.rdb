@@ -20,6 +20,12 @@ nxterm*foreground:  white
 Rxvt*foreground:    white
 xterm*foreground:   RGB:F/F/E
 
+xterm*SimpleMenu.background:    gray50
+nxterm*SimpleMenu.background:   gray75
+
+xterm*SimpleMenu.foreground:    black
+nxterm*SimpleMenu.foreground:   black
+
 #else
 
 XTerm*background:   white
@@ -29,6 +35,27 @@ rxvt*background:    white
 XTerm*foreground:   black
 nxterm*foreground:  black
 rxvt*foreground:    black
+
+#endif
+
+! }}}
+! {{{ bold/underline colours
+
+! Use color or bold/underline for bold/underline?
+*xterm*colorBDMode: off
+*xterm*colorULMode: on
+
+xterm*boldMode: false
+
+#ifdef BLACK_BG_XTERMS
+
+*VT100*colorBD:     white
+*VT100*colorUL:     yellow
+
+#else
+
+*VT100*colorBD:     black
+*VT100*colorUL:     blue
 
 #endif
 
@@ -58,34 +85,38 @@ rxvt*foreground:    black
 *xterm*color15: rgb:ff/ff/ff
 
 ! }}}
-! {{{ bold/underline colours
-
-! Use color or bold/underline for bold/underline?
-*xterm*colorBDMode: off
-*xterm*colorULMode: on
-
-#ifdef BLACK_BG_XTERMS
-
-*VT100*colorBD:     white
-*VT100*colorUL:     yellow
-
-#else
-
-*VT100*colorBD:     black
-*VT100*colorUL:     blue
-
-#endif
-
-! }}}
-! {{{ menu foreground/background
-
-xterm*SimpleMenu.background:    gray50
-nxterm*SimpleMenu.background:   gray75
-
-xterm*SimpleMenu.foreground:    black
-nxterm*SimpleMenu.foreground:   black
-! }}}
 ! {{{ fonts
+
+! xrdb-cpp needs to be in the $PATH, then
+!        xrdb -cpp xrdb-cpp
+! will substitute two @ signs for newlines.
+
+#define FontAndLabel(fontNum,size,label) \
+xterm*VT100*font##fontNum: size@@\
+xterm*fontMenu*font##fontNum*Label: label (size)@@\
+nxterm*VT100*font##fontNum: size@@\
+nxterm*fontMenu*font##fontNum*Label: label (size)
+
+#ifndef SMALL_SCREEN
+*SimpleMenu*font: *helvetica*r*normal*12*
+XDvi*font: *helvetica*r*normal*12*
+
+
+FontAndLabel(1,nil2,Unreadable)
+
+FontAndLabel(2,5x7,Micro)
+!F!ontAndLabel(2,5x8,Tiny)
+
+FontAndLabel(3,6x10,Small)
+
+!F!ontAndLabel(4,fixed,Medium)
+!F!ontAndLabel(4,9x15,Large)
+
+FontAndLabel(4,fkp,Large)
+
+FontAndLabel(5,10x20,Very Large)
+
+FontAndLabel(6,12x24,Huge)
 
 !xterm*font:        10x20
 !nxterm*font:       10x20
@@ -93,34 +124,11 @@ nxterm*SimpleMenu.foreground:   black
 xterm*font:         9x15
 nxterm*font:        9x15
 
-! xrdb-cpp needs to be in the $PATH, then
-!        xrdb -cpp xrdb-cpp
-! will substitute @@ for newlines.
-#define FontAndLabel(cFont,sz,lbl) \
-xterm*VT100*font##cFont: sz@@\
-xterm*fontMenu*font##cFont:*Label: lbl (sz)@@\
-nxterm*VT100*font##cFont: sz@@\
-nxterm*fontMenu*font##cFont:*Label: lbl (sz)@@
-
-#ifndef SMALL_SCREEN
-
-*SimpleMenu*font: *helvetica*r*normal*12*
-XDvi*font: *helvetica*r*normal*12*
-
-FontAndLabel(1,nil2,Unreadable)
-FontAndLabel(2,5x7,Micro)
-!F!ontAndLabel(2,5x8,Tiny)
-FontAndLabel(3,6x10,Small)
-!F!ontAndLabel(4,fixed,Medium)
-FontAndLabel(4,fkp,Large)
-!F!ontAndLabel(4,9x15,Large)
-FontAndLabel(5,10x20,Very Large)
-FontAndLabel(6,12x24,Huge)
-
 #else
 
 *SimpleMenu*font: *helvetica*r*normal*10*
 XDvi*font: *helvetica*r*normal*10*
+
 FontAndLabel(1,5x7,Micro)
 FontAndLabel(2,5x8,Tiny)
 FontAndLabel(3,6x9,Small)
@@ -134,11 +142,14 @@ FontAndLabel(7,8x16,Alternate Large)
 ! }}}
 ! {{{ cursor
 
-XTerm*cursorColor:  blue
-nxterm*cursorColor: blue
+!#define CURSORCOLOR blue
+#define CURSORCOLOR coral
 
-xterm*fullCursor:   true
-nxterm*fullCursor:  true
+XTerm*cursorColor:  CURSORCOLOR
+nxterm*cursorColor: CURSORCOLOR
+
+XTerm*cursorBlink:  true
+nxterm*cursorBlink: true
 
 ! }}}
 ! {{{ pointer shape?
