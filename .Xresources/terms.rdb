@@ -110,49 +110,35 @@ nxterm*SimpleMenu.foreground:   black
 ! way of introducing a newline into a macro expansion
 ! I get the NL by including an extra argument to the macro for which
 ! I always use a literal newline as the argument
-#define FontAndLabel(cFont,sz,NL,lbl) \
-xterm*VT100*font/**/cFont/**/: sz/**/NL \
-xterm*fontMenu*font/**/cFont/**/*Label: lbl (/**/sz/**/)NL \
-nxterm*VT100*font/**/cFont/**/: sz/**/NL \
-nxterm*fontMenu*font/**/cFont/**/*Label: lbl (/**/sz/**/)NL
+#define FontAndLabel(cFont,sz,lbl) \
+xterm*VT100*font##cFont: sz@@\
+xterm*fontMenu*font##cFont:*Label: lbl (sz)@@\
+nxterm*VT100*font##cFont: sz@@\
+nxterm*fontMenu*font##cFont:*Label: lbl (sz)@@
 
 #ifndef SMALL_SCREEN
 
 *SimpleMenu*font: *helvetica*r*normal*12*
 XDvi*font: *helvetica*r*normal*12*
-FontAndLabel(1,5x7,
-,Micro)
-FontAndLabel(2,5x8,
-,Tiny)
-FontAndLabel(3,6x10,
-,Small)
-FontAndLabel(4,fixed,
-,Medium)
-FontAndLabel(5,9x15,
-,Large)
-FontAndLabel(6,10x20,
-,Very Large)
-FontAndLabel(7,12x24,
-,Huge)
+FontAndLabel(1,5x7,Micro)
+FontAndLabel(2,5x8,Tiny)
+FontAndLabel(3,6x10,Small)
+FontAndLabel(4,fixed,Medium)
+FontAndLabel(5,9x15,Large)
+FontAndLabel(6,10x20,Very Large)
+FontAndLabel(7,12x24,Huge)
 
 #else
 
 *SimpleMenu*font: *helvetica*r*normal*10*
 XDvi*font: *helvetica*r*normal*10*
-FontAndLabel(1,5x7,
-,Micro)
-FontAndLabel(2,5x8,
-,Tiny)
-FontAndLabel(3,6x9,
-,Small)
-FontAndLabel(4,7x13,
-,Medium)
-FontAndLabel(5,9x15,
-,Large)
-FontAndLabel(6,10x20,
-,Huge)
-FontAndLabel(7,8x16,
-,Alternate Large)
+FontAndLabel(1,5x7,Micro)
+FontAndLabel(2,5x8,Tiny)
+FontAndLabel(3,6x9,Small)
+FontAndLabel(4,7x13,Medium)
+FontAndLabel(5,9x15,Large)
+FontAndLabel(6,10x20,Huge)
+FontAndLabel(7,8x16,Alternate Large)
 
 #endif
 
@@ -179,6 +165,10 @@ nxterm*VT100.JumpScroll: true
 XTerm.VT100.JumpScroll: true
 
 ! }}}
+! WARNING!  This file should be used with my custom xrdb-cpp preprocessor,
+! via:
+!        xrdb -cpp xrdb-cpp
+
 ! {{{ key and mouse translations
 
 ! Good reference here:
@@ -211,7 +201,7 @@ XTerm.VT100.JumpScroll: true
 ! http://bugs.donarmstrong.com/cgi-bin/bugreport.cgi?bug=226386
 ! TODO: Check http://sourceforge.net/projects/rxvt
 
-XTerm.vt100.translations: #override \
+#define XTERM_DEFAULT_TRANSLATIONS \n\
                None <Key> BackSpace:     string(0x7F)\n\
  !Meta              <Key> BackSpace:     string(0x1b) string(0x7F)\n\
                None <Key> Delete:        string(0x04)\n\
@@ -238,10 +228,10 @@ XTerm.vt100.translations: #override \
        !Ctrl        <Btn4Down>,<Btn4Up>: scroll-back(1,page)\n\
        !Ctrl        <Btn5Down>,<Btn5Up>: scroll-forw(1,page)\n\
 \
-       !Ctrl        <Key> less:          smaller-vt-font\n\
-       !Ctrl        <Key> greater:       larger-vt-font\n\
+  Meta  Ctrl        <Key><:              smaller-vt-font()\n\
+  Meta  Ctrl        <Key>>:              larger-vt-font()\n\
 \
-  Meta  Ctrl        <Key> slash:         dabbrev-expand
+  Meta  Ctrl        <Key>/:              dabbrev-expand()
 
 xterm.vt100.translations: #override \
                None <Key> BackSpace:     string(0x7F)\n\
@@ -270,19 +260,19 @@ xterm.vt100.translations: #override \
        !Ctrl        <Btn4Down>,<Btn4Up>: scroll-back(1,page)\n\
        !Ctrl        <Btn5Down>,<Btn5Up>: scroll-forw(1,page)\n\
 \
-       !Ctrl        <Key> less:          smaller-vt-font\n\
-       !Ctrl        <Key> greater:       larger-vt-font\n\
+  Meta  Ctrl        <Key><:              smaller-vt-font()\n\
+  Meta  Ctrl        <Key>>:              larger-vt-font()\n\
 \
-  Meta  Ctrl        <Key> slash:         dabbrev-expand
+  Meta  Ctrl        <Key>/:              dabbrev-expand()
 
 ! In the scrollbar we map buttons 5 & 4 to 1 and 2 otherwise, core
 ! dump.  This will move proportionally to cursor position, but we
 ! don't know how to program the same exact behavior as in the text
 ! widget.
 
-XTerm.vt100.Scrollbar.translations: #override\n\
-     <Btn5Down>: StartScroll(Forward)\n\
-     <Btn4Down>: StartScroll(Backward)\n\
+XTerm.vt100.translations: #override XTERM_DEFAULT_TRANSLATIONS
+                          
+XTerm.vt100.Scrollbar.translations: #override XTERM_DEFAULT_TRANSLATIONS
 
 ! }}}
 ! {{{ title bar
