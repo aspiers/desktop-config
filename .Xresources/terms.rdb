@@ -14,14 +14,14 @@
 #ifdef BLACK_BG_XTERMS
 
 XTerm*background:   black
+xterm*background:   black
 nxterm*background:  black
 Rxvt*background:    black
-xterm*background:   black
 
-XTerm*foreground:   white
-nxterm*foreground:  white
-Rxvt*foreground:    white
-xterm*foreground:   RGB:F/F/E
+XTerm*foreground:   rgb:bb/bb/bb
+xterm*foreground:   rgb:bb/bb/bb
+nxterm*foreground:  rgb:bb/bb/bb
+Rxvt*foreground:    rgb:bb/bb/bb
 
 xterm*SimpleMenu.background:    gray50
 nxterm*SimpleMenu.background:   gray75
@@ -45,20 +45,20 @@ rxvt*foreground:    black
 ! {{{ bold/underline colours
 
 ! Use color or bold/underline for bold/underline?
-*xterm*colorBDMode: off
+*xterm*colorBDMode: on
 *xterm*colorULMode: on
 
 xterm*boldMode: false
 
 #ifdef BLACK_BG_XTERMS
 
-*VT100*colorBD:     white
-*VT100*colorUL:     yellow
+*VT100*colorBD: white
+*VT100*colorUL: RGB:e0/e0/33
 
 #else
 
-*VT100*colorBD:     black
-*VT100*colorUL:     blue
+*VT100*colorBD: black
+*VT100*colorUL: blue
 
 #endif
 
