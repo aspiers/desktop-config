@@ -13,33 +13,37 @@
 
 #ifdef BLACK_BG_XTERMS
 
-XTerm*background:   black
-xterm*background:   black
-nxterm*background:  black
-Rxvt*background:    black
+#define TERM_FG rgb:bb/bb/bb
+#define TERM_BG black
 
-XTerm*foreground:   rgb:bb/bb/bb
-xterm*foreground:   rgb:bb/bb/bb
-nxterm*foreground:  rgb:bb/bb/bb
-Rxvt*foreground:    rgb:bb/bb/bb
-
-xterm*SimpleMenu.background:    gray50
-nxterm*SimpleMenu.background:   gray75
-
-xterm*SimpleMenu.foreground:    black
-nxterm*SimpleMenu.foreground:   black
+#define MENU_FG white
+#define MENU_BG black
 
 #else
 
-XTerm*background:   white
-nxterm*background:  white
-rxvt*background:    white
+#define TERM_FG black
+#define TERM_BG rgb:ee/ee/ee
 
-XTerm*foreground:   black
-nxterm*foreground:  black
-rxvt*foreground:    black
+#define MENU_FG black
+#define MENU_BG rgb:ee/ee/ee
 
 #endif
+
+XTerm*background:   TERM_BG
+xterm*background:   TERM_BG
+nxterm*background:  TERM_BG
+Rxvt*background:    TERM_BG
+
+XTerm*foreground:   TERM_FG
+xterm*foreground:   TERM_FG
+nxterm*foreground:  TERM_FG
+Rxvt*foreground:    TERM_FG
+
+! SimpleMenu is the type for all 3 menus (mainMenu, vtMenu, fontMenu)
+xterm*SimpleMenu*background:  MENU_BG
+nxterm*SimpleMenu*background: MENU_BG
+xterm*SimpleMenu*foreground:  MENU_FG
+nxterm*SimpleMenu*foreground: MENU_FG
 
 ! }}}
 ! {{{ bold/underline colours
