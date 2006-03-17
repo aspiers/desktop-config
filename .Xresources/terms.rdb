@@ -5,10 +5,12 @@
 XTerm*background:   black
 nxterm*background:  black
 Rxvt*background:    black
+xterm*background:   black
 
 XTerm*foreground:   white
 nxterm*foreground:  white
 Rxvt*foreground:    white
+xterm*foreground:   RGB:F/F/E
 
 #else
 
@@ -22,8 +24,39 @@ rxvt*foreground:    black
 
 #endif
 
+! }}}
+
+! {{{ other colours
+
+*xterm*color0: rgb:00/00/00
+*xterm*color1: rgb:aa/00/00
+*xterm*color2: rgb:00/88/00
+*xterm*color3: rgb:aa/55/22
+*xterm*color4: rgb:10/00/b6
+*xterm*color5: rgb:aa/00/aa
+!*xterm*color6: rgb:00/aa aa
+*xterm*color6: rgb:79/ae/a6
+*xterm*color7: rgb:e0/e0/e0
+*xterm*color8: rgb:55/55/55
+*xterm*color9: rgb:ff/44/44
+!*xterm*color10: rgb:44/ff/44
+*xterm*color10: rgb:9e/db/96
+!*xterm*color11: rgb:ff/ff/44
+*xterm*color11: rgb:f7/ff/a6
+!*xterm*color12: rgb:44/44/ff
+*xterm*color12: rgb:51/55/c8
+*xterm*color13: rgb:ff/44/ff
+!*xterm*color14: rgb:44/ff/ff
+*xterm*color14: rgb:be/eb/f4
+*xterm*color15: rgb:ff/ff/ff
+
 ! }}} 
+
 ! {{{ bold/underline colours
+
+! Use color or bold/underline for bold/underline?
+*xterm*colorBDMode: off
+*xterm*colorULMode: on
 
 #ifdef BLACK_BG_XTERMS
 
@@ -56,6 +89,13 @@ xterm*fullCursor:   true
 nxterm*fullCursor:  true
 
 ! }}} 
+
+! {{{ geometry
+
+xterm*geometry: 92x40
+
+! }}} 
+
 
 ! {{{ menus
 
@@ -127,8 +167,9 @@ XTerm*saveLines:    1500
 nxterm*saveLines:   1500
 rxvt*saveLines:     1500
 
-XTerm*scrollBar:    true
-nxterm*scrollBar:   true
+XTerm*scrollBar:    false
+nxterm*scrollBar:   false
+xterm*rightScrollBar: true
 
 *scrollTtyOutput:   False
 *scrollKey:     True
@@ -136,17 +177,93 @@ Scrollbar.JumpCursor:   True
 
 xterm*VT100.JumpScroll:  true
 nxterm*VT100.JumpScroll: true
+XTerm.VT100.JumpScroll: true
 
-! {{{ mouse wheel
+! {{{ key and mouse translations
 
-! Scrolling on wheel mouse: half a page normally, line per line with shift
-XTerm.vt100.translations: #override\n\
- Shift<Btn4Down>,<Btn4Up>:scroll-back(1,line)\n\
- Shift<Btn5Down>,<Btn5Up>:scroll-forw(1,line)\n\
- Ctrl<Btn4Down>,<Btn4Up>:scroll-back(1,page)\n\
- Ctrl<Btn5Down>,<Btn5Up>:scroll-forw(1,page)\n\
- <Btn4Down>,<Btn4Up>:scroll-back(1,halfpage)\n\
- <Btn5Down>,<Btn5Up>:scroll-forw(1,halfpage)\n\
+! Good reference here:
+!   http://www.in-ulm.de/~mascheck/X11/xterm/XTerm
+! 
+! From
+! http://moat.nlanr.net/Software/OC3mon/DOSCoraldist19980317/REMCTL/XDEFAULT.UNX
+! :-
+!
+!   in case you are wondering, magic words like 
+!   "Prior" and "BackSpace" are all listed in 
+!   	/usr/local/X11R6/include/X11/keysymdef.h
+!   with "XK_" in front of the name you can use here
+!
+!   boy, is it frustrating to try guessing 'em!
+!
+!   apparently, tilde in front of a shift means "not this shift"
+!   and exclaimation point in front of a shift means "just this shift"
+!
+!   but the ~Shift somehow doesn't work on IRIX 6.3 X display
+!   in front of the lines that define ctrl-alt-L and ctrl-alt-X,
+!   even though it works fine for ctrl-alt-delete, so you need
+!   to take "~Shift" off the front of those definitions (which means
+!   that shift-ctrl-alt-L will have the same definition as ctrl-alt-L)
+!   if you live in that world
+!
+! In rxvt, Ctrl-Shift-Prior/Next is a bug which needs to be patched:
+!
+! http://lists.debian.org/debian-qa-packages/2005/10/msg00112.html
+! http://bugs.donarmstrong.com/cgi-bin/bugreport.cgi?bug=226386
+! TODO: Check http://sourceforge.net/projects/rxvt
+
+XTerm.vt100.translations: #override \
+        None <Key> BackSpace: string(0x7F)\n\
+       !Meta <Key> BackSpace: string(0x1b) string(0x7F)\n\
+             <Key> Delete:    string(0x04)\n\
+             <Key> Home:      string(0x1b) string("[1~")\n\
+             <Key> End:       string(0x1b) string("[4~")\n\
+\
+        None <Key> Prior:    string(0x1b) string("[5~")\n\
+        None <Key> Next:     string(0x1b) string("[6~")\n\
+      !Shift <Key> Prior:    scroll-back(1,halfpage)\n\
+      !Shift <Key> Next:     scroll-forw(1,halfpage)\n\
+       !Ctrl <Key> Prior:    string(0x1b) string("[5\^")\n\
+       !Ctrl <Key> Next:     string(0x1b) string("[6\^")\n\
+  Ctrl Shift <Key> Prior:    string(0x1b) string("[5@")\n\
+  Ctrl Shift <Key> Next:     string(0x1b) string("[6@")\n\
+  Ctrl Meta  <Key> Prior:    string(0x1b) string("[5@")\n\
+  Ctrl Meta  <Key> Next:     string(0x1b) string("[6@")\n\
+       Meta  <Key> Prior:    string(0x1b) string("[5@")\n\
+       Meta  <Key> Next:     string(0x1b) string("[6@")\n\
+\
+             <Btn4Down>,<Btn4Up>: scroll-back(1,halfpage)\n\
+             <Btn5Down>,<Btn5Up>: scroll-forw(1,halfpage)\n\
+  Shift      <Btn4Down>,<Btn4Up>: scroll-back(1,line)\n\
+  Shift      <Btn5Down>,<Btn5Up>: scroll-forw(1,line)\n\
+        Ctrl <Btn4Down>,<Btn4Up>: scroll-back(1,page)\n\
+        Ctrl <Btn5Down>,<Btn5Up>: scroll-forw(1,page)
+
+xterm.vt100.translations: #override \
+        None <Key> BackSpace: string(0x7F)\n\
+       !Meta <Key> BackSpace: string(0x1b) string(0x7F)\n\
+             <Key> Delete:    string(0x04)\n\
+             <Key> Home:      string(0x1b) string("[1~")\n\
+             <Key> End:       string(0x1b) string("[4~")\n\
+\
+        None <Key> Prior:    string(0x1b) string("[5~")\n\
+        None <Key> Next:     string(0x1b) string("[6~")\n\
+      !Shift <Key> Prior:    scroll-back(1,halfpage)\n\
+      !Shift <Key> Next:     scroll-forw(1,halfpage)\n\
+       !Ctrl <Key> Prior:    string(0x1b) string("[5\^")\n\
+       !Ctrl <Key> Next:     string(0x1b) string("[6\^")\n\
+  Ctrl Shift <Key> Prior:    string(0x1b) string("[5@")\n\
+  Ctrl Shift <Key> Next:     string(0x1b) string("[6@")\n\
+  Ctrl Meta  <Key> Prior:    string(0x1b) string("[5@")\n\
+  Ctrl Meta  <Key> Next:     string(0x1b) string("[6@")\n\
+       Meta  <Key> Prior:    string(0x1b) string("[5@")\n\
+       Meta  <Key> Next:     string(0x1b) string("[6@")\n\
+\
+             <Btn4Down>,<Btn4Up>: scroll-back(1,halfpage)\n\
+             <Btn5Down>,<Btn5Up>: scroll-forw(1,halfpage)\n\
+  Shift      <Btn4Down>,<Btn4Up>: scroll-back(1,line)\n\
+  Shift      <Btn5Down>,<Btn5Up>: scroll-forw(1,line)\n\
+        Ctrl <Btn4Down>,<Btn4Up>: scroll-back(1,page)\n\
+        Ctrl <Btn5Down>,<Btn5Up>: scroll-forw(1,page)
 
 ! In the scrollbar we map buttons 5 & 4 to 1 and 2 otherwise, core
 ! dump.  This will move proportionally to cursor position, but we
@@ -158,8 +275,6 @@ XTerm.vt100.Scrollbar.translations: #override\n\
      <Btn4Down>: StartScroll(Backward)\n\
 
 ! }}} 
-
-! }}} 
 ! {{{ title bar
 
 xterm*titleBar:     false
@@ -167,32 +282,12 @@ nxterm*titleBar:    false
 
 ! }}} 
 
-! {{{ key bindings
-
-xterm*VT100.Translations: #override              \n\
-    <Key>BackSpace:   string(0x7F)               \n\
-Meta <Key>BackSpace:  string("hello")            \n\
-~Meta <Key>BackSpace: string("hello")            \n\
-    <Key>Delete:      string(0x04)               \n\
-    <Key>Home:        string(0x01)               \n\
-    <Key>End:         string(0x05)               \n\
-    <KeyPress>Prior:  scroll-back(1,page)        \n\
-    <KeyPress>Next:   scroll-forw(1,page)
-
-nxterm*VT100.Translations: #override            \n\
-    <Key>BackSpace:  string(0x7F)               \n\
-    <Key>Delete:     string(0x04)               \n\
-    <Key>Home:       string(0x01)               \n\
-    <Key>End:        string(0x05)               \n\
-    <KeyPress>Prior: scroll-back(1,page)        \n\
-    <KeyPress>Next:  scroll-forw(1,page)
-
-! }}} 
 ! {{{ Meta key
 
 *eightBitInput: false
 *EightBitInput: false
 remotexterm*eightBitInput:  false
+XTerm.VT100.EightBitInput:      false
 
 ! }}} 
 
@@ -200,6 +295,7 @@ remotexterm*eightBitInput:  false
 
 xterm*visualBell:   true
 nxterm*visualBell:  true
+!XTerm*visualBell:       true
 
 ! }}} 
 ! {{{ terminal type
@@ -209,10 +305,17 @@ nxterm*termName:         xterm-color
 
 ! }}} 
 
+! {{{ selection
+! gotta have this one to trim trailing whitespace:
+xterm*trimSelection: true
+! but not sure about this one:
+xterm*cutNewline: true
+! }}} 
 ! {{{ AutoWrap
 
 xterm*VT100.AutoWrap:    true
 nxterm*VT100.AutoWrap:   true
+XTerm.VT100.AutoWrap:   true
 
 ! }}} 
 ! {{{ reverseWrap
@@ -220,6 +323,7 @@ nxterm*VT100.AutoWrap:   true
 ! what is this?
 xterm*reverseWrap:  true
 nxterm*reverseWrap: true
+XTerm.VT100.ReverseWrap:        true
 
 ! }}} 
 ! {{{ pointer shape?
