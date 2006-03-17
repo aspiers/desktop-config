@@ -17,18 +17,14 @@ run_if_executable () {
 
 echo $DISPLAY > ~/.Xdisplay.${HOST%%.*}
 
-echo "### Xmodmap ..."
-if [ -z "$VNCDESKTOP" ]; then
-  . $ZDOT_RUN_HOOKS .Xmodmap.d
-fi
-
-echo "### Xresources ..."
-[ -e ~/.Xresources/all.rdb ] && xrdb -merge ~/.Xresources/all.rdb
-
 echo "### Fonts ..."
 for dir in ~/.X_fonts ~/.truetype; do
   if [ -d $dir ]; then
-    xset fp+ $dir
+    if xset fp+ $dir; then
+      echo "Added font dir $dir"
+    else
+      echo "Failed to add font dir $dir !"
+    fi
   fi
 done
 xset fp rehash
