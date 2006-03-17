@@ -14,11 +14,17 @@
 #endif
 
 #if WIDTH <= 800
-#ifndef NO_SMALL_SCREEN
-#define SMALL_SCREEN
-#endif
+#define SMALL_SCREEN 1
+#undef  LARGE_SCREEN
 #endif
 
 #if WIDTH <= 1024
 #define LAPTOP_SCREEN
+#undef  LARGE_SCREEN
+#endif
+
+#if WIDTH >= 1600
+#undef  SMALL_SCREEN
+#undef  LAPTOP_SCREEN
+#define LARGE_SCREEN 1
 #endif
