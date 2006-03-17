@@ -1,5 +1,19 @@
 #!/bin/sh
 
+echo "### Xmodmap ..."
+if [ -z "$VNCDESKTOP" ]; then
+  . $ZDOT_RUN_HOOKS .Xmodmap.d
+else
+  echo "\$VNCDESKTOP is $VNCDESKTOP, not running .Xmodmap hooks"
+fi
+
+echo "### Xresources ..."
+if [ -e ~/.Xresources/all.rdb ]; then
+  xrdb -merge ~/.Xresources/all.rdb && echo "merged all.rdb"
+else
+  echo "no all.rdb"
+fi
+
 executable_p () {
     which "$1" >/dev/null 2>&1
 }
