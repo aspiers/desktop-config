@@ -85,12 +85,17 @@ nxterm*SimpleMenu.background:   gray75
 xterm*SimpleMenu.foreground:    black
 nxterm*SimpleMenu.foreground:   black
 ! }}}
-! {{{ font menu
+! {{{ fonts
 
-! Please email <gjb@cs.duke.edu> if you have a better
-! way of introducing a newline into a macro expansion
-! I get the NL by including an extra argument to the macro for which
-! I always use a literal newline as the argument
+!xterm*font:        10x20
+!nxterm*font:       10x20
+
+xterm*font:         9x15
+nxterm*font:        9x15
+
+! xrdb-cpp needs to be in the $PATH, then
+!        xrdb -cpp xrdb-cpp
+! will substitute @@ for newlines.
 #define FontAndLabel(cFont,sz,lbl) \
 xterm*VT100*font##cFont: sz@@\
 xterm*fontMenu*font##cFont:*Label: lbl (sz)@@\
@@ -101,13 +106,16 @@ nxterm*fontMenu*font##cFont:*Label: lbl (sz)@@
 
 *SimpleMenu*font: *helvetica*r*normal*12*
 XDvi*font: *helvetica*r*normal*12*
-FontAndLabel(1,5x7,Micro)
-FontAndLabel(2,5x8,Tiny)
+
+FontAndLabel(1,nil2,Unreadable)
+FontAndLabel(2,5x7,Micro)
+!F!ontAndLabel(2,5x8,Tiny)
 FontAndLabel(3,6x10,Small)
-FontAndLabel(4,fixed,Medium)
-FontAndLabel(5,9x15,Large)
-FontAndLabel(6,10x20,Very Large)
-FontAndLabel(7,12x24,Huge)
+!F!ontAndLabel(4,fixed,Medium)
+FontAndLabel(4,fkp,Large)
+!F!ontAndLabel(4,9x15,Large)
+FontAndLabel(5,10x20,Very Large)
+FontAndLabel(6,12x24,Huge)
 
 #else
 
@@ -122,15 +130,6 @@ FontAndLabel(6,10x20,Huge)
 FontAndLabel(7,8x16,Alternate Large)
 
 #endif
-
-! }}}
-! {{{ default font
-
-!xterm*font:        10x20
-!nxterm*font:       10x20
-
-xterm*font:         9x15
-nxterm*font:        9x15
 
 ! }}}
 ! {{{ cursor
@@ -243,8 +242,9 @@ XTerm.VT100.JumpScroll: true
 \
   Meta  Ctrl        <Key><:              smaller-vt-font()\n\
   Meta  Ctrl        <Key>>:              larger-vt-font()\n\
-\
-  Meta  Ctrl        <Key>/:              dabbrev-expand()
+
+! dabbrev-expand not supported for some reason
+!  Meta  Ctrl        <Key>/:              dabbrev-expand()
 
 XTerm.vt100.translations: #override XTERM_DEFAULT_TRANSLATIONS
 xterm.vt100.translations: #override XTERM_DEFAULT_TRANSLATIONS
