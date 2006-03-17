@@ -1,0 +1,10 @@
+#!/bin/sh
+#
+# Thanks to Greg Badros for the ideas here:
+#
+# http://groups.google.co.uk/group/comp.windows.x/msg/8dcd8e161d2bc750?&hl=en
+#
+# or google for `cpp-sed-nl'.
+
+cpp "$@" | sed -e 's/@@/\
+/g; s/[ \t]*$//g'
