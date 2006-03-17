@@ -24,7 +24,7 @@ rxvt*foreground:    black
 
 #endif
 
-! }}} 
+! }}}
 
 ! {{{ other colours
 
@@ -50,7 +50,7 @@ rxvt*foreground:    black
 *xterm*color14: rgb:be/eb/f4
 *xterm*color15: rgb:ff/ff/ff
 
-! }}} 
+! }}}
 
 ! {{{ bold/underline colours
 
@@ -70,7 +70,7 @@ rxvt*foreground:    black
 
 #endif
 
-! }}} 
+! }}}
 ! {{{ font
 
 !xterm*font:        10x20
@@ -79,7 +79,7 @@ rxvt*foreground:    black
 xterm*font:         9x15
 nxterm*font:        9x15
 
-! }}} 
+! }}}
 ! {{{ cursor
 
 XTerm*cursorColor:  blue
@@ -88,13 +88,13 @@ nxterm*cursorColor: blue
 xterm*fullCursor:   true
 nxterm*fullCursor:  true
 
-! }}} 
+! }}}
 
 ! {{{ geometry
 
 xterm.vt100.geometry: 92x40
 
-! }}} 
+! }}}
 
 ! {{{ menus
 
@@ -156,9 +156,9 @@ FontAndLabel(7,8x16,
 
 #endif
 
-! }}} 
+! }}}
 
-! }}} 
+! }}}
 
 ! {{{ scrolling
 
@@ -178,7 +178,7 @@ xterm*VT100.JumpScroll:  true
 nxterm*VT100.JumpScroll: true
 XTerm.VT100.JumpScroll: true
 
-! }}} 
+! }}}
 ! {{{ key and mouse translations
 
 ! Good reference here:
@@ -284,13 +284,13 @@ XTerm.vt100.Scrollbar.translations: #override\n\
      <Btn5Down>: StartScroll(Forward)\n\
      <Btn4Down>: StartScroll(Backward)\n\
 
-! }}} 
+! }}}
 ! {{{ title bar
 
 xterm*titleBar:     false
 nxterm*titleBar:    false
 
-! }}} 
+! }}}
 
 ! {{{ Meta key
 
@@ -299,7 +299,7 @@ nxterm*titleBar:    false
 remotexterm*eightBitInput:  false
 XTerm.VT100.EightBitInput:      false
 
-! }}} 
+! }}}
 
 ! {{{ bell
 
@@ -307,13 +307,13 @@ xterm*visualBell:   true
 nxterm*visualBell:  true
 !XTerm*visualBell:       true
 
-! }}} 
+! }}}
 ! {{{ terminal type
 
 xterm*termName:          xterm-color
 nxterm*termName:         xterm-color
 
-! }}} 
+! }}}
 
 ! {{{ selection
 
@@ -322,14 +322,14 @@ xterm*trimSelection: true
 ! but not sure about this one:
 xterm*cutNewline: true
 
-! }}} 
+! }}}
 ! {{{ AutoWrap
 
 xterm*VT100.AutoWrap:    true
 nxterm*VT100.AutoWrap:   true
 XTerm.VT100.AutoWrap:   true
 
-! }}} 
+! }}}
 ! {{{ reverseWrap
 
 ! what is this?
@@ -337,12 +337,12 @@ xterm*reverseWrap:  true
 nxterm*reverseWrap: true
 XTerm.VT100.ReverseWrap:        true
 
-! }}} 
+! }}}
 ! {{{ pointer shape?
 
 nxterm*Cursor: xterm
 
-! }}} 
+! }}}
 
 ! {{{ locale stuff
 
@@ -352,4 +352,5 @@ nxterm*Cursor: xterm
 ! *timeFormat:        C
 ! *inputLang:         C
 
-! }}} 
+! }}}
+
