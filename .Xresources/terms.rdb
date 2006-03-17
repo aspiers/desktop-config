@@ -24,7 +24,7 @@ rxvt*foreground:    black
 
 #endif
 
-! }}}
+! }}} 
 
 ! {{{ other colours
 
@@ -92,10 +92,9 @@ nxterm*fullCursor:  true
 
 ! {{{ geometry
 
-xterm*geometry: 92x40
+xterm.vt100.geometry: 92x40
 
 ! }}} 
-
 
 ! {{{ menus
 
@@ -179,6 +178,7 @@ xterm*VT100.JumpScroll:  true
 nxterm*VT100.JumpScroll: true
 XTerm.VT100.JumpScroll: true
 
+! }}} 
 ! {{{ key and mouse translations
 
 ! Good reference here:
@@ -212,58 +212,68 @@ XTerm.VT100.JumpScroll: true
 ! TODO: Check http://sourceforge.net/projects/rxvt
 
 XTerm.vt100.translations: #override \
-        None <Key> BackSpace: string(0x7F)\n\
-       !Meta <Key> BackSpace: string(0x1b) string(0x7F)\n\
-             <Key> Delete:    string(0x04)\n\
-             <Key> Home:      string(0x1b) string("[1~")\n\
-             <Key> End:       string(0x1b) string("[4~")\n\
+               None <Key> BackSpace:     string(0x7F)\n\
+ !Meta              <Key> BackSpace:     string(0x1b) string(0x7F)\n\
+               None <Key> Delete:        string(0x04)\n\
+               None <Key> Home:          string(0x1b) string("[1~")\n\
+               None <Key> End:           string(0x1b) string("[4~")\n\
 \
-        None <Key> Prior:    string(0x1b) string("[5~")\n\
-        None <Key> Next:     string(0x1b) string("[6~")\n\
-      !Shift <Key> Prior:    scroll-back(1,halfpage)\n\
-      !Shift <Key> Next:     scroll-forw(1,halfpage)\n\
-       !Ctrl <Key> Prior:    string(0x1b) string("[5\^")\n\
-       !Ctrl <Key> Next:     string(0x1b) string("[6\^")\n\
-  Ctrl Shift <Key> Prior:    string(0x1b) string("[5@")\n\
-  Ctrl Shift <Key> Next:     string(0x1b) string("[6@")\n\
-  Ctrl Meta  <Key> Prior:    string(0x1b) string("[5@")\n\
-  Ctrl Meta  <Key> Next:     string(0x1b) string("[6@")\n\
-       Meta  <Key> Prior:    string(0x1b) string("[5@")\n\
-       Meta  <Key> Next:     string(0x1b) string("[6@")\n\
+               None <Key> Prior:         string(0x1b) string("[5~")\n\
+               None <Key> Next:          string(0x1b) string("[6~")\n\
+             !Shift <Key> Prior:         scroll-back(1,halfpage)\n\
+             !Shift <Key> Next:          scroll-forw(1,halfpage)\n\
+       !Ctrl        <Key> Prior:         string(0x1b) string("[5\^")\n\
+       !Ctrl        <Key> Next:          string(0x1b) string("[6\^")\n\
+        Ctrl  Shift <Key> Prior:         string(0x1b) string("[5@")\n\
+        Ctrl  Shift <Key> Next:          string(0x1b) string("[6@")\n\
+  Meta  Ctrl        <Key> Prior:         string(0x1b) string("[5@")\n\
+  Meta  Ctrl        <Key> Next:          string(0x1b) string("[6@")\n\
+ !Meta              <Key> Prior:         string(0x1b) string("[5@")\n\
+ !Meta              <Key> Next:          string(0x1b) string("[6@")\n\
 \
-             <Btn4Down>,<Btn4Up>: scroll-back(1,halfpage)\n\
-             <Btn5Down>,<Btn5Up>: scroll-forw(1,halfpage)\n\
-  Shift      <Btn4Down>,<Btn4Up>: scroll-back(1,line)\n\
-  Shift      <Btn5Down>,<Btn5Up>: scroll-forw(1,line)\n\
-        Ctrl <Btn4Down>,<Btn4Up>: scroll-back(1,page)\n\
-        Ctrl <Btn5Down>,<Btn5Up>: scroll-forw(1,page)
+                    <Btn4Down>,<Btn4Up>: scroll-back(1,halfpage)\n\
+                    <Btn5Down>,<Btn5Up>: scroll-forw(1,halfpage)\n\
+             !Shift <Btn4Down>,<Btn4Up>: scroll-back(1,line)\n\
+             !Shift <Btn5Down>,<Btn5Up>: scroll-forw(1,line)\n\
+       !Ctrl        <Btn4Down>,<Btn4Up>: scroll-back(1,page)\n\
+       !Ctrl        <Btn5Down>,<Btn5Up>: scroll-forw(1,page)\n\
+\
+       !Ctrl        <Key> less:          smaller-vt-font\n\
+       !Ctrl        <Key> greater:       larger-vt-font\n\
+\
+  Meta  Ctrl        <Key> slash:         dabbrev-expand
 
 xterm.vt100.translations: #override \
-        None <Key> BackSpace: string(0x7F)\n\
-       !Meta <Key> BackSpace: string(0x1b) string(0x7F)\n\
-             <Key> Delete:    string(0x04)\n\
-             <Key> Home:      string(0x1b) string("[1~")\n\
-             <Key> End:       string(0x1b) string("[4~")\n\
+               None <Key> BackSpace:     string(0x7F)\n\
+ !Meta              <Key> BackSpace:     string(0x1b) string(0x7F)\n\
+               None <Key> Delete:        string(0x04)\n\
+               None <Key> Home:          string(0x1b) string("[1~")\n\
+               None <Key> End:           string(0x1b) string("[4~")\n\
 \
-        None <Key> Prior:    string(0x1b) string("[5~")\n\
-        None <Key> Next:     string(0x1b) string("[6~")\n\
-      !Shift <Key> Prior:    scroll-back(1,halfpage)\n\
-      !Shift <Key> Next:     scroll-forw(1,halfpage)\n\
-       !Ctrl <Key> Prior:    string(0x1b) string("[5\^")\n\
-       !Ctrl <Key> Next:     string(0x1b) string("[6\^")\n\
-  Ctrl Shift <Key> Prior:    string(0x1b) string("[5@")\n\
-  Ctrl Shift <Key> Next:     string(0x1b) string("[6@")\n\
-  Ctrl Meta  <Key> Prior:    string(0x1b) string("[5@")\n\
-  Ctrl Meta  <Key> Next:     string(0x1b) string("[6@")\n\
-       Meta  <Key> Prior:    string(0x1b) string("[5@")\n\
-       Meta  <Key> Next:     string(0x1b) string("[6@")\n\
+               None <Key> Prior:         string(0x1b) string("[5~")\n\
+               None <Key> Next:          string(0x1b) string("[6~")\n\
+             !Shift <Key> Prior:         scroll-back(1,halfpage)\n\
+             !Shift <Key> Next:          scroll-forw(1,halfpage)\n\
+       !Ctrl        <Key> Prior:         string(0x1b) string("[5\^")\n\
+       !Ctrl        <Key> Next:          string(0x1b) string("[6\^")\n\
+        Ctrl  Shift <Key> Prior:         string(0x1b) string("[5@")\n\
+        Ctrl  Shift <Key> Next:          string(0x1b) string("[6@")\n\
+  Meta  Ctrl        <Key> Prior:         string(0x1b) string("[5@")\n\
+  Meta  Ctrl        <Key> Next:          string(0x1b) string("[6@")\n\
+ !Meta              <Key> Prior:         string(0x1b) string("[5@")\n\
+ !Meta              <Key> Next:          string(0x1b) string("[6@")\n\
 \
-             <Btn4Down>,<Btn4Up>: scroll-back(1,halfpage)\n\
-             <Btn5Down>,<Btn5Up>: scroll-forw(1,halfpage)\n\
-  Shift      <Btn4Down>,<Btn4Up>: scroll-back(1,line)\n\
-  Shift      <Btn5Down>,<Btn5Up>: scroll-forw(1,line)\n\
-        Ctrl <Btn4Down>,<Btn4Up>: scroll-back(1,page)\n\
-        Ctrl <Btn5Down>,<Btn5Up>: scroll-forw(1,page)
+                    <Btn4Down>,<Btn4Up>: scroll-back(1,halfpage)\n\
+                    <Btn5Down>,<Btn5Up>: scroll-forw(1,halfpage)\n\
+             !Shift <Btn4Down>,<Btn4Up>: scroll-back(1,line)\n\
+             !Shift <Btn5Down>,<Btn5Up>: scroll-forw(1,line)\n\
+       !Ctrl        <Btn4Down>,<Btn4Up>: scroll-back(1,page)\n\
+       !Ctrl        <Btn5Down>,<Btn5Up>: scroll-forw(1,page)\n\
+\
+       !Ctrl        <Key> less:          smaller-vt-font\n\
+       !Ctrl        <Key> greater:       larger-vt-font\n\
+\
+  Meta  Ctrl        <Key> slash:         dabbrev-expand
 
 ! In the scrollbar we map buttons 5 & 4 to 1 and 2 otherwise, core
 ! dump.  This will move proportionally to cursor position, but we
@@ -306,10 +316,12 @@ nxterm*termName:         xterm-color
 ! }}} 
 
 ! {{{ selection
+
 ! gotta have this one to trim trailing whitespace:
 xterm*trimSelection: true
 ! but not sure about this one:
 xterm*cutNewline: true
+
 ! }}} 
 ! {{{ AutoWrap
 
