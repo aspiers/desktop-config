@@ -1,3 +1,11 @@
+! WARNING!  This file should be used with my custom xrdb-cpp preprocessor,
+! via:
+!        xrdb -cpp xrdb-cpp
+
+!------------------------------------------------------------
+!
+! Appearance
+
 ! {{{ foreground/background
 
 #ifdef BLACK_BG_XTERMS
@@ -25,7 +33,6 @@ rxvt*foreground:    black
 #endif
 
 ! }}}
-
 ! {{{ other colours
 
 *xterm*color0: rgb:00/00/00
@@ -51,7 +58,6 @@ rxvt*foreground:    black
 *xterm*color15: rgb:ff/ff/ff
 
 ! }}}
-
 ! {{{ bold/underline colours
 
 ! Use color or bold/underline for bold/underline?
@@ -71,39 +77,14 @@ rxvt*foreground:    black
 #endif
 
 ! }}}
-! {{{ font
-
-!xterm*font:        10x20
-!nxterm*font:       10x20
-
-xterm*font:         9x15
-nxterm*font:        9x15
-
-! }}}
-! {{{ cursor
-
-XTerm*cursorColor:  blue
-nxterm*cursorColor: blue
-
-xterm*fullCursor:   true
-nxterm*fullCursor:  true
-
-! }}}
-
-! {{{ geometry
-
-xterm.vt100.geometry: 92x40
-
-! }}}
-
-! {{{ menus
+! {{{ menu foreground/background
 
 xterm*SimpleMenu.background:    gray50
 nxterm*SimpleMenu.background:   gray75
 
 xterm*SimpleMenu.foreground:    black
 nxterm*SimpleMenu.foreground:   black
-
+! }}}
 ! {{{ font menu
 
 ! Please email <gjb@cs.duke.edu> if you have a better
@@ -143,8 +124,44 @@ FontAndLabel(7,8x16,Alternate Large)
 #endif
 
 ! }}}
+! {{{ default font
+
+!xterm*font:        10x20
+!nxterm*font:       10x20
+
+xterm*font:         9x15
+nxterm*font:        9x15
 
 ! }}}
+! {{{ cursor
+
+XTerm*cursorColor:  blue
+nxterm*cursorColor: blue
+
+xterm*fullCursor:   true
+nxterm*fullCursor:  true
+
+! }}}
+! {{{ pointer shape?
+
+nxterm*Cursor: xterm
+
+! }}}
+! {{{ geometry
+
+xterm.vt100.geometry: 92x40
+
+! }}}
+! {{{ title bar
+
+xterm*titleBar:     false
+nxterm*titleBar:    false
+
+! }}}
+
+!------------------------------------------------------------
+!
+! Behaviour
 
 ! {{{ scrolling
 
@@ -165,10 +182,6 @@ nxterm*VT100.JumpScroll: true
 XTerm.VT100.JumpScroll: true
 
 ! }}}
-! WARNING!  This file should be used with my custom xrdb-cpp preprocessor,
-! via:
-!        xrdb -cpp xrdb-cpp
-
 ! {{{ key and mouse translations
 
 ! Good reference here:
@@ -245,14 +258,7 @@ XTerm.vt100.Scrollbar.translations: #override\n\
      <Btn4Down>: StartScroll(Backward)\n\
 
 ! }}}
-! {{{ title bar
-
-xterm*titleBar:     false
-nxterm*titleBar:    false
-
-! }}}
-
-! {{{ Meta key
+! {{{ meta key
 
 *eightBitInput: false
 *EightBitInput: false
@@ -296,11 +302,6 @@ XTerm.VT100.AutoWrap:   true
 xterm*reverseWrap:  true
 nxterm*reverseWrap: true
 XTerm.VT100.ReverseWrap:        true
-
-! }}}
-! {{{ pointer shape?
-
-nxterm*Cursor: xterm
 
 ! }}}
 
