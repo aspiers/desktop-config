@@ -14,6 +14,12 @@ else
   echo "no all.rdb"
 fi
 
+echo "### Mouse ..."
+xset m 2 4
+
+echo "### Keyboard ..."
+xset r rate 180 50
+
 executable_p () {
     which "$1" >/dev/null 2>&1
 }

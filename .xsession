@@ -29,12 +29,6 @@ for dir in ~/.X_fonts ~/.truetype; do
 done
 xset fp rehash
 
-echo "### Mouse ..."
-xset m 2 4
-
-echo "### Keyboard ..."
-xset r rate 180 50
-
 echo "### .xsession.local.pre ..."
 [ -e ~/.xsession.local.pre       ] && . ~/.xsession.local.pre
 [ -e ~/.xsession.${HOST%%.*}.pre ] && . ~/.xsession.${HOST%%.*}.pre
