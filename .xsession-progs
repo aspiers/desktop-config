@@ -9,7 +9,7 @@ fi
 
 echo "### Xresources ..."
 if [ -e ~/.Xresources/all.rdb ]; then
-  xrdb -merge ~/.Xresources/all.rdb && echo "merged all.rdb"
+  xrdb -cpp xrdb-cpp -merge ~/.Xresources/all.rdb && echo "merged all.rdb"
 else
   echo "no all.rdb"
 fi
