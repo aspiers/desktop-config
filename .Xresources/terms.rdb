@@ -308,10 +308,15 @@ nxterm*termName:         xterm-color
 
 ! {{{ selection
 
-! gotta have this one to trim trailing whitespace:
+! Gotta have this one to trim trailing whitespace.
 xterm*trimSelection: true
-! but not sure about this one:
+
+! Include newlines when selection includes end of line
+! (e.g. via triple-click).
 xterm*cutNewline: true
+
+! Don't select entire line from beginning when triple-clicking.
+xterm*cutToBeginningOfLine: false
 
 ! }}}
 ! {{{ AutoWrap
