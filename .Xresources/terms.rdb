@@ -280,6 +280,8 @@ XTerm.vt100.Scrollbar.translations: #override\n\
      <Btn5Down>: StartScroll(Forward)\n\
      <Btn4Down>: StartScroll(Backward)\n\
 
+xterm*ttyModes: erase ^?
+
 ! }}}
 ! {{{ meta key
 
