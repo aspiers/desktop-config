@@ -265,6 +265,7 @@ XTerm.VT100.JumpScroll: true
 \
   Meta  Ctrl        <Key><:              smaller-vt-font()\n\
   Meta  Ctrl        <Key>>:              larger-vt-font()\n\
+       !Ctrl        <Key>;:              string(0x03) string("e;")
 
 ! dabbrev-expand not supported for some reason
 !  Meta  Ctrl        <Key>/:              dabbrev-expand()
