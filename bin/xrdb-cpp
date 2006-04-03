@@ -6,5 +6,5 @@
 #
 # or google for `cpp-sed-nl'.
 
-cpp "$@" | sed -e 's/@@/\
+cpp -I $HOME/.Xresources "$@" | sed -e 's/@@/\
 /g; s/[ \t]*$//g'
