@@ -1,6 +1,8 @@
+/*
 ! Adam's emacs X resources
 !
 ! $Id$
+*/
 
 ! {{{ foreground/background
 
@@ -23,25 +25,27 @@ emacs.Foreground: RGB:F/F/E
 ! }}} 
 ! {{{ geometry
 
-! Don't use default-frame-alist.  I used to think it was a good idea;
-! maybe with older emacsen you needed it because X resources didn't
-! affect the size of extra frames created well after startup time?
-! But the best results with emacs 21 are obtained by using X resources
-! for controlling geometry *and* turning the toolbar off.
-!
-! For reference, the old technique involved something like this going
-! in ~/.emacs.local, for instance:
-!
-!   (setq default-frame-alist
-!         '((width . 83)
-!           (height . 57)
-!           (menu-bar-lines . 1)
-!           (tool-bar-lines . 0)))
-!
+/*
+  Don't use default-frame-alist.  I used to think it was a good idea;
+  maybe with older emacsen you needed it because X resources didn't
+  affect the size of extra frames created well after startup time?
+  But the best results with emacs 21 are obtained by using X resources
+  for controlling geometry *and* turning the toolbar off.
 
-! Note: emacs seems to increase the size by 6x2 on startup
-! (on a 1024x768 display, anyhow).  So 78x42 actually ends
-! up being 84x44.
+  For reference, the old technique involved something like this going
+  in ~/.emacs.local, for instance:
+
+    (setq default-frame-alist
+          '((width . 83)
+            (height . 57)
+            (menu-bar-lines . 1)
+            (tool-bar-lines . 0)))
+
+
+  Note: emacs seems to increase the size by 6x2 on startup
+  (on a 1024x768 display, anyhow).  So 78x42 actually ends
+  up being 84x44.
+ */
 
 #ifdef LAPTOP_SCREEN
    Emacs.geometry: 78x42

@@ -1,9 +1,11 @@
-! WARNING!  This file should be used with my custom xrdb-cpp preprocessor,
-! via:
-!        xrdb -cpp xrdb-cpp
-!
-! It should also be included via `all.rdb', which first loads
-! `defines.rdb'.
+/*
+  WARNING!  This file should be used with my custom xrdb-cpp preprocessor,
+  via:
+         xrdb -cpp xrdb-cpp
+ 
+  It should also be included via `all.rdb', which first loads
+  `defines.rdb'.
+*/
 
 !------------------------------------------------------------
 !
@@ -206,35 +208,37 @@ XTerm.VT100.JumpScroll: true
 ! }}}
 ! {{{ key and mouse translations
 
-! Good reference here:
-!   http://www.in-ulm.de/~mascheck/X11/xterm/XTerm
-! 
-! From
-! http://moat.nlanr.net/Software/OC3mon/DOSCoraldist19980317/REMCTL/XDEFAULT.UNX
-! :-
-!
-!   in case you are wondering, magic words like 
-!   "Prior" and "BackSpace" are all listed in 
-!   	/usr/local/X11R6/include/X11/keysymdef.h
-!   with "XK_" in front of the name you can use here
-!
-!   boy, is it frustrating to try guessing 'em!
-!
-!   apparently, tilde in front of a shift means "not this shift"
-!   and exclaimation point in front of a shift means "just this shift"
-!
-!   but the ~Shift somehow doesn't work on IRIX 6.3 X display
-!   in front of the lines that define ctrl-alt-L and ctrl-alt-X,
-!   even though it works fine for ctrl-alt-delete, so you need
-!   to take "~Shift" off the front of those definitions (which means
-!   that shift-ctrl-alt-L will have the same definition as ctrl-alt-L)
-!   if you live in that world
-!
-! In rxvt, Ctrl-Shift-Prior/Next is a bug which needs to be patched:
-!
-! http://lists.debian.org/debian-qa-packages/2005/10/msg00112.html
-! http://bugs.donarmstrong.com/cgi-bin/bugreport.cgi?bug=226386
-! TODO: Check http://sourceforge.net/projects/rxvt
+/*
+  Good reference here:
+    http://www.in-ulm.de/~mascheck/X11/xterm/XTerm
+  
+  From
+  http://moat.nlanr.net/Software/OC3mon/DOSCoraldist19980317/REMCTL/XDEFAULT.UNX
+  :-
+ 
+    in case you are wondering, magic words like 
+    "Prior" and "BackSpace" are all listed in 
+    	/usr/local/X11R6/include/X11/keysymdef.h
+    with "XK_" in front of the name you can use here
+ 
+    boy, is it frustrating to try guessing 'em!
+ 
+    apparently, tilde in front of a shift means "not this shift"
+    and exclaimation point in front of a shift means "just this shift"
+ 
+    but the ~Shift somehow doesn't work on IRIX 6.3 X display
+    in front of the lines that define ctrl-alt-L and ctrl-alt-X,
+    even though it works fine for ctrl-alt-delete, so you need
+    to take "~Shift" off the front of those definitions (which means
+    that shift-ctrl-alt-L will have the same definition as ctrl-alt-L)
+    if you live in that world
+ 
+  In rxvt, Ctrl-Shift-Prior/Next is a bug which needs to be patched:
+ 
+  http://lists.debian.org/debian-qa-packages/2005/10/msg00112.html
+  http://bugs.donarmstrong.com/cgi-bin/bugreport.cgi?bug=226386
+  TODO: Check http://sourceforge.net/projects/rxvt
+*/
 
 #define XTERM_DEFAULT_TRANSLATIONS \n\
                None <Key> BackSpace:     string(0x7F)\n\
@@ -267,16 +271,18 @@ XTerm.VT100.JumpScroll: true
   Meta  Ctrl        <Key>>:              larger-vt-font()\n\
        !Ctrl        <Key>;:              string(0x03) string("E;")
 
-! dabbrev-expand not supported for some reason
-!  Meta  Ctrl        <Key>/:              dabbrev-expand()
+  dabbrev-expand not supported for some reason
+   Meta  Ctrl        <Key>/:              dabbrev-expand()
 
 XTerm.vt100.translations: #override XTERM_DEFAULT_TRANSLATIONS
 xterm.vt100.translations: #override XTERM_DEFAULT_TRANSLATIONS
 
-! In the scrollbar we map buttons 5 & 4 to 1 and 2 otherwise, core
-! dump.  This will move proportionally to cursor position, but we
-! don't know how to program the same exact behavior as in the text
-! widget.
+/*
+  In the scrollbar we map buttons 5 & 4 to 1 and 2 otherwise, core
+  dump.  This will move proportionally to cursor position, but we
+  don't know how to program the same exact behavior as in the text
+  widget.
+ */
 XTerm.vt100.Scrollbar.translations: #override\n\
      <Btn5Down>: StartScroll(Forward)\n\
      <Btn4Down>: StartScroll(Backward)\n\
@@ -316,7 +322,7 @@ xterm*trimSelection: true
 ! (e.g. via triple-click).
 xterm*cutNewline: true
 
-! Don't select entire line from beginning when triple-clicking.
+// Don't select entire line from beginning when triple-clicking.
 xterm*cutToBeginningOfLine: false
 
 ! }}}
