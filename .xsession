@@ -18,13 +18,16 @@ run_if_executable () {
 echo $DISPLAY > ~/.Xdisplay.${HOST%%.*}
 
 echo "### Fonts ..."
+# also change SESSION/.cfg-post.d/SESSION
 for dir in ~/.X_fonts ~/.truetype; do
   if [ -d $dir ]; then
     if xset fp+ $dir; then
       echo "Added font dir $dir"
     else
-      echo "Failed to add font dir $dir !"
+      echo "Failed to add font dir $dir"
     fi
+  else
+    echo "Warning: $dir doesn't exist"
   fi
 done
 xset fp rehash
