@@ -2,6 +2,11 @@
 
 touch ~/.Xresources/local.rdb
 
+# also change SESSION/.xsession
+for dir in ~/.X_fonts ~/.truetype; do
+  mkfontdir "$dir"
+done
+
 mkdir -p ~/.xsession-progs.d
 
 if which startkde >&/dev/null; then
