@@ -1,10 +1,10 @@
 #!/bin/bash
 
-exec 1>~/.xsession-my-errors 2>&1
+exec 1> ~/.xsession-my-errors 2>&1
 
 . ~/.shared_env
 
-echo -n "### X session started: "
+echo -n "### .xsession started: "
 date
 
 executable_p () {
@@ -48,8 +48,10 @@ echo "### .xsession.local ..."
 
 if executable_p startkde; then
   exec startkde
+elif executable_p kde; then
+  exec kde
 else
-  echo "startkde not executable :-("
+  echo "startkde and kde both not executable :-("
 fi
 
 if executable_p sawfish; then
