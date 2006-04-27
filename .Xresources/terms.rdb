@@ -224,7 +224,7 @@ XTerm.VT100.JumpScroll: true
     boy, is it frustrating to try guessing 'em!
  
     apparently, tilde in front of a shift means "not this shift"
-    and exclaimation point in front of a shift means "just this shift"
+    and exclamation point in front of a shift means "just this shift"
  
     but the ~Shift somehow doesn't work on IRIX 6.3 X display
     in front of the lines that define ctrl-alt-L and ctrl-alt-X,
