@@ -1,6 +1,5 @@
 #!/bin/bash
 
-PING_COUNT=10
 CLIENT_PROG=synergyc
 CLIENT_NAME_FILE=$HOME/.synergy-client-name
 SERVER_NAME_FILE=$HOME/.synergy-server-name
@@ -69,28 +68,6 @@ read_conf () {
     fi
 }
 
-is_host_up () {
-    host="$1"
-    shift
-
-#    _log_it "testing if $host is up"
-
-    host_up=
-    case "$OSTYPE" in
-        solaris*) 
-            echo "FIXME: ping count option?" >&2
-            exit 1
-            # redirect stderr to avoid "no route to host" type errors
-            ping -s "$host" 2>&1 | grep -q 'bytes from' && host_up=yes
-            ;;
-
-        # FreeBSD and Linux
-        *)
-            ping -c "$PING_COUNT" "$host" 2>&1 | grep -q 'bytes from' && host_up=yes
-            ;; 
-    esac
-    [ -n "$host_up" ]
-}
 
 _kill () {
     kill "$@" 2>/dev/null
@@ -143,7 +120,7 @@ _log_it "pid $$ started up"
 while true; do
     read_conf
 
-    if is_host_up "$servername"; then
+    if isup "$servername"; then
 #        _log_it "$servername up"
         if ! ensure_correct_invocation_running; then
             sleep 60
