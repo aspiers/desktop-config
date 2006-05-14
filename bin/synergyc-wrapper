@@ -1,7 +1,7 @@
 #!/bin/bash
 
 CLIENT_PROG=synergyc
-CLIENT_NAME_FILE=$HOME/.synergy-client-name
+CLIENT_NAME_FILE=$HOME/.localhost-nickname
 SERVER_NAME_FILE=$HOME/.synergy-server-name
 
 me="`basename $0`"
