@@ -1,6 +1,6 @@
 !
 ! This is an `xmodmap' input file for IBM ThinkPad T23 (XFree86; UK) keyboards.
-! Automatically generated on Tue Mar 28 20:10:30 2006 by aspiers with
+! Automatically generated on Wed Jun 28 14:38:06 2006 by aspiers with
 ! XKeyCaps 2.46; Copyright (c) 1999 Jamie Zawinski <jwz@jwz.org>.
 ! http://www.jwz.org/xkeycaps/
 !
@@ -64,7 +64,7 @@
 ! The "Z" key generates c, C, cent, copyright, cent, and copyright
 ! The "X" key generates v, V, leftdoublequotemark, grave, leftdoublequotemark, and grave
 ! The "C" key generates b, B, rightdoublequotemark, apostrophe, rightdoublequotemark, and apostrophe
-! The "V" key generates backslash, bar, bar, brokenbar, bar, and brokenbar
+! The "V" key generates grave, bar, bar, brokenbar, bar, and brokenbar
 ! The "B" key generates b, B, rightdoublequotemark, apostrophe, rightdoublequotemark, and apostrophe
 ! The "M 0" key generates m, M, mu, masculine, mu, and masculine
 ! The "< ," key generates comma, less, horizconnector, multiply, horizconnector, and multiply
@@ -143,7 +143,7 @@ keycode 0x5E =	x		X		guillemotright	greater		guillemotright	greater
 keycode 0x34 =	c		C		cent		copyright	cent		copyright
 keycode 0x35 =	v		V		leftdoublequotemark	grave		leftdoublequotemark	grave
 keycode 0x36 =	b		B		rightdoublequotemark	apostrophe	rightdoublequotemark	apostrophe
-keycode 0x37 =	backslash	bar		bar		brokenbar	bar		brokenbar
+keycode 0x37 =	grave		bar		bar		brokenbar	bar		brokenbar
 keycode 0x38 =	b		B		rightdoublequotemark	apostrophe	rightdoublequotemark	apostrophe
 keycode 0x39 =	n		N
 keycode 0x3A =	m		M		mu		masculine	mu		masculine
@@ -171,8 +171,8 @@ clear Mod4
 clear Mod5
 
 add    Shift   = Shift_L Shift_R
-add    Control = Control_L Control_L
-add    Mod1    = Alt_L 0x007D 0x009C
+add    Control = Control_L
+add    Mod1    = Alt_L 0x007D
 add    Mod2    = Num_Lock
 add    Mod4    = Hyper_R
 add    Mod5    = Mode_switch ISO_Level3_Shift
