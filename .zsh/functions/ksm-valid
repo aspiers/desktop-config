@@ -12,7 +12,7 @@ if [[ ! -e "$session_socket" ]]; then
     return 1
 fi
 
-if lsof $session_socket | egrep -q 'ksmserver|kdeinit'; then
+if lsof $session_socket |& egrep -q 'ksmserver|kdeinit'; then
     return 0
 fi
 
