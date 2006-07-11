@@ -17,6 +17,11 @@ run_if_executable () {
 
 echo $DISPLAY > ~/.Xdisplay.${HOST%%.*}
 
+echo "### dbus ..."
+if [ -z "$DBUS_SESSION_BUS_ADDRESS" ] && executable_p dbus-launch; then
+  eval `dbus-launch --sh-syntax --exit-with-session`
+fi
+
 echo "### Fonts ..."
 # also change SESSION/.cfg-post.d/SESSION
 for dir in ~/.X_fonts ~/.truetype; do
@@ -46,28 +51,30 @@ echo "### .xsession.local ..."
 [ -e ~/.xsession.local       ] && . ~/.xsession.local
 [ -e ~/.xsession.${HOST%%.*} ] && . ~/.xsession.${HOST%%.*}
 
+# Note that ~/.cfg/SESSION/.cfg-post.d/SESSION ensures
+# that there is a symlink from within ~/.kde/Autostart
+# to .xsession-progs so we can exec if starting kde,
+# otherwise we need to start .xsession-progs here.
 if executable_p startkde; then
   exec startkde
 elif executable_p kde; then
   exec kde
-else
-  echo "startkde and kde both not executable :-("
 fi
+
+echo "startkde and kde both not executable :-("
 
 if executable_p sawfish; then
   echo "### sawfish ..."
   sawfish &
-else
+elif executable_p gnome-session; then
   gnome-session &
+else
+  # oh fuck
+  ( fvwm || twm ) &
 fi
 
 echo "### ~/.xsession-progs ..."
 ~/.xsession-progs &
-
-# oh fuck
-# exec fvwm
-# exec twm
-
 
 # this script must not terminate, otherwise its callers assume
 # the X session has finished
