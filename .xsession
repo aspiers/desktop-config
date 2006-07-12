@@ -7,26 +7,7 @@ exec 1> ~/.xsession-my-errors 2>&1
 echo -n "### .xsession started: "
 date
 
-executable_p () {
-    which "$1" >/dev/null 2>&1
-}
-
-run_if_executable () {
-    executable_p "$1" && "$@"
-}
-
-process_running_my_uid () {
-    proc="$1"
-    pgrep -u "`id -un`" "$proc" >/dev/null
-}
-
-run_unless_running () {
-    prog="$1"; shift
-    if ! executable_p "$prog"; then
-        echo "$prog not executable" >&2
-    fi
-    process_running_my_uid "$prog" || "$prog" "$@"
-}
+. ~/lib/libproc.sh
 
 echo $DISPLAY > ~/.Xdisplay.${HOST%%.*}
 
@@ -87,7 +68,7 @@ else
 fi
 
 echo "### ~/.xsession-progs ..."
-~/.xsession-progs &
+. ~/.xsession-progs &
 
 # this script must not terminate, otherwise its callers assume
 # the X session has finished

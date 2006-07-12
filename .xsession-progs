@@ -1,5 +1,7 @@
 #!/bin/sh
 
+. ~/lib/libproc.sh
+
 echo "### Xmodmap ..."
 if [ -z "$VNCDESKTOP" ]; then
   . $ZDOT_RUN_HOOKS .Xmodmap.d
@@ -20,18 +22,6 @@ xset m 2 4
 echo "### Keyboard ..."
 xset r rate 180 50
 
-executable_p () {
-    which "$1" >/dev/null 2>&1
-}
-
-run_if_executable () {
-    if executable_p "$1"; then
-        "$@"
-    else
-        echo "$1 not executable; skipping $*"
-    fi
-}
-
 if executable_p Esetroot; then
   run_if_executable retrieve_background
 #  run_if_executable randomise_background
@@ -46,6 +36,13 @@ run_if_executable workrave &
 run_if_executable watchlogs-system &
 [ -z "$VNCDESKTOP" ] && run_if_executable gkrellm -geometry -0-0 &
 #run_if_executable 3ddesk &
+
+if [ -n "$KDE_FULL_SESSION" ]; then
+  echo "### knetworkmanager ..."
+  run_unless_running knetworkmanager &
+else
+  echo "not in kde, not launching knetworkmanager"
+fi
 
 # Other programs to run:
 #   gaim / kopete
