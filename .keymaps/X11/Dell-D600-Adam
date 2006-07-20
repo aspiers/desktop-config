@@ -33,7 +33,7 @@
 ! The "V" key generates b and B
 ! The "? /" key generates slash, question, and Insert
 ! The "Ctrl" key generates z and Z, and has no modifiers
-! The "Win" key generates Meta_L, and the Mod1 modifier
+! The "Win" key generates Alt_L, Meta_L, and the Mod1 modifier
 ! The "Alt" key generates Control_L, and the Control modifier
 ! The "AltGr" key generates Return, and has no modifiers
 ! The "Ctrl" key generates Super_R, and the Mod3 modifier
@@ -116,7 +116,7 @@ keycode 0x3C =	period		greater
 keycode 0x3D =	slash		question	Insert
 keycode 0x3E =	Shift_R
 keycode 0x25 =	z		Z
-keycode 0x73 =	Meta_L
+keycode 0x73 =	Alt_L Meta_L
 keycode 0x40 =	Control_L
 keycode 0x41 =	space
 keycode 0x71 =	Return
@@ -137,7 +137,7 @@ clear Mod5
 
 add    Shift   = Shift_L Shift_R
 add    Control = Control_L
-add    Mod1    = Meta_L 0x009C
+add    Mod1    = Alt_L Meta_L
 add    Mod2    = Mode_switch
 add    Mod3    = Super_R
 add    Mod4    = Hyper_R
