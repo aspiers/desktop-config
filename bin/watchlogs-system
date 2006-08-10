@@ -8,9 +8,14 @@ dpy_width=${dpy_geometry[1]}
 dpy_height=${dpy_geometry[2]}
 
 # Each char in smoothansi is 13 pixels high by 6 pixels wide.
+font_char_width=6
+font_char_height=13
 # Take 10% of height:
-watchlogs_height=$(( (dpy_height / 5) / 13 ))
-# Allow some space on the right for gkrellm:
-watchlogs_width=$(( (dpy_width - 90) / 6 ))
+watchlogs_height=$(( (dpy_height / 5) / font_char_height ))
+
+# Maybe allow some space on the right for gkrellm
+right_margin=0
+#right_margin=90
+watchlogs_width=$(( (dpy_width - right_margin) / font_char_width ))
 
 Eterm -t watchlogs-system -g ${watchlogs_width}x${watchlogs_height}+0-0
