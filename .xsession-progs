@@ -34,7 +34,7 @@ run_if_executable workrave &
 #run_if_executable xscreensaver -no-splash &
 
 run_if_executable watchlogs-system &
-[ -z "$VNCDESKTOP" ] && run_if_executable gkrellm -geometry -0-0 &
+[ -z "$VNCDESKTOP" ] && run_if_executable gkrellm -geometry -0+0 &
 #run_if_executable 3ddesk &
 
 if [ -n "$KDE_FULL_SESSION" ]; then
