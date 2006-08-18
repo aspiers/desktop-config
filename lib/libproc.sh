@@ -26,3 +26,21 @@ run_unless_running () {
     fi
     process_running_my_uid "$prog" || "$prog" "$@"
 }
+
+process_starttime () {
+    echo "process_starttime broken!" >&2
+    return 1
+    pid="$1"
+    boot_time=$( awk '/btime/ {print $2}' /proc/stat )
+    jiffies_since_boot=$( awk '{print $22}' /proc/$pid/stat )
+    # this probably doesn't work
+    hertz=$(
+        echo -e '#include <asm/param.h>\ngiveittome HZ' | \
+            gcc -I/lib/modules/`uname -r`/build/include -D__KERNEL__ -E - | \
+            awk '/giveittome/ {print $2}'
+    )
+    hertz=100
+    starttime=$(( boot_time + jiffies_since_boot/hertz ))
+    #echo "btime $boot_time jif $jiffies_since_boot hz $hertz"
+    return $starttime
+}
