@@ -35,7 +35,7 @@
 ! The "Ctrl" key generates z and Z, and has no modifiers
 ! The "Win" key generates Alt_L, Meta_L, and the Mod1 modifier
 ! The "Alt" key generates Control_L, and the Control modifier
-! The "AltGr" key generates Return, and has no modifiers
+! The "AltGr" key generates Super_R, and the Mod3 modifier
 ! The "Ctrl" key generates Super_R, and the Mod3 modifier
 
 keycode 0x75 =	Return
@@ -119,7 +119,7 @@ keycode 0x25 =	z		Z
 keycode 0x73 =	Alt_L Meta_L
 keycode 0x40 =	Control_L
 keycode 0x41 =	space
-keycode 0x71 =	Return
+keycode 0x71 =	Super_R
 keycode 0x6D =	Super_R
 keycode 0x62 =	Up
 keycode 0x64 =	Left
