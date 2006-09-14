@@ -2,8 +2,9 @@
 
 host=${HOST:-$HOSTNAME}
 host=${host%%.*}
+exec 1> ~/.xsession-my-errors.${host} 2>&1
 
 echo -n "### .Xclients started: "
 date
 
-exec ~/.xsession "$@" > ~/.Xclients-errors.${host} 2>&1
+exec ~/.xsession "$@"

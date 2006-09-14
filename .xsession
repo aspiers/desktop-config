@@ -1,6 +1,10 @@
 #!/bin/bash
 
-exec 1> ~/.xsession-my-errors 2>&1
+host=${HOST:-$HOSTNAME}
+host=${host%%.*}
+exec 1> ~/.xsession-my-errors.${host} 2>&1
+
+PREFER_SAWFISH=
 
 . ~/.shared_env
 
@@ -35,10 +39,12 @@ echo "### .xsession.local.pre ..."
 [ -e ~/.xsession.local.pre       ] && . ~/.xsession.local.pre
 [ -e ~/.xsession.${HOST%%.*}.pre ] && . ~/.xsession.${HOST%%.*}.pre
 
-if executable_p sawfish; then
-  export KDEWM=sawfish
-else
-  echo "sawfish not executable :-("
+if [ -n "$PREFER_SAWFISH" ]; then
+  if executable_p sawfish; then
+    export KDEWM=sawfish
+  else
+    echo "sawfish not executable :-("
+  fi
 fi
 
 echo "### .xsession.local ..."
@@ -49,7 +55,7 @@ echo "### .xsession.local ..."
 # that there is a symlink from within ~/.kde/Autostart
 # to .xsession-progs so we can exec if starting kde,
 # otherwise we need to start .xsession-progs here.
-if executable_p startkde; then
+if [ -n "$PREFER_SAWFISH" ] && executable_p startkde; then
   exec startkde
 elif executable_p kde; then
   exec kde

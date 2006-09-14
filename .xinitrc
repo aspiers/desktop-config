@@ -2,4 +2,9 @@
 
 host=${HOST:-$HOSTNAME}
 host=${host%%.*}
-exec ~/.xsession "$@" >~/.Xclients-errors.${host} 2>&1
+exec 1> ~/.xsession-my-errors.${host} 2>&1
+
+echo -n "### .xinitrc started: "
+date
+
+exec ~/.xsession "$@"
