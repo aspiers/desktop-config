@@ -55,7 +55,7 @@ echo "### .xsession.local ..."
 # that there is a symlink from within ~/.kde/Autostart
 # to .xsession-progs so we can exec if starting kde,
 # otherwise we need to start .xsession-progs here.
-if [ -n "$PREFER_SAWFISH" ] && executable_p startkde; then
+if [ -z "$PREFER_SAWFISH" ] && executable_p startkde; then
   exec startkde
 elif executable_p kde; then
   exec kde
