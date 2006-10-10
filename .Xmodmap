@@ -30,7 +30,7 @@ keycode 22 = BackSpace
 
 clear mod3
 
-! Turn right Alt (AltGr or <> on HHKL) into Hyper 
-keycode 113 = Hyper_R
+! Turn right Alt (AltGr or <> on HHKL) into Super 
+keycode 113 = Super_R
 clear mod4
-add mod4 = Hyper_R
+add mod4 = Super_R
