@@ -123,6 +123,7 @@ while true; do
 
     if AC-online; then
 #        _log_it "AC power online"
+        :
     else
         if [ -n "$pid" ]; then
             _log_it "AC power offline; stopping $CLIENT_PROG"
@@ -135,6 +136,7 @@ while true; do
 
     if isup "$servername"; then
 #        _log_it "$servername up"
+        :
     else
         if [ -n "$pid" ]; then
             _log_it "$servername down; stopping $CLIENT_PROG"
