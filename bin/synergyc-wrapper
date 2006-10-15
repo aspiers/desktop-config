@@ -75,6 +75,7 @@ _kill () {
     kill -9 "$@" 2>/dev/null
 }
 
+# returns success (0) if managed to ensure correct invocation is running
 ensure_correct_invocation_running () {
     pids=( $(pgrep -u "$USERNAME" "^$CLIENT_PROG$") )
 
@@ -120,18 +121,34 @@ _log_it "pid $$ started up"
 while true; do
     read_conf
 
-    if AC-online && isup "$servername"; then
-#        _log_it "$servername up"
-        if ! ensure_correct_invocation_running; then
-            sleep 60
-            continue
+    if AC-online; then
+#        _log_it "AC power online"
+    else
+        if [ -n "$pid" ]; then
+            _log_it "AC power offline; stopping $CLIENT_PROG"
+            _kill "$pid"
+            pid=
         fi
+        sleep 5
+        continue
+    fi
+
+    if isup "$servername"; then
+#        _log_it "$servername up"
     else
         if [ -n "$pid" ]; then
             _log_it "$servername down; stopping $CLIENT_PROG"
             _kill "$pid"
             pid=
         fi
+        sleep 5
+        continue
+    fi
+
+    if ! ensure_correct_invocation_running; then
+        # Oh dear, can't do much but try again.
+        sleep 60
+        continue
     fi
 
     sleep 5
