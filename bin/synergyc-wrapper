@@ -3,6 +3,7 @@
 CLIENT_PROG=synergyc
 CLIENT_NAME_FILE=$HOME/.localhost-nickname
 SERVER_NAME_FILE=$HOME/.synergy-server-name
+DOMAIN_NAME_FILE=$HOME/.synergy-domain-name
 
 me="`basename $0`"
 
@@ -23,18 +24,6 @@ _alertme () {
     fi
 }
 
-sighup () {
-    _log_it "pid $$ received SIGHUP"
-}
-
-sigterm () {
-    _log_it "pid $$ received SIGTERM"
-}
-
-sigquit () {
-    _log_it "pid $$ received SIGQUIT"
-}
-
 sigexit () {
     _log_it "pid $$ shutting down"
 }
@@ -44,9 +33,6 @@ if ps -ef | egrep -v "grep| $$ " | grep -q "bash.*$0"; then
     exit 1
 fi
 
-trap sighup  HUP
-trap sigterm TERM
-trap sigquit QUIT
 trap sigexit EXIT
 
 if [ "$1" == '-a' ]; then
@@ -64,6 +50,12 @@ read_conf () {
     servername="`cat $SERVER_NAME_FILE`"
     if [ -z "$servername" ]; then
         echo "Put server name in $SERVER_NAME_FILE" >&2
+        exit 1
+    fi
+
+    domainname="`cat $DOMAIN_NAME_FILE`"
+    if [ -z "$domainname" ]; then
+        echo "Put domain name in $DOMAIN_NAME_FILE" >&2
         exit 1
     fi
 }
@@ -134,7 +126,9 @@ while true; do
         continue
     fi
 
-    if isup "$servername"; then
+    if grep -q $domainname /etc/resolv.conf && isup "$servername"; then
+    # dnsdomainname doesn't get changed by DHCP for some reason
+    #[ "`dnsdomainname 2>&1`" = $domainname ]
 #        _log_it "$servername up"
         :
     else
