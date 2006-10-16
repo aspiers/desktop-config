@@ -260,17 +260,37 @@ XTerm.VT100.JumpScroll: true
  !Meta              <Key> Prior:         string(0x1b) string("[5@")\n\
  !Meta              <Key> Next:          string(0x1b) string("[6@")\n\
 \
+                           !Ctrl <Btn1Down>:popup-menu(mainMenu) \n\
+                      !Lock Ctrl <Btn1Down>:popup-menu(mainMenu) \n\
+            !Lock Ctrl @Num_Lock <Btn1Down>:popup-menu(mainMenu) \n\
+                ! @Num_Lock Ctrl <Btn1Down>:popup-menu(mainMenu) \n\
+                           ~Meta <Btn1Down>:select-start() \n\
+                         ~Meta <Btn1Motion>:select-extend() \n\
+\
+                           !Ctrl <Btn2Down>:popup-menu(vtMenu) \n\
+                      !Lock Ctrl <Btn2Down>:popup-menu(vtMenu) \n\
+            !Lock Ctrl @Num_Lock <Btn2Down>:popup-menu(vtMenu) \n\
+                ! @Num_Lock Ctrl <Btn2Down>:popup-menu(vtMenu) \n\
+                     ~Ctrl ~Meta <Btn2Down>:ignore() \n\
+                            Meta <Btn2Down>:clear-saved-lines() \n\
+                       ~Ctrl ~Meta <Btn2Up>:insert-selection(PRIMARY, CUT_BUFFER0) \n\
+\
+                           !Ctrl <Btn3Down>:popup-menu(fontMenu) \n\
+                      !Lock Ctrl <Btn3Down>:popup-menu(fontMenu) \n\
+            !Lock Ctrl @Num_Lock <Btn3Down>:popup-menu(fontMenu) \n\
+                ! @Num_Lock Ctrl <Btn3Down>:popup-menu(fontMenu) \n\
+\
                     <Btn4Down>,<Btn4Up>: scroll-back(1,halfpage)\n\
-                    <Btn5Down>,<Btn5Up>: scroll-forw(1,halfpage)\n\
              !Shift <Btn4Down>,<Btn4Up>: scroll-back(1,line)\n\
-             !Shift <Btn5Down>,<Btn5Up>: scroll-forw(1,line)\n\
        !Ctrl        <Btn4Down>,<Btn4Up>: scroll-back(1,page)\n\
+                    <Btn5Down>,<Btn5Up>: scroll-forw(1,halfpage)\n\
+             !Shift <Btn5Down>,<Btn5Up>: scroll-forw(1,line)\n\
        !Ctrl        <Btn5Down>,<Btn5Up>: scroll-forw(1,page)\n\
 \
   Meta  Ctrl        <Key><:              smaller-vt-font()\n\
   Meta  Ctrl        <Key>>:              larger-vt-font()\n\
        !Ctrl        <Key>;:              string(0x03) string("E;")\n\
-\
+/* \
   Meta  Ctrl        <Key>/:         dabbrev-expand()
 /* Note dabbrev-expand needs ./configure --dabbrev-expand and
    even that doesn't work on FC4 ... */
