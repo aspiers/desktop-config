@@ -42,11 +42,14 @@ echo "### gkrellm ..."
 [ -z "$VNCDESKTOP" ] && run_if_executable gkrellm -geometry -0+0 &
 #run_if_executable 3ddesk &
 
+kdeapps="knetworkmanager kmix"
 if [ -n "$KDE_FULL_SESSION" ]; then
-  echo "### knetworkmanager ..."
-  run_unless_running knetworkmanager &
+  for app in $kdeapps; do
+    echo "### $app ..."
+    run_unless_running $app &
+  done
 else
-  echo "not in kde, not launching knetworkmanager"
+  echo "not in kde, not launching: $kdeapps"
 fi
 
 # Other programs to run:
