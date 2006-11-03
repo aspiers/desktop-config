@@ -35,10 +35,6 @@ for dir in ~/.X_fonts ~/.truetype; do
 done
 xset fp rehash
 
-echo "### .xsession.local.pre ..."
-[ -e ~/.xsession.local.pre       ] && . ~/.xsession.local.pre
-[ -e ~/.xsession.${HOST%%.*}.pre ] && . ~/.xsession.${HOST%%.*}.pre
-
 if [ -n "$PREFER_SAWFISH" ]; then
   if executable_p sawfish; then
     export KDEWM=sawfish
@@ -46,10 +42,6 @@ if [ -n "$PREFER_SAWFISH" ]; then
     echo "sawfish not executable :-("
   fi
 fi
-
-echo "### .xsession.local ..."
-[ -e ~/.xsession.local       ] && . ~/.xsession.local
-[ -e ~/.xsession.${HOST%%.*} ] && . ~/.xsession.${HOST%%.*}
 
 # Note that ~/.cfg/SESSION/.cfg-post.d/SESSION ensures
 # that there is a symlink from within ~/.kde/Autostart
