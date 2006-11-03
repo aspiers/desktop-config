@@ -115,7 +115,11 @@ clear Mod5
 
 add    Shift   = Shift_L Shift_R
 add    Control = Control_L
-add    Mod1    = Meta_L Alt_L
+! Mod1 is a funny one.  Things like yast look for Alt_L for shortcuts
+! but having Meta_L and Alt_L is evil and broken, according to jwz
+! (see the xkeycaps man page).
+! If we can get away with just Alt_L that seems to be best.
+add    Mod1    = Alt_L
 add    Mod2    = Num_Lock
 add    Mod4    = Super_R
 add    Mod5    = Mode_switch ISO_Level3_Shift
