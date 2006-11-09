@@ -32,8 +32,8 @@ fi
 #run_if_executable ~/bin/xwrits &
 run_if_executable workrave &
 
-# FIXME: issues relating to kde/sawfish combo?
-#run_if_executable xscreensaver -no-splash &
+# N.B. xscreensaver doesn't play nice with KDEWM=sawfish
+run_if_executable xscreensaver -no-splash &
 
 echo "### watchlogs ..."
 run_if_executable watchlogs-system &
