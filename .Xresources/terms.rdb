@@ -295,6 +295,11 @@ XTerm.VT100.JumpScroll: true
 /* Note dabbrev-expand needs ./configure --dabbrev-expand and
    even that doesn't work on FC4 ... */
 
+/*  Unknown event type :   Btn6Down :-(
+                     <Btn6Down>,<Btn6Up>: string(0x1b) string("[1;2C")\n\
+                     <Btn7Down>,<Btn7Up>: string(0x1b) string("[1;2D")\n\
+*/
+
 XTerm.vt100.translations: #override XTERM_DEFAULT_TRANSLATIONS
 xterm.vt100.translations: #override XTERM_DEFAULT_TRANSLATIONS
 
