@@ -18,4 +18,7 @@ right_margin=0
 #right_margin=90
 watchlogs_width=$(( (dpy_width - right_margin) / font_char_width ))
 
-Eterm -t watchlogs-system -g ${watchlogs_width}x${watchlogs_height}+0-0
+font=smoothansi
+rxvt -ip -fn $font -fb $font -tr -g ${watchlogs_width}x${watchlogs_height}+0-0 -e watchlogs ~/.watchlogs/system.d
+#aterm -fn $font -fb $font -tr -g ${watchlogs_width}x${watchlogs_height}+0-0 -e watchlogs ~/.watchlogs/system.d
+#Eterm -t watchlogs-system -g ${watchlogs_width}x${watchlogs_height}+0-0
