@@ -18,6 +18,9 @@
 #define TERM_FG rgb:bb/bb/bb
 #define TERM_BG black
 
+#define TERM_BD white
+#define TERM_UL rgb:e0/e0/33
+
 #define MENU_FG white
 #define MENU_BG black
 
@@ -25,6 +28,9 @@
 
 #define TERM_FG black
 #define TERM_BG rgb:ee/ee/ee
+
+#define TERM_BD black
+#define TERM_UL blue
 
 #define MENU_FG black
 #define MENU_BG rgb:ee/ee/ee
@@ -56,42 +62,38 @@ nxterm*SimpleMenu*foreground: MENU_FG
 
 xterm*boldMode: false
 
-#ifdef BLACK_BG_XTERMS
+*VT100*colorBD: TERM_BD
+*VT100*colorUL: TERM_UL
 
-*VT100*colorBD: white
-*VT100*colorUL: RGB:e0/e0/33
-
-#else
-
-*VT100*colorBD: black
-*VT100*colorUL: blue
-
-#endif
+XTerm*colorBD:  TERM_BD
+XTerm*colorUL:  TERM_UL
 
 ! }}}
 ! {{{ other colours
 
-*xterm*color0: rgb:00/00/00
-*xterm*color1: rgb:aa/00/00
-*xterm*color2: rgb:00/88/00
-*xterm*color3: rgb:aa/55/22
-*xterm*color4: rgb:10/00/b6
-*xterm*color5: rgb:aa/00/aa
-!*xterm*color6: rgb:00/aa aa
-*xterm*color6: rgb:79/ae/a6
-*xterm*color7: rgb:e0/e0/e0
-*xterm*color8: rgb:55/55/55
-*xterm*color9: rgb:ff/44/44
-!*xterm*color10: rgb:44/ff/44
-*xterm*color10: rgb:9e/db/96
-!*xterm*color11: rgb:ff/ff/44
-*xterm*color11: rgb:f7/ff/a6
-!*xterm*color12: rgb:44/44/ff
-*xterm*color12: rgb:51/55/c8
-*xterm*color13: rgb:ff/44/ff
-!*xterm*color14: rgb:44/ff/ff
-*xterm*color14: rgb:be/eb/f4
-*xterm*color15: rgb:ff/ff/ff
+! N.B. updates here should be reflected in ~/.Eterm/themes/base.cfg
+
+XTerm*color0: rgb:00/00/00
+XTerm*color1: rgb:aa/00/00
+XTerm*color2: rgb:00/88/00
+XTerm*color3: rgb:aa/55/22
+XTerm*color4: rgb:10/00/b6
+XTerm*color5: rgb:aa/00/aa
+!XTerm*color6: rgb:00/aa aa
+XTerm*color6: rgb:79/ae/a6
+XTerm*color7: rgb:e0/e0/e0
+XTerm*color8: rgb:55/55/55
+XTerm*color9: rgb:ff/44/44
+!XTerm*color10: rgb:44/ff/44
+XTerm*color10: rgb:9e/db/96
+!XTerm*color11: rgb:ff/ff/44
+XTerm*color11: rgb:f7/ff/a6
+!XTerm*color12: rgb:44/44/ff
+XTerm*color12: rgb:51/55/c8
+XTerm*color13: rgb:ff/44/ff
+!XTerm*color14: rgb:44/ff/ff
+XTerm*color14: rgb:be/eb/f4
+XTerm*color15: rgb:ff/ff/ff
 
 ! }}}
 ! {{{ fonts
