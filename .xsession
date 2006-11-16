@@ -4,8 +4,6 @@ host=${HOST:-$HOSTNAME}
 host=${host%%.*}
 exec 1> ~/.xsession-my-errors.${host} 2>&1
 
-PREFER_SAWFISH=
-
 . ~/.shared_env
 
 echo -n "### .xsession started: "
@@ -35,19 +33,16 @@ for dir in ~/.X_fonts ~/.truetype; do
 done
 xset fp rehash
 
-if [ -n "$PREFER_SAWFISH" ]; then
-  if executable_p sawfish; then
-    export KDEWM=sawfish
-  else
-    echo "sawfish not executable :-("
-  fi
+if executable_p openbox; then
+  export KDEWM=openbox
+  kdetrayproxy &
 fi
 
 # Note that ~/.cfg/SESSION/.cfg-post.d/SESSION ensures
 # that there is a symlink from within ~/.kde/Autostart
 # to .xsession-progs so we can exec if starting kde,
 # otherwise we need to start .xsession-progs here.
-if [ -z "$PREFER_SAWFISH" ] && executable_p startkde; then
+if executable_p startkde; then
   exec startkde
 elif executable_p kde; then
   exec kde
@@ -55,10 +50,7 @@ fi
 
 echo "startkde and kde both not executable :-("
 
-if executable_p sawfish; then
-  echo "### sawfish ..."
-  sawfish &
-elif executable_p gnome-session; then
+if executable_p gnome-session; then
   gnome-session &
 else
   # oh fuck
