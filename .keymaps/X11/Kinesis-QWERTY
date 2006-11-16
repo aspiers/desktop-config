@@ -57,7 +57,7 @@
 ! The "DownArrow" key generates Up
 ! The "Alt" key generates Delete, and has no modifiers
 ! The "Alt" key generates Meta_R
-! The "Ctrl" key generates Hyper_R, and the Mod4 modifier
+! The "Ctrl" key generates Super_R, and the Mod4 modifier
 ! The "Delete" key generates Meta_L, and the Mod1 modifier
 ! The "Home" key generates Alt_L, and the Mod2 modifier, for synergy
 ! The "End" key generates Escape
@@ -140,7 +140,7 @@ keycode 0x23 =	bracketright	braceright
 keycode 0x25 =	Control_L
 keycode 0x40 =	Delete
 keycode 0x71 =	Meta_R
-keycode 0x6D =	Hyper_R
+keycode 0x6D =	Super_R
 keycode 0x16 =	BackSpace
 keycode 0x6B =	Meta_L
 keycode 0x61 =	Alt_L
@@ -165,4 +165,4 @@ add    Mod1    = Meta_L Meta_R
 !add   Mod2    = Mode_switch
 !add    Mod2    = Alt_L Alt_R
 add    Mod2    = Alt_L
-add    Mod4    = Hyper_R
+add    Mod4    = Super_R
