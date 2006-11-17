@@ -21,7 +21,7 @@
 </placement>
 
 <theme>
-  <name>Mikachu</name>
+  <name>orang</name>
   <titleLayout>NLIMC</titleLayout>
   <titleNumber>yes</titleNumber>
   <!--
@@ -96,38 +96,11 @@
     <action name="Desktop"><desktop>4</desktop><dialog>yes</dialog></action>
   </keybind>
 
-
   <keybind key="A-W-comma">
     <action name="SendToDesktopLeft"><wrap>no</wrap></action>
   </keybind>
   <keybind key="A-W-period">
     <action name="SendToDesktopRight"><wrap>no</wrap></action>
-  </keybind>
-
-  <keybind key="W-m">
-    <action name="ToggleMaximizeFull"/>
-  </keybind>
-  <keybind key="W-d">
-    <action name="ToggleShowDesktop"/>
-  </keybind>
-  <keybind key="W-i">
-    <action name="Iconify"/>
-  </keybind>
-  <keybind key="W-l">
-    <action name="Lower"/>
-  </keybind>
-  <keybind key="W-space">
-    <action name="Raise"/>
-  </keybind>
-
-  <keybind key="A-F4">
-    <action name="Close"/>
-  </keybind>
-  <keybind key="W-q">
-    <action name="Close"/>
-  </keybind>
-  <keybind key="S-W-q">
-    <action name="Kill"/>
   </keybind>
 
   <keybind key="W-slash">
@@ -174,6 +147,41 @@
   </keybind>
   <keybind key="C-W-Down">
     <action name="GrowToEdgeSouth"/>
+  </keybind>
+
+  <keybind key="W-m">
+    <action name="ToggleMaximizeFull"/>
+  </keybind>
+  <keybind key="W-d">
+    <action name="ToggleShowDesktop"/>
+  </keybind>
+  <keybind key="W-i">
+    <action name="Iconify"/>
+  </keybind>
+  <keybind key="W-l">
+    <action name="Lower"/>
+  </keybind>
+  <keybind key="W-space">
+    <action name="Raise"/>
+  </keybind>
+  <keybind key="A-F4">
+    <action name="Close"/>
+  </keybind>
+  <keybind key="W-q">
+    <action name="Close"/>
+  </keybind>
+  <keybind key="S-W-q">
+    <action name="Kill"/>
+  </keybind>
+
+  <keybind key="C-W-l">
+    <action name="Execute"><execute>xscreensaver-command -activate</execute></action>
+  </keybind>
+  <keybind key="A-W-l">
+    <action name="Execute"><execute>xscreensaver-command -activate</execute></action>
+  </keybind>
+  <keybind key="C-A-W-l">
+    <action name="Execute"><execute>xscreensaver-command -lock</execute></action>
   </keybind>
 </keyboard>
 
@@ -444,4 +452,3 @@ Use devilspie instead, ubiquitous across window managers.
 -->
 
 </openbox_config>
-
