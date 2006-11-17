@@ -1,0 +1,4 @@
+(if (matches (window_name) "GKrellM.*Conf")
+   (begin
+     (pin)
+     (above)))
