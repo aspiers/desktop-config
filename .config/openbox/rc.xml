@@ -83,6 +83,20 @@
     <action name="DesktopRight"><wrap>no</wrap></action>
   </keybind>
 
+  <keybind key="W-1">
+    <action name="Desktop"><desktop>1</desktop><dialog>yes</dialog></action>
+  </keybind>
+  <keybind key="W-2">
+    <action name="Desktop"><desktop>2</desktop><dialog>yes</dialog></action>
+  </keybind>
+  <keybind key="W-3">
+    <action name="Desktop"><desktop>3</desktop><dialog>yes</dialog></action>
+  </keybind>
+  <keybind key="W-4">
+    <action name="Desktop"><desktop>4</desktop><dialog>yes</dialog></action>
+  </keybind>
+
+
   <keybind key="A-W-comma">
     <action name="SendToDesktopLeft"><wrap>no</wrap></action>
   </keybind>
@@ -163,10 +177,10 @@
 
   <context name="Desktop">
     <mousebind button="Up" action="Press">
-      <action name="DesktopLeft"><wrap>no</wrap></action>
+      <action name="DesktopLeft"><wrap>no</wrap><dialog>yes</dialog></action>
     </mousebind>
     <mousebind button="Down" action="Press">
-      <action name="DesktopRight"><wrap>no</wrap></action>
+      <action name="DesktopRight"><wrap>no</wrap><dialog>yes</dialog></action>
     </mousebind>
     <mousebind button="Left" action="Press">
       <action name="ShowMenu"><menu>apps-menu</menu></action>
@@ -196,10 +210,10 @@
       <action name="ShowMenu"><menu>client-menu</menu></action>
     </mousebind>
     <mousebind button="C-A-Up" action="Press">
-      <action name="DesktopLeft"><wrap>no</wrap></action>
+      <action name="DesktopLeft"><wrap>no</wrap><dialog>yes</dialog></action>
     </mousebind>
     <mousebind button="C-A-Down" action="Press">
-      <action name="DesktopRight"><wrap>no</wrap></action>
+      <action name="DesktopRight"><wrap>no</wrap><dialog>yes</dialog></action>
     </mousebind>
     <mousebind button="S-C-A-Up" action="Click">
       <action name="SendToDesktopLeft"/>
@@ -384,9 +398,26 @@
   <!-- -->
 </menu>
 
+<!--
+
+Use devilspie instead, ubiquitous across window managers.
+
 <applications>
-  <application name="watchlogs">
-    <decor>no</decor>
+  <application name="Rxvt">
+    <decor>false</decor>
+    <shade>no</shade>
+    <focus>yes</focus>
+    <desktop>all</desktop>
+    <layer>below</layer>
+    <iconic>no</iconic>
+    <skip_pager>no</skip_pager>
+    <skip_taskbar>yes</skip_taskbar>
+    <fullscreen>no</fullscreen>
+    <maximized>false</maximized>
+  </application>
+
+  <application name="Gkrellm">
+    <decor>false</decor>
     <shade>no</shade>
     <focus>yes</focus>
     <desktop>all</desktop>
@@ -397,19 +428,8 @@
     <fullscreen>no</fullscreen>
     <maximized>false</maximized>
   </application>
-
-  <application name="gkrellm">
-    <decor>no</decor>
-    <shade>no</shade>
-    <focus>yes</focus>
-    <desktop>all</desktop>
-    <layer>below</layer>
-    <iconic>no</iconic>
-    <skip_pager>yes</skip_pager>
-    <skip_taskbar>yes</skip_taskbar>
-    <fullscreen>no</fullscreen>
-    <maximized>true</maximized>
-  </application>
 </applications>
+-->
 
 </openbox_config>
+
