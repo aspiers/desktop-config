@@ -19,6 +19,7 @@ right_margin=0
 watchlogs_width=$(( (dpy_width - right_margin) / font_char_width ))
 
 font=smoothansi
-rxvt -fn $font +sk +sw -tr -g ${watchlogs_width}x${watchlogs_height}+0-0 -e watchlogs ~/.watchlogs/system.d
+urxvt -fn $font +sk +sw +sb -name XTerm -tr -tint white -sh 70 -g ${watchlogs_width}x${watchlogs_height}+0-0 -e watchlogs ~/.watchlogs/system.d
+#rxvt -fn $font +sk +sw -tr -g ${watchlogs_width}x${watchlogs_height}+0-0 -e watchlogs ~/.watchlogs/system.d
 #aterm -fn $font -fb $font -tr -g ${watchlogs_width}x${watchlogs_height}+0-0 -e watchlogs ~/.watchlogs/system.d
 #Eterm -t watchlogs-system -g ${watchlogs_width}x${watchlogs_height}+0-0
