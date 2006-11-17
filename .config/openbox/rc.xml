@@ -113,6 +113,12 @@
   <keybind key="W-i">
     <action name="Iconify"/>
   </keybind>
+  <keybind key="W-l">
+    <action name="Lower"/>
+  </keybind>
+  <keybind key="W-space">
+    <action name="Raise"/>
+  </keybind>
 
   <keybind key="A-F4">
     <action name="Close"/>
