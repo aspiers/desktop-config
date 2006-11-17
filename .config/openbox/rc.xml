@@ -182,6 +182,12 @@
     <mousebind button="Down" action="Press">
       <action name="DesktopRight"><wrap>no</wrap><dialog>yes</dialog></action>
     </mousebind>
+    <mousebind button="C-A-Up" action="Press">
+      <action name="DesktopLeft"><wrap>no</wrap><dialog>yes</dialog></action>
+    </mousebind>
+    <mousebind button="C-A-Down" action="Press">
+      <action name="DesktopRight"><wrap>no</wrap><dialog>yes</dialog></action>
+    </mousebind>
     <mousebind button="Left" action="Press">
       <action name="ShowMenu"><menu>apps-menu</menu></action>
     </mousebind> 
