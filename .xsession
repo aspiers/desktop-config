@@ -33,6 +33,13 @@ for dir in ~/.X_fonts ~/.truetype; do
 done
 xset fp rehash
 
+echo "### devilspie ..."
+if executable_p devilspie; then
+  devilspie >& ~/.devilspie-${HOST%%.*}.log &
+else
+  echo "Warning: devilspie not executable"
+fi
+
 if executable_p openbox; then
   export KDEWM=openbox
   kdetrayproxy &
