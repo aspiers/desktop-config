@@ -60,7 +60,7 @@ obtain_lock () {
   cmd="$2"
 
   if mkdir "$lock" 2>/dev/null; then
-    echo "got lock $lock" >&2
+    #echo "got lock $lock" >&2
     return 0
   fi
 
