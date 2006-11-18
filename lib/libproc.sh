@@ -14,11 +14,13 @@ run_if_executable () {
     fi
 }
 
+# Checks for a named process running as me
 process_running_my_uid () {
     proc="$1"
     pgrep -u "`id -un`" "$proc" >/dev/null
 }
 
+# Runs a named process unless it's already running as me
 run_unless_running () {
     prog="$1"; shift
     if ! executable_p "$prog"; then
@@ -27,6 +29,9 @@ run_unless_running () {
     process_running_my_uid "$prog" || "$prog" "$@"
 }
 
+# Calculate the time a process was started.  Broken; use
+# ttrack-age which is a cleaner, more portable, userspace-based
+# solution anyway.
 process_starttime () {
     echo "process_starttime broken!" >&2
     return 1
