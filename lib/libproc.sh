@@ -29,6 +29,64 @@ run_unless_running () {
     process_running_my_uid "$prog" || "$prog" "$@"
 }
 
+# obtain_lock LOCKFILE COMMAND
+# 
+# Obtains a lock via mkdir LOCKFILE, to protect against COMMAND
+# running concurrently.  Returns success (zero) iff lock was obtained.
+# Cross-checks lock with process table and does the sensible thing in
+# each case.
+#
+# N.B. Any code calling this function is responsible for clearing
+# the lock when COMMAND stops!
+obtain_lock () {
+  if [ $# != 2 ]; then
+    echo "ERROR: Usage: obtain_lock LOCKFILE COMMAND" >&2
+    return 1
+  fi
+
+  lock="$1"
+  cmd="$2"
+
+  if mkdir "$lock" 2>/dev/null; then
+    echo "got lock $lock" >&2
+    return 0
+  fi
+
+  echo "$lock already exists!"
+  echo "Looking for running processes ..."
+  # -f is needed since $cmd could be a shell script in which case
+  # $0 would be the interpreter not $cmd itself.
+  for pid in $( pgrep -f "$cmd" ); do
+    [ "$pid" != $$ ] && pids="$pid $pids"
+  done
+  if [ -z "$pids" ]; then
+    if ! [ -t 0 ]; then
+      echo -n "None found; rmdir $lock manually."
+      return 1
+    fi
+    echo -n "None found; if lock is stale, remove it now? (y/n) "
+    read confirm
+    case "$confirm" in
+      y*|Y*)
+        if rmdir "$lock"; then
+          echo "Removed $lock, now re-run."
+        else
+          # rmdir will output an error
+          return 1
+        fi
+        ;;
+      *)
+        echo "Not removing lock."
+    esac
+    return 1
+  else
+    pids="${pids% }"
+    pids="${pids// /,}"
+    ps -fp "$pids"
+  fi
+  return 1
+}
+
 # Calculate the time a process was started.  Broken; use
 # ttrack-age which is a cleaner, more portable, userspace-based
 # solution anyway.
