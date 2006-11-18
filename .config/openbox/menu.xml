@@ -1,50 +1,143 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <openbox_menu xmlns="http://openbox.org/"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="http://openbox.org/
-                file:///usr/share/openbox/menu.xsd">
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://openbox.org/
+                                  file:///usr/share/openbox/menu.xsd">
 
-<menu id="games-menu" label="Games">
-  <item label="Crack-Attack">
-    <action name="Execute"><execute>crack-attack</execute></action>
-  </item>
-  <item label="XFRisk">
-    <action name="Execute"><execute>xfrisk</execute></action>
-  </item>
-  <item label="Quake III">
-    <action name="Execute"><execute>quake3</execute></action>
-  </item>
-</menu>
+  <menu id="games-menu" label="Games">
+    <item label="crafty">
+      <action name="Execute"><execute>xcrafty</execute></action>
+    </item>
+    <item label="FICS">
+      <action name="Execute"><execute>xterm -e xcrafty -ics -icshost freechess.org -icshelper timeseal</execute></action>
+    </item>
+  </menu>
 
-<menu id="apps-menu" label="Applications">
-  <item label="Xterm">
-    <action name="Execute"><execute>xterm</execute></action>
-  </item>
-  <item label="Mozilla">
-    <action name="Execute"><execute>mozilla</execute></action>
-  </item>
-  <item label="Gaim">
-    <action name="Execute"><execute>gaim</execute></action>
-  </item>
-  <item label="Quark">
-    <action name="Execute"><execute>strange-quark</execute></action>
-  </item>
-  <separator />
-  <menu id="games-menu" />
-</menu>
+  <menu id="browser-menu" label="Browsers menu">
+    <item label="firefox">
+      <action name="Execute"><execute>firefox</execute></action>
+    </item>
+    <item label="galeon">
+      <action name="Execute"><execute>galeon</execute></action>
+    </item>
+    <item label="konqueror">
+      <action name="Execute"><execute>konqueror</execute></action>
+    </item>
+    <item label="opera">
+      <action name="Execute"><execute>opera</execute></action>
+    </item>
+    <item label="Mozilla">
+      <action name="Execute"><execute>mozilla</execute></action>
+    </item>
+    <item label="Netscape Navigator">
+      <action name="Execute"><execute>netscape-navigator</execute></action>
+    </item>
+    <item label="Netscape Communicator">
+      <action name="Execute"><execute>netscape-communicator</execute></action>
+    </item>
+  </menu>
 
-<menu id="root-menu" label="Openbox 3">
-  <item label="ObConf">
-    <action name="Execute"><execute>obconf</execute></action>
-  </item>
-  <item label="Reconfigure">
-    <action name="Reconfigure" />
-  </item>
-  <separator />
-  <item label="Exit">
-    <action name="Exit" />
-  </item>
-</menu>
+  <menu id="comms-menu" label="Communications menu">
+    <item label="gaim">
+      <action name="Execute"><execute>gaim</execute></action>
+    </item>
+    <item label="X-Chat">
+      <action name="Execute"><execute>xchat</execute></action>
+    </item>
+  </menu>
+
+  <menu id="audio-menu" label="Audio menu">
+    <item label="xmms">
+      <action name="Execute"><execute>xmms</execute></action>
+    </item>
+    <separator />
+    <item label="kmix">
+      <action name="Execute"><execute>kmix</execute></action>
+    </item>
+    <item label="gnome ALSA mixer">
+      <action name="Execute"><execute>gnome-alsamixer</execute></action>
+    </item>
+    <item label="envy24control">
+      <action name="Execute"><execute>envy24control</execute></action>
+    </item>
+    <separator />
+    <item label="grip">
+      <action name="Execute"><execute>grip</execute></action>
+    </item>
+    <item label="easytag">
+      <action name="Execute"><execute>easytag</execute></action>
+    </item>
+    <item label="gtkpod">
+      <action name="Execute"><execute>gtkpod</execute></action>
+    </item>
+  </menu>
+
+  <menu id="office-menu" label="Office menu">
+    <item label="OpenOffice">
+      <action name="Execute"><execute>ooffice</execute></action>
+    </item>
+    <item label="GnuCash">
+      <action name="Execute"><execute>gnucash</execute></action>
+    </item>
+    <item label="Gnumeric">
+      <action name="Execute"><execute>gnumeric</execute></action>
+    </item>
+  </menu>
+
+  <menu id="graphics-menu" label="Graphics menu">
+    <item label="The GIMP">
+      <action name="Execute"><execute>gimp</execute></action>
+    </item>
+    <item label="gqview">
+      <action name="Execute"><execute>gqview</execute></action>
+    </item>
+  </menu>
+
+  <menu id="utils-menu" label="Utils menu">
+    <item label="gkrellm">
+      <action name="Execute"><execute>gkrellm</execute></action>
+    </item>
+    <item label="kcalc">
+      <action name="Execute"><execute>kcalc</execute></action>
+    </item>
+    <item label="xmag">
+      <action name="Execute"><execute>xmag</execute></action>
+    </item>
+  </menu>
+
+  <menu id="root-menu" label="Openbox 3">
+    <menu id="browsers-menu" />
+    <menu id="comms-menu" />
+    <menu id="graphics-menu" />
+    <menu id="audio-menu" />
+    <menu id="office-menu" />
+    <menu id="utils-menu" />
+    <menu id="games-menu" />
+    <separator />
+    <item label="system logs">
+      <action name="Execute"><execute>watchlogs-system</execute></action>
+    </item>
+    <separator />
+    <item label="ObConf">
+      <action name="Execute"><execute>obconf</execute></action>
+    </item>
+    <item label="Reconfigure">
+      <action name="Reconfigure" />
+    </item>
+    <separator />
+    <item label="xscreensaver">
+      <action name="Execute"><execute>xscreensaver-demo</execute></action>
+    </item>
+    <item label="Save screen">
+      <action name="Execute"><execute>xscreensaver-command -activate</execute></action>
+    </item>
+    <item label="Lock screen">
+      <action name="Execute"><execute>xscreensaver-command -lock</execute></action>
+    </item>
+    <item label="Exit">
+      <action name="Exit" />
+    </item>
+  </menu>
 
 </openbox_menu>
