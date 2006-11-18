@@ -51,7 +51,7 @@ run_unless_running () {
 #   trap clean_up EXIT
 #
 obtain_lock () {
-  if [ $# != 2 ]; then
+  if [ $# != 2 ] || [ -z "$2" ]; then
     echo "ERROR: Usage: obtain_lock LOCKFILE COMMAND" >&2
     return 1
   fi
@@ -65,7 +65,7 @@ obtain_lock () {
   fi
 
   echo "$lock already exists!"
-  echo "Looking for running processes ..."
+  echo "Looking for running processes matching '$cmd' ..."
   # -f is needed since $cmd could be a shell script in which case
   # $0 would be the interpreter not $cmd itself.
   for pid in $( pgrep -f "$cmd" ); do
