@@ -38,6 +38,18 @@ run_unless_running () {
 #
 # N.B. Any code calling this function is responsible for clearing
 # the lock when COMMAND stops!
+# 
+# Sample usage follows:
+# 
+#   clean_up () {
+#     [ -d "$lock" ] && rmdir "$lock"
+#   }  
+#   
+#   obtain_lock "$lock" "$cmd" || exit 1
+#   # Signal must be trapped *after* obtaining lock, otherwise
+#   # failure to obtain the lock would remove an active lock.
+#   trap clean_up EXIT
+#
 obtain_lock () {
   if [ $# != 2 ]; then
     echo "ERROR: Usage: obtain_lock LOCKFILE COMMAND" >&2
