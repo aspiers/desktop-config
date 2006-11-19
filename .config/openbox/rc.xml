@@ -21,7 +21,7 @@
 </placement>
 
 <theme>
-  <name>orang</name>
+  <name>Mikachu</name>
   <titleLayout>NLIMC</titleLayout>
   <titleNumber>yes</titleNumber>
   <!--
@@ -172,6 +172,10 @@
   </keybind>
   <keybind key="S-W-q">
     <action name="Kill"/>
+  </keybind>
+
+  <keybind key="W-Return">
+    <action name="ShowMenu"><menu>root-menu</menu></action>
   </keybind>
 
   <keybind key="C-W-l">
