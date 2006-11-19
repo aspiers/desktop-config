@@ -107,6 +107,10 @@
   </menu>
 
   <menu id="root-menu" label="Openbox 3">
+    <item label="Check Novell mail">
+      <action name="Execute"><execute>fetch-novell-mail-now</execute></action>
+    </item>
+    <separator />
     <menu id="browsers-menu" />
     <menu id="comms-menu" />
     <menu id="graphics-menu" />
@@ -115,7 +119,7 @@
     <menu id="utils-menu" />
     <menu id="games-menu" />
     <separator />
-    <item label="system logs">
+    <item label="System logs">
       <action name="Execute"><execute>watchlogs-system</execute></action>
     </item>
     <separator />
