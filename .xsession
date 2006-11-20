@@ -35,7 +35,7 @@ xset fp rehash
 
 echo "### devilspie ..."
 if executable_p devilspie; then
-  devilspie >& ~/.devilspie-${HOST%%.*}.log &
+  devilspie -a >& ~/.devilspie-${HOST%%.*}.log &
 else
   echo "Warning: devilspie not executable"
 fi
