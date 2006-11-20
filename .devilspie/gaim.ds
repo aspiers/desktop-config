@@ -1,0 +1,4 @@
+(if (and (is (window_role) "conversation") (is (window_class) "Gaim"))
+   (begin
+     (pin)
+     (above)))
