@@ -107,4 +107,14 @@ Second value of WM_CLASS seems to correspond 100% with window_class
 
 file:///usr/share/gtk-doc/html/libwnck/libwnck-WnckApplication.html#wnck-application-get-name implies that application_name is also unpredictable
 
-Recommendation: either match on window_name or window_class
+Recommendation: match on (in decreasing order of specificity):
+
+  - window_name, e.g. "Slashdot" in firefox
+    use devilspie's (debug) to determine value
+
+  - window_role, e.g. "conversation" in gaim
+    use xprop | grep WM_WINDOW_ROLE to determine value
+
+  - window_class, e.g. "Rxvt"
+    use devilspie's (debug) to determine value
+
