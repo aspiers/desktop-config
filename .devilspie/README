@@ -39,3 +39,72 @@ From src/parser.c:
   { "undecorate", func_undecorate, FALSE },
   { "wintype", func_wintype, FALSE },
   { "opacity", func_opacity, FALSE },
+
+e.g.
+
+devilspie debug says:
+
+Window Title: 'Dan Beimborn'; Application Name: 'gaim'; Class: 'Gaim'
+
+xprop says:
+WM_CLASS(STRING) = "gaim", "Gaim"
+WM_ICON_NAME(STRING) = "Dan Beimborn"
+WM_NAME(STRING) = "Dan Beimborn"
+WM_WINDOW_ROLE(STRING) = "conversation"
+
+OR
+
+devilspie debug says:
+
+Window Title: 'SMART Package Manager - SUSE Wiki - Mozilla Firefox'; Application Name: 'Firefox'; Class: 'Firefox-bin'
+
+xprop says:
+WM_CLASS(STRING) = "Gecko", "Firefox-bin"
+WM_ICON_NAME(STRING) = "SMART Package Manager - SUSE Wiki - Mozilla Firefox"
+WM_NAME(STRING) = "SMART Package Manager - SUSE Wiki - Mozilla Firefox"
+(no WM_WINDOW_ROLE listed)
+
+OR
+
+devilspie debug says:
+
+Window Title: 'GKrellM Configuration'; Application Name: 'gkrellm'; Class: 'Gkrellm'
+
+xprop says:
+WM_CLASS(STRING) = "Gkrellm_conf", "Gkrellm"
+WM_ICON_NAME(STRING) = "GKrellM Configuration"
+WM_NAME(STRING) = "GKrellM Configuration"
+(no WM_WINDOW_ROLE listed)
+
+devilspie uses libwnck:
+
+file:///usr/share/gtk-doc/html/libwnck/libwnck-WnckWindow.html
+
+in src/matchers.c:
+
+func_window_name      => wnck_window_get_name
+func_application_name => wnck_application_get_name
+func_window_role      => my_wnck_get_string_property_latin1(... "WM_WINDOW_ROLE")
+func_window_class     => wnck_class_group_get_res_class (wnck_window_get_class_group
+
+in src/actions.c:
+
+  g_print(_("Window Title: '%s'; Application Name: '%s'; Class: '%s'; Geometry: %dx%d+%d+%d\n"),
+          wnck_window_get_name (c->window),
+          wnck_application_get_name (wnck_window_get_application (c->window)),
+          wnck_class_group_get_res_class (wnck_window_get_class_group (c->window)),
+          width, height, xoffset, yoffset);
+
+so devilspie debug should read:
+
+"Window Name: '%s'; Application Name: '%s'; Window Class: '%s'"
+
+and window_role is not debugged but refers to WM_WINDOW_ROLE
+
+WM_NAME seems to correspond 100% with window_name
+First value of WM_CLASS from xprop seems unpredictable
+Second value of WM_CLASS seems to correspond 100% with window_class
+
+file:///usr/share/gtk-doc/html/libwnck/libwnck-WnckApplication.html#wnck-application-get-name implies that application_name is also unpredictable
+
+Recommendation: either match on window_name or window_class
