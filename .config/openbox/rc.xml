@@ -161,6 +161,9 @@
   <keybind key="W-l">
     <action name="Lower"/>
   </keybind>
+  <keybind key="W-s">
+    <action name="ToggleOmnipresent"/>
+  </keybind>
   <keybind key="W-space">
     <action name="Raise"/>
   </keybind>
