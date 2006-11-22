@@ -52,7 +52,7 @@ else
   echo "not in kde, not launching: $kdeapps"
 fi
 
-xterm -e screen &
+xterm &
 
 # Other programs we could run:
 #   kmix
