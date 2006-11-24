@@ -1,16 +1,11 @@
 #!/bin/bash
 
-typeset -a dpy_geometry
-#dpy_geometry=$( xwininfo -root | awk '/-geometry/ {print $2}' )
-dpy_geometry=($( xprop -root -notype 32i ' $0 $1\n' _NET_DESKTOP_GEOMETRY ))
-
-dpy_width=${dpy_geometry[1]}
-dpy_height=${dpy_geometry[2]}
+. $ZDOTDIR/lib/libdpy.sh
 
 # Each char in smoothansi is 13 pixels high by 6 pixels wide.
 font_char_width=6
 font_char_height=13
-# Take 10% of height:
+# Take 20% of height:
 watchlogs_height=$(( (dpy_height / 5) / font_char_height ))
 
 # Maybe allow some space on the right for gkrellm

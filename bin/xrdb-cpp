@@ -1,10 +1,25 @@
-#!/bin/sh
+#!/bin/bash
 #
-# Thanks to Greg Badros for the ideas here:
+# Thanks to Greg Badros for some of the ideas here:
 #
 # http://groups.google.co.uk/group/comp.windows.x/msg/8dcd8e161d2bc750?&hl=en
 #
 # or google for `cpp-sed-nl'.
 
-cpp -I $HOME/.Xresources "$@" | sed -e 's/@@/\
+. $ZDOTDIR/lib/libdpy.sh
+
+# FIXME: auto-detect
+# cpp -I ~/.Xresources .Xresources/all.rdb | awk '/Emacs.geometry/ {print $2}'
+font_char_width=8
+font_char_height=16
+
+# Take 80% of height:
+emacs_height=$(( (dpy_height * 4 / 5) / font_char_height ))
+emacs_height=20
+#emacs_width=$(( (dpy_width - right_margin) / font_char_width ))
+emacs_width=83
+
+cpp -I $HOME/.Xresources \
+    -DEMACS_GEOMETRY=${emacs_height}x${emacs_width} \
+    "$@" | sed -e 's/@@/\
 /g; s/[ \t]*$//g'

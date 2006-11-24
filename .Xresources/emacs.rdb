@@ -45,18 +45,11 @@ emacs.Foreground: RGB:F/F/E
   Note: emacs seems to increase the size by 6x2 on startup
   (on a 1024x768 display, anyhow).  So 78x42 actually ends
   up being 84x44.
+
+  N.B. We define EMACS_GEOMETRY in our xrdb-cpp wrapper.
  */
 
-#ifdef LAPTOP_SCREEN
-   Emacs.geometry: 78x42
-#else
-#  if OLD_GNU_EMACS
-     Emacs.geometry: 83x51
-#  else
-     emacs.geometry: 83x57
-     Emacs.geometry: 83x57
-#  endif
-#endif
+Emacs.geometry: EMACS_GEOMETRY
 
 ! }}} 
 ! {{{ font
