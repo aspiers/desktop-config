@@ -14,7 +14,7 @@
     </item>
   </menu>
 
-  <menu id="browser-menu" label="Browsers menu">
+  <menu id="browser-menu" label="Browsers">
     <item label="firefox">
       <action name="Execute"><execute>firefox</execute></action>
     </item>
@@ -38,7 +38,7 @@
     </item>
   </menu>
 
-  <menu id="comms-menu" label="Communications menu">
+  <menu id="comms-menu" label="Communications">
     <item label="gaim">
       <action name="Execute"><execute>gaim</execute></action>
     </item>
@@ -47,7 +47,7 @@
     </item>
   </menu>
 
-  <menu id="graphics-menu" label="Graphics menu">
+  <menu id="graphics-menu" label="Graphics">
     <item label="The GIMP">
       <action name="Execute"><execute>gimp</execute></action>
     </item>
@@ -56,7 +56,7 @@
     </item>
   </menu>
 
-  <menu id="audio-menu" label="Audio menu">
+  <menu id="audio-menu" label="Audio">
     <item label="xmms">
       <action name="Execute"><execute>xmms</execute></action>
     </item>
@@ -82,7 +82,7 @@
     </item>
   </menu>
 
-  <menu id="office-menu" label="Office menu">
+  <menu id="office-menu" label="Office">
     <item label="OpenOffice">
       <action name="Execute"><execute>ooffice</execute></action>
     </item>
@@ -94,7 +94,7 @@
     </item>
   </menu>
 
-  <menu id="utils-menu" label="Utils menu">
+  <menu id="utils-menu" label="Utils">
     <item label="gkrellm">
       <action name="Execute"><execute>gkrellm</execute></action>
     </item>
