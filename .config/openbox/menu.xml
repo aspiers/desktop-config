@@ -5,12 +5,12 @@
               xsi:schemaLocation="http://openbox.org/
                                   file:///usr/share/openbox/menu.xsd">
 
-  <menu id="games-menu" label="Games">
-    <item label="crafty">
-      <action name="Execute"><execute>xcrafty</execute></action>
+  <menu id="wwwoffle-menu" label="wwwoffle">
+    <item label="go online">
+      <action name="Execute"><execute>wwwoffle -online</execute></action>
     </item>
-    <item label="FICS">
-      <action name="Execute"><execute>xterm -e xcrafty -ics -icshost freechess.org -icshelper timeseal</execute></action>
+    <item label="go offline">
+      <action name="Execute"><execute>wwwoffle -offline</execute></action>
     </item>
   </menu>
 
@@ -44,6 +44,15 @@
     </item>
     <item label="X-Chat">
       <action name="Execute"><execute>xchat</execute></action>
+    </item>
+  </menu>
+
+  <menu id="graphics-menu" label="Graphics menu">
+    <item label="The GIMP">
+      <action name="Execute"><execute>gimp</execute></action>
+    </item>
+    <item label="gqview">
+      <action name="Execute"><execute>gqview</execute></action>
     </item>
   </menu>
 
@@ -85,15 +94,6 @@
     </item>
   </menu>
 
-  <menu id="graphics-menu" label="Graphics menu">
-    <item label="The GIMP">
-      <action name="Execute"><execute>gimp</execute></action>
-    </item>
-    <item label="gqview">
-      <action name="Execute"><execute>gqview</execute></action>
-    </item>
-  </menu>
-
   <menu id="utils-menu" label="Utils menu">
     <item label="gkrellm">
       <action name="Execute"><execute>gkrellm</execute></action>
@@ -106,11 +106,21 @@
     </item>
   </menu>
 
+  <menu id="games-menu" label="Games">
+    <item label="crafty">
+      <action name="Execute"><execute>xcrafty</execute></action>
+    </item>
+    <item label="FICS">
+      <action name="Execute"><execute>xterm -e xcrafty -ics -icshost freechess.org -icshelper timeseal</execute></action>
+    </item>
+  </menu>
+
   <menu id="root-menu" label="Openbox 3">
     <item label="Check Novell mail">
       <action name="Execute"><execute>sync-novell-mail-now</execute></action>
     </item>
     <separator />
+    <menu id="wwwoffle-menu" />
     <menu id="browsers-menu" />
     <menu id="comms-menu" />
     <menu id="graphics-menu" />

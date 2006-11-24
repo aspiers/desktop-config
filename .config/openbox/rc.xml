@@ -203,6 +203,12 @@
   <keybind key="W-v"><!-- Volume -->
     <action name="Execute"><execute>kmix</execute></action>
   </keybind>
+  <keybind key="W-w">
+    <action name="Execute"><execute>wwwoffle -online</execute></action>
+  </keybind>
+  <keybind key="W-W">
+    <action name="Execute"><execute>wwwoffle -offline</execute></action>
+  </keybind>
 </keyboard>
 
 <mouse>
