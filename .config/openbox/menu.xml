@@ -108,7 +108,7 @@
 
   <menu id="root-menu" label="Openbox 3">
     <item label="Check Novell mail">
-      <action name="Execute"><execute>fetch-novell-mail-now</execute></action>
+      <action name="Execute"><execute>sync-novell-mail-now</execute></action>
     </item>
     <separator />
     <menu id="browsers-menu" />
