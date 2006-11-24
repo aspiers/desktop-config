@@ -228,6 +228,9 @@
     <mousebind button="C-A-Down" action="Press">
       <action name="DesktopRight"><wrap>no</wrap><dialog>yes</dialog></action>
     </mousebind>
+    <mousebind button="C-A-S-Right" action="Press">
+      <action name="ShowMenu"><menu>root-menu</menu></action>
+    </mousebind>
     <mousebind button="Left" action="Press">
       <action name="ShowMenu"><menu>apps-menu</menu></action>
     </mousebind> 
@@ -260,6 +263,9 @@
     </mousebind>
     <mousebind button="C-A-Down" action="Press">
       <action name="DesktopRight"><wrap>no</wrap><dialog>yes</dialog></action>
+    </mousebind>
+    <mousebind button="C-A-S-Right" action="Press">
+      <action name="ShowMenu"><menu>root-menu</menu></action>
     </mousebind>
     <mousebind button="S-C-A-Up" action="Click">
       <action name="SendToDesktopLeft"/>
