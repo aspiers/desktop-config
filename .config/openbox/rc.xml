@@ -21,7 +21,7 @@
 </placement>
 
 <theme>
-  <name>Mikachu</name>
+  <name>TheBear</name>
   <titleLayout>NLIMC</titleLayout>
   <titleNumber>yes</titleNumber>
   <!--
@@ -208,6 +208,9 @@
   </keybind>
   <keybind key="W-S-w">
     <action name="Execute"><execute>wwwoffle -offline</execute></action>
+  </keybind>
+  <keybind key="W-C-w">
+    <action name="Execute"><execute>wwwoffle -fetch</execute></action>
   </keybind>
 </keyboard>
 

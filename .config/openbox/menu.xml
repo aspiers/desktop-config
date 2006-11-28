@@ -12,6 +12,9 @@
     <item label="go offline">
       <action name="Execute"><execute>wwwoffle -offline</execute></action>
     </item>
+    <item label="fetch">
+      <action name="Execute"><execute>wwwoffle -fetch</execute></action>
+    </item>
   </menu>
 
   <menu id="browser-menu" label="Browsers">
@@ -121,7 +124,7 @@
     </item>
     <separator />
     <menu id="wwwoffle-menu" />
-    <menu id="browsers-menu" />
+    <menu id="browser-menu" />
     <menu id="comms-menu" />
     <menu id="graphics-menu" />
     <menu id="audio-menu" />
