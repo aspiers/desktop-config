@@ -118,7 +118,7 @@
     </item>
   </menu>
 
-  <menu id="root-menu" label="Openbox 3">
+  <menu id="apps-menu" label="Applications">
     <item label="Check Novell mail">
       <action name="Execute"><execute>sync-novell-mail-now</execute></action>
     </item>
@@ -136,6 +136,9 @@
       <action name="Execute"><execute>watchlogs-system</execute></action>
     </item>
     <separator />
+  </menu>
+
+  <menu id="wm-menu" label="Openbox 3">
     <item label="ObConf">
       <action name="Execute"><execute>obconf</execute></action>
     </item>
