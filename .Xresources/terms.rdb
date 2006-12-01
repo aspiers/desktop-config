@@ -108,7 +108,7 @@ xterm*fontMenu*font##fontNum*Label:  label (fontName)@@\
 nxterm*VT100*font##fontNum:          fontName@@\
 nxterm*fontMenu*font##fontNum*Label: label (fontName)
 
-#ifdef LARGE_SCREEN
+#if WIDTH >= 1400
 *SimpleMenu*font: *helvetica*r*normal*12*
 
 ! Note: the default font is automatically inserted into the order
@@ -174,7 +174,7 @@ nxterm*Cursor: xterm
 ! }}}
 ! {{{ geometry
 
-! Could ifdef on LARGE_SCREEN here
+! Could ifdef on WIDTH here
 xterm.vt100.geometry: 92x40
 
 ! }}}

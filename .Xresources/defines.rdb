@@ -12,19 +12,3 @@
 #ifdef COLOR
 *customization: -color
 #endif
-
-#if WIDTH <= 800
-#define SMALL_SCREEN 1
-#undef  LARGE_SCREEN
-#endif
-
-#if WIDTH <= 1024
-#define LAPTOP_SCREEN
-#undef  LARGE_SCREEN
-#endif
-
-#if WIDTH >= 1600
-#undef  SMALL_SCREEN
-#undef  LAPTOP_SCREEN
-#define LARGE_SCREEN 1
-#endif

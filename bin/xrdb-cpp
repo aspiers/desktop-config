@@ -13,13 +13,22 @@
 font_char_width=8
 font_char_height=16
 
-# Take 80% of height:
-emacs_height=$(( (dpy_height * 4 / 5) / font_char_height ))
-emacs_height=20
+
+# Note: emacs used to seem to increase the size by 6x2 on startup (on
+# a 1024x768 display, anyhow).  So 78x42 actually ended up being
+# 84x44.  This doesn't happen any more, at least not on SLED10.  We
+# take 80% of height (watchlogs-system takes 20%) and then allow 50
+# pixels to account for the window title and emacs toolbar.
+# Whatever's left goes to the emacs frame.
+
+emacs_height=$(( ((dpy_height * 4 / 5) - 50) / font_char_height ))
 #emacs_width=$(( (dpy_width - right_margin) / font_char_width ))
 emacs_width=83
 
+# just to left of gkrellm
+emacs_position=-80+0
+
 cpp -I $HOME/.Xresources \
-    -DEMACS_GEOMETRY=${emacs_height}x${emacs_width} \
+    -DEMACS_GEOMETRY=${emacs_width}x${emacs_height}${emacs_position} \
     "$@" | sed -e 's/@@/\
 /g; s/[ \t]*$//g'
