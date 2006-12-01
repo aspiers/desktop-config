@@ -33,12 +33,6 @@
     <item label="Mozilla">
       <action name="Execute"><execute>mozilla</execute></action>
     </item>
-    <item label="Netscape Navigator">
-      <action name="Execute"><execute>netscape-navigator</execute></action>
-    </item>
-    <item label="Netscape Communicator">
-      <action name="Execute"><execute>netscape-communicator</execute></action>
-    </item>
   </menu>
 
   <menu id="comms-menu" label="Communications">
@@ -123,7 +117,6 @@
       <action name="Execute"><execute>sync-novell-mail-now</execute></action>
     </item>
     <separator />
-    <menu id="wwwoffle-menu" />
     <menu id="browser-menu" />
     <menu id="comms-menu" />
     <menu id="graphics-menu" />
@@ -131,19 +124,19 @@
     <menu id="office-menu" />
     <menu id="utils-menu" />
     <menu id="games-menu" />
+    <menu id="wwwoffle-menu" />
     <separator />
     <item label="System logs">
       <action name="Execute"><execute>watchlogs-system</execute></action>
     </item>
-    <separator />
   </menu>
 
   <menu id="wm-menu" label="Openbox 3">
-    <item label="ObConf">
-      <action name="Execute"><execute>obconf</execute></action>
-    </item>
     <item label="Reconfigure">
       <action name="Reconfigure" />
+    </item>
+    <item label="ObConf">
+      <action name="Execute"><execute>obconf</execute></action>
     </item>
     <separator />
     <item label="xscreensaver">
