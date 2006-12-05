@@ -218,6 +218,9 @@
   <keybind key="W-S-t">
     <action name="Execute"><execute>top-term</execute></action>
   </keybind>
+  <keybind key="C-W-S-t">
+    <action name="Execute"><execute>top-term htop</execute></action>
+  </keybind>
   <keybind key="W-v"><!-- Volume -->
     <action name="Execute"><execute>kmix</execute></action>
   </keybind>
