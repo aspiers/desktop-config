@@ -215,6 +215,9 @@
   <keybind key="W-t"><!-- Terminal -->
     <action name="Execute"><execute>xterm</execute></action>
   </keybind>
+  <keybind key="W-S-t">
+    <action name="Execute"><execute>top-term</execute></action>
+  </keybind>
   <keybind key="W-v"><!-- Volume -->
     <action name="Execute"><execute>kmix</execute></action>
   </keybind>
