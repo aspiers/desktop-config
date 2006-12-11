@@ -74,8 +74,21 @@
     <item label="easytag">
       <action name="Execute"><execute>easytag</execute></action>
     </item>
-    <item label="gtkpod">
-      <action name="Execute"><execute>gtkpod</execute></action>
+    <separator />
+    <item label="audacity">
+      <action name="Execute"><execute>audacity</execute></action>
+    </item>
+    <item label="ardour">
+      <action name="Execute"><execute>ardour</execute></action>
+    </item>
+    <item label="rosegarden">
+      <action name="Execute"><execute>rosegarden</execute></action>
+    </item>
+    <item label="qjackctl">
+      <action name="Execute"><execute>qjackctl</execute></action>
+    </item>
+    <item label="qsynth">
+      <action name="Execute"><execute>qsynth</execute></action>
     </item>
   </menu>
 
