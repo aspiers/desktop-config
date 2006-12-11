@@ -152,6 +152,12 @@
   <keybind key="W-m">
     <action name="ToggleMaximizeFull"/>
   </keybind>
+  <keybind key="S-W-m">
+    <action name="ToggleMaximizeVert"/>
+  </keybind>
+  <keybind key="C-W-m">
+    <action name="ToggleMaximizeHorz"/>
+  </keybind>
   <keybind key="W-d">
     <action name="ToggleShowDesktop"/>
   </keybind>
