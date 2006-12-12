@@ -21,9 +21,6 @@
     <item label="firefox">
       <action name="Execute"><execute>firefox</execute></action>
     </item>
-    <item label="galeon">
-      <action name="Execute"><execute>galeon</execute></action>
-    </item>
     <item label="konqueror">
       <action name="Execute"><execute>konqueror</execute></action>
     </item>
@@ -38,6 +35,9 @@
   <menu id="comms-menu" label="Communications">
     <item label="gaim">
       <action name="Execute"><execute>gaim</execute></action>
+    </item>
+    <item label="groupwise">
+      <action name="Execute"><execute>/opt/novell/groupwise/client/bin/groupwise</execute></action>
     </item>
     <item label="X-Chat">
       <action name="Execute"><execute>xchat</execute></action>
