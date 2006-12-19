@@ -135,6 +135,9 @@
     <menu id="graphics-menu" />
     <menu id="audio-menu" />
     <menu id="office-menu" />
+    <item label="vmware">
+      <action name="Execute"><execute>vmware</execute></action>
+    </item>
     <menu id="utils-menu" />
     <menu id="games-menu" />
     <menu id="wwwoffle-menu" />
