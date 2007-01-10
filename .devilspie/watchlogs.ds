@@ -1,4 +1,4 @@
-(if (is (window_name) "watchlogs")
+(if (matches (window_name) "^watchlogs.*")
    (begin
      (pin)
      (skip_tasklist)
