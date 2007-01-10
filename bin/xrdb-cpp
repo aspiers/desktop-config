@@ -28,7 +28,7 @@ emacs_width=83
 # just to left of gkrellm
 emacs_position=-80+0
 
-cpp -I $HOME/.Xresources \
+cpp -I $ZDOTDIR/.Xresources \
     -DEMACS_GEOMETRY=${emacs_width}x${emacs_height}${emacs_position} \
     "$@" | sed -e 's/@@/\
 /g; s/[ \t]*$//g'
