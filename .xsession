@@ -33,6 +33,9 @@ for dir in ~/.X_fonts ~/.truetype; do
 done
 xset fp rehash
 
+echo "### .xsession-prewm.d ..."
+. $ZDOT_RUN_HOOKS .xsession-prewm.d
+
 echo "### devilspie ..."
 if executable_p devilspie; then
   devilspie -a >& ~/.devilspie-${HOST%%.*}.log &
