@@ -3,6 +3,29 @@
 use strict;
 use warnings;
 
+use Getopt::Long;
+
+(my $ME = $0) =~ s,.*/,,;
+
+sub usage {
+  warn @_, "\n" if @_;
+
+  die <<EOUSAGE;
+Usage: $ME [options] [XSCREENSAVERRC]
+Options:
+  -h, --help             Show this help
+  -f, --full-path        Don't remove directory path from hacks
+EOUSAGE
+}
+
+my %opts;
+GetOptions(
+  \%opts,
+  'help|h',
+  'full-path|f'
+) or usage();
+usage() if $opts{help} or @ARGV > 1;
+
 my $rc = $ARGV[0] || "$ENV{HOME}/.xscreensaver";
 
 open(RC, $rc)
@@ -18,6 +41,8 @@ $hacks =~ s/\\\n//g;
 $hacks =~ s/\\n/\n/g;
 $hacks =~ s/^\s+//gm;
 $hacks =~ s/[ \t]{2,}/ /gm;
-$hacks =~ s!/usr/libexec/xscreensaver/!!g;
+unless ($opts{'full-path'}) {
+  $hacks =~ s!/usr/libexec/xscreensaver/!!g;
+}
 #$hacks =~ s! -?-root\b!!g;
 print $hacks;
