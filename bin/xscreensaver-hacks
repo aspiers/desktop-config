@@ -1,0 +1,23 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+my $rc = $ARGV[0] || "$ENV{HOME}/.xscreensaver";
+
+open(RC, $rc)
+  or die "Couldn't open($rc): $!\n";
+undef $/;
+my $config = <RC>;
+close(RC);
+
+$config =~ /^programs:\s*\\\n(.+?)\n\n/ms
+  or die "Couldn't find hacks in $rc!\n";
+my $hacks = $1;
+$hacks =~ s/\\\n//g;
+$hacks =~ s/\\n/\n/g;
+$hacks =~ s/^\s+//gm;
+$hacks =~ s/[ \t]{2,}/ /gm;
+$hacks =~ s!/usr/libexec/xscreensaver/!!g;
+#$hacks =~ s! -?-root\b!!g;
+print $hacks;
