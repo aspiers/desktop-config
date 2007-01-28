@@ -45,4 +45,5 @@ unless ($opts{'full-path'}) {
   $hacks =~ s!/usr/libexec/xscreensaver/!!g;
 }
 #$hacks =~ s! -?-root\b!!g;
+$hacks =~ s/\\\s*\Z//;
 print $hacks;
