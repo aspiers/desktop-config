@@ -72,8 +72,8 @@ obtain_lock () {
     [ "$pid" != $$ ] && pids="$pid $pids"
   done
   if [ -z "$pids" ]; then
-    if ! [ -t 0 ]; then
-      echo -n "None found; rmdir $lock manually."
+    if ! [ -t 0 ] || ! [ -t 1 ]; then
+      echo "None found; rmdir $lock manually."
       return 1
     fi
     echo -n "None found; if lock is stale, remove it now? (y/n) "
