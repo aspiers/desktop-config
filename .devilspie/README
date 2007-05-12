@@ -1,4 +1,19 @@
-From src/parser.c:
+# -*- mode: org -*-
+
+* Recommendation: match on (in decreasing order of specificity):
+
+  - window_name, e.g. "Slashdot" in firefox
+    use xprop | grep WM_NAME or devilspie's (debug) to determine value
+
+  - window_role, e.g. "conversation" in gaim
+    use xprop | grep WM_WINDOW_ROLE to determine value
+
+  - window_class, e.g. "Rxvt"
+    use xprop | grep WM_CLASS or devilspie's (debug) to determine value
+
+* Logic
+
+** From src/parser.c:
 
   /* Logical operations */
   { "is", func_is, FALSE },
@@ -40,7 +55,7 @@ From src/parser.c:
   { "wintype", func_wintype, FALSE },
   { "opacity", func_opacity, FALSE },
 
-e.g.
+** data collected
 
 devilspie debug says:
 
@@ -59,9 +74,9 @@ devilspie debug says:
 Window Title: 'SMART Package Manager - SUSE Wiki - Mozilla Firefox'; Application Name: 'Firefox'; Class: 'Firefox-bin'
 
 xprop says:
-WM_CLASS(STRING) = "Gecko", "Firefox-bin"
-WM_ICON_NAME(STRING) = "SMART Package Manager - SUSE Wiki - Mozilla Firefox"
 WM_NAME(STRING) = "SMART Package Manager - SUSE Wiki - Mozilla Firefox"
+WM_ICON_NAME(STRING) = "SMART Package Manager - SUSE Wiki - Mozilla Firefox"
+WM_CLASS(STRING) = "Gecko", "Firefox-bin"
 (no WM_WINDOW_ROLE listed)
 
 OR
@@ -71,10 +86,35 @@ devilspie debug says:
 Window Title: 'GKrellM Configuration'; Application Name: 'gkrellm'; Class: 'Gkrellm'
 
 xprop says:
-WM_CLASS(STRING) = "Gkrellm_conf", "Gkrellm"
-WM_ICON_NAME(STRING) = "GKrellM Configuration"
 WM_NAME(STRING) = "GKrellM Configuration"
+WM_ICON_NAME(STRING) = "GKrellM Configuration"
+WM_CLASS(STRING) = "Gkrellm_conf", "Gkrellm"
 (no WM_WINDOW_ROLE listed)
+
+** data presented in table
+
+|------------------+----------------+------------------------+---------------------------|
+| devilspie debug  |                |                        |                           |
+|------------------+----------------+------------------------+---------------------------|
+| Window Title     | Dan Beimborn   | SMART blah             | GKrellM Config            |
+| Application name | gaim           | Firefox                | gkrellm                   |
+| Class            | Gaim           | Firefox-bin            | Gkrellm                   |
+|------------------+----------------+------------------------+---------------------------|
+| xprop            |                |                        |                           |
+|------------------+----------------+------------------------+---------------------------|
+| WM_NAME          | Dan Beimborn   | SMART blah             | GKrellM Config            |
+| WM_ICON_NAME     | Dan Beimborn   | SMART blah             | GKrellM Config            |
+| WM_CLASS         | "gaim", "Gaim" | "Gecko", "Firefox-bin" | "Gkrellm_conf", "Gkrellm" |
+| WM_WINDOW_ROLE   | conversation   | <unlisted>             | <unlisted>                |
+|------------------+----------------+------------------------+---------------------------|
+
+** conclusions
+
+*** WM_NAME seems to correspond 100% with window_name
+*** First value of WM_CLASS from xprop seems unpredictable
+*** Second value of WM_CLASS seems to correspond 100% with window_class
+
+** how does devilspie get data to match on?
 
 devilspie uses libwnck:
 
@@ -97,24 +137,16 @@ in src/actions.c:
 
 so devilspie debug should read:
 
-"Window Name: '%s'; Application Name: '%s'; Window Class: '%s'"
+  "Window Name: '%s'; Application Name: '%s'; Window Class: '%s'"
+
+rather than
+
+  "Window Title: '%s'; Application Name: '%s'; Class: '%s'"
 
 and window_role is not debugged but refers to WM_WINDOW_ROLE
 
-WM_NAME seems to correspond 100% with window_name
-First value of WM_CLASS from xprop seems unpredictable
-Second value of WM_CLASS seems to correspond 100% with window_class
 
-file:///usr/share/gtk-doc/html/libwnck/libwnck-WnckApplication.html#wnck-application-get-name implies that application_name is also unpredictable
+file:///usr/share/gtk-doc/html/libwnck/libwnck-WnckApplication.html#wnck-application-get-name
+implies that application_name is also unpredictable
 
-Recommendation: match on (in decreasing order of specificity):
-
-  - window_name, e.g. "Slashdot" in firefox
-    use devilspie's (debug) to determine value
-
-  - window_role, e.g. "conversation" in gaim
-    use xprop | grep WM_WINDOW_ROLE to determine value
-
-  - window_class, e.g. "Rxvt"
-    use devilspie's (debug) to determine value
 
