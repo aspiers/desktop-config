@@ -1,0 +1,5 @@
+(if (or (is (window_name) "XMMS")
+        (matches (window_name) "^XMMS - .*"))
+   (begin
+     (pin)
+     (skip_tasklist)))
