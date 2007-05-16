@@ -1,0 +1,5 @@
+#!/bin/sh
+
+if [ -n "$DISPLAY" ] && pgrep -u "${USER:-$USERNAME}" openbox >/dev/null; then
+    openbox --replace >/dev/null 2>&1 &
+fi
