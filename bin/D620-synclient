@@ -1,0 +1,3 @@
+#!/bin/sh
+
+synclient VertScrollDelta=15 LeftEdge=130 RightEdge=970
