@@ -11,15 +11,5 @@ else
   echo "\$VNCDESKTOP is $VNCDESKTOP, not running .Xmodmap hooks"
 fi
 
-kdeapps="knetworkmanager"
-if [ -n "$KDE_FULL_SESSION" ]; then
-  for app in $kdeapps; do
-    echo "### $app ..."
-    run_unless_running $app &
-  done
-else
-  echo "not in kde, not launching: $kdeapps"
-fi
-
 . $ZDOT_RUN_HOOKS .xsession-progs.d &
 
