@@ -11,13 +11,6 @@ else
   echo "\$VNCDESKTOP is $VNCDESKTOP, not running .Xmodmap hooks"
 fi
 
-echo "### Xresources ..."
-if [ -e ~/.Xresources/all.rdb ]; then
-  xrdb-as -merge ~/.Xresources/all.rdb && echo "merged all.rdb"
-else
-  echo "no all.rdb"
-fi
-
 echo "### Mouse ..."
 xset m 2 4
 
