@@ -1,0 +1,14 @@
+#!/bin/sh
+
+if grep -q '^ *Driver.*synaptics' /etc/X11/xorg.conf; then
+    echo "Synaptics touchpad detected in X11 config."
+    if which synclient >/dev/null 2>&1; then
+        echo "Tweaking parameters via synclient..."
+        synclient VertScrollDelta=15 LeftEdge=130 RightEdge=970
+    else
+        echo "synclient not found; cannot tweak parameters." >&2
+        exit 1
+    fi
+else
+    echo "Synaptics touchpad not detected in X11 config."
+fi
