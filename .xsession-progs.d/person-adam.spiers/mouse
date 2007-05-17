@@ -1,0 +1,4 @@
+#!/bin/sh
+
+echo "### Mouse ..."
+xset m 2 4

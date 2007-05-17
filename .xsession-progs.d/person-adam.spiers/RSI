@@ -1,0 +1,7 @@
+#!/bin/sh
+
+. $ZDOTDIR/lib/libproc.sh
+
+#run_if_executable ~/bin/xwrits &
+run_if_executable workrave &
+

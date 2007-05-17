@@ -1,0 +1,6 @@
+#!/bin/sh
+
+. $ZDOTDIR/lib/libproc.sh
+
+xterm -geometry +0+0 &
+

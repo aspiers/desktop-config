@@ -1,0 +1,4 @@
+#!/bin/sh
+
+echo "### Keyboard ..."
+xset r rate 180 50

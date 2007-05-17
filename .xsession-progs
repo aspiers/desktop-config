@@ -2,7 +2,7 @@
 
 echo "### .xsession-progs ..."
 
-. ~/lib/libproc.sh
+. $ZDOTDIR/lib/libproc.sh
 
 echo "### Xmodmap ..."
 if [ -z "$VNCDESKTOP" ]; then
@@ -10,30 +10,6 @@ if [ -z "$VNCDESKTOP" ]; then
 else
   echo "\$VNCDESKTOP is $VNCDESKTOP, not running .Xmodmap hooks"
 fi
-
-echo "### Mouse ..."
-xset m 2 4
-
-echo "### Keyboard ..."
-xset r rate 180 50
-
-if executable_p Esetroot; then
-  run_if_executable retrieve_background
-#  run_if_executable randomise_background
-fi
-
-#run_if_executable ~/bin/xwrits &
-run_if_executable workrave &
-
-# N.B. xscreensaver doesn't play nice with KDEWM=sawfish
-run_if_executable xscreensaver -no-splash > ~/.xscreensaver.log 2>&1 &
-
-echo "### watchlogs ..."
-run_if_executable watchlogs-system &
-
-echo "### gkrellm ..."
-[ -z "$VNCDESKTOP" ] && run_if_executable gkrellm -geometry -0+0 &
-#run_if_executable 3ddesk &
 
 kdeapps="knetworkmanager"
 if [ -n "$KDE_FULL_SESSION" ]; then
@@ -45,14 +21,5 @@ else
   echo "not in kde, not launching: $kdeapps"
 fi
 
-xterm -geometry +0+0 &
-
-# Other programs we could run:
-#   kmix
-#   gaim / kopete
-#   xmms
-#   xchat
-#   kgpg
-#   
 . $ZDOT_RUN_HOOKS .xsession-progs.d &
 

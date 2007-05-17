@@ -1,0 +1,9 @@
+#!/bin/sh
+
+. $ZDOTDIR/lib/libproc.sh
+
+if executable_p Esetroot; then
+  run_if_executable retrieve_background
+#  run_if_executable randomise_background
+fi
+
