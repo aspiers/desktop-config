@@ -92,9 +92,12 @@
     </item>
   </menu>
 
-  <menu id="office-menu" label="Office">
+  <menu id="office-menu" label="Office/PIM">
     <item label="OpenOffice">
       <action name="Execute"><execute>ooffice</execute></action>
+    </item>
+    <item label="korganizer">
+      <action name="Execute"><execute>korganizer</execute></action>
     </item>
     <item label="GnuCash">
       <action name="Execute"><execute>gnucash</execute></action>
