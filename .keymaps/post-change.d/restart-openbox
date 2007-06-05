@@ -1,0 +1,5 @@
+#!/bin/sh -x
+
+if [ -n "$DISPLAY" ] && pid=`pgrep -u "${USER:-$USERNAME}" '^openbox'`; then
+    openbox --replace >/dev/null 2>&1 &
+fi
