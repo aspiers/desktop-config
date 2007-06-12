@@ -218,6 +218,12 @@
   <keybind key="W-g">
     <action name="Execute"><execute>/opt/novell/groupwise/client/bin/groupwise</execute></action>
   </keybind>
+  <keybind key="W-S-R">
+    <action name="Execute"><execute>zsh -c 'dsa; roam pacific ifolder roaming'</execute></action>
+  </keybind>
+  <keybind key="W-S-l"><!-- logs -->
+    <action name="Execute"><execute>top-term screen -c ~/.screen.d/mail-watcher</execute></action>
+  </keybind>
   <keybind key="W-t"><!-- Terminal -->
     <action name="Execute"><execute>xterm</execute></action>
   </keybind>
