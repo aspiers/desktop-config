@@ -245,6 +245,9 @@
   <keybind key="W-C-w">
     <action name="Execute"><execute>wwwoffle -fetch</execute></action>
   </keybind>
+  <keybind key="W-x"><!-- Volume -->
+    <action name="Execute"><execute>xmms</execute></action>
+  </keybind>
 </keyboard>
 
 <mouse>
