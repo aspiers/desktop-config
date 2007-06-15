@@ -17,13 +17,16 @@ CHECK_INTERVAL=2
 # The RSSI threshold at which a phone is considered far or near
 THRESHOLD=-13
 
+START_CMD='/usr/bin/xscreensaver -nosplash'
+
 # The command to run when your phone gets too far away
 #FAR_CMD='/opt/gnome/bin/gnome-screensaver-command --activate'
 FAR_CMD='xscreensaver-command -lock'
 
 # The command to run when your phone is close again
 #NEAR_CMD='/opt/gnome/bin/gnome-screensaver-command --poke'
-NEAR_CMD='xscreensaver-command -unlock'
+#NEAR_CMD='xscreensaver-command -unlock'
+NEAR_CMD='killall xscreensaver'
 
 HCITOOL="/usr/bin/hcitool"
 DEBUG="$HOME/.btproximity.log"
@@ -37,6 +40,7 @@ function msg {
 function check_connection {
     connected=0;
     found=0
+
     for s in `$HCITOOL con`; do
         if [[ "$s" == "$DEVICE" ]]; then
             found=1;
@@ -63,6 +67,13 @@ function check_connection {
     fi
 }
 
+function check_xscreensaver {
+    PID=`ps -C xscreensaver --no-heading | awk '{ print $1 }'`
+    if [ "$PID" == "" ];  then
+        $START_CMD &
+    fi
+}
+
 check_connection
 
 while [[ $connected -eq 0 ]]; do
@@ -76,6 +87,7 @@ msg "Monitoring proximity of \"$name\" [$DEVICE]";
 state="near"
 while /bin/true; do
 
+    check_xscreensaver
     check_connection
 
     if [[ $connected -eq 1 ]]; then
@@ -91,7 +103,8 @@ while /bin/true; do
             if [[ "$state" == "far" && $rssi -ge $[$THRESHOLD+2] ]]; then
                 msg "*** Device \"$name\" [$DEVICE] is within proximity"
                 state="near"
-                $NEAR_CMD > /dev/null 2>&1
+                $NEAR_CMD
+                $START_CMD &
             fi
         fi
         msg "state = $state, RSSI = $rssi"
