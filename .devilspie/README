@@ -3,7 +3,7 @@
 * Recommendation: match on (in decreasing order of specificity):
 
   - window_name, e.g. "Slashdot" in firefox
-    use devilspie's (debug) to determine value
+    use devilspie's (debug) and use value of Window Title (misnamed)
     xprop | grep WM_NAME is less reliable
 
   - window_role, e.g. "conversation" in gaim
