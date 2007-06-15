@@ -1,0 +1,93 @@
+#!/bin/sh
+
+DEVICE="00:00:00:00:00:00"
+CHECK_INTERVAL=2
+THRESHOLD=-7
+PID=0
+START_CMD='/usr/bin/xscreensaver -nosplash'
+FAR_CMD='/usr/bin/xscreensaver-command -lock'
+NEAR_CMD='/bin/killall xscreensaver'
+
+HCITOOL="sudo /usr/bin/hcitool"
+DEBUG="/dev/null"
+
+connected=0
+
+function msg {
+    echo "$1" #>> "$DEBUG"
+}
+
+function check_connection {
+    connected=0;
+    found=0
+
+    for s in `$HCITOOL con`; do
+        if [[ "$s" == "$DEVICE" ]]; then
+            found=1;
+        fi
+    done
+    if [[ $found == 1 ]]; then
+        connected=1;
+    else
+        msg 'Attempting connection...'
+        if [ -z "`$HCITOOL cc $DEVICE 2>&1`" ]; then
+            msg 'Connected.'
+            connected=1;
+        else
+            connected=0;
+        fi
+    fi
+}
+
+function check_xscreensaver {
+    PID=`ps -C xscreensaver --no-heading | awk '{ print $1 }'`
+    if [ "$PID" == "" ];  then
+        $START_CMD &
+    fi
+}
+
+check_connection
+
+while [[ $connected -eq 0 ]]; do
+    check_connection
+    sleep 3
+done
+
+name=`$HCITOOL name $DEVICE`
+msg "Monitoring proximity of \"$name\" [$DEVICE]";
+
+state="near"
+while /bin/true; do
+
+    check_xscreensaver
+    check_connection
+
+    if [[ $connected -eq 1 ]]; then
+        rssi=$($HCITOOL rssi $DEVICE | sed -e 's/RSSI return value: //g')
+
+        if [[ $rssi -le $THRESHOLD ]]; then
+            if [[ "$state" == "near" ]]; then
+                msg "*** Device \"$name\" [$DEVICE] has left proximity"
+                state="far"
+                $FAR_CMD > /dev/null 2>&1
+            fi
+        else
+            if [[ "$state" == "far" && $rssi -ge $[$THRESHOLD+2] ]]; then
+                msg "*** Device \"$name\" [$DEVICE] is within proximity"
+                state="near"
+                $NEAR_CMD > /dev/null 2>&1
+                $START_CMD &
+            fi
+        fi
+        msg "state = $state, RSSI = $rssi, PID = $PID"
+
+    else
+        if [[ "$state" == "near" ]]; then
+            msg "*** Device \"$name\" [$DEVICE] has been disconnected"
+            state="far"
+            $FAR_CMD > /dev/null 2>&1
+        fi
+    fi
+
+    sleep $CHECK_INTERVAL
+done
