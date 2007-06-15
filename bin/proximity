@@ -7,8 +7,8 @@
 DEVICE="$K610"
 
 if [ -z "$DEVICE" ]; then
-  echo "Device not in environment; aborting." >&2
-  exit 1
+    echo "Device not in environment; aborting." >&2
+    exit 1
 fi
 
 # How often to check the distance between phone and computer in seconds
@@ -26,7 +26,6 @@ FAR_CMD='xscreensaver-command -lock'
 NEAR_CMD='xscreensaver-command -unlock'
 
 HCITOOL="/usr/bin/hcitool"
-STARTX_PID=0
 DEBUG="$HOME/.btproximity.log"
 
 connected=0
@@ -46,20 +45,20 @@ function check_connection {
     if [[ $found == 1 ]]; then
         connected=1;
     else
-       msg 'Attempting connection...'
+        msg 'Attempting connection...'
         if [ -z "`$HCITOOL cc $DEVICE 2>&1`" ]; then
             msg 'Connected.'
             connected=1;
         else
-                if [ -z "`l2ping -c 2 $DEVICE 2>&1`" ]; then
-                        if [ -z "`$HCITOOL cc $DEVICE 2>&1`" ]; then
-                            msg 'Connected.'
-                            connected=1;
-                        else
-                        msg "ERROR: Could not connect to device $DEVICE."
-                        connected=0;
-                        fi
+            if [ -z "`l2ping -c 2 $DEVICE 2>&1`" ]; then
+                if [ -z "`$HCITOOL cc $DEVICE 2>&1`" ]; then
+                    msg 'Connected.'
+                    connected=1;
+                else
+                    msg "ERROR: Could not connect to device $DEVICE."
+                    connected=0;
                 fi
+            fi
         fi
     fi
 }
@@ -93,7 +92,6 @@ while /bin/true; do
                 msg "*** Device \"$name\" [$DEVICE] is within proximity"
                 state="near"
                 $NEAR_CMD > /dev/null 2>&1
-                STARTX_PID=$(pgrep startx)
             fi
         fi
         msg "state = $state, RSSI = $rssi"
