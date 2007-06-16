@@ -44,6 +44,7 @@ else
 fi
 
 if executable_p openbox; then
+  echo "### openbox ..."
   export KDEWM=openbox
   kdetrayproxy &
 fi
@@ -53,17 +54,20 @@ fi
 # to .xsession-progs so we can exec if starting kde,
 # otherwise we need to start .xsession-progs here.
 if executable_p startkde; then
+  echo "### startkde ..."
   exec startkde
 elif executable_p kde; then
+  echo "### kde ..."
   exec kde
 fi
 
-echo "startkde and kde both not executable :-("
+echo "!!! startkde and kde both not executable :-("
 
 if executable_p gnome-session; then
+  echo "### gnome ..."
   gnome-session &
 else
-  # oh fuck
+  echo "### oh fuck... fvwm or worse"
   ( fvwm || twm ) &
 fi
 
