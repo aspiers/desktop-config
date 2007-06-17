@@ -96,10 +96,10 @@
     <action name="Desktop"><desktop>4</desktop><dialog>yes</dialog></action>
   </keybind>
 
-  <keybind key="A-W-comma">
+  <keybind key="M-W-comma">
     <action name="SendToDesktopLeft"><wrap>no</wrap></action>
   </keybind>
-  <keybind key="A-W-period">
+  <keybind key="M-W-period">
     <action name="SendToDesktopRight"><wrap>no</wrap></action>
   </keybind>
 
@@ -173,7 +173,7 @@
   <keybind key="W-space">
     <action name="Raise"/>
   </keybind>
-  <keybind key="A-F4">
+  <keybind key="M-F4">
     <action name="Close"/>
   </keybind>
   <keybind key="W-q">
@@ -187,7 +187,7 @@
     <action name="ShowMenu"><menu>apps-menu</menu></action>
   </keybind>
 
-  <keybind key="A-W-Return">
+  <keybind key="M-W-Return">
     <action name="ShowMenu"><menu>client-list-menu</menu></action>
   </keybind>
 
@@ -202,10 +202,10 @@
   <keybind key="C-W-l">
     <action name="Execute"><execute>xscreensaver-command -activate</execute></action>
   </keybind>
-  <keybind key="A-W-l">
+  <keybind key="M-W-l">
     <action name="Execute"><execute>xscreensaver-command -activate</execute></action>
   </keybind>
-  <keybind key="C-A-W-l">
+  <keybind key="C-M-W-l">
     <action name="Execute"><execute>xscreensaver-command -lock</execute></action>
   </keybind>
 
@@ -261,13 +261,13 @@
     <mousebind button="Down" action="Press">
       <action name="DesktopRight"><wrap>no</wrap><dialog>yes</dialog></action>
     </mousebind>
-    <mousebind button="C-A-Up" action="Press">
+    <mousebind button="C-M-Up" action="Press">
       <action name="DesktopLeft"><wrap>no</wrap><dialog>yes</dialog></action>
     </mousebind>
-    <mousebind button="C-A-Down" action="Press">
+    <mousebind button="C-M-Down" action="Press">
       <action name="DesktopRight"><wrap>no</wrap><dialog>yes</dialog></action>
     </mousebind>
-    <mousebind button="C-A-S-Right" action="Press">
+    <mousebind button="C-M-S-Right" action="Press">
       <action name="ShowMenu"><menu>apps-menu</menu></action>
     </mousebind>
     <mousebind button="Left" action="Press">
@@ -282,34 +282,34 @@
   </context>
 
   <context name="Frame">
-    <mousebind button="A-Up" action="Press">
+    <mousebind button="M-Up" action="Press">
       <action name="Raise"/>
     </mousebind>
-    <mousebind button="A-Down" action="Press">
+    <mousebind button="M-Down" action="Press">
       <action name="Lower"/>
     </mousebind>
-    <mousebind button="A-Left" action="Drag">
+    <mousebind button="M-Left" action="Drag">
       <action name="Move"/>
     </mousebind>
-    <mousebind button="A-Right" action="Drag">
+    <mousebind button="M-Right" action="Drag">
       <action name="Resize"/>
     </mousebind> 
-    <mousebind button="A-Middle" action="Press">
+    <mousebind button="M-Middle" action="Press">
       <action name="ShowMenu"><menu>client-menu</menu></action>
     </mousebind>
-    <mousebind button="C-A-Up" action="Press">
+    <mousebind button="C-M-Up" action="Press">
       <action name="DesktopLeft"><wrap>no</wrap><dialog>yes</dialog></action>
     </mousebind>
-    <mousebind button="C-A-Down" action="Press">
+    <mousebind button="C-M-Down" action="Press">
       <action name="DesktopRight"><wrap>no</wrap><dialog>yes</dialog></action>
     </mousebind>
-    <mousebind button="C-A-S-Right" action="Press">
+    <mousebind button="C-M-S-Right" action="Press">
       <action name="ShowMenu"><menu>apps-menu</menu></action>
     </mousebind>
-    <mousebind button="S-C-A-Up" action="Click">
+    <mousebind button="S-C-M-Up" action="Click">
       <action name="SendToDesktopLeft"/>
     </mousebind>
-    <mousebind button="S-C-A-Down" action="Click">
+    <mousebind button="S-C-M-Down" action="Click">
       <action name="SendToDesktopRight"/>
     </mousebind>
   </context>
