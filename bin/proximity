@@ -50,7 +50,7 @@ function check_connection {
         connected=1;
     else
         msg 'Attempting connection...'
-        if [ -z "`$HCITOOL cc $DEVICE 2>&1`" ]; then
+        if [ -z "`sudo $HCITOOL cc $DEVICE 2>&1`" ]; then
             msg 'Connected.'
             connected=1;
         else
