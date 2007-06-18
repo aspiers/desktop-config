@@ -34,7 +34,7 @@ DEBUG="$HOME/.btproximity.log"
 connected=0
 
 function msg {
-    echo "$1" #>> "$DEBUG"
+    echo "$1" >> "$DEBUG"
 }
 
 function check_connection {
