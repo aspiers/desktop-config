@@ -15,7 +15,7 @@ fi
 CHECK_INTERVAL=2
 
 # The RSSI threshold at which a phone is considered far or near
-THRESHOLD=-13
+THRESHOLD=-15
 
 START_CMD='/usr/bin/xscreensaver -nosplash'
 
