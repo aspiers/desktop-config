@@ -17,7 +17,8 @@ keycode 0x7d =
 keycode 0xAE =  XF86AudioLowerVolume
 keycode 0xB0 =  XF86AudioRaiseVolume
 keycode 0xA0 =  XF86AudioMute
-keycode 0x75 =	Menu
+!keycode 0x75 =	ISO_Level3_Shift
+keycode 0x75 =	Mode_switch
 keycode 0x6F =	Print		Sys_Req
 keycode 0x4D =	Num_Lock	Pointer_EnableKeys
 keycode 0x6E =	Pause		Break
@@ -102,14 +103,14 @@ keycode 0x3E =	Shift_R
 ! was keycode 0x25 =	Control_L
 keycode 0x25 =	z		Z		guillemotleft	less		guillemotleft	less
 ! keycode 0x73 is Win key
-keycode 0x73 = Alt_L		Meta_L
+keycode 0x73 = Meta_L
 ! keycode 0x40 is left Alt
 keycode 0x40 =	Control_L
 keycode 0x41 =	space
 ! keycode 0x71 is Alt Gr key, was ISO_Level3_Shift
 keycode 0x71 =	Super_R
 ! was keycode 0x6D =	Control_R	Multi_key
-keycode 0x6D =	ISO_Level3_Shift
+keycode 0x6D =	Alt_R
 keycode 0x62 =	Up
 keycode 0x64 =	Left
 keycode 0x68 =	Down
@@ -124,13 +125,11 @@ clear Mod3
 clear Mod4
 clear Mod5
 
+! See ~/roaming/notes/X11Modifiers.muse
 add    Shift   = Shift_L Shift_R
 add    Control = Control_L
-! Mod1 is a funny one.  Things like yast look for Alt_L for shortcuts
-! but having Meta_L and Alt_L is evil and broken, according to jwz
-! (see the xkeycaps man page).
-! If we can get away with just Alt_L that seems to be best.
-add    Mod1    = Alt_L
+add    Mod1    = Meta_L
 add    Mod2    = Num_Lock
+add    Mod3    = Alt_R
 add    Mod4    = Super_R
 add    Mod5    = Mode_switch ISO_Level3_Shift
