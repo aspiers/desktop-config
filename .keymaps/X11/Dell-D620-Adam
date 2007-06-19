@@ -17,7 +17,7 @@ keycode 0x7d =
 keycode 0xAE =  XF86AudioLowerVolume
 keycode 0xB0 =  XF86AudioRaiseVolume
 keycode 0xA0 =  XF86AudioMute
-keycode 0x75 =	ISO_Level3_Shift
+keycode 0x75 =	Menu
 keycode 0x6F =	Print		Sys_Req
 keycode 0x4D =	Num_Lock	Pointer_EnableKeys
 keycode 0x6E =	Pause		Break
@@ -89,9 +89,12 @@ keycode 0x32 =	Shift_L
 keycode 0x5E =	x		X		guillemotright	greater		guillemotright	greater
 keycode 0x34 =	c		C		cent		copyright	cent		copyright
 keycode 0x35 =	v		V		leftdoublequotemark	grave		leftdoublequotemark	grave
-keycode 0x36 =	Alt_L		NoSymbol		rightdoublequotemark	apostrophe	rightdoublequotemark	apostrophe
-! spare key!
-keycode 0x37 =	v		V		leftdoublequotemark	grave		leftdoublequotemark	grave
+keycode 0x36 =	b		NoSymbol		rightdoublequotemark	apostrophe	rightdoublequotemark	apostrophe
+
+! v key is spare: change to 
+!keycode 0x37 =	v		V		leftdoublequotemark	grave		leftdoublequotemark	grave
+keycode 0x37 =	ISO_Level3_Shift
+
 keycode 0x38 =	b		B		rightdoublequotemark	apostrophe	rightdoublequotemark	apostrophe
 keycode 0x39 =	n		N
 keycode 0x3A =	m		M		mu		masculine	mu		masculine
@@ -109,7 +112,7 @@ keycode 0x41 =	space
 ! keycode 0x71 is Alt Gr key, was ISO_Level3_Shift
 keycode 0x71 =	Super_R
 ! was keycode 0x6D =	Control_R	Multi_key
-keycode 0x6D =	Mode_switch
+keycode 0x6D =	Alt_R
 keycode 0x62 =	Up
 keycode 0x64 =	Left
 keycode 0x68 =	Down
