@@ -15,7 +15,7 @@ fi
 CHECK_INTERVAL=2
 
 # The RSSI threshold at which a phone is considered far or near
-THRESHOLD=-15
+THRESHOLD=-23
 
 START_CMD='/usr/bin/xscreensaver -nosplash'
 
@@ -31,10 +31,12 @@ NEAR_CMD='killall xscreensaver'
 HCITOOL="/usr/bin/hcitool"
 DEBUG="$HOME/.btproximity.log"
 
+exec >"$DEBUG" 2>&1
+
 connected=0
 
 function msg {
-    echo "$1" >> "$DEBUG"
+    echo "$1"
 }
 
 function check_connection {
