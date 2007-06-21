@@ -188,7 +188,7 @@
   </keybind>
 
   <keybind key="M-W-Return">
-    <action name="ShowMenu"><menu>client-list-menu</menu></action>
+    <action name="ShowMenu"><menu>client-list-combined-menu</menu></action>
   </keybind>
 
   <keybind key="C-W-Return">
