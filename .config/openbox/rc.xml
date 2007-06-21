@@ -20,11 +20,11 @@
   <!-- 'Smart' or 'UnderMouse' -->
 </placement>
 
+<!--
 <theme>
   <name>TheBear</name>
   <titleLayout>NLIMC</titleLayout>
   <titleNumber>yes</titleNumber>
-  <!--
       avaible characters are NDSLIMC, each can occur at most once.
       N: client menu
       L: window label (AKA title).
@@ -33,10 +33,10 @@
       C: close
       S: shade
       D: omnipresent (on all desktops).
-  -->
   <keepBorder>yes</keepBorder>
   <hideDisabled>no</hideDisabled>
 </theme>
+-->
 
 <desktops>
   <number>4</number>
