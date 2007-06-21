@@ -1,4 +1,4 @@
-(if (is (window_name) "XMMS_Playlist")
+(if (matches (window_name) "XMMS.*Playlist")
    (begin
      (pin)
      (skip_tasklist)))
