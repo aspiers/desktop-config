@@ -9,8 +9,9 @@
 
 <focus>
   <focusNew>yes</focusNew>
-  <focusLast>no</focusLast>
   <followMouse>yes</followMouse>
+  <focusLast>yes</focusLast>
+  <underMouse>yes</underMouse>
   <focusDelay>0</focusDelay>
   <raiseOnFocus>no</raiseOnFocus>
 </focus>
