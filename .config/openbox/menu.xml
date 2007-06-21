@@ -6,6 +6,7 @@
                                   file:///usr/share/openbox/menu.xsd">
 
   <menu id="wwwoffle-menu" label="wwwoffle">
+    <separator label="wwwoffle" />
     <item label="go online">
       <action name="Execute"><execute>wwwoffle -online</execute></action>
     </item>
@@ -18,6 +19,7 @@
   </menu>
 
   <menu id="browser-menu" label="Browsers">
+    <separator label="Browsers" />
     <item label="firefox">
       <action name="Execute"><execute>firefox</execute></action>
     </item>
@@ -33,6 +35,7 @@
   </menu>
 
   <menu id="comms-menu" label="Communications">
+    <separator label="Communications" />
     <item label="gaim">
       <action name="Execute"><execute>gaim</execute></action>
     </item>
@@ -45,6 +48,7 @@
   </menu>
 
   <menu id="graphics-menu" label="Graphics">
+    <separator label="Graphics" />
     <item label="The GIMP">
       <action name="Execute"><execute>gimp</execute></action>
     </item>
@@ -54,6 +58,7 @@
   </menu>
 
   <menu id="audio-menu" label="Audio">
+    <separator label="Audio" />
     <item label="xmms">
       <action name="Execute"><execute>xmms</execute></action>
     </item>
@@ -93,6 +98,7 @@
   </menu>
 
   <menu id="office-menu" label="Office/PIM">
+    <separator label="Office/PIM" />
     <item label="OpenOffice">
       <action name="Execute"><execute>ooffice</execute></action>
     </item>
@@ -108,6 +114,7 @@
   </menu>
 
   <menu id="utils-menu" label="Utils">
+    <separator label="Utils" />
     <item label="gkrellm">
       <action name="Execute"><execute>gkrellm</execute></action>
     </item>
@@ -120,6 +127,7 @@
   </menu>
 
   <menu id="games-menu" label="Games">
+    <separator label="Games" />
     <item label="crafty">
       <action name="Execute"><execute>xcrafty</execute></action>
     </item>
@@ -129,6 +137,7 @@
   </menu>
 
   <menu id="apps-menu" label="Applications">
+    <separator label="Apps" />
     <item label="Check Novell mail">
       <action name="Execute"><execute>sync-novell-mail-now</execute></action>
     </item>
@@ -154,6 +163,7 @@
   </menu>
 
   <menu id="wm-menu" label="Openbox 3">
+    <separator label="Openbox" />
     <item label="Reconfigure">
       <action name="Reconfigure" />
     </item>
