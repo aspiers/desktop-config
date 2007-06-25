@@ -55,6 +55,9 @@
     <item label="gqview">
       <action name="Execute"><execute>gqview</execute></action>
     </item>
+    <item label="xsane">
+      <action name="Execute"><execute>xsane</execute></action>
+    </item>
   </menu>
 
   <menu id="audio-menu" label="Audio">
