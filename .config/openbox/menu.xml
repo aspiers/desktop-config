@@ -121,6 +121,9 @@
     <item label="gkrellm">
       <action name="Execute"><execute>gkrellm</execute></action>
     </item>
+    <item label="krandrtray">
+      <action name="Execute"><execute>krandrtray</execute></action>
+    </item>
     <item label="kcalc">
       <action name="Execute"><execute>kcalc</execute></action>
     </item>
