@@ -164,7 +164,7 @@
       <action name="Execute"><execute>xterm</execute></action>
     </item>
     <item label="System logs">
-      <action name="Execute"><execute>watchlogs-system</execute></action>
+      <action name="Execute"><execute>watchlogs-system-window</execute></action>
     </item>
   </menu>
 
