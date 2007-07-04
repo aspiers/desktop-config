@@ -1,0 +1,27 @@
+#!/bin/bash
+
+. $ZDOTDIR/lib/libdpy.sh
+
+# Each char in smoothansi is 13 pixels high by 6 pixels wide.
+font_char_width=6
+font_char_height=13
+# Take 20% of height:
+watchlogs_height=$(( (dpy_height / 5) / font_char_height ))
+
+# Maybe allow some space on the right for gkrellm
+right_margin=0
+#right_margin=90
+watchlogs_width=$(( (dpy_width - right_margin) / font_char_width ))
+
+font=smoothansi
+urxvt -fn $font -fb $font +sk +sw +sb -name XTerm -tr -tint white -sh 70 -is \
+      -g ${watchlogs_width}x${watchlogs_height}+0-0 \
+      -e watchlogs-system
+
+#rxvt -fn $font +sk +sw -tr -g ${watchlogs_width}x${watchlogs_height}+0-0 \
+#     -e watchlogs-system
+
+#aterm -fn $font -fb $font -tr -g ${watchlogs_width}x${watchlogs_height}+0-0 \
+#      -e watchlogs-system
+
+#Eterm -t watchlogs-system -g ${watchlogs_width}x${watchlogs_height}+0-0
