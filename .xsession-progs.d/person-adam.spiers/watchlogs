@@ -3,5 +3,5 @@
 . $ZDOTDIR/lib/libproc.sh
 
 echo "### watchlogs ..."
-run_if_executable watchlogs-system &
+run_if_executable watchlogs-system-window &
 
