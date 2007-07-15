@@ -52,7 +52,11 @@ keycode 0x10 =	7		ampersand	braceleft	seveneighths	braceleft	seveneighths
 keycode 0x11 =	8		asterisk	bracketleft	trademark	bracketleft	trademark
 keycode 0x12 =	9		parenleft	bracketright	plusminus	bracketright	plusminus
 keycode 0x13 =	0		parenright	braceright	degree		braceright	degree
+
+! was keycode 0x14 =	minus		underscore	backslash	questiondown	backslash	questiondown
+! Removing backslash because if two keycodes both send backslash, synergyc receives events for both, and this one also causes it to receive ISO_Level3_Shift.  As a result, Control-backslash doesn't work.
 keycode 0x14 =	minus		underscore	backslash	questiondown	backslash	questiondown
+
 keycode 0x15 =	equal		plus		dead_cedilla	dead_ogonek	dead_cedilla	dead_ogonek
 keycode 0x16 =	BackSpace	Terminate_Server
 keycode 0x17 =	Tab		ISO_Left_Tab
