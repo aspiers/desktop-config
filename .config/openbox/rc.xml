@@ -223,7 +223,7 @@
     <action name="Execute"><execute>zsh -c 'dsa; roam pacific ifolder roaming'</execute></action>
   </keybind>
   <keybind key="W-S-l"><!-- logs -->
-    <action name="Execute"><execute>top-term screen -c ~/.screen.d/mail-watcher</execute></action>
+    <action name="Execute"><execute>sh -c 'STY= top-term screen -c ~/.screen.d/mail-watcher'</execute></action>
   </keybind>
   <keybind key="W-t"><!-- Terminal -->
     <action name="Execute"><execute>xterm</execute></action>
