@@ -132,8 +132,17 @@
     </item>
   </menu>
 
-  <menu id="games-menu" label="Games">
-    <separator label="Games" />
+  <menu id="fun-menu" label="Fun">
+    <separator label="Fun" />
+    <item label="Google Earth">
+      <action name="Execute"><execute>googleearth</execute></action>
+    </item>
+    <item label="Stellarium">
+      <action name="Execute"><execute>stellarium</execute></action>
+    </item>
+    <item label="Celestia">
+      <action name="Execute"><execute>celestia</execute></action>
+    </item>
     <item label="crafty">
       <action name="Execute"><execute>xcrafty</execute></action>
     </item>
@@ -157,7 +166,7 @@
       <action name="Execute"><execute>vmware</execute></action>
     </item>
     <menu id="utils-menu" />
-    <menu id="games-menu" />
+    <menu id="fun-menu" />
     <menu id="wwwoffle-menu" />
     <separator />
     <item label="xterm">
