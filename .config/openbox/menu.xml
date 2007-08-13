@@ -138,10 +138,10 @@
       <action name="Execute"><execute>googleearth</execute></action>
     </item>
     <item label="Stellarium">
-      <action name="Execute"><execute>stellarium</execute></action>
+      <action name="Execute"><execute>sh -c 'stellarium &gt; ~/.stellarium/log 2&gt;&amp;1'</execute></action>
     </item>
     <item label="Celestia">
-      <action name="Execute"><execute>celestia</execute></action>
+      <action name="Execute"><execute>sh -c 'celestia &gt; ~/.celestia.log 2&gt;&amp;1'</execute></action>
     </item>
     <item label="crafty">
       <action name="Execute"><execute>xcrafty</execute></action>
