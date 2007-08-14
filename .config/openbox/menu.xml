@@ -62,6 +62,9 @@
 
   <menu id="audio-menu" label="Audio">
     <separator label="Audio" />
+    <item label="AmaroK">
+      <action name="Execute"><execute>amarok</execute></action>
+    </item>
     <item label="xmms">
       <action name="Execute"><execute>xmms</execute></action>
     </item>
