@@ -52,12 +52,7 @@ Emacs.geometry: EMACS_GEOMETRY
 #if WIDTH <= 1400
    emacs*font: fixed
 #else
-#  if OLD_GNU_EMACS
-   emacs.font: -adobe-courier-medium-r-normal--*-120-*-*-*-*-iso8859-1
-!    FIXME
-#  else
-!    default is fine
-#  endif
+   emacs*font: 9x15
 #endif
 
 ! Fonts I have used in the past:
