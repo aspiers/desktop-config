@@ -208,7 +208,7 @@
     </keybind>
     <keybind key="W-a">
       <action name="Execute">
-        <execute>gaim</execute>
+        <execute>amarok</execute>
       </action>
     </keybind>
     <keybind key="W-f">
@@ -230,6 +230,11 @@
       <!-- logs -->
       <action name="Execute">
         <execute>sh -c 'unset STY; . ~/lib/novell-mail.sh; top-term screen -c ~/.screen.d/mail-watcher'</execute>
+      </action>
+    </keybind>
+    <keybind key="W-p">
+      <action name="Execute">
+        <execute>gaim</execute>
       </action>
     </keybind>
     <keybind key="W-S-R">
