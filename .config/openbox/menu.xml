@@ -45,6 +45,9 @@
     <item label="X-Chat">
       <action name="Execute"><execute>xchat</execute></action>
     </item>
+    <item label="ekiga">
+      <action name="Execute"><execute>ekiga</execute></action>
+    </item>
   </menu>
 
   <menu id="graphics-menu" label="Graphics">

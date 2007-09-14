@@ -211,6 +211,11 @@
         <execute>amarok</execute>
       </action>
     </keybind>
+    <keybind key="W-e">
+      <action name="Execute">
+        <execute>ekiga</execute>
+      </action>
+    </keybind>
     <keybind key="W-f">
       <action name="Execute">
         <execute>firefox</execute>
