@@ -255,12 +255,12 @@
     </keybind>
     <keybind key="W-S-t">
       <action name="Execute">
-        <execute>top-term</execute>
+        <execute>top-term htop</execute>
       </action>
     </keybind>
     <keybind key="C-W-S-t">
       <action name="Execute">
-        <execute>top-term htop</execute>
+        <execute>top-term</execute>
       </action>
     </keybind>
     <keybind key="W-v">
