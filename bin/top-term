@@ -11,4 +11,10 @@ font=smoothansi
 unset COLUMNS
 cmd="${1:-top}"
 shift
-xterm -fn $font -geometry 90x40 -e "$cmd" "$@"
+
+geometry=90x40
+case "$cmd" in
+    htop) geometry=150x50 ;;
+esac
+
+xterm -fn $font -geometry $geometry -e "$cmd" "$@"
