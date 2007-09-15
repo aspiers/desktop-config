@@ -1,0 +1,4 @@
+#!/bin/sh
+
+# Needed cos Eterm's -e is shite and won't accept args
+exec sudo iftop "$@"

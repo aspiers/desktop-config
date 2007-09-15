@@ -1,0 +1,11 @@
+#!/bin/sh
+
+#font=5x7
+#font=nexus
+#font=smoothansi
+#font=kates
+font=fkp
+#font=10x20
+
+#Eterm -t top
+xterm -fn $font -geometry 90x40 -e "mutt $*"

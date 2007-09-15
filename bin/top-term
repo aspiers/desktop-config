@@ -1,0 +1,14 @@
+#!/bin/sh
+
+#font=5x7
+#font=nexus
+font=smoothansi
+#font=kates
+#font=fkp
+#font=10x20
+
+#Eterm -t top
+unset COLUMNS
+cmd="${1:-top}"
+shift
+xterm -fn $font -geometry 90x40 -e "$cmd" "$@"
