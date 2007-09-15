@@ -175,7 +175,12 @@ nxterm*Cursor: xterm
 ! {{{ geometry
 
 ! Could ifdef on WIDTH here
-xterm.vt100.geometry: 92x40
+! This is really weird: if I use this:
+!xterm.vt100.geometry: 92x40
+! I can't override on the CLI via xterm -geometry
+! but if I use this, I can:
+xterm*geometry: 92x40
+! Huh?
 
 ! }}}
 ! {{{ title bar
