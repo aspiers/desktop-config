@@ -211,6 +211,8 @@
         <execute>amarok</execute>
       </action>
     </keybind>
+    <!-- W-b reserved for amarok -->
+    <!-- W-c reserved for amarok -->
     <keybind key="W-e">
       <action name="Execute">
         <execute>ekiga</execute>
@@ -264,7 +266,7 @@
       </action>
     </keybind>
     <keybind key="W-v">
-      <!-- Volume -->
+      <!-- v for volume -->
       <action name="Execute">
         <execute>kmix</execute>
       </action>
@@ -284,12 +286,8 @@
         <execute>wwwoffle -fetch</execute>
       </action>
     </keybind>
-    <keybind key="W-x">
-      <!-- Volume -->
-      <action name="Execute">
-        <execute>xmms</execute>
-      </action>
-    </keybind>
+    <!-- W-x reserved for amarok -->
+    <!-- W-z reserved for amarok -->
   </keyboard>
   <mouse>
     <dragThreshold>3</dragThreshold>
