@@ -228,6 +228,11 @@
         <execute>/opt/novell/groupwise/client/bin/groupwise</execute>
       </action>
     </keybind>
+    <keybind key="W-k">
+      <action name="Execute">
+        <execute>kmix</execute>
+      </action>
+    </keybind>
     <keybind key="W-S-i">
       <action name="Execute">
         <execute>top-term 'sudo iftop'</execute>
@@ -265,12 +270,8 @@
         <execute>top-term</execute>
       </action>
     </keybind>
-    <keybind key="W-v">
-      <!-- v for volume -->
-      <action name="Execute">
-        <execute>kmix</execute>
-      </action>
-    </keybind>
+    <!-- W-v reserved for amarok -->
+    <!-- W-C-v reserved for amarok -->
     <keybind key="W-w">
       <action name="Execute">
         <execute>wwwoffle -online</execute>
