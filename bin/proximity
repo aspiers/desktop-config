@@ -14,7 +14,12 @@ fi
 # How often to check the distance between phone and computer in seconds
 CHECK_INTERVAL=2
 
-# The RSSI threshold at which a phone is considered far or near
+# How many consecutive times the threshold has to be crossed for it to
+# take effect.
+CONSECUTIVE=3
+
+# The RSSI threshold at which a phone is considered far or near.
+# It's always(?) negative, so closer to 0 means closer to the phone.
 THRESHOLD=-25
 
 START_CMD='/usr/bin/xscreensaver -nosplash'
@@ -86,7 +91,11 @@ done
 name=`$HCITOOL name $DEVICE`
 msg "Monitoring proximity of \"$name\" [$DEVICE]";
 
+# switched after $CONSECUTIVE times on opposite side of threshold
 state="near"
+# number of times proximity has been seen on opposite side of threshold to $state
+consecutive=0 
+
 while /bin/true; do
 
     check_xscreensaver
@@ -96,20 +105,42 @@ while /bin/true; do
         rssi=$($HCITOOL rssi $DEVICE | sed -e 's/RSSI return value: //g')
 
         if [[ $rssi -le $THRESHOLD ]]; then
-            if [[ "$state" == "near" ]]; then
-                msg "*** Device \"$name\" [$DEVICE] has left proximity"
-                state="far"
-                $FAR_CMD > /dev/null 2>&1
+            # -le means further away from phone than threshold.
+            if [[ $state == "near" ]]; then
+                : $(( consecutive ++ ))
+                if [[ $consecutive == 1 ]]; then
+                    msg "*** Device '$name' [$DEVICE] has left proximity ($rssi <= $THRESHOLD)"
+                elif [[ $consecutive -lt $CONSECUTIVE ]]; then
+                    msg "--- consecutive times in far state: $consecutive"
+                else
+                    state="far"
+                    consecutive=0
+                    msg "+++ running $FAR_CMD"
+                    $FAR_CMD > /dev/null 2>&1
+                fi
+            else
+                consecutive=0
             fi
         else
-            if [[ "$state" == "far" && $rssi -ge $[$THRESHOLD+2] ]]; then
-                msg "*** Device \"$name\" [$DEVICE] is within proximity"
-                state="near"
-                $NEAR_CMD
-                $START_CMD &
+            # Closer to phone than threshold.
+            if [[ $state == "far" ]]; then
+                : $(( consecutive ++ ))
+                if [[ $consecutive == 1 ]]; then
+                    msg "*** Device '$name' [$DEVICE] has returned to proximity ($rssi <= $THRESHOLD)"
+                elif [[ $consecutive -lt $CONSECUTIVE ]]; then
+                    msg "--- consecutive times in near state: $consecutive"
+                else
+                    state="near"
+                    consecutive=0
+                    msg "+++ running $NEAR_CMD then $START_CMD"
+                    $NEAR_CMD
+                    $START_CMD &
+                fi
+            else
+                consecutive=0
             fi
         fi
-        msg "state = $state, RSSI = $rssi"
+        msg "RSSI = $rssi, state = $state, consec=$consecutive"
     fi
 
     sleep $CHECK_INTERVAL
