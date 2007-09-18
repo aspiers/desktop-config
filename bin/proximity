@@ -14,13 +14,13 @@ fi
 # How often to check the distance between phone and computer in seconds
 CHECK_INTERVAL=2
 
-# How many consecutive times the threshold has to be crossed for it to
-# take effect.
-CONSECUTIVE=3
-
 # The RSSI threshold at which a phone is considered far or near.
 # It's always(?) negative, so closer to 0 means closer to the phone.
 THRESHOLD=-25
+
+# How many consecutive times the threshold has to be crossed for it to
+# take effect.
+CONSECUTIVE=3
 
 START_CMD='/usr/bin/xscreensaver -nosplash'
 
@@ -38,7 +38,6 @@ HCITOOL="/usr/bin/hcitool"
 DEBUG=/dev/null
 # This will consume battery from the frequent writes to disk!
 #DEBUG="$HOME/.btproximity.log"
-
 
 exec >"$DEBUG" 2>&1
 
