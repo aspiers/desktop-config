@@ -1,0 +1,3 @@
+(if (is (window_name) "Activation - KNetworkManager")
+   (begin
+     (pin)))
