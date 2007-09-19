@@ -4,6 +4,8 @@ me=`basename $0`
 
 # From http://www.novell.com/coolsolutions/feature/18684.html
 # Originally from http://gentoo-wiki.com/Talk:TIP_Bluetooth_Proximity_Monitor
+#
+# Hacked by Adam Spiers <shell-hacks@adamspiers.org>
 
 # You'll need to use the MAC address of your phone here
 DEVICE="$K610"
