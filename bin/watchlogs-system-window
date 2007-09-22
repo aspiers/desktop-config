@@ -2,9 +2,11 @@
 
 . $ZDOTDIR/lib/libdpy.sh
 
+font=smoothansi
 # Each char in smoothansi is 13 pixels high by 6 pixels wide.
 font_char_width=6
 font_char_height=13
+
 # Take 20% of height:
 watchlogs_height=$(( (dpy_height / 5) / font_char_height ))
 
@@ -13,7 +15,6 @@ right_margin=0
 #right_margin=90
 watchlogs_width=$(( (dpy_width - right_margin) / font_char_width ))
 
-font=smoothansi
 urxvt -fn $font -fb $font +sk +sw +sb -name XTerm -tr -tint white -sh 70 -is \
       -g ${watchlogs_width}x${watchlogs_height}+0-0 \
       -e watchlogs-system
