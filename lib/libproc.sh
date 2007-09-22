@@ -31,7 +31,7 @@ run_unless_running () {
 
 # obtain_lock LOCKFILE COMMAND
 # 
-# Obtains a lock via mkdir LOCKFILE, to protect against COMMAND
+# Obtains a lock via ln -s LOCKINFO LOCKFILE, to protect against COMMAND
 # running concurrently.  Returns success (zero) iff lock was obtained.
 # Cross-checks lock with process table and does the sensible thing in
 # each case.
@@ -42,61 +42,102 @@ run_unless_running () {
 # Sample usage follows:
 # 
 #   clean_up () {
-#     [ -d "$lock" ] && rmdir "$lock"
-#   }  
+#     [ -d "$lock" ] && rm "$lock"
+#   }
 #   
 #   obtain_lock "$lock" "$cmd" || exit 1
 #   # Signal must be trapped *after* obtaining lock, otherwise
 #   # failure to obtain the lock would remove an active lock.
+#   # This leaves a tiny window within which unexpected failure
+#   # of the script could leave a stale lock.
 #   trap clean_up EXIT
 #
 obtain_lock () {
-  if [ $# != 2 ] || [ -z "$2" ]; then
-    echo "ERROR: Usage: obtain_lock LOCKFILE COMMAND" >&2
-    return 1
-  fi
-
-  lock="$1"
-  cmd="$2"
-
-  if mkdir "$lock" 2>/dev/null; then
-    #echo "got lock $lock" >&2
-    return 0
-  fi
-
-  echo "$lock already exists!"
-  echo "Looking for running processes matching '$cmd' ..."
-  # -f is needed since $cmd could be a shell script in which case
-  # $0 would be the interpreter not $cmd itself.
-  for pid in $( pgrep -f "$cmd" ); do
-    [ "$pid" != $$ ] && pids="$pid $pids"
-  done
-  if [ -z "$pids" ]; then
-    if ! [ -t 0 ] || ! [ -t 1 ]; then
-      echo "None found; rmdir $lock manually."
-      return 1
+    if [ $# != 2 ] || [ -z "$2" ]; then
+        echo "ERROR: Usage: obtain_lock LOCKFILE COMMAND" >&2
+        return 1
     fi
-    echo -n "None found; if lock is stale, remove it now? (y/n) "
+
+    lock="$1"
+    required_lockinfo="$USER@$HOSTNAME.$$:`date +%s`"
+    cmd="$2"
+
+    if ln -s "$required_lockinfo" "$lock" 2>/dev/null; then
+        #echo "got lock $lock" >&2
+        return 0
+    fi
+
+    echo "obtain_lock: $lock already exists!"
+
+    lockinfo=$( file -b "$lock" )
+    case "$lockinfo" in
+      *symbolic\ link\ to*$USER@$HOSTNAME.[0-9]*)
+        : ;;
+      *)
+        echo "obtain_lock: Couldn't parse lock info [$lockinfo] from $lock" >&2
+        return 1 ;;
+    esac
+
+    # or: sed 's/^symbolic link to `\(.\+\)'\''$/\1/' )
+    #' # emacs font-lock hack
+    pid="${lockinfo%:*}"
+    pid="${pid#*\`$USER@$HOSTNAME.}"
+    case "$pid" in
+      [0-9]*[0-9])
+        : ;;
+      *)
+        echo "obtain_lock: Couldn't extract PID from [$lockinfo]" >&2
+        return 1 ;;
+    esac
+
+    interactive=y
+    if ! [ -t 0 ] || ! [ -t 1 ]; then
+        interactive=
+    fi
+
+    if [ -d "/proc/$pid" ]; then
+        ps -fp "$pid"
+        return 1
+    fi
+
+    # /proc/$pid missing - if we got here, we found a stale lock.
+
+    if [ -z "$interactive" ]; then
+        # Should be robust enough now to automatically remove stale locks.
+        echo "obtain_lock: removing stale lock $lock for pid $pid"
+        if ! rm "$lock"; then
+            echo "obtain_lock: rm of stale $lock failed" >&2
+            return 1
+        fi
+        if ln -s "$required_lockinfo" "$lock" 2>/dev/null; then
+            #echo "got lock $lock" >&2
+            return 0
+        else
+            echo "obtain_lock: second attempt to claim lock $lock failed" >&2
+            return 1
+        fi
+    fi
+
+    # We're interactive.
+    echo -n "obtain_lock: lock $lock for pid $pid seems stale, remove it now? (y/n) "
     read confirm
     case "$confirm" in
       y*|Y*)
-        if rmdir "$lock"; then
-          echo "Removed $lock, now re-run."
+        if rm "$lock"; then
+            echo "obtain_lock: Removed stale lock $lock"
+            if ln -s "$required_lockinfo" "$lock" 2>/dev/null; then
+                #echo "got lock $lock" >&2
+                return 0
+            fi
         else
-          # rmdir will output an error
-          return 1
+            echo "obtain_lock: rm of stale $lock failed" >&2
+            return 1
         fi
         ;;
       *)
-        echo "Not removing lock."
+        echo "obtain_lock: Not removing lock."
     esac
     return 1
-  else
-    pids="${pids% }"
-    pids="${pids// /,}"
-    ps -fp "$pids"
-  fi
-  return 1
 }
 
 # Calculate the time a process was started.  Broken; use
