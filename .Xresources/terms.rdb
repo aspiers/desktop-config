@@ -1,11 +1,11 @@
-/*
-  WARNING!  This file should be used with my custom xrdb-cpp preprocessor,
-  via:
-         xrdb -cpp xrdb-cpp
- 
-  It should also be included via `all.rdb', which first loads
-  `defines.rdb'.
-*/
+!
+! WARNING!  This file should be used with my custom xrdb-cpp preprocessor,
+! via:
+!        xrdb -cpp xrdb-cpp
+! 
+! It should also be included via `all.rdb', which first loads
+! `defines.rdb'.
+!
 
 !------------------------------------------------------------
 !
