@@ -53,10 +53,10 @@ run_unless_running () {
 #   }
 #   
 #   obtain_lock "$lock" "$cmd" || exit 1
-#   # Signal must be trapped *after* obtaining lock, otherwise
-#   # failure to obtain the lock would remove an active lock.
-#   # This leaves a tiny window within which unexpected failure
-#   # of the script could leave a stale lock.
+#   # Signal must be trapped *after* obtaining lock, otherwise failure
+#   # to obtain the lock would remove an active lock.  This leaves a
+#   # tiny window within which unexpected failure of the script could
+#   # leave a stale lock.
 #   trap clean_up EXIT
 #
 obtain_lock () {
