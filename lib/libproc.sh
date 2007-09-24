@@ -31,13 +31,20 @@ run_unless_running () {
 
 # obtain_lock LOCKFILE COMMAND
 # 
-# Obtains a lock via ln -s LOCKINFO LOCKFILE, to protect against COMMAND
-# running concurrently.  Returns success (zero) iff lock was obtained.
-# Cross-checks lock with process table and does the sensible thing in
-# each case.
+# Obtains a lock via ln -s LOCKINFO LOCKFILE, to protect against
+# COMMAND running concurrently.  Returns success (zero) iff lock was
+# obtained.  Cross-checks lock with process table and does the
+# sensible thing in each case.
 #
-# N.B. Any code calling this function is responsible for clearing
-# the lock when COMMAND stops!
+# Assumes that /proc/$pid/cmdline of the resulting command will
+# contain the first word of COMMAND.  This is so it can check whether
+# the lock has become stale and another process has assumed $pid.  If
+# this assumption is broken, and a second attempt is made to obtain
+# the lock, it will incorrectly treat the valid lock as a stale one,
+# and attempt to remove it.
+#
+# N.B. Any code calling this function is responsible for clearing the
+# lock when COMMAND stops!
 # 
 # Sample usage follows:
 # 
@@ -67,7 +74,7 @@ obtain_lock () {
         return 0
     fi
 
-    echo "obtain_lock: $lock already exists!"
+    #echo "obtain_lock: $lock already exists!"
 
     lockinfo=$( file -b "$lock" )
     case "$lockinfo" in
@@ -96,8 +103,15 @@ obtain_lock () {
     fi
 
     if [ -d "/proc/$pid" ]; then
-        ps -fp "$pid"
-        return 1
+        running="$(</proc/$pid/cmdline)"
+        cmd0="${cmd%% *}"
+        case "$running" in
+          *$cmd0*)
+            echo "obtain_lock: $cmd0 already running" >&2
+            ps -fp "$pid" >&2
+            return 1
+            ;;
+        esac
     fi
 
     # /proc/$pid missing - if we got here, we found a stale lock.
