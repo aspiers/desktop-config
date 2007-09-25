@@ -65,9 +65,9 @@ obtain_lock () {
         return 1
     fi
 
-    lock="$1"
-    required_lockinfo="$USER@$HOSTNAME.$$:`date +%s`"
-    cmd="$2"
+    local lock="$1"
+    local required_lockinfo="$USER@$HOSTNAME.$$:`date +%s`"
+    local cmd="$2"
 
     if ln -s "$required_lockinfo" "$lock" 2>/dev/null; then
         #echo "got lock $lock" >&2
@@ -76,7 +76,7 @@ obtain_lock () {
 
     #echo "obtain_lock: $lock already exists!"
 
-    lockinfo=$( file -b "$lock" )
+    local lockinfo=$( file -b "$lock" )
     case "$lockinfo" in
       *symbolic\ link\ to*$USER@$HOSTNAME.[0-9]*)
         : ;;
@@ -87,7 +87,7 @@ obtain_lock () {
 
     # or: sed 's/^symbolic link to `\(.\+\)'\''$/\1/' )
     #' # emacs font-lock hack
-    pid="${lockinfo%:*}"
+    local pid="${lockinfo%:*}"
     pid="${pid#*\`$USER@$HOSTNAME.}"
     case "$pid" in
       [0-9]*[0-9])
@@ -97,7 +97,7 @@ obtain_lock () {
         return 1 ;;
     esac
 
-    interactive=y
+    local interactive=y
     if ! [ -t 0 ] || ! [ -t 1 ]; then
         interactive=
     fi
@@ -134,6 +134,7 @@ obtain_lock () {
 
     # We're interactive.
     echo -n "obtain_lock: lock $lock for pid $pid seems stale, remove it now? (y/n) "
+    local confirm
     read confirm
     case "$confirm" in
       y*|Y*)
