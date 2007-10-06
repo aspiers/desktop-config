@@ -40,7 +40,7 @@
 ! The "W" key generates e and E
 ! The "E" key generates r, R, paragraph, registered, paragraph, and registered
 ! The "R" key generates t, T, tslash, Tslash, tslash, and Tslash
-! The "T" key generates z, Z, guillemotleft, less, guillemotleft, and less
+! The "T" key generates grave, bar, bar, brokenbar, bar, and brokenbar
 ! The "Y" key generates y, Y, leftarrow, yen, leftarrow, and yen
 ! The "U 4" key generates u, U, downarrow, uparrow, downarrow, and uparrow
 ! The "I 5" key generates i, I, rightarrow, idotless, rightarrow, and idotless
@@ -64,7 +64,7 @@
 ! The "Z" key generates c, C, cent, copyright, cent, and copyright
 ! The "X" key generates v, V, leftdoublequotemark, grave, leftdoublequotemark, and grave
 ! The "C" key generates b, B, rightdoublequotemark, apostrophe, rightdoublequotemark, and apostrophe
-! The "V" key generates grave, bar, bar, brokenbar, bar, and brokenbar
+! The "V" key generates z, Z, guillemotleft, less, guillemotleft, and less
 ! The "B" key generates b, B, rightdoublequotemark, apostrophe, rightdoublequotemark, and apostrophe
 ! The "M 0" key generates m, M, mu, masculine, mu, and masculine
 ! The "< ," key generates comma, less, horizconnector, multiply, horizconnector, and multiply
@@ -116,7 +116,7 @@ keycode 0x18 =	w		W		lstroke		Lstroke		lstroke		Lstroke
 keycode 0x19 =	e		E
 keycode 0x1A =	r		R		paragraph	registered	paragraph	registered
 keycode 0x1B =	t		T		tslash		Tslash		tslash		Tslash
-keycode 0x1C =	z		Z		guillemotleft	less		guillemotleft	less
+keycode 0x1C =	grave		bar		bar		brokenbar	bar		brokenbar
 keycode 0x1D =	y		Y		leftarrow	yen		leftarrow	yen
 keycode 0x1E =	u		U		downarrow	uparrow		downarrow	uparrow
 keycode 0x1F =	i		I		rightarrow	idotless	rightarrow	idotless
@@ -143,7 +143,7 @@ keycode 0x5E =	x		X		guillemotright	greater		guillemotright	greater
 keycode 0x34 =	c		C		cent		copyright	cent		copyright
 keycode 0x35 =	v		V		leftdoublequotemark	grave		leftdoublequotemark	grave
 keycode 0x36 =	b		B		rightdoublequotemark	apostrophe	rightdoublequotemark	apostrophe
-keycode 0x37 =	grave		bar		bar		brokenbar	bar		brokenbar
+keycode 0x37 =	z		Z		guillemotleft	less		guillemotleft	less
 keycode 0x38 =	b		B		rightdoublequotemark	apostrophe	rightdoublequotemark	apostrophe
 keycode 0x39 =	n		N
 keycode 0x3A =	m		M		mu		masculine	mu		masculine
