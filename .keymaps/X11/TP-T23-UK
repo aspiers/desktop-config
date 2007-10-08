@@ -72,8 +72,8 @@
 ! The "? / " key generates slash, question, dead_belowdot, dead_abovedot, dead_belowdot, and dead_abovedot
 ! The "Ctrl" key generates Meta_L, and the Mod1 modifier
 ! The "Alt" key generates Control_L, and the Control modifier
-! The "AltGr" key generates Alt_R, and the Mod3 modifier
-! The "Ctrl" key generates Super_R, and the Mod4 modifier
+! The "AltGr" key generates Super_R, and the Mod4 modifier
+! The "Ctrl" key generates Alt_R, and the Mod3 modifier
 
 keycode 0x09 =	Escape
 keycode 0x6F =	Print		Sys_Req
@@ -154,8 +154,8 @@ keycode 0x3E =	Shift_R
 keycode 0x25 =	Meta_L
 keycode 0x40 =	Control_L
 keycode 0x41 =	space
-keycode 0x71 =	Alt_R
-keycode 0x6D =	Super_R
+keycode 0x71 =	Super_R
+keycode 0x6D =	Alt_R
 keycode 0x62 =	Up
 keycode 0x64 =	Left
 keycode 0x68 =	Down
