@@ -206,6 +206,11 @@
         <execute>xscreensaver-command -lock</execute>
       </action>
     </keybind>
+    <keybind key="C-M-W-b">
+      <action name="Execute">
+        <execute>blank-all-screens</execute>
+      </action>
+    </keybind>
     <keybind key="W-a">
       <action name="Execute">
         <execute>amarok</execute>
