@@ -70,10 +70,10 @@
 ! The "< ," key generates comma, less, horizconnector, multiply, horizconnector, and multiply
 ! The "> ." key generates period, greater, periodcentered, division, periodcentered, and division
 ! The "? / " key generates slash, question, dead_belowdot, dead_abovedot, dead_belowdot, and dead_abovedot
-! The "Ctrl" key generates Alt_L and Meta_L, and the Mod1 modifier
+! The "Ctrl" key generates Meta_L, and the Mod1 modifier
 ! The "Alt" key generates Control_L, and the Control modifier
-! The "AltGr" key generates Return, and has no modifiers
-! The "Ctrl" key generates Hyper_R, and the Mod4 modifier
+! The "AltGr" key generates Alt_R, and the Mod3 modifier
+! The "Ctrl" key generates Super_R, and the Mod4 modifier
 
 keycode 0x09 =	Escape
 keycode 0x6F =	Print		Sys_Req
@@ -151,11 +151,11 @@ keycode 0x3B =	comma		less		horizconnector	multiply	horizconnector	multiply
 keycode 0x3C =	period		greater		periodcentered	division	periodcentered	division
 keycode 0x3D =	slash		question	dead_belowdot	dead_abovedot	dead_belowdot	dead_abovedot
 keycode 0x3E =	Shift_R
-keycode 0x25 =	Alt_L		Meta_L
+keycode 0x25 =	Meta_L
 keycode 0x40 =	Control_L
 keycode 0x41 =	space
-keycode 0x71 =	Return
-keycode 0x6D =	Hyper_R
+keycode 0x71 =	Alt_R
+keycode 0x6D =	Super_R
 keycode 0x62 =	Up
 keycode 0x64 =	Left
 keycode 0x68 =	Down
@@ -170,9 +170,11 @@ clear Mod3
 clear Mod4
 clear Mod5
 
+! See ~/roaming/notes/X11Modifiers.muse
 add    Shift   = Shift_L Shift_R
 add    Control = Control_L
-add    Mod1    = Alt_L 0x007D
+add    Mod1    = Meta_L
 add    Mod2    = Num_Lock
-add    Mod4    = Hyper_R
+add    Mod3    = Alt_L Alt_R
+add    Mod4    = Super_R
 add    Mod5    = Mode_switch ISO_Level3_Shift
