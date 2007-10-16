@@ -161,6 +161,10 @@ keycode 0x64 =	Left
 keycode 0x68 =	Down
 keycode 0x66 =	Right
 
+! Not sure where these come from
+keycode 0x9c =
+keycode 0x74 =
+
 clear Shift
 clear Lock
 clear Control
@@ -175,6 +179,6 @@ add    Shift   = Shift_L Shift_R
 add    Control = Control_L
 add    Mod1    = Meta_L
 add    Mod2    = Num_Lock
-add    Mod3    = Alt_L Alt_R
+add    Mod3    = Alt_R
 add    Mod4    = Super_R
 add    Mod5    = Mode_switch ISO_Level3_Shift
