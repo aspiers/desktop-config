@@ -89,6 +89,9 @@
       <action name="Execute"><execute>easytag</execute></action>
     </item>
     <separator />
+    <item label="transcribe">
+      <action name="Execute"><execute>transcribe</execute></action>
+    </item>
     <item label="audacity">
       <action name="Execute"><execute>audacity</execute></action>
     </item>
