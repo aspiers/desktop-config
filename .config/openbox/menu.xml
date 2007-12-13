@@ -5,6 +5,19 @@
               xsi:schemaLocation="http://openbox.org/
                                   file:///usr/share/openbox/menu.xsd">
 
+  <menu id="unison-menu" label="sync for roaming">
+    <separator label="" />
+    <item label="~/roaming">
+      <action name="Execute"><execute>roam pacific roaming</execute></action>
+    </item>
+    <item label="~/ifolder">
+      <action name="Execute"><execute>roam pacific ifolder</execute></action>
+    </item>
+    <item label="both">
+      <action name="Execute"><execute>roam pacific roaming ifolder</execute></action>
+    </item>
+  </menu>
+
   <menu id="wwwoffle-menu" label="wwwoffle">
     <separator label="wwwoffle" />
     <item label="go online">
@@ -177,6 +190,7 @@
     <menu id="utils-menu" />
     <menu id="fun-menu" />
     <menu id="wwwoffle-menu" />
+    <menu id="unison-menu" />
     <separator />
     <item label="xterm">
       <action name="Execute"><execute>xterm</execute></action>
