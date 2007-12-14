@@ -52,6 +52,9 @@
     <item label="gaim">
       <action name="Execute"><execute>gaim</execute></action>
     </item>
+    <item label="kopete">
+      <action name="Execute"><execute>kopete</execute></action>
+    </item>
     <item label="groupwise">
       <action name="Execute"><execute>/opt/novell/groupwise/client/bin/groupwise</execute></action>
     </item>
