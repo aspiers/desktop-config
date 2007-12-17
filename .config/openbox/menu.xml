@@ -229,22 +229,80 @@
     </item>
   </menu>
 
+  <menu id="org-personal-menu" label="_personal">
+    <item label="_TODO">
+      <action name="Execute">
+        <execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-jump-personal-todo"</execute>
+      </action>
+    </item>
+    <item label="_diary">
+      <action name="Execute">
+        <execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-jump-personal-diary"</execute>
+      </action>
+    </item>
+  </menu>
+
+  <menu id="org-work-menu" label="_work">
+    <item label="_TODO">
+      <action name="Execute">
+        <execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-jump-work-todo"</execute>
+      </action>
+    </item>
+    <item label="_diary">
+      <action name="Execute">
+        <execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-jump-work-diary"</execute>
+      </action>
+    </item>
+  </menu>
+
+  <menu id="org-todo-menu" label="_TODOs">
+    <item label="_personal">
+      <action name="Execute">
+        <execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-jump-personal-todo"</execute>
+      </action>
+    </item>
+    <item label="_work">
+      <action name="Execute">
+        <execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-jump-work-todo"</execute>
+      </action>
+    </item>
+  </menu>
+
+  <menu id="org-diary-menu" label="_diaries">
+    <item label="_personal">
+      <action name="Execute">
+        <execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-jump-personal-diary"</execute>
+      </action>
+    </item>
+    <item label="_work">
+      <action name="Execute">
+        <execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-jump-work-diary"</execute>
+      </action>
+    </item>
+  </menu>
+
   <menu id="org-menu" label="org-mode">
     <separator label="org-mode" />
-    <item label="_a: agenda">
-      <action name="Execute"><execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-jump-personal-todo"</execute></action>
+    <menu id="org-personal-menu" />
+    <menu id="org-work-menu" />
+    <separator label="" />
+    <menu id="org-todo-menu" />
+    <menu id="org-diary-menu" />
+    <separator label="" />
+    <item label="_agenda">
+      <action name="Execute">
+        <execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-agenda"</execute>
+      </action>
     </item>
-    <item label="_t: personal TODO">
-      <action name="Execute"><execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-jump-personal-todo"</execute></action>
+    <item label="_review">
+      <action name="Execute">
+        <execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-agenda-review"</execute>
+      </action>
     </item>
-    <item label="_T: work TODO">
-      <action name="Execute"><execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-jump-work-todo"</execute></action>
-    </item>
-    <item label="_d: personal diary">
-      <action name="Execute"><execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-jump-personal-diary"</execute></action>
-    </item>
-    <item label="_D: work diary">
-      <action name="Execute"><execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-jump-work-diary"</execute></action>
+    <item label="_q: remember">
+      <action name="Execute">
+        <execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-remember"</execute>
+      </action>
     </item>
   </menu>
 

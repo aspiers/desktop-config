@@ -213,7 +213,7 @@
     </keybind>
     <keybind key="W-a">
       <action name="Execute">
-        <execute>org-agenda</execute>
+        <execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-agenda"</execute>
       </action>
     </keybind>
     <keybind key="W-S-A">
