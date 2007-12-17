@@ -238,14 +238,19 @@
         <execute>/opt/novell/groupwise/client/bin/groupwise</execute>
       </action>
     </keybind>
-    <keybind key="W-k">
-      <action name="Execute">
-        <execute>kmix</execute>
-      </action>
-    </keybind>
     <keybind key="W-S-i">
       <action name="Execute">
         <execute>top-term 'sudo iftop'</execute>
+      </action>
+    </keybind>
+    <keybind key="W-j">
+      <action name="ShowMenu">
+        <menu>jump-to-app-menu</menu>
+      </action>
+    </keybind>
+    <keybind key="W-k">
+      <action name="Execute">
+        <execute>kmix</execute>
       </action>
     </keybind>
     <keybind key="W-S-l">

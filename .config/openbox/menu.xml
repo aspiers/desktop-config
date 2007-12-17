@@ -306,4 +306,13 @@
     </item>
   </menu>
 
+  <menu id="jump-to-app-menu" label="Jump to application">
+    <separator label="Jump to application" />
+    <item label="_gaim / pidgin">
+      <action name="Execute">
+        <execute>wmctrl -a 'Buddy List'</execute>
+      </action>
+    </item>
+  </menu>
+
 </openbox_menu>
