@@ -254,6 +254,11 @@
         <execute>sh -c 'unset STY; . ~/lib/novell-mail.sh; top-term screen -c ~/.screen.d/mail-watcher'</execute>
       </action>
     </keybind>
+    <keybind key="W-o">
+      <action name="ShowMenu">
+        <menu>org-menu</menu>
+      </action>
+    </keybind>
     <keybind key="W-p">
       <action name="Execute">
         <execute>gaim</execute>
