@@ -308,6 +308,11 @@
 
   <menu id="jump-to-app-menu" label="Jump to application">
     <separator label="Jump to application" />
+    <item label="_xterm">
+      <action name="Execute">
+        <execute>wmctrl -a xterm</execute>
+      </action>
+    </item>
     <item label="_gaim / pidgin">
       <action name="Execute">
         <execute>wmctrl -a 'Buddy List'</execute>
