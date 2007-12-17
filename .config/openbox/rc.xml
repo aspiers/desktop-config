@@ -213,6 +213,11 @@
     </keybind>
     <keybind key="W-a">
       <action name="Execute">
+        <execute>org-agenda</execute>
+      </action>
+    </keybind>
+    <keybind key="W-S-A">
+      <action name="Execute">
         <execute>amarok</execute>
       </action>
     </keybind>
@@ -254,11 +259,17 @@
         <execute>gaim</execute>
       </action>
     </keybind>
+    <keybind key="W-r">
+      <action name="Execute">
+        <execute>org-remember</execute>
+      </action>
+    </keybind>
     <keybind key="W-S-R">
       <action name="Execute">
         <execute>zsh -c 'dsa; roam pacific ifolder roaming'</execute>
       </action>
     </keybind>
+    <!-- W-C-r reserved for KDE run command -->
     <keybind key="W-t">
       <!-- Terminal -->
       <action name="Execute">
