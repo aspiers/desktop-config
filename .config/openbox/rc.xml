@@ -271,7 +271,7 @@
     </keybind>
     <keybind key="W-r">
       <action name="Execute">
-        <execute>org-remember</execute>
+        <execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-remember"</execute>
       </action>
     </keybind>
     <keybind key="W-S-R">
