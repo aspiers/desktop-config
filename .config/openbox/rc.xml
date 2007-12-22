@@ -64,6 +64,11 @@
         <wrap>no</wrap>
       </action>
     </keybind>
+    <keybind key="W-C-q" chroot="true">
+      <keybind key="W-C-q">
+        <action name="BreakChroot"/>
+      </keybind>
+    </keybind>
     <keybind key="W-period">
       <action name="DesktopRight">
         <wrap>no</wrap>
