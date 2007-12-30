@@ -283,12 +283,6 @@
 
   <menu id="org-menu" label="org-mode">
     <separator label="org-mode" />
-    <menu id="org-personal-menu" />
-    <menu id="org-work-menu" />
-    <separator label="" />
-    <menu id="org-todo-menu" />
-    <menu id="org-diary-menu" />
-    <separator label="" />
     <item label="_agenda">
       <action name="Execute">
         <execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-agenda"</execute>
@@ -304,6 +298,12 @@
         <execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-remember"</execute>
       </action>
     </item>
+    <separator label="by category" />
+    <menu id="org-personal-menu" />
+    <menu id="org-work-menu" />
+    <separator label="by file type" />
+    <menu id="org-todo-menu" />
+    <menu id="org-diary-menu" />
   </menu>
 
   <menu id="jump-to-app-menu" label="Jump to application">
