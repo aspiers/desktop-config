@@ -308,14 +308,29 @@
 
   <menu id="jump-to-app-menu" label="Jump to application">
     <separator label="Jump to application" />
-    <item label="_xterm">
+    <item label="_emacs">
       <action name="Execute">
-        <execute>wmctrl -a xterm</execute>
+        <execute>wmctrl -a emacs</execute>
+      </action>
+    </item>
+    <item label="_firefox">
+      <action name="Execute">
+        <execute>wmctrl -a firefox</execute>
       </action>
     </item>
     <item label="_gaim / pidgin">
       <action name="Execute">
         <execute>wmctrl -a 'Buddy List'</execute>
+      </action>
+    </item>
+    <item label="_vmware">
+      <action name="Execute">
+        <execute>wmctrl -a vmware</execute>
+      </action>
+    </item>
+    <item label="_xterm">
+      <action name="Execute">
+        <execute>wmctrl -a xterm</execute>
       </action>
     </item>
   </menu>
