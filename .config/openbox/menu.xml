@@ -293,16 +293,6 @@
         <execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-agenda-review"</execute>
       </action>
     </item>
-    <item label="_Daily review">
-      <action name="Execute">
-        <execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-agenda-daily-review"</execute>
-      </action>
-    </item>
-    <item label="_Weekly review">
-      <action name="Execute">
-        <execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-agenda-weekly-review"</execute>
-      </action>
-    </item>
     <item label="_q: remember">
       <action name="Execute">
         <execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-remember"</execute>
