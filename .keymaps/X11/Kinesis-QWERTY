@@ -150,6 +150,9 @@ keycode 0x41 =	space
 keycode 0x67 =	Escape
 keycode 0x69 =	Next
 
+! This ends up being Meta_L for some reason
+keycode 0x9c =
+
 clear Shift
 clear Lock
 clear Control
