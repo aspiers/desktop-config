@@ -3,5 +3,7 @@
 . $ZDOTDIR/lib/libproc.sh
 
 # N.B. xscreensaver doesn't play nice with KDEWM=sawfish
-run_if_executable xscreensaver -no-splash > ~/.xscreensaver.log 2>&1 &
+if ! uname -r | grep -q xen; then
+  run_if_executable xscreensaver -no-splash > ~/.xscreensaver.log 2>&1 &
+fi
 
