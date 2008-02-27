@@ -183,9 +183,14 @@
     <keybind key="S-W-q">
       <action name="Kill"/>
     </keybind>
-    <keybind key="S-W-Return">
+    <keybind key="W-Return">
       <action name="ShowMenu">
         <menu>apps-menu</menu>
+      </action>
+    </keybind>
+    <keybind key="S-W-Return">
+      <action name="ShowMenu">
+        <menu>client-menu</menu>
       </action>
     </keybind>
     <keybind key="M-W-Return">
@@ -196,11 +201,6 @@
     <keybind key="C-W-Return">
       <action name="ShowMenu">
         <menu>wm-menu</menu>
-      </action>
-    </keybind>
-    <keybind key="W-Return">
-      <action name="ShowMenu">
-        <menu>client-menu</menu>
       </action>
     </keybind>
     <keybind key="C-W-l">
@@ -273,7 +273,7 @@
     <keybind key="W-S-l">
       <!-- logs -->
       <action name="Execute">
-        <execute>sh -c 'unset STY; . ~/lib/novell-mail.sh; top-term screen -c ~/.screen.d/mail-watcher'</execute>
+        <execute>watchlogs-novell-mail-window</execute>
       </action>
     </keybind>
     <keybind key="W-o">
