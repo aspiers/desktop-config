@@ -12,10 +12,31 @@ if (( $#sockets == 0 )); then
 fi
 
 if (( $#sockets > 1 )); then
-    echo "Found multiple sockets in $sock_dir:"
-    echo "${(F@)sockets//(#s)/    }"
-    echo "Dunno what to do..."
+    echo "Found multiple sockets in $sock_dir"
+    for socket in "${(@)sockets}"; do
+        echo "  Checking if $socket in use via lsof"
+        _lsof="`lsof $socket`"
+        if [[ -z "$_lsof" ]]; then
+            echo "    unused; deleting"
+            if rm "$socket"; then
+                # remove from array using reverse subscripting
+                sockets[(r)$socket]=() 
+            else
+                echo "rm $socket failed" >&2
+                return 1
+            fi
+        fi
+    done
+fi
+
+if (( $#sockets > 1 )); then
+    echo "Still found multiple sockets in $sock_dir:"
+    echo "${(F@)sockets//(#s)/  }"
     return 1
+elif (( $#sockets == 0 )); then
+    echo "No sockets were in use!" >&2
+else
+    #echo "Found unique socket in use: $sockets[0]"
 fi
 
 session_socket="${SESSION_MANAGER#*:}"
