@@ -22,7 +22,7 @@ fi
 unset _array_index_test
 
 if echo "$dpy_width$dpy_height" | egrep -q '[^0-9]'; then
-    echo "xprop failed to determine _NET_DESKTOP_GEOMETRY; assuming 1280x1024" >&2
+    echo "failed to determine desktop geometry; assuming 1280x1024" >&2
     dpy_width=1280
     dpy_height=1024
 fi
