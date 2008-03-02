@@ -11,11 +11,11 @@ dpy_geometry=( $(
 # bash counts from 0, zsh counts from 1 - ugh!
 _array_index_test=(0 1 2)
 if [[ "${_array_index_test[1]}" == 1 ]]; then
-    echo "shell array indices start at 0"
+#     echo "shell array indices start at 0"
     dpy_width=${dpy_geometry[0]}
     dpy_height=${dpy_geometry[1]}
 elif [[ "${_array_index_test[1]}" == 0 ]]; then
-    echo "shell array indices start at 1"
+#     echo "shell array indices start at 1"
     dpy_width=${dpy_geometry[1]}
     dpy_height=${dpy_geometry[2]}
 fi
