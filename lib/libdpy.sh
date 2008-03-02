@@ -1,7 +1,10 @@
 #!/bin/bash
 
 typeset -a dpy_geometry
-dpy_geometry=$( xwininfo -root | awk '/-geometry/ {print $2}' )
+dpy_geometry=( $(
+  xwininfo -root | \
+  awk '/-geometry/ { sub(/x/, " ", $2); sub(/\+.*/, "", $2); print $2 }'
+) )
 # this doesn't work under nomachine's NX client
 #dpy_geometry=($( xprop -root -notype 32i ' $0 $1\n' _NET_DESKTOP_GEOMETRY ))
 
