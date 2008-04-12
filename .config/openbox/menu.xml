@@ -58,6 +58,9 @@
     <item label="groupwise">
       <action name="Execute"><execute>/opt/novell/groupwise/client/bin/groupwise</execute></action>
     </item>
+    <item label="skype">
+      <action name="Execute"><execute>skype</execute></action>
+    </item>
     <item label="X-Chat">
       <action name="Execute"><execute>xchat</execute></action>
     </item>
