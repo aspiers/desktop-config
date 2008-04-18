@@ -1,0 +1,9 @@
+;; Call window
+(if (and (matches (window_name) "Call with")
+         (is (window_role) "CallWindowForm"))
+   (begin (pin)))
+
+;; Chat window
+(if (and (matches (window_name) "Skype.*Chat")
+         (is (window_role) "Chats"))
+   (begin (pin)))
