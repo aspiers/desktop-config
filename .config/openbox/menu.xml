@@ -326,6 +326,16 @@
         <execute>wmctrl -a 'Buddy List'</execute>
       </action>
     </item>
+    <item label="_korganizer">
+      <action name="Execute">
+        <execute>wmctrl -a korganizer</execute>
+      </action>
+    </item>
+    <item label="_skype">
+      <action name="Execute">
+        <execute>wmctrl -a skype</execute>
+      </action>
+    </item>
     <item label="_vmware">
       <action name="Execute">
         <execute>wmctrl -a vmware</execute>
