@@ -336,6 +336,11 @@ xterm*visualBell:   true
 nxterm*visualBell:  true
 !XTerm*visualBell:       true
 
+! one of these will raise windows on bell but not deiconify - see
+! http://bugzilla.icculus.org/show_bug.cgi?id=3241
+XTerm.vt100.popOnBell:   true
+XTerm*PopOnBell:   true
+
 ! }}}
 ! {{{ terminal type
 
