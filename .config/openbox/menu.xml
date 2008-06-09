@@ -49,8 +49,8 @@
 
   <menu id="comms-menu" label="Communications">
     <separator label="Communications" />
-    <item label="gaim">
-      <action name="Execute"><execute>gaim</execute></action>
+    <item label="pidgin || gaim">
+      <action name="Execute"><execute>sh -c 'pidgin || gaim'</execute></action>
     </item>
     <item label="kopete">
       <action name="Execute"><execute>kopete</execute></action>
@@ -69,6 +69,9 @@
     </item>
     <item label="ekiga">
       <action name="Execute"><execute>ekiga</execute></action>
+    </item>
+    <item label="umtsmon">
+      <action name="Execute"><execute>umtsmon</execute></action>
     </item>
   </menu>
 
