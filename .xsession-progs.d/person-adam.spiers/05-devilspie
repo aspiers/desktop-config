@@ -1,0 +1,8 @@
+#!/bin/sh
+
+echo "### devilspie ..."
+if executable_p devilspie; then
+  devilspie -a >& ~/.devilspie-${HOST%%.*}.log &
+else
+  echo "Warning: devilspie not executable"
+fi

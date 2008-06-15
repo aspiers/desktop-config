@@ -21,17 +21,10 @@ fi
 echo "### .xsession-prewm.d ..."
 . $ZDOT_RUN_HOOKS .xsession-prewm.d
 
-echo "### devilspie ..."
-if executable_p devilspie; then
-  devilspie -a >& ~/.devilspie-${HOST%%.*}.log &
-else
-  echo "Warning: devilspie not executable"
-fi
-
 if executable_p openbox; then
   echo "### openbox ..."
   export KDEWM=openbox
-  kdetrayproxy &
+  run_if_executable kdetrayproxy &
 fi
 
 # Note that ~/.cfg/SESSION/.cfg-post.d/SESSION ensures
