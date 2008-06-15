@@ -1,6 +1,6 @@
 #!/bin/bash
 
-touch ~/.Xresources/local.rdb
+touch ~/.Xresources.d/local.rdb
 
 # also change SESSION/.xsession
 for dir in ~/.X_fonts ~/.truetype; do

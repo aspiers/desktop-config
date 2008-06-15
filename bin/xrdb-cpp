@@ -9,7 +9,7 @@
 . $ZDOTDIR/lib/libdpy.sh
 
 # FIXME: auto-detect
-# cpp -I ~/.Xresources .Xresources/all.rdb | awk '/Emacs.geometry/ {print $2}'
+# cpp -I ~/.Xresources.d .Xresources.d/all.rdb | awk '/Emacs.geometry/ {print $2}'
 font_char_width=8
 font_char_height=16
 
@@ -28,7 +28,7 @@ emacs_width=83
 # just to left of gkrellm
 emacs_position=-80+0
 
-cpp -I $ZDOTDIR/.Xresources \
+cpp -I $ZDOTDIR/.Xresources.d \
     -DEMACS_GEOMETRY=${emacs_width}x${emacs_height}${emacs_position} \
     "$@" | sed -e 's/@@/\
 /g; s/[ \t]*$//g'
