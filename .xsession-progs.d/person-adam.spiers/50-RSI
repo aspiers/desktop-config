@@ -2,7 +2,7 @@
 
 . $ZDOTDIR/lib/libproc.sh
 
-if [ "$HOST" = atlantic ]; then
+if [ "`cat $ZDOTDIR/.localhost-nickname`" = atlantic ]; then
     #run_if_executable ~/bin/xwrits &
     run_if_executable workrave &
 fi
