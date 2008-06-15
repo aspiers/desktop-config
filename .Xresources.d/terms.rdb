@@ -174,13 +174,14 @@ nxterm*Cursor: xterm
 ! }}}
 ! {{{ geometry
 
-! Could ifdef on WIDTH here
-! This is really weird: if I use this:
-!xterm.vt100.geometry: 92x40
-! I can't override on the CLI via xterm -geometry
-! but if I use this, I can:
+/*
+  Could ifdef on WIDTH here
+  This is really weird: if I use this:
+ xterm.vt100.geometry: 92x40
+  I can't override on the CLI via xterm -geometry
+  but if I use this, I can:
+*/
 xterm*geometry: 92x40
-! Huh?
 
 ! }}}
 ! {{{ title bar
@@ -215,35 +216,37 @@ XTerm.VT100.JumpScroll: true
 ! }}}
 ! {{{ key and mouse translations
 
-! Good reference here:
-!   http://www.in-ulm.de/~mascheck/X11/xterm/XTerm
-! 
-! From
-! http://moat.nlanr.net/Software/OC3mon/DOSCoraldist19980317/REMCTL/XDEFAULT.UNX
-! :-
-!
-!   in case you are wondering, magic words like 
-!   "Prior" and "BackSpace" are all listed in 
-!   	/usr/local/X11R6/include/X11/keysymdef.h
-!   with "XK_" in front of the name you can use here
-!
-!   boy, is it frustrating to try guessing them!
-!
-!   apparently, tilde in front of a shift means "not this shift"
-!   and exclamation point in front of a shift means "just this shift"
-!
-!   but the ~Shift somehow doesn't work on IRIX 6.3 X display
-!   in front of the lines that define ctrl-alt-L and ctrl-alt-X,
-!   even though it works fine for ctrl-alt-delete, so you need
-!   to take "~Shift" off the front of those definitions (which means
-!   that shift-ctrl-alt-L will have the same definition as ctrl-alt-L)
-!   if you live in that world
-!
-! In rxvt, Ctrl-Shift-Prior/Next is a bug which needs to be patched:
-!
-! http://lists.debian.org/debian-qa-packages/2005/10/msg00112.html
-! http://bugs.donarmstrong.com/cgi-bin/bugreport.cgi?bug=226386
-! TODO: Check http://sourceforge.net/projects/rxvt
+/*
+  Good reference here:
+    http://www.in-ulm.de/~mascheck/X11/xterm/XTerm
+  
+  From
+  http://moat.nlanr.net/Software/OC3mon/DOSCoraldist19980317/REMCTL/XDEFAULT.UNX
+  :-
+ 
+    in case you are wondering, magic words like 
+    "Prior" and "BackSpace" are all listed in 
+    	/usr/local/X11R6/include/X11/keysymdef.h
+    with "XK_" in front of the name you can use here
+ 
+    boy, is it frustrating to try guessing them!
+ 
+    apparently, tilde in front of a shift means "not this shift"
+    and exclamation point in front of a shift means "just this shift"
+ 
+    but the ~Shift somehow doesn't work on IRIX 6.3 X display
+    in front of the lines that define ctrl-alt-L and ctrl-alt-X,
+    even though it works fine for ctrl-alt-delete, so you need
+    to take "~Shift" off the front of those definitions (which means
+    that shift-ctrl-alt-L will have the same definition as ctrl-alt-L)
+    if you live in that world
+ 
+  In rxvt, Ctrl-Shift-Prior/Next is a bug which needs to be patched:
+ 
+  http://lists.debian.org/debian-qa-packages/2005/10/msg00112.html
+  http://bugs.donarmstrong.com/cgi-bin/bugreport.cgi?bug=226386
+  TODO: Check http://sourceforge.net/projects/rxvt
+*/
 
 #define XTERM_DEFAULT_TRANSLATIONS \n\
                None <Key> BackSpace:     string(0x7F)\n\
@@ -361,45 +364,49 @@ xterm*cutNewline: true
 // Don't select entire line from beginning when triple-clicking.
 xterm*cutToBeginningOfLine: false
 
-! From: http://www.leidinger.net/X/xresources/app-defaults/XTerm_mascheck
+/*
+  From: http://www.leidinger.net/X/xresources/app-defaults/XTerm_mascheck
 
-! Which characters are considered to build a _single_ word for Cut&Paste?
-! Every ascii-value gets mapped to another (arbitrary), already 'valid'
-! character  with a colon.
-! Here ascii 48 ("0") is the reference. See the manpage.
-!
-! I don't want these to separate 'words':   ! # $ % + - . / @ ~
+  Which characters are considered to build a _single_ word for Cut&Paste?
+  Every ascii-value gets mapped to another (arbitrary), already 'valid'
+  character  with a colon.
+  Here ascii 48 ("0") is the reference. See the manpage.
+ 
+  I don't want these to separate 'words':   ! # $ % + - . / @ ~
+*/
 XTerm.VT100.charClass: 33:48,35-37:48,43:48,45-47:48,58:48,64:48,126:48
 
-! Reminder:
-!   !    "    #    $    %    &    '    (    )    *    +    ,    -    .    / 
-!   33,  34,  35,  36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,
-!   @         [    \    ]    ^    _    `    {    |    }    ~  
-!   64,       91,  92,  93,  94,  48,  96,  123, 124, 125, 126,
+/*
+  Reminder:
+    !    "    #    $    %    &    '    (    )    *    +    ,    -    .    / 
+    33,  34,  35,  36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,
+    @         [    \    ]    ^    _    `    {    |    }    ~  
+    64,       91,  92,  93,  94,  48,  96,  123, 124, 125, 126,
 
-! Wether this works also with _wrapped_ selections, depends on
-!  - the terminal emulator:  Neither MIT X11R5/6 nor Suns openwin xterm
-!    know about that.  Use the 'xfree xterm' or 'rxvt'.  Both compile on
-!    all major platforms.
-!  - It only works if xterm is wrapping the line itself (if so is not
-!    always really obvious for the user).
-!  - Among the different vi's, vim actually supports this with a
-!    clever and hackish trick (see screen.c):
-!
-!    But first: vim inspects the _name_ of the value of TERM.
-!    This must be similar to 'xterm' (like xterm-color).
-!    The terminfo entry _itself_ doesn't matter here
-!    (e.g.: 'xterm' and 'vs100' are the same entry, but with
-!     the latter it doesn't work).
-!
-!    If vim has to wrap a word, it appends a space at the first part,
-!    this space will be wrapped by xterm.  vim in turn then positions
-!    the cursor again at the _beginning_ of this next line. Thus, the
-!    space is not visible. xterm now believes that the two lines are
-!    actually a single one--as xterm _did_ some wrapping...
+  Wether this works also with _wrapped_ selections, depends on
+   - the terminal emulator:  Neither MIT X11R5/6 nor Suns openwin xterm
+     know about that.  Use the 'xfree xterm' or 'rxvt'.  Both compile on
+     all major platforms.
+   - It only works if xterm is wrapping the line itself (if so is not
+     always really obvious for the user).
+   - Among the different vi's, vim actually supports this with a
+     clever and hackish trick (see screen.c):
+ 
+     But first: vim inspects the _name_ of the value of TERM.
+     This must be similar to 'xterm' (like xterm-color).
+     The terminfo entry _itself_ doesn't matter here
+     (e.g.: 'xterm' and 'vs100' are the same entry, but with
+      the latter it doesn't work).
+ 
+     If vim has to wrap a word, it appends a space at the first part,
+     this space will be wrapped by xterm.  vim in turn then positions
+     the cursor again at the _beginning_ of this next line. Thus, the
+     space is not visible. xterm now believes that the two lines are
+     actually a single one--as xterm _did_ some wrapping...
 
-! Here comes a simple test for a                                   'wrapped_selection' (using an 80 chars wide terminal).
-! Double click shall select the _whole_ word.
+  Here comes a simple test for a                                   'wrapped_selection' (using an 80 chars wide terminal).
+  Double click shall select the _whole_ word.
+*/
 
 ! }}}
 ! {{{ AutoWrap
