@@ -342,6 +342,11 @@
         <execute>wmctrl -a skype</execute>
       </action>
     </item>
+    <item label="_thunderbird">
+      <action name="Execute">
+        <execute>wmctrl -a thunderbird</execute>
+      </action>
+    </item>
     <item label="_vmware">
       <action name="Execute">
         <execute>wmctrl -a vmware</execute>
