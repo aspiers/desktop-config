@@ -75,8 +75,8 @@
     </item>
   </menu>
 
-  <menu id="graphics-menu" label="Graphics">
-    <separator label="Graphics" />
+  <menu id="images-menu" label="Images">
+    <separator label="Images" />
     <item label="The GIMP">
       <action name="Execute"><execute>gimp</execute></action>
     </item>
@@ -199,7 +199,7 @@
     <separator />
     <menu id="browser-menu" />
     <menu id="comms-menu" />
-    <menu id="graphics-menu" />
+    <menu id="images-menu" />
     <menu id="audio-menu" />
     <menu id="office-menu" />
     <item label="vmware">
