@@ -83,6 +83,12 @@
     <item label="gqview">
       <action name="Execute"><execute>gqview</execute></action>
     </item>
+    <item label="picasa">
+      <action name="Execute"><execute>picasa</execute></action>
+    </item>
+    <item label="kphotoalbum">
+      <action name="Execute"><execute>kphotoalbum</execute></action>
+    </item>
     <item label="xsane">
       <action name="Execute"><execute>xsane</execute></action>
     </item>
