@@ -7,8 +7,8 @@ me=`basename $0`
 #
 # Hacked by Adam Spiers <shell-hacks@adamspiers.org>
 
-# You'll need to use the MAC address of your phone here
-DEVICE="$K610"
+# This needs to be set to the MAC address of the phone to track
+DEVICE="$(~/.proximity-MAC)"
 
 if [ -z "$DEVICE" ]; then
     echo "Device not in environment; aborting." >&2
@@ -54,9 +54,10 @@ function msg {
 }
 
 function debug {
-    #echo "$1" >> "$LOG"
-    #logger -p auth.debug "$me[$$]: $*"
-    :
+    if [ -n "$DEBUG" ]; then
+        echo "$1" >> "$LOG"
+        logger -p auth.debug "$me[$$]: $*"
+    fi
 }
 
 function check_connection {
