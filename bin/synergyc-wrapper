@@ -1,7 +1,8 @@
 #!/bin/bash
 
 CLIENT_PROG=synergyc
-CLIENT_NAME_FILE=$HOME/.localhost-nickname
+HOST_NAME_FILE=$HOME/.localhost-nickname
+CLIENT_NAME_FILE=$HOME/.synergy-client-name
 SERVER_NAME_FILE=$HOME/.synergy-server-name
 DOMAIN_NAME_FILE=$HOME/.synergy-domain-name
 
@@ -43,8 +44,11 @@ fi
 read_conf () {
     clientname="`cat $CLIENT_NAME_FILE`"
     if [ -z "$clientname" ]; then
-        echo "Put client name in $CLIENT_NAME_FILE" >&2
-        exit 1
+        clientname="`cat $HOST_NAME_FILE`"
+        if [ -z "$clientname" ]; then
+            echo "Put host nickname in $HOST_NAME_FILE or client name in $CLIENT_NAME_FILE" >&2
+            exit 1
+        fi
     fi
 
     servername="`cat $SERVER_NAME_FILE`"
