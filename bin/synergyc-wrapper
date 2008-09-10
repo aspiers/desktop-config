@@ -41,15 +41,20 @@ if [ "$1" == '-a' ]; then
   shift
 fi
 
+read_client_conf () {
+    clientname=
+    [ -f "$CLIENT_NAME_FILE" ] && clientname="$(<$CLIENT_NAME_FILE)"
+    [ -n "$clientname" ] && return 0
+
+    [ -f "$HOST_NAME_FILE" ] && clientname="$(<$HOST_NAME_FILE)"
+    [ -n "$clientname" ] && return 0
+
+    echo "Put host nickname in $HOST_NAME_FILE or client name in $CLIENT_NAME_FILE" >&2
+    exit 1
+}
+
 read_conf () {
-    clientname="`cat $CLIENT_NAME_FILE`"
-    if [ -z "$clientname" ]; then
-        clientname="`cat $HOST_NAME_FILE`"
-        if [ -z "$clientname" ]; then
-            echo "Put host nickname in $HOST_NAME_FILE or client name in $CLIENT_NAME_FILE" >&2
-            exit 1
-        fi
-    fi
+    read_client_conf
 
     servername="`cat $SERVER_NAME_FILE`"
     if [ -z "$servername" ]; then
