@@ -93,10 +93,10 @@ ensure_correct_invocation_running () {
         restart=
         if [ "$last_arg" != "$servername" ]; then
             # We're pointing at the wrong server
-            _log_it "killing invocation pid $pid (has server $last_arg not $servername)"
+            _log_it "killing invocation pid $pid (has server '$last_arg' not '$servername')"
             restart=1
         elif [[ "${args[*]}" != *" -n $clientname"* ]]; then
-            _log_it "killing invocation pid $pid (client should be $clientname)"
+            _log_it "killing invocation pid $pid (client should be '$clientname')"
             restart=1
         fi
 
