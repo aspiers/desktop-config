@@ -102,7 +102,6 @@ ensure_correct_invocation_running () {
 
         [ -z "$restart" ] && return 0
 
-        _log_it "killing invocation pid $pid (has server IP $last_arg not $servername)"
         _kill "$pid"
         pid=
     elif [ "${#pids[@]}" -gt 1 ]; then
