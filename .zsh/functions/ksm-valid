@@ -1,7 +1,7 @@
 #autoload
 
 if [[ -z "$SESSION_MANAGER" ]]; then
-    echo "\$SESSION_MANAGER not set!" >&2
+    echo "\$SESSION_MANAGER not set" >&2
     return 1
 fi
 
