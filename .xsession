@@ -9,6 +9,8 @@ exec 1> ~/.xsession-my-errors.${host} 2>&1
 echo -n "### .xsession started: "
 date
 
+echo "### WINDOWMANAGER=$WINDOWMANAGER"
+
 . ~/lib/libproc.sh
 
 echo $DISPLAY > ~/.Xdisplay.${HOST%%.*}
