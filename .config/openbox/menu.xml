@@ -199,6 +199,9 @@
     <item label="_sync Novell mail">
       <action name="Execute"><execute>sync-novell-mail-now</execute></action>
     </item>
+    <item label="sync _personal mail">
+      <action name="Execute"><execute>top-term sync-personal-mail</execute></action>
+    </item>
     <separator />
     <menu id="browser-menu" />
     <menu id="comms-menu" />
