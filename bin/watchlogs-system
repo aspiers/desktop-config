@@ -1,3 +1,14 @@
 #!/bin/bash
 
+# Changing to #!/bin/zsh also works.  Maybe the PERL5LIB stuff
+# should be moved from .zshenv to .shared_env ...
+if ! echo "$PERL5LIB" | grep -q $ZDOTDIR/lib/perl5; then
+  if [ -z "$PERL5LIB" ]; then
+      PERL5LIB=$ZDOTDIR/lib/perl5
+  else
+      PERL5LIB=$ZDOTDIR/lib/perl5:$PERL5LIB
+  fi
+  export PERL5LIB
+fi
+
 . $ZDOT_FIND_HOOKS .watchlogs/system.d | watchlogs -
