@@ -167,6 +167,9 @@
     <item label="krandrtray">
       <action name="Execute"><execute>krandrtray</execute></action>
     </item>
+    <item label="kcolorchooser">
+      <action name="Execute"><execute>kcolorchooser</execute></action>
+    </item>
     <item label="kcalc">
       <action name="Execute"><execute>kcalc</execute></action>
     </item>
