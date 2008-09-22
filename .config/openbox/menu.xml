@@ -78,8 +78,8 @@
     </item>
   </menu>
 
-  <menu id="images-menu" label="Images">
-    <separator label="Images" />
+  <menu id="graphics-menu" label="Graphics">
+    <separator label="Graphics" />
     <item label="The GIMP">
       <action name="Execute"><execute>gimp</execute></action>
     </item>
@@ -94,6 +94,9 @@
     </item>
     <item label="xsane">
       <action name="Execute"><execute>xsane</execute></action>
+    </item>
+    <item label="xvidcap">
+      <action name="Execute"><execute>xvidcap</execute></action>
     </item>
   </menu>
 
@@ -208,7 +211,7 @@
     <separator />
     <menu id="browser-menu" />
     <menu id="comms-menu" />
-    <menu id="images-menu" />
+    <menu id="graphics-menu" />
     <menu id="audio-menu" />
     <menu id="office-menu" />
     <item label="vmware">
