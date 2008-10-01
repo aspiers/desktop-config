@@ -148,11 +148,15 @@
 
   <menu id="office-menu" label="Office/PIM">
     <separator label="Office/PIM" />
-    <item label="OpenOffice">
-      <action name="Execute"><execute>ooffice</execute></action>
-    </item>
     <item label="korganizer">
       <action name="Execute"><execute>korganizer</execute></action>
+    </item>
+    <item label="sunbird">
+      <action name="Execute"><execute>sunbird</execute></action>
+    </item>
+    <separator />
+    <item label="OpenOffice">
+      <action name="Execute"><execute>ooffice</execute></action>
     </item>
     <item label="GnuCash">
       <action name="Execute"><execute>gnucash</execute></action>
