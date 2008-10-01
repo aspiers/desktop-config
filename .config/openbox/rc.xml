@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <openbox_config xmlns="http://openbox.org/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://openbox.org/                 file:///usr/share/openbox/rc.xsd">
-
   <resistance>
     <strength>10</strength>
     <screen_edge_strength>20</screen_edge_strength>
     <edges_hit_layers_below>no</edges_hit_layers_below>
   </resistance>
-
   <focus>
     <focusNew>yes</focusNew>
     <followMouse>yes</followMouse>
@@ -15,13 +13,12 @@
     <focusDelay>0</focusDelay>
     <raiseOnFocus>no</raiseOnFocus>
   </focus>
-
   <placement>
     <policy>Smart</policy>
     <!-- 'Smart' or 'UnderMouse' -->
     <center>yes</center>
+    <monitor>Any</monitor>
   </placement>
-
   <desktops>
     <number>4</number>
     <firstdesk>1</firstdesk>
@@ -31,8 +28,8 @@
       <name>Three</name>
       <name>Four</name>
     </names>
+    <popupTime>875</popupTime>
   </desktops>
-
   <resize>
     <drawContents>yes</drawContents>
     <fourCorners>no</fourCorners>
@@ -40,8 +37,11 @@
     <!-- 'Always', 'Never', or 'Nonpixel' (xterms and such) -->
     <popupPosition>Center</popupPosition>
     <!-- 'Center' or 'Top' -->
+    <popupFixedPosition>
+      <x>0</x>
+      <y>0</y>
+    </popupFixedPosition>
   </resize>
-
   <dock>
     <position>TopLeft</position>
     <!-- (Top|Bottom)(Left|Right|)|Left|Right|Floating -->
@@ -56,7 +56,6 @@
     <showDelay>300</showDelay>
     <moveButton>Middle</moveButton>
   </dock>
-
   <keyboard>
     <chainQuitKey>C-g</chainQuitKey>
     <keybind key="W-comma">
@@ -262,12 +261,12 @@
     </keybind>
     <keybind key="W-k">
       <action name="Execute">
-        <execute>kmix</execute>
+        <execute>korganizer</execute>
       </action>
     </keybind>
     <keybind key="W-S-k">
       <action name="Execute">
-        <execute>korganizer</execute>
+        <execute>kmix</execute>
       </action>
     </keybind>
     <keybind key="W-S-l">
@@ -333,7 +332,6 @@
     <!-- W-x reserved for amarok -->
     <!-- W-z reserved for amarok -->
   </keyboard>
-
   <mouse>
     <dragThreshold>3</dragThreshold>
     <doubleClickTime>200</doubleClickTime>
@@ -576,8 +574,8 @@
     </context>
     <context name="MoveResize">
   </context>
+    <screenEdgeWarpTime>400</screenEdgeWarpTime>
   </mouse>
-
   <menu>
     <!-- You can specify more than one menu file in here and they are all loaded,
        just don't make menu ids clash or, well, it'll be kind of pointless -->
@@ -591,7 +589,6 @@
     <desktopMenuIcons>yes</desktopMenuIcons>
     <!-- -->
   </menu>
-
   <!--
 
 Use devilspie instead, ubiquitous across window managers.
@@ -624,7 +621,6 @@ Use devilspie instead, ubiquitous across window managers.
   </application>
 </applications>
 -->
-
   <theme>
     <keepBorder>yes</keepBorder>
     <animateIconify>yes</animateIconify>
@@ -632,41 +628,39 @@ Use devilspie instead, ubiquitous across window managers.
     <font place="ActiveWindow">
       <name>Sans</name>
       <size>8</size>
-      <weight></weight>
-      <slant></slant>
+      <weight/>
+      <slant/>
     </font>
     <font place="InactiveWindow">
       <name>Sans</name>
       <size>8</size>
-      <weight></weight>
-      <slant></slant>
+      <weight/>
+      <slant/>
     </font>
     <font place="MenuHeader">
       <name>Sans</name>
       <size>8</size>
-      <weight></weight>
-      <slant></slant>
+      <weight/>
+      <slant/>
     </font>
     <font place="MenuItem">
       <name>Sans</name>
       <size>8</size>
-      <weight></weight>
-      <slant></slant>
+      <weight/>
+      <slant/>
     </font>
     <font place="OnScreenDisplay">
       <name>Sans</name>
       <size>8</size>
-      <weight></weight>
-      <slant></slant>
+      <weight/>
+      <slant/>
     </font>
     <name>Clearlooks-Olive</name>
   </theme>
-
   <margins>
     <left>0</left>
     <right>0</right>
     <top>0</top>
     <bottom>0</bottom>
   </margins>
-
 </openbox_config>
