@@ -1,0 +1,150 @@
+#!/bin/sh
+
+# using my modified key layout
+#
+# Caveats:
+#   - modifier order seems irrelevant
+#   - beware allscreens/screen0 difference
+#   - can use <Super> or <Mod4>
+#   - use keysyms for non-modifiers
+#   - keysyms are case-sensitive, e.g. space not Space
+#   - don't put <> around non-modifiers!
+#   - avoid clashes between plugins
+#   - gconf-editor can be unreliable reporting current state - try restart
+#   - settings outside schema can (and should) be removed
+
+# TODO:
+#   - fold cube: C-M-down then left/right
+#   - fix dragging across edges
+#   - moving windows around with keybindings
+#   - toggle sticky
+#   - more command bindings
+
+plugins=/apps/compiz/plugins
+
+echo "general settings ..."
+general=/apps/compiz/general/allscreens/options
+
+# Note png is required for skydome and cube top/bottom if using png images
+gconftool-2 -s $general/active_plugins -t list --list-type=string \
+    '[gconf,decoration,wobbly,fade,minimize,png,cube,rotate,zoom,scale,move,resize,switcher,place,annotate,water]'
+
+gconftool-2 -s $general/click_to_focus -t bool false
+gconftool-2 -s $general/autoraise -t bool false
+gconftool-2 -s $general/raise_on_click -t bool false
+
+gconftool-2 -s $general/raise_window_button -t string '<Meta>Button4'
+gconftool-2 -s $general/lower_window_button -t string '<Meta>Button5'
+gconftool-2 -s $general/raise_window_key -t string '<Super>space'
+gconftool-2 -s $general/lower_window_key -t string '<Super>l'
+
+gconftool-2 -s $general/show_desktop_key -t string '<Super>d'
+gconftool-2 -s $general/close_window_key -t string '<Super>q'
+
+gconftool-2 -s $general/opacity_increase_button -t string '<Alt><Super>Button4'
+gconftool-2 -s $general/opacity_decrease_button -t string '<Alt><Super>Button5'
+
+gconftool-2 -s $general/minimize_window_key -t string '<Super>i'
+
+gconftool-2 -s $general/toggle_window_maximized_key -t string '<Super>m'
+gconftool-2 -s $general/toggle_window_maximized_vertically_key -t string '<Shift><Super>m'
+gconftool-2 -s $general/toggle_window_maximized_horizontally -t string '<Control><Super>m'
+gconftool-2 -s $general/command0 -t string 'xterm'
+gconftool-2 -s $general/run_command0_key -t string '<Super>t'
+gconftool-2 -s $general/command1 -t string 'firefox'
+gconftool-2 -s $general/run_command1_key -t string '<Super>f'
+
+gconftool-2 -s $general/run_key -t string '<Super>r'
+
+if rpm -ql compiz | grep -q libannotate.so; then
+  echo "setting up annotate plugin ..."
+  annotate=$plugins/annotate/allscreens/options
+  gconftool-2 -s $annotate/initiate_button -t string '<Alt><Super>Button1'
+  gconftool-2 -s $annotate/draw_button -t string '<Alt><Super>Button1'
+else
+  echo "annotate plugin not installed :-("
+fi
+
+echo "setting up cube plugin and skydome ..."
+cube=$plugins/cube/allscreens/options
+# N.B. screen0 not allscreens for some of these
+cube0=$plugins/cube/screen0/options
+gconftool-2 -s $cube/unfold_key -t string '<Control><Meta>Down'
+gconftool-2 -s $cube/prev_slide_key -t string '<Control><Meta>Left'
+gconftool-2 -s $cube/next_slide_key -t string '<Control><Meta>Right'
+gconftool-2 -s $cube0/prev_slide -t string '<Control><Meta>Left'
+gconftool-2 -s $cube0/next_slide -t string '<Control><Meta>Right'
+gconftool-2 -s $cube0/in -t bool false
+
+echo "setting up cube top/bottom and skydome ..."
+gconftool-2 -s -t list --list-type=string $cube0/images '[/usr/share/compiz/novell.png]'
+# don't scale image on cube top/bottom
+gconftool-2 -s $cube0/scale_image -t bool false
+# skydome
+gconftool-2 -s $cube0/skydome -t bool true
+gconftool-2 -s $cube0/skydome_animated -t bool true
+gconftool-2 -s $cube0/skydome_image -t string '/home/sleddemo/Documents/Images/skydome_img002.png'
+
+echo "setting up move plugin ..."
+move=$plugins/move/allscreens/options
+gconftool-2 -s $move/initiate_button -t string '<Meta>Button1'
+
+echo "setting up resize plugin ..."
+resize=$plugins/resize/allscreens/options
+gconftool-2 -s $resize/initiate_button -t string '<Meta>Button3'
+
+echo "setting up rotate plugin ..."
+rotate=$plugins/rotate/allscreens/options
+gconftool-2 -s $rotate/initiate_button -t string '<Control><Meta>Button1'
+gconftool-2 -s $rotate/rotate_left_key -t string '<Super>comma'
+gconftool-2 -s $rotate/rotate_right_key -t string '<Super>period'
+gconftool-2 -s $rotate/rotate_left_window_key -t string '<Meta><Super>comma'
+gconftool-2 -s $rotate/rotate_right_window_key -t string '<Meta><Super>period'
+# rotate_flip_x_button slower than rotate_x_button which is too sensitive
+gconftool-2 -s $rotate/rotate_flip_left_button -t string '<Control><Meta>Button4'
+gconftool-2 -s $rotate/rotate_flip_right_button -t string '<Control><Meta>Button5'
+
+for i in 1 2 3 4 5 6 7 8; do
+  gconftool-2 -s $rotate/rotate_to_${i}_key -t string "<Super>$i"
+  gconftool-2 -s $rotate/rotate_to_${i}_window_key -t string "<Shift><Super>$i"
+  gconftool-2 -s $rotate/rotate_to_${i}_window_key -t string "<Meta><Super>$i"
+done
+
+gconftool-2 -s $rotate/edge_flip_move -t bool true
+gconftool-2 -s $rotate/edge_flip_dnd  -t bool true
+gconftool-2 -s $rotate/rotate_window_button -t string 'Button1'
+
+echo "setting up scale plugin ..."
+scale=$plugins/scale/allscreens/options
+gconftool-2 -s $scale/initiate_button -t string 'Pause'
+gconftool-2 -s $scale/initiate_edge -t list --list-type=string '[]'
+
+echo "setting up switcher plugin ..."
+switcher=$plugins/switcher/allscreens/options
+gconftool-2 -s $switcher/next_key -t string '<Super>slash'
+gconftool-2 -s $switcher/prev_key -t string '<Shift><Super>slash'
+
+echo "setting up water plugin ..."
+water=$plugins/water
+# Desktop Effects GUI seems to be buggy and only affect the
+# initiate_button setting, but this doesn't affect actual behaviour.
+#
+# This is a funny one on account of being (typically) a binding to
+# modifiers only, and no keysyms.
+# We choose <Super>p for "Puddle"
+gconftool-2 -s $water/allscreens/options/initiate_key -t string '<Super>p'
+
+echo "setting up wobbly plugin ..."
+wobbly=$plugins/wobbly/allscreens/options
+wobbly0=$plugins/wobbly/allscreens/options
+gconftool-2 -s $wobbly/maximize_effect -t bool true
+gconftool-2 -s $wobbly0/maximize_effect -t bool true
+gconftool-2 -s $wobbly/snap_key -t string '<Shift>'
+
+echo "setting up zoom plugin ..."
+zoom=$plugins/zoom/allscreens/options
+zoom0=$plugins/zoom/screen0/options
+gconftool-2 -s $zoom/initiate_button -t string '<Control><Meta>Button3'
+gconftool-2 -s $zoom/zoom_in_button -t string '<Super>Button4'
+gconftool-2 -s $zoom/zoom_out_button -t string '<Super>Button5'
+
