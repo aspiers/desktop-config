@@ -8,13 +8,13 @@
   <menu id="unison-menu" label="sync for _roaming">
     <separator label="unison" />
     <item label="~/roaming">
-      <action name="Execute"><execute>roam pacific roaming</execute></action>
+      <action name="Execute"><execute>roam indian roaming</execute></action>
     </item>
     <item label="~/ifolder">
-      <action name="Execute"><execute>roam pacific ifolder</execute></action>
+      <action name="Execute"><execute>roam indian ifolder</execute></action>
     </item>
     <item label="both">
-      <action name="Execute"><execute>roam pacific roaming ifolder</execute></action>
+      <action name="Execute"><execute>roam indian roaming ifolder</execute></action>
     </item>
   </menu>
 
