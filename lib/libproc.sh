@@ -78,10 +78,11 @@ obtain_lock () {
 
     local lockinfo=$( file -b "$lock" )
     case "$lockinfo" in
-      *symbolic\ link\ to*$USER@$HOSTNAME.[0-9]*)
+      *symbolic\ link\ to*$USER@$HOSTNAME.*[0-9]*:*[0-9]*)
         : ;;
       *)
         echo "obtain_lock: Couldn't parse lock info [$lockinfo] from $lock" >&2
+        echo "*symbolic\ link\ to*$USER@$HOSTNAME.*[0-9])"
         return 1 ;;
     esac
 
@@ -89,11 +90,12 @@ obtain_lock () {
     #' # emacs font-lock hack
     local pid="${lockinfo%:*}"
     pid="${pid#*\`$USER@$HOSTNAME.}"
+    pid="${pid##[a-z]*.}"
     case "$pid" in
       [0-9]*[0-9])
         : ;;
       *)
-        echo "obtain_lock: Couldn't extract PID from [$lockinfo]" >&2
+        echo "obtain_lock: Couldn't extract PID from [$lockinfo]; stripped to [$pid]" >&2
         return 1 ;;
     esac
 
