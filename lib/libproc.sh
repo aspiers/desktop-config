@@ -90,6 +90,7 @@ obtain_lock () {
     #' # emacs font-lock hack
     local pid="${lockinfo%:*}"
     pid="${pid#*\`$USER@$HOSTNAME.}"
+    # strip domain name from hostname, if any
     pid="${pid##[a-z]*.}"
     case "$pid" in
       [0-9]*[0-9])
