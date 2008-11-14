@@ -350,7 +350,7 @@
         <execute>wmctrl -a emacs</execute>
       </action>
     </item>
-    <item label="xchat _IRC">
+    <item label="_xchat IRC">
       <action name="Execute">
         <execute>wmctrl -a xchat</execute>
       </action>
@@ -385,7 +385,7 @@
         <execute>wmctrl -a vmware</execute>
       </action>
     </item>
-    <item label="_xterm">
+    <item label="xterm _console">
       <action name="Execute">
         <execute>wmctrl -a xterm</execute>
       </action>
