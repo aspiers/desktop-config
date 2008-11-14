@@ -350,6 +350,11 @@
         <execute>wmctrl -a emacs</execute>
       </action>
     </item>
+    <item label="xchat _IRC">
+      <action name="Execute">
+        <execute>wmctrl -a xchat</execute>
+      </action>
+    </item>
     <item label="_firefox">
       <action name="Execute">
         <execute>wmctrl -a firefox</execute>
