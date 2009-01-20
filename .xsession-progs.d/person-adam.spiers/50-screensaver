@@ -2,8 +2,8 @@
 
 . $ZDOTDIR/lib/libproc.sh
 
-# N.B. xscreensaver doesn't play nice with KDEWM=sawfish
-if ! uname -r | grep -q xen; then
+if uname -r | grep -q xen && pgrep sawfish >/dev/null; then
+  echo "xscreensaver crashes Xen dom0 with KDEWM=sawfish? not running"
+else
   run_if_executable xscreensaver -no-splash > ~/.xscreensaver.log 2>&1 &
 fi
-
