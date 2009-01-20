@@ -2,7 +2,7 @@
 
 echo "### Fonts ..."
 # also change SESSION/.cfg-post.d/SESSION
-for dir in ~/.X_fonts ~/.truetype; do
+for dir in $ZDOTDIR/.X_fonts $ZDOTDIR/.truetype; do
   if [ -d $dir ]; then
     if xset fp+ $dir; then
       echo "Added font dir $dir"
