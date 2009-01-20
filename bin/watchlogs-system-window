@@ -15,7 +15,12 @@ right_margin=0
 #right_margin=90
 watchlogs_width=$(( (dpy_width - right_margin) / font_char_width ))
 
-urxvt -fn $font -fb $font +sk +sw +sb -name XTerm -tr -tint white -sh 70 -is \
+# Old style fake transparency: -tr -tint white -sh 70
+#
+# New style is full alpha transparency but needs composite extension
+# and a compositing manager such as xcompmgr running.
+urxvt -fn $font -fb $font -is +sk +sw +sb -name XTerm \
+      -depth 32 -bg rgba:0000/0000/0000/8888 \
       -g ${watchlogs_width}x${watchlogs_height}+0-0 \
       -e watchlogs-system
 
