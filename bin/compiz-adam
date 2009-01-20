@@ -5,6 +5,7 @@
 # Caveats:
 #   - modifier order seems irrelevant
 #   - beware allscreens/screen0 difference
+#   - <Super> before <Meta> before <Control> !
 #   - can use <Super> or <Mod4>
 #   - use keysyms for non-modifiers
 #   - keysyms are case-sensitive, e.g. space not Space
@@ -69,11 +70,11 @@ echo "setting up cube plugin and skydome ..."
 cube=$plugins/cube/allscreens/options
 # N.B. screen0 not allscreens for some of these
 cube0=$plugins/cube/screen0/options
-gconftool-2 -s $cube/unfold_key -t string '<Control><Meta>Down'
-gconftool-2 -s $cube/prev_slide_key -t string '<Control><Meta>Left'
-gconftool-2 -s $cube/next_slide_key -t string '<Control><Meta>Right'
-gconftool-2 -s $cube0/prev_slide -t string '<Control><Meta>Left'
-gconftool-2 -s $cube0/next_slide -t string '<Control><Meta>Right'
+gconftool-2 -s $cube/unfold_key -t string '<Meta><Control>Down'
+gconftool-2 -s $cube/prev_slide_key -t string '<Meta><Control>Left'
+gconftool-2 -s $cube/next_slide_key -t string '<Meta><Control>Right'
+gconftool-2 -s $cube0/prev_slide -t string '<Meta><Control>Left'
+gconftool-2 -s $cube0/next_slide -t string '<Meta><Control>Right'
 gconftool-2 -s $cube0/in -t bool false
 
 echo "setting up cube top/bottom and skydome ..."
@@ -95,19 +96,19 @@ gconftool-2 -s $resize/initiate_button -t string '<Meta>Button3'
 
 echo "setting up rotate plugin ..."
 rotate=$plugins/rotate/allscreens/options
-gconftool-2 -s $rotate/initiate_button -t string '<Control><Meta>Button1'
+gconftool-2 -s $rotate/initiate_button -t string '<Meta><Control>Button1'
 gconftool-2 -s $rotate/rotate_left_key -t string '<Super>comma'
 gconftool-2 -s $rotate/rotate_right_key -t string '<Super>period'
 gconftool-2 -s $rotate/rotate_left_window_key -t string '<Meta><Super>comma'
 gconftool-2 -s $rotate/rotate_right_window_key -t string '<Meta><Super>period'
 # rotate_flip_x_button slower than rotate_x_button which is too sensitive
-gconftool-2 -s $rotate/rotate_flip_left_button -t string '<Control><Meta>Button4'
-gconftool-2 -s $rotate/rotate_flip_right_button -t string '<Control><Meta>Button5'
+gconftool-2 -s $rotate/rotate_flip_left_button -t string '<Meta><Control>Button4'
+gconftool-2 -s $rotate/rotate_flip_right_button -t string '<Meta><Control>Button5'
 
 for i in 1 2 3 4 5 6 7 8; do
   gconftool-2 -s $rotate/rotate_to_${i}_key -t string "<Super>$i"
-  gconftool-2 -s $rotate/rotate_to_${i}_window_key -t string "<Shift><Super>$i"
-  gconftool-2 -s $rotate/rotate_to_${i}_window_key -t string "<Meta><Super>$i"
+  gconftool-2 -s $rotate/rotate_to_${i}_window_key -t string "<Super><Shift>$i"
+  gconftool-2 -s $rotate/rotate_to_${i}_window_key -t string "<Super><Meta>$i"
 done
 
 gconftool-2 -s $rotate/edge_flip_move -t bool true
@@ -140,11 +141,12 @@ wobbly0=$plugins/wobbly/allscreens/options
 gconftool-2 -s $wobbly/maximize_effect -t bool true
 gconftool-2 -s $wobbly0/maximize_effect -t bool true
 gconftool-2 -s $wobbly/snap_key -t string '<Shift>'
+gconftool-2 -s $wobbly/shiver_bell -t bool true
 
 echo "setting up zoom plugin ..."
 zoom=$plugins/zoom/allscreens/options
 zoom0=$plugins/zoom/screen0/options
-gconftool-2 -s $zoom/initiate_button -t string '<Control><Meta>Button3'
+gconftool-2 -s $zoom/initiate_button -t string '<Meta><Control>Button3'
 gconftool-2 -s $zoom/zoom_in_button -t string '<Super>Button4'
 gconftool-2 -s $zoom/zoom_out_button -t string '<Super>Button5'
 
