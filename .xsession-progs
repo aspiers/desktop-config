@@ -4,12 +4,5 @@ echo "### .xsession-progs ..."
 
 . $ZDOTDIR/lib/libproc.sh
 
-echo "### Xmodmap ..."
-if [ -z "$VNCDESKTOP" ]; then
-  . $ZDOT_RUN_HOOKS .Xmodmap.d
-else
-  echo "\$VNCDESKTOP is $VNCDESKTOP, not running .Xmodmap hooks"
-fi
-
 . $ZDOT_RUN_HOOKS .xsession-progs.d &
 
