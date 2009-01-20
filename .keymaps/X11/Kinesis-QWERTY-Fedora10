@@ -1,0 +1,178 @@
+!
+! This is an `xmodmap' input file for Kinesis 120 key (XFree86; US) keyboards.
+! Automatically generated on Thu Nov  7 09:34:25 2002 by aspiers with
+! XKeyCaps 2.46; Copyright (c) 1999 Jamie Zawinski <jwz@jwz.org>.
+! http://www.jwz.org/xkeycaps/, and then manually altered to support newer
+! models with the different insert/backslash/bar key by aspiers.
+! Also tweaked Home to generate Alt_L for synergy.
+!
+! Further tweaked on 2009-01-20 Tue 16:22:23 GMT by aspiers to cope
+! with changes in keycodes upon upgrade to Fedora 10, possibly as a
+! result of switching to a new evdev driver?
+!
+! This file makes the following changes:
+!
+! The "F1" key generates F1 and XF86_Switch_VT_1
+! The "F2" key generates F2 and XF86_Switch_VT_2
+! The "F3" key generates F3 and XF86_Switch_VT_3
+! The "F4" key generates F4 and XF86_Switch_VT_4
+! The "F5" key generates F5 and XF86_Switch_VT_5
+! The "F6" key generates F6 and XF86_Switch_VT_6
+! The "F7 Data" key generates F7 and XF86_Switch_VT_7
+! The "F8 Delay" key generates F8 and XF86_Switch_VT_8
+! The "F9 Repeat" key generates F9 and XF86_Switch_VT_9
+! The "F10 Disable" key generates F10 and XF86_Switch_VT_10
+! The "F11 Macro" key generates F11 and XF86_Switch_VT_11
+! The "F12 Remap" key generates F12 and XF86_Switch_VT_12
+! The "Scroll Lock" key generates Multi_key, and has no modifiers
+! The "@ 2" key generates 2 and quotedbl
+! The "Q" key generates q, Q, and braceleft
+! The "W" key generates w, W, and braceright
+! The "E" key generates e, E, and bracketleft
+! The "R" key generates r, R, and bracketright
+! The "U" key generates u, U, and underscore
+! The "I" key generates i, I, and less
+! The "O" key generates o, O, and greater
+! The "P" key generates p, P, and dollar
+! The "Caps Lock" key generates minus and underscore, and has no modifiers
+! The "A" key generates a, A, and semicolon
+! The "S" key generates s, S, and slash
+! The "D" key generates d, D, and minus
+! The "F" key generates f, F, and 0
+! The "G" key generates g, G, and colon
+! The "H" key generates h, H, and backslash
+! The "J" key generates j, J, and 1
+! The "K" key generates k, K, and parenleft
+! The "L" key generates l, L, and parenright
+! The ": ;" key generates semicolon, colon, and equal
+! The "" '" key generates apostrophe and at
+! The "Z" key generates z, Z, and 6
+! The "X" key generates x, X, and 7
+! The "C" key generates c, C, and 8
+! The "V" key generates v, V, and 9
+! The "B" key generates b, B, and plus
+! The "N" key generates n, N, and asterisk
+! The "M" key generates m, M, and 2
+! The "< ," key generates comma, less, and 3
+! The "> ." key generates period, greater, and 4
+! The "? /" key generates slash, question, and 5
+! The "Insert" key generates Insert and Insert
+! The "UpArrow" key generates Down
+! The "DownArrow" key generates Up
+! The "Alt" key generates Delete, and has no modifiers
+! The "Alt" key generates Meta_R
+! The "Ctrl" key generates Super_R, and the Mod4 modifier
+! The "Delete" key generates Meta_L, and the Mod1 modifier
+! The "Home" key generates Alt_L, and the Mod2 modifier, for synergy
+! The "End" key generates Escape
+
+keycode 0x09 =	Escape
+keycode 0x43 =	F1		XF86_Switch_VT_1
+keycode 0x44 =	F2		XF86_Switch_VT_2
+keycode 0x45 =	F3		XF86_Switch_VT_3
+keycode 0x46 =	F4		XF86_Switch_VT_4
+keycode 0x47 =	F5		XF86_Switch_VT_5
+keycode 0x48 =	F6		XF86_Switch_VT_6
+keycode 0x49 =	F7		XF86_Switch_VT_7
+keycode 0x4A =	F8		XF86_Switch_VT_8
+keycode 0x4B =	F9		XF86_Switch_VT_9
+keycode 0x4C =	F10		XF86_Switch_VT_10
+keycode 0x5F =	F11		XF86_Switch_VT_11
+keycode 0x60 =	F12		XF86_Switch_VT_12
+keycode 0x6B =	Print		Execute
+keycode 0x4E =	Multi_key
+keycode 0x7f =	Pause
+keycode 0x15 =	equal		plus
+keycode 0x0A =	1		exclam
+keycode 0x0B =	2		quotedbl
+keycode 0x0C =	3		numbersign
+keycode 0x0D =	4		dollar
+keycode 0x0E =	5		percent
+keycode 0x0F =	6		asciicircum
+keycode 0x10 =	7		ampersand
+keycode 0x11 =	8		asterisk
+keycode 0x12 =	9		parenleft
+keycode 0x13 =	0		parenright
+keycode 0x14 =	minus		underscore
+keycode 0x17 =	Tab
+keycode 0x18 =	q		Q		braceleft
+keycode 0x19 =	w		W		braceright
+keycode 0x1A =	e		E		bracketleft
+keycode 0x1B =	r		R		bracketright
+keycode 0x1C =	t		T
+keycode 0x1D =	y		Y
+keycode 0x1E =	u		U		underscore
+keycode 0x1F =	i		I		less
+keycode 0x20 =	o		O		greater
+keycode 0x21 =	p		P		dollar
+keycode 0x33 =	backslash	bar
+keycode 0x42 =	minus		underscore
+keycode 0x26 =	a		A		semicolon
+keycode 0x27 =	s		S		slash
+keycode 0x28 =	d		D		minus
+keycode 0x29 =	f		F		0
+keycode 0x2A =	g		G		colon
+keycode 0x2B =	h		H		backslash
+keycode 0x2C =	j		J		1
+keycode 0x2D =	k		K		parenleft
+keycode 0x2E =	l		L		parenright
+keycode 0x2F =	semicolon	colon		equal
+keycode 0x30 =	apostrophe	at
+keycode 0x32 =	Shift_L
+keycode 0x34 =	z		Z		6
+keycode 0x35 =	x		X		7
+keycode 0x36 =	c		C		8
+keycode 0x37 =	v		V		9
+keycode 0x38 =	b		B		plus
+keycode 0x39 =	n		N		asterisk
+keycode 0x3A =	m		M		2
+keycode 0x3B =	comma		less		3
+keycode 0x3C =	period		greater		4
+keycode 0x3D =	slash		question	5
+keycode 0x3E =	Shift_R
+keycode 0x31 =	grave		asciitilde
+! Older models?
+keycode 0x6A =	Insert          Insert
+! Newer models?
+keycode 0x5E =	Insert          Insert
+keycode 0x71 =	Left
+keycode 0x66 =	Right
+keycode 0x6f =	Down
+keycode 0x74 =	Up
+keycode 0x22 =	bracketleft	braceleft
+keycode 0x23 =	bracketright	braceright
+keycode 0x25 =	Control_L
+keycode 0x40 =	Delete
+keycode 0x6c =	Meta_R
+keycode 0x69 =	Super_R
+keycode 0x16 =	BackSpace
+keycode 0x77 =	Meta_L
+keycode 0x6e =	Alt_L
+keycode 0x70 =	Prior
+keycode 0x24 =	Return
+keycode 0x41 =	space
+keycode 0x73 =	Escape
+
+! This ends up being Meta_L for some reason
+keycode 0x9c =
+
+! Other ones to clear
+keycode 0x85 =
+keycode 0x86 =
+
+clear Shift
+clear Lock
+clear Control
+clear Mod1
+clear Mod2
+clear Mod3
+clear Mod4
+clear Mod5
+
+add    Shift   = Shift_L Shift_R
+add    Control = Control_L
+add    Mod1    = Meta_L Meta_R
+!add   Mod2    = Mode_switch
+!add    Mod2    = Alt_L Alt_R
+add    Mod2    = Alt_L
+add    Mod4    = Super_R
