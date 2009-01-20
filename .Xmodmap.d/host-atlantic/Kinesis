@@ -1,1 +1,6 @@
-xmodmap /home/adam/.keymaps/X11/Kinesis-QWERTY
+#!/bin/sh
+
+xmodmap /home/adam/.keymaps/X11/Kinesis-QWERTY-Fedora10
+
+xset r 64 # autorepeat Delete
+xset r 66 # autorepeat left-hand minus
