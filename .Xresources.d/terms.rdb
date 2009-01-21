@@ -147,7 +147,7 @@ nxterm*fontMenu*font##fontNum*Label: label (fontName)
 
 xterm*font:  DEFAULTFONT
 nxterm*font: DEFAULTFONT
-Rxvt*font: DEFAULTFONT
+Rxvt*font: xft:DejaVu Sans Mono:pixelsize=14
 
 FontAndLabel(  1, nil2 ,      Unreadable)
 !F!ontAndLabel(?, 5x7  ,      Micro)
@@ -163,9 +163,6 @@ FontAndLabel  (5, 10x20,      10x20)
 !F!ontAndLabel(?, vga11x19,   vga11x19)
 FontAndLabel  (6, 12x24,      12x24)
 
-! urxvt does not like fkp for some reason
-URxvt.font-switcher-list:  nexus|smoothansi|9x15|10x20|12x24
-
 #else
 
 *SimpleMenu*font: *helvetica*r*normal*10*
@@ -173,7 +170,7 @@ URxvt.font-switcher-list:  nexus|smoothansi|9x15|10x20|12x24
 #define DEFAULTFONT smoothansi
 xterm*font:  DEFAULTFONT
 nxterm*font: DEFAULTFONT
-Rxvt.font:  DEFAULTFONT
+Rxvt*font: xft:DejaVu Sans Mono:pixelsize=12
 
 FontAndLabel(  1, nil2 ,      Unreadable)
 FontAndLabel(  2, 5x7  ,      Micro)
@@ -189,10 +186,25 @@ FontAndLabel  (6, 10x20,      10x20)
 !F!ontAndLabel(?, vga11x19,   vga11x19)
 !F!ontAndLabel(?, 12x24,      12x24)
 
-! urxvt does not like fkp for some reason
-URxvt.font-switcher-list:  Micro|nexus|9x15|10x20
-
 #endif
+
+! urxvt does not like fkp for some reason
+!URxvt.font-switcher-list:  Micro|nexus|smoothansi|9x15|10x20|12x24
+
+URxvt.font-switcher-list:  \
+    xft:DejaVu Sans Mono:pixelsize=6  | \
+    xft:DejaVu Sans Mono:pixelsize=7  | \
+    xft:DejaVu Sans Mono:pixelsize=8  | \
+    xft:DejaVu Sans Mono:pixelsize=9  | \
+    xft:DejaVu Sans Mono:pixelsize=10 | \
+    xft:DejaVu Sans Mono:pixelsize=11 | \
+    xft:DejaVu Sans Mono:pixelsize=12 | \
+    xft:DejaVu Sans Mono:pixelsize=13 | \
+    xft:DejaVu Sans Mono:pixelsize=14 | \
+    xft:DejaVu Sans Mono:pixelsize=15 | \
+    xft:DejaVu Sans Mono:pixelsize=16 | \
+    xft:DejaVu Sans Mono:pixelsize=17 | \
+    xft:DejaVu Sans Mono:pixelsize=18
 
 URxvt.intensityStyles: true
 !URxvt.boldFont: DEFAULTFONT
