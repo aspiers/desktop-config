@@ -163,7 +163,7 @@ FontAndLabel  (5, 10x20,      10x20)
 !F!ontAndLabel(?, vga11x19,   vga11x19)
 FontAndLabel  (6, 12x24,      12x24)
 
-! urxvt doesn't like fkp for some reason
+! urxvt does not like fkp for some reason
 URxvt.font-switcher-list:  Unreadable|nexus|smoothansi|9x15|10x20|12x24
 
 #else
@@ -189,7 +189,7 @@ FontAndLabel  (6, 10x20,      10x20)
 !F!ontAndLabel(?, vga11x19,   vga11x19)
 !F!ontAndLabel(?, 12x24,      12x24)
 
-! urxvt doesn't like fkp for some reason
+! urxvt does not like fkp for some reason
 URxvt.font-switcher-list:  Unreadable|Micro|nexus|9x15|10x20
 
 #endif
