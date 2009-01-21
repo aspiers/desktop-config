@@ -299,7 +299,7 @@
     <keybind key="W-t">
       <!-- Terminal -->
       <action name="Execute">
-        <execute>xterm</execute>
+        <execute>urxvt</execute>
       </action>
     </keybind>
     <keybind key="W-S-t">
