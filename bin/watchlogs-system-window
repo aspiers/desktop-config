@@ -19,10 +19,18 @@ watchlogs_width=$(( (dpy_width - right_margin) / font_char_width ))
 #
 # New style is full alpha transparency but needs composite extension
 # and a compositing manager such as xcompmgr running.
-urxvt -fn $font -fb $font -is +sk \
-      +sw +sb \
+#
+# -is high-intensity styles for bold/blink
+# +sk don't scroll to bottom on keypress (irrelevant with -bl ?)
+# +sw don't scroll as new lines appear
+# +sb turn off scrollbar
+# -b 0 reduces border
+# -bl totally removes border but stops window from ever gaining focus;
+#     it also puts it above everything else for some reason
+#      -name XTerm \
+urxvt -fn $font -fb $font -is \
+      +sk +sw +sb \
       -b 0 \
-      -name XTerm \
       -depth 32 -bg rgba:0000/0000/0000/4444 \
       -g ${watchlogs_width}x${watchlogs_height}+0-0 \
       -e watchlogs-system
