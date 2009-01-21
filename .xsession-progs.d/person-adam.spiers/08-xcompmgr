@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# Needed for proper urxvt alpha channel compositing
+
 echo "### xcompmgr ..."
 if executable_p xcompmgr; then
   xcompmgr -c -t-5 -l-5 -r4.2 -o.55 &
