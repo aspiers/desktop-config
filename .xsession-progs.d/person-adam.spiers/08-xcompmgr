@@ -1,0 +1,8 @@
+#!/bin/sh
+
+echo "### xcompmgr ..."
+if executable_p xcompmgr; then
+  xcompmgr -c -t-5 -l-5 -r4.2 -o.55 &
+else
+  echo "Warning: xcompmgr not executable"
+fi
