@@ -141,6 +141,7 @@ nxterm*fontMenu*font##fontNum*Label: label (fontName)
 ! to play around with. 
 xterm*font:  9x15
 nxterm*font: 9x15
+Rxvt*font: 9x15
 
 FontAndLabel(  1, nil2 ,      Unreadable)
 !F!ontAndLabel(?, 5x7  ,      Micro)
@@ -162,6 +163,7 @@ FontAndLabel  (6, 12x24,      12x24)
 
 xterm*font:  smoothansi
 nxterm*font: smoothansi
+Rxvt.font:  smoothansi
 
 FontAndLabel(  1, nil2 ,      Unreadable)
 FontAndLabel(  2, 5x7  ,      Micro)
@@ -204,11 +206,12 @@ nxterm*Cursor: xterm
 /*
   Could ifdef on WIDTH here
   This is really weird: if I use this:
- xterm.vt100.geometry: 92x40
+    xterm.vt100.geometry: 92x40
   I can't override on the CLI via xterm -geometry
   but if I use this, I can:
 */
 xterm*geometry: 92x40
+Rxvt*geometry: 92x40
 
 ! }}}
 ! {{{ title bar
@@ -436,6 +439,8 @@ XTerm.VT100.charClass: 33:48,35-37:48,43:48,45-47:48,58:48,64:48,126:48
   Here comes a simple test for a                                   'wrapped_selection' (using an 80 chars wide terminal).
   Double click shall select the _whole_ word.
 */
+
+URxvt.perl-ext-common: default,selection-autotransform
 
 ! }}}
 ! {{{ AutoWrap
