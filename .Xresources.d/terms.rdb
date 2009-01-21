@@ -40,7 +40,8 @@
 XTerm*background:   TERM_BG
 xterm*background:   TERM_BG
 nxterm*background:  TERM_BG
-Rxvt*background:    TERM_BG
+Rxvt*background:    rgba:0000/0000/0000/8888
+Rxvt*depth:         32
 
 XTerm*foreground:   TERM_FG
 xterm*foreground:   TERM_FG
@@ -94,6 +95,28 @@ XTerm*color13: rgb:ff/44/ff
 !XTerm*color14: rgb:44/ff/ff
 XTerm*color14: rgb:be/eb/f4
 XTerm*color15: rgb:ff/ff/ff
+
+Rxvt*color0: rgb:00/00/00
+Rxvt*color1: rgb:aa/00/00
+Rxvt*color2: rgb:00/88/00
+Rxvt*color3: rgb:aa/55/22
+Rxvt*color4: rgb:10/00/b6
+Rxvt*color5: rgb:aa/00/aa
+!Rxvt*color6: rgb:00/aa aa
+Rxvt*color6: rgb:79/ae/a6
+Rxvt*color7: rgb:e0/e0/e0
+Rxvt*color8: rgb:55/55/55
+Rxvt*color9: rgb:ff/44/44
+!Rxvt*color10: rgb:44/ff/44
+Rxvt*color10: rgb:9e/db/96
+!Rxvt*color11: rgb:ff/ff/44
+Rxvt*color11: rgb:f7/ff/a6
+!Rxvt*color12: rgb:44/44/ff
+Rxvt*color12: rgb:51/55/c8
+Rxvt*color13: rgb:ff/44/ff
+!Rxvt*color14: rgb:44/ff/ff
+Rxvt*color14: rgb:be/eb/f4
+Rxvt*color15: rgb:ff/ff/ff
 
 ! }}}
 ! {{{ fonts
@@ -162,9 +185,11 @@ FontAndLabel  (6, 10x20,      10x20)
 
 XTerm*cursorColor:  CURSORCOLOR
 nxterm*cursorColor: CURSORCOLOR
+Rxvt*cursorColor: CURSORCOLOR
 
 XTerm*cursorBlink:  true
 nxterm*cursorBlink: true
+Rxvt*cursorBlink: true
 
 ! }}}
 ! {{{ pointer shape?
