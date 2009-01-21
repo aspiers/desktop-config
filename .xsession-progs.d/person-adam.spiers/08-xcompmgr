@@ -3,8 +3,46 @@
 # Needed for proper urxvt alpha channel compositing
 
 echo "### xcompmgr ..."
-if executable_p xcompmgr; then
-  xcompmgr -c -t-5 -l-5 -r4.2 -o.55 &
-else
-  echo "Warning: xcompmgr not executable"
-fi
+
+. $ZDOTDIR/lib/libproc.sh
+
+detect_wm () {
+    if [ -n "$DESKTOP_SESSION" ]; then
+        wm="$DESKTOP_SESSION"
+        echo "Detected window manager from \$DESKTOP_SESSION as $wm"
+        return
+    fi
+
+    if executable_p wmctrl; then
+        wm=`wmctrl -m | awk '/^Name: / { print $2 }'`
+        if [ -n "$wm" ]; then
+            echo "Detected window manager from wmctrl -m as $wm"
+            return
+        else
+            echo "wmctrl -m failed" >&2
+        fi
+    else
+        echo "wmctrl not executable" >&2
+    fi
+    
+    echo "Warning: couldn't determine window manager" >&2
+    wm=
+}
+
+detect_wm
+
+case "$wm" in
+    *openbox*)
+        if executable_p xcompmgr; then
+            # shadows are buggy
+            #xcompmgr -c -t-5 -l-5 -r4.2 -o.55 &
+            echo "Launching xcompmgr ..."
+            xcompmgr &
+        else
+            echo "Warning: xcompmgr not executable"
+        fi
+        ;;
+    *)
+        echo "openbox not running; won't launch xcompmgr"
+        ;;
+esac
