@@ -42,7 +42,7 @@ xterm*background:   TERM_BG
 nxterm*background:  TERM_BG
 
 ! pretty non-fake transparency
-URxvt*background:   rgba:0000/0000/0000/cccc
+URxvt*background:   rgba:0000/0000/0000/dddd
 URxvt*depth:        32
 
 XTerm*foreground:   TERM_FG
