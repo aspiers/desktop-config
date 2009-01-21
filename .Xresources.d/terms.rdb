@@ -40,8 +40,10 @@
 XTerm*background:   TERM_BG
 xterm*background:   TERM_BG
 nxterm*background:  TERM_BG
-Rxvt*background:    rgba:0000/0000/0000/8888
-Rxvt*depth:         32
+
+! pretty non-fake transparency
+URxvt*background:   rgba:0000/0000/0000/cccc
+URxvt*depth:        32
 
 XTerm*foreground:   TERM_FG
 xterm*foreground:   TERM_FG
@@ -224,11 +226,13 @@ nxterm*titleBar:    false
 
 XTerm*saveLines:    1500
 nxterm*saveLines:   1500
-rxvt*saveLines:     1500
+Rxvt*saveLines:     1500
 
 XTerm*scrollBar:    false
 nxterm*scrollBar:   false
+Rxvt*scrollBar:     false
 xterm*rightScrollBar: true
+Rxvt*rightScrollBar: true
 
 *scrollTtyOutput:   False
 *scrollKey:     True
