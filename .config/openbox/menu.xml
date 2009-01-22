@@ -115,6 +115,9 @@
     <item label="kmix">
       <action name="Execute"><execute>kmix</execute></action>
     </item>
+    <item label="pulseaudio mixer">
+      <action name="Execute"><execute>pavucontrol</execute></action>
+    </item>
     <item label="gnome ALSA mixer">
       <action name="Execute"><execute>gnome-alsamixer</execute></action>
     </item>
