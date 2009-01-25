@@ -20,6 +20,7 @@
 
 #define TERM_BD white
 #define TERM_UL rgb:e0/e0/33
+#define TERM_IT rgb:e0/00/33
 
 #define MENU_FG white
 #define MENU_BG black
@@ -31,6 +32,7 @@
 
 #define TERM_BD black
 #define TERM_UL blue
+#define TERM_IT red
 
 #define MENU_FG black
 #define MENU_BG rgb:ee/ee/ee
@@ -57,7 +59,7 @@ xterm*SimpleMenu*foreground:  MENU_FG
 nxterm*SimpleMenu*foreground: MENU_FG
 
 ! }}}
-! {{{ bold/underline colours
+! {{{ bold/underline/italic colours
 
 ! Use color or bold/underline for bold/underline?
 *xterm*colorBDMode: on
@@ -71,8 +73,12 @@ xterm*boldMode: false
 XTerm*colorBD:  TERM_BD
 XTerm*colorUL:  TERM_UL
 
-Rxvt*colorBD:  TERM_BD
-Rxvt*colorUL:  TERM_UL
+Rxvt*colorBD:   TERM_BD
+Rxvt*colorUL:   TERM_UL
+URxvt*colorIT:  TERM_IT
+
+/* Hrm, don't understand this one yet. */
+URxvt*italicULMode: false
 
 ! }}}
 ! {{{ other colours
