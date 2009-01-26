@@ -1,6 +1,6 @@
 #!/bin/sh
 
-if egrep -i 'AutoAddDevices.*(off|0)' /etc/X11/xorg.conf; then
+if egrep -iq 'AutoAddDevices.*(off|0)' /etc/X11/xorg.conf; then
     xmodmap /home/adam/.keymaps/X11/Kinesis-QWERTY
 else
     # funny shit happens with evdev
