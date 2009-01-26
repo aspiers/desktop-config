@@ -24,3 +24,13 @@ do
     echo -ne "\e[1m$key\e[0m = "
     gconftool-2 -g "$key"
 done
+
+echo
+echo -e "\e[1mxsession-progs.d"
+echo -e "----------------\e[0m"
+echo
+if which zsh >/dev/null 2>&1; then
+  zsh -c '. $ZDOT_FIND_HOOKS .xsession-progs.d'
+else
+  echo "zsh not installed"
+fi
