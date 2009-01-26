@@ -108,15 +108,18 @@
     <item label="AmaroK">
       <action name="Execute"><execute>amarok</execute></action>
     </item>
-    <item label="xmms">
+    <item label="_xmms">
       <action name="Execute"><execute>xmms</execute></action>
     </item>
     <separator />
-    <item label="kmix">
+    <item label="_kmix">
       <action name="Execute"><execute>kmix</execute></action>
     </item>
-    <item label="pulseaudio mixer">
+    <item label="_pulseaudio mixer (pavucontrol)">
       <action name="Execute"><execute>pavucontrol</execute></action>
+    </item>
+    <item label="pulseaudio VU _meter (pavumeter)">
+      <action name="Execute"><execute>pavumeter</execute></action>
     </item>
     <item label="gnome ALSA mixer">
       <action name="Execute"><execute>gnome-alsamixer</execute></action>
@@ -125,29 +128,29 @@
       <action name="Execute"><execute>envy24control</execute></action>
     </item>
     <separator />
-    <item label="grip">
+    <item label="_grip">
       <action name="Execute"><execute>grip</execute></action>
     </item>
-    <item label="easytag">
+    <item label="_easytag">
       <action name="Execute"><execute>easytag</execute></action>
     </item>
     <separator />
     <item label="transcribe">
       <action name="Execute"><execute>transcribe</execute></action>
     </item>
-    <item label="audacity">
+    <item label="_audacity">
       <action name="Execute"><execute>audacity</execute></action>
     </item>
-    <item label="ardour">
+    <item label="ar_dour">
       <action name="Execute"><execute>ardour</execute></action>
     </item>
-    <item label="rosegarden">
+    <item label="_rosegarden">
       <action name="Execute"><execute>rosegarden</execute></action>
     </item>
-    <item label="qjackctl">
+    <item label="q_jackctl">
       <action name="Execute"><execute>qjackctl</execute></action>
     </item>
-    <item label="qsynth">
+    <item label="_qsynth">
       <action name="Execute"><execute>qsynth</execute></action>
     </item>
   </menu>
@@ -350,7 +353,7 @@
     <separator label="Jump to application" />
     <item label="_emacs">
       <action name="Execute">
-        <execute>wmctrl -a emacs</execute>
+        <execute>wmctrl -ax emacs</execute>
       </action>
     </item>
     <item label="_xchat IRC">
