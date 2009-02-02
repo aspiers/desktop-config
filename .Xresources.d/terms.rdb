@@ -425,6 +425,7 @@ XTerm*PopOnBell:   true
 
 xterm*termName:          xterm-color
 nxterm*termName:         xterm-color
+URxvt*termName:          xterm-color
 
 ! }}}
 
