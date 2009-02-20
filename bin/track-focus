@@ -1,0 +1,64 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use Date::Manip;
+
+my %times;
+my $current;
+my $clock_start = time();
+
+$| = 1;
+open(CNEE, "unbuffer cnee -rec -devra 09-10 -hp|")
+  or die "Couldn't open(unbuffer cnee -rec -devra 09-10 -hp|): $!\n";
+while (<CNEE>) {
+  chomp;
+  if (/Event=(Focus(In|Out)) .* window=(\d+)/) {
+    my ($event, $window) = ($1, $3);
+    #print "$event $window\n";
+    my ($name) = `xprop -id $window -notype WM_NAME` =~ /WM_NAME = "(.+)"/;
+    if ($name) {
+      #print "$event $name\n";
+      account($event, $name);
+    }
+  }
+  else {
+    #print "unparsed: $_\n";
+  }
+}
+close(CNEE)
+  or die "close(unbuffer cnee -rec -devra 09-10 -hp|) failed: $!\n";
+
+sub account {
+  my ($event, $name) = @_;
+
+  if ($event eq 'FocusOut') {
+    #out();
+  }
+  elsif ($event eq 'FocusIn') {
+    out();
+    $clock_start = time();
+    $current = $name;
+    #print "Current: $current\n";
+  }
+}
+
+sub out {
+  return unless $current;
+  #die "\$current was $current, not $name" unless $name eq $current;
+  my $elapsed = time() - $clock_start;
+  my $total = $times{$current} += $elapsed;
+  report();
+  $clock_start = time();
+  undef $current;
+}
+
+sub report {
+#  printf "%s: %3d:%02s\n", $current, int($total/60), $total % 60;
+  system "clear";
+  foreach my $name (sort keys %times) {
+    my $total = $times{$name};
+    printf "%s: %3d:%02s\n", $name, int($total/60), $total % 60;
+  }
+}
