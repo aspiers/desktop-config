@@ -10,10 +10,17 @@ done
 mkdir -p ~/.xsession-progs.d
 
 if which startkde >&/dev/null; then
-  mkdir -p ~/.kde/Autostart
-  cd ~/.kde/Autostart
-  [ -e ~/.kde/Autostart/xsession-progs ] ||
-    ln -s ../../.xsession-progs ~/.kde/Autostart/xsession-progs
+    for dir in .kde .kde4; do
+        autostart=$HOME/$dir/Autostart
+        mkdir -p $autostart
+        cd $autostart
+        # notice the symlink mustn't be hidden
+        if ! [ -e xsession-progs ]; then
+            if ln -s ../../.xsession-progs xsession-progs; then
+                echo "Created $autostart/xsession-progs symlink"
+            fi
+        fi
+    done
 fi
 
 touch ~/.synergy-{client,server}-name
