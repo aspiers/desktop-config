@@ -97,6 +97,30 @@
         <dialog>yes</dialog>
       </action>
     </keybind>
+    <keybind key="M-W-1">
+      <action name="SendToDesktop">
+        <desktop>1</desktop>
+        <follow>yes</follow>
+      </action>
+    </keybind>
+    <keybind key="M-W-2">
+      <action name="SendToDesktop">
+        <desktop>2</desktop>
+        <follow>yes</follow>
+      </action>
+    </keybind>
+    <keybind key="M-W-3">
+      <action name="SendToDesktop">
+        <desktop>3</desktop>
+        <follow>yes</follow>
+      </action>
+    </keybind>
+    <keybind key="M-W-4">
+      <action name="SendToDesktop">
+        <desktop>4</desktop>
+        <follow>yes</follow>
+      </action>
+    </keybind>
     <keybind key="M-W-comma">
       <action name="SendToDesktopLeft">
         <wrap>no</wrap>
