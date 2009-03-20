@@ -5,7 +5,7 @@ if [[ -z "$SESSION_MANAGER" ]]; then
     return 1
 fi
 
-session_socket="${SESSION_MANAGER#*:}"
+session_socket="${SESSION_MANAGER##*:}"
 
 if [[ ! -e "$session_socket" ]]; then
     echo "$session_socket does not exist!" >&2
