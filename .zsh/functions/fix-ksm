@@ -27,21 +27,22 @@ if (( $#sockets > 1 )); then
             fi
         fi
     done
+
+    if (( $#sockets > 1 )); then
+        echo "Still found multiple sockets in $sock_dir:"
+        echo "${(F@)sockets//(#s)/  }"
+        return 1
+    elif (( $#sockets == 0 )); then
+        echo "No sockets left after removing unused ones!" >&2
+        return 1
+    fi
 fi
 
-if (( $#sockets > 1 )); then
-    echo "Still found multiple sockets in $sock_dir:"
-    echo "${(F@)sockets//(#s)/  }"
-    return 1
-elif (( $#sockets == 0 )); then
-    echo "No sockets were in use!" >&2
-else
-    #echo "Found unique socket in use: $sockets[0]"
-fi
+#echo "Found unique socket in use: $sockets[1]"
 
 session_socket="${SESSION_MANAGER#*:}"
-SESSION_MANAGER="local/`hostname`:$sockets[0]"
+export SESSION_MANAGER="local/`hostname`:$sockets[1]"
 
-echo "Set SESSION_MANAGER=local/`hostname`:$sockets[0]"
+echo "Set SESSION_MANAGER=local/`hostname`:$sockets[1]"
 return 0
 
