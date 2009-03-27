@@ -1,0 +1,15 @@
+#!/bin/sh
+
+# When using mutt/emacs server-mode, auto-switch focus back to mutt.
+
+current_desktop=$( wmctrl -d | awk '$2 == "*" { print $1; exit 0 }' )
+
+win_id=$( wmctrl -lpx | awk '/urxvt/ && ! /watchlogs/ && $2 == "'$current_desktop'" {print $1; exit 0 }' )
+
+if [ -n "$win_id" ]; then
+  wmctrl -ia "$win_id"
+else
+  echo "Couldn't guess win_id of terminal running mutt" >&2
+  exit 1
+fi
+
