@@ -1,0 +1,4 @@
+#!/bin/sh
+
+wmctrl -xa emacs
+emacsclient "$@"
