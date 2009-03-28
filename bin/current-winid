@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# Hmm, it's easier than I thought...
+echo $WINDOWID
+exit 0
 
 if ! which wmctrl >/dev/null 2>&1; then
   me=`basename $0`
