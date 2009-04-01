@@ -1,0 +1,9 @@
+#!/bin/sh
+
+if ! which wmctrl >/dev/null 2>&1; then
+  me=`basename $0`
+  echo "$me: wmctrl not found; aborting." >&2
+  exit 1
+fi
+
+wmctrl -d -v 2>&1 | sed -ne '/^Current desktop ID.*: /{s///;p}'
