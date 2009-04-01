@@ -21,6 +21,11 @@ elif [ "${#emacs_winids[*]}" -gt 1 ]; then
     if [ -n "$emacs_winid" ]; then
         debug "winid of emacs on current desktop is $emacs_winid"
         wmctrl -ia $emacs_winid
+
+        # The problem here is that emacsclient doesn't tell emacs
+        # server which frame to open the new buffer in.  FIXME: tweak
+        # `server-switch-hook' to do this somehow (env variable?)
+        # http://emacs-fu.blogspot.com/2008/12/opening-emacsclient-windows-on-current.html
     else
         debug "No emacs on current desktop; picking any one"
         wmctrl -xa emacs
