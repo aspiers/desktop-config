@@ -1,10 +1,35 @@
-#!/bin/sh
+#!/bin/bash
 
 # Save the current winid so we know what to switch back to from emacs.
 client_winid=`current-winid`
 
 # Switch to emacs and wait for editing to be completed.
-wmctrl -xa emacs
+
+debug () {
+    :
+    echo "$*" >&2
+}
+
+emacs_winids=( $(wmctrl -lpx | awk '$4 ~ /emacs/ { print $1 }') )
+if [ "${#emacs_winids[*]}" -eq 1 ]; then
+    wmctrl -ia $emacs_winids[1]
+elif [ "${#emacs_winids[*]}" -gt 1 ]; then
+    current_desktop=`current-desktop`
+    debug "More than one emacs frame; will prefer one on desktop $current_desktop" >&2
+    emacs_winid=$( wmctrl -lpx | \
+                   awk '$4 ~ /emacs/ && $2 == '$current_desktop' { print $1 }' )
+    if [ -n "$emacs_winid" ]; then
+        debug "winid of emacs on current desktop is $emacs_winid"
+        wmctrl -ia $emacs_winid
+    else
+        debug "No emacs on current desktop; picking any one"
+        wmctrl -xa emacs
+    fi
+else
+    echo "ERROR: no emacs windows found" >&2
+    exit 1
+fi
+
 emacsclient -a fe "$@"
 
 # Switch back to window from which emacsclient was invoked.
