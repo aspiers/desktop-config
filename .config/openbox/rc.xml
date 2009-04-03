@@ -275,7 +275,7 @@
     </keybind>
     <keybind key="W-S-i">
       <action name="Execute">
-        <execute>top-term 'sudo iftop'</execute>
+        <execute>top-term sudo iftop</execute>
       </action>
     </keybind>
     <keybind key="W-j">
