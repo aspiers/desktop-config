@@ -4,6 +4,8 @@ host=${HOST:-$HOSTNAME}
 host=${host%%.*}
 exec 1> ~/.xsession-my-errors.${host} 2>&1
 
+. ~/.shared_env
+
 echo "### .xsession-progs ..."
 
 . $ZDOTDIR/lib/libproc.sh
