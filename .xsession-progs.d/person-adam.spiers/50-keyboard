@@ -12,7 +12,7 @@ my_xmodmap () {
         d600)
             xmodmap ~/.keymaps/X11/Dell-D600-Adam ;;
         indian|pacific)
-            . $ZDOTDIR/.Xmodmap.d/lib/D620-hacked ;;
+            xmodmap ~/.keymaps/X11/Dell-D620-Adam ;;
         t23)
             xmodmap ~/.keymaps/X11/TP-T23-UK      ;;
         *)
