@@ -23,11 +23,17 @@ fi
 echo "### .xsession-prewm.d ..."
 . $ZDOT_RUN_HOOKS .xsession-prewm.d
 
-if executable_p openbox; then
-  echo "### openbox ..."
-  export KDEWM=openbox
-  run_if_executable kdetrayproxy &
-fi
+xprop -root > /tmp/xprop.out
+xprop -root -remove _NET_NUMBER_OF_DESKTOPS -remove _NET_DESKTOP_NAMES -remove _NET_CURRENT_DESKTOP
+
+for ob in openbox-kde-session openbox-session openbox; do
+    if executable_p $ob; then
+        echo "### $ob ..."
+        export KDEWM=openbox
+        run_if_executable kdetrayproxy &
+        break
+    fi
+done
 
 # Note that ~/.cfg/SESSION/.cfg-post.d/SESSION ensures
 # that there is a symlink from within ~/.kde/Autostart
