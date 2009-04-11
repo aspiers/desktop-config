@@ -8,8 +8,8 @@ my_xmodmap () {
 
     case "${HOSTNAME%%.*}" in
         atlantic)
-            . $ZDOTDIR/.Xmodmap.d/lib/Kinesis-QWERTY ;;
-        d600)
+            . $ZDOTDIR/.Xmodmap.d/lib/Kinesis     ;;
+       d600)
             xmodmap ~/.keymaps/X11/Dell-D600-Adam ;;
         indian|pacific)
             xmodmap ~/.keymaps/X11/Dell-D620-Adam ;;
