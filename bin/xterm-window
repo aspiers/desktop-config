@@ -13,16 +13,5 @@ height=$(( (dpy_height - border_height) * 4 / 5 / font_char_height ))
 
 width=90
 
-xterm -fn $font -g ${width}x${height}+0+0
-
-#urxvt -fn $font -fb $font +sk +sw +sb -name XTerm -tr -tint white -sh 70 -is \
-#      -g ${width}x${height}+0-0 \
-#      -e watchlogs-system
-
-#rxvt -fn $font +sk +sw -tr -g ${width}x${height}+0-0 \
-#     -e watchlogs-system
-
-#aterm -fn $font -fb $font -tr -g ${width}x${height}+0-0 \
-#      -e watchlogs-system
-
-#Eterm -t watchlogs-system -g ${width}x${height}+0-0
+#xterm -fn $font -g ${width}x${height}+0+0
+urxvt -fn $font -g ${width}x${height}+0+0
