@@ -1,10 +1,30 @@
 #!/bin/sh
 
+my_xmodmap () {
+    backup=$HOME/.Xmodmap.orig.`hostname -s`
+    if ! [ -e "$backup" ]; then
+        xmodmap -pke > "$backup"
+    fi
+
+    case "${HOSTNAME%%.*}" in
+        atlantic)
+            . $ZDOTDIR/.Xmodmap.d/lib/Kinesis-QWERTY ;;
+        d600)
+            xmodmap ~/.keymaps/X11/Dell-D600-Adam ;;
+        indian|pacific)
+            . $ZDOTDIR/.Xmodmap.d/lib/D620-hacked ;;
+        t23)
+            xmodmap ~/.keymaps/X11/TP-T23-UK      ;;
+        *)
+            echo "WARNING: didn't know which keymap to use with HOSTNAME=$HOSTNAME" >&2
+    esac
+}
+
 echo "### Xmodmap ..."
 if [ -z "$VNCDESKTOP" ]; then
-  . $ZDOT_RUN_HOOKS .Xmodmap.d
+    my_xmodmap
 else
-  echo "\$VNCDESKTOP is $VNCDESKTOP, not running .Xmodmap hooks"
+    echo "\$VNCDESKTOP is $VNCDESKTOP, not running .Xmodmap hooks"
 fi
 
 echo "### Keyboard autorepeat ..."

@@ -1,3 +1,0 @@
-#!/bin/sh
-
-xmodmap $ZDOTDIR/.keymaps/X11/Dell-D620-Adam
