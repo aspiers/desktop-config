@@ -51,7 +51,7 @@ Emacs.geometry: EMACS_GEOMETRY
 
 #if WIDTH < 1280
    emacs*font: fixed
-#elif WIDTH <= 1400
+#elif WIDTH <= 1440
    emacs*font: 9x15
 #else
    emacs*font: 10x20
