@@ -8,12 +8,19 @@
 
 . $ZDOTDIR/lib/libdpy.sh
 
-emacs_font=$( cpp -I $ZDOTDIR/.Xresources.d $ZDOTDIR/.Xresources.d/all.rdb | \
+emacs_font=$( cpp -I $ZDOTDIR/.Xresources.d \
+                  -DWIDTH=$dpy_width \
+                  $ZDOTDIR/.Xresources.d/all.rdb | \
                 awk '/^ *emacs.font/ {print $2}' )
-# FIXME: auto-detect font size, something involving:
-#   xlsfonts -fn $emacs_font -lll
-font_char_width=8
-font_char_height=16
+
+eval $( xlsfonts -ll -fn $emacs_font | \
+          awk '/ascent:/  {ascent=$2}
+               /descent:/ {descent=$2}
+               $1=="max"  {width=$2}
+               END {
+                 height=ascent+descent;
+                 print "font_char_width="  width;
+                 print "font_char_height=" height}' )
 
 # Note: emacs used to seem to increase the size by 6x2 on startup (on
 # a 1024x768 display, anyhow).  So 78x42 actually ended up being
