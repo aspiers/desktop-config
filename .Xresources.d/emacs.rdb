@@ -49,10 +49,12 @@ Emacs.geometry: EMACS_GEOMETRY
 ! }}} 
 ! {{{ font
 
-#if WIDTH <= 1400
+#if WIDTH < 1280
    emacs*font: fixed
-#else
+#elif WIDTH <= 1400
    emacs*font: 9x15
+#else
+   emacs*font: 10x20
 #endif
 
 ! Fonts I have used in the past:
