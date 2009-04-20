@@ -2,7 +2,7 @@
 <openbox_config xmlns="http://openbox.org/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://openbox.org/                 file:///usr/share/openbox/rc.xsd">
   <resistance>
     <strength>10</strength>
-    <screen_edge_strength>20</screen_edge_strength>
+    <screen_edge_strength>70</screen_edge_strength>
     <edges_hit_layers_below>no</edges_hit_layers_below>
   </resistance>
   <focus>
@@ -357,7 +357,7 @@
     <!-- W-z reserved for amarok -->
   </keyboard>
   <mouse>
-    <dragThreshold>3</dragThreshold>
+    <dragThreshold>1</dragThreshold>
     <doubleClickTime>200</doubleClickTime>
     <context name="Desktop">
       <mousebind button="Up" action="Press">
@@ -598,7 +598,7 @@
     </context>
     <context name="MoveResize">
   </context>
-    <screenEdgeWarpTime>400</screenEdgeWarpTime>
+    <screenEdgeWarpTime>0</screenEdgeWarpTime>
   </mouse>
   <menu>
     <!-- You can specify more than one menu file in here and they are all loaded,
