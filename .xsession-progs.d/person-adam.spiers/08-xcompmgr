@@ -5,6 +5,13 @@
 echo "### xcompmgr ..."
 
 . $ZDOTDIR/lib/libproc.sh
+. $ZDOTDIR/lib/libhost.sh
+
+read_localhost_nickname
+if [ "$localhost_nickname" == 'd600' ]; then
+    echo "xcompmgr doesn't work on d600"
+    exit 0
+fi
 
 detect_wm () {
     if [ -n "$DESKTOP_SESSION" ]; then
@@ -31,18 +38,15 @@ detect_wm () {
 
 detect_wm
 
-case "$wm" in
-    *openbox*)
-        if executable_p xcompmgr; then
-            # shadows are buggy
-            #xcompmgr -c -t-5 -l-5 -r4.2 -o.55 &
-            echo "Launching xcompmgr ..."
-            xcompmgr &
-        else
-            echo "Warning: xcompmgr not executable"
-        fi
-        ;;
-    *)
-        echo "openbox not running; won't launch xcompmgr"
-        ;;
-esac
+if [[ "$wm" == *openbox* ]]; then
+    if executable_p xcompmgr; then
+        # shadows are buggy
+        #xcompmgr -c -t-5 -l-5 -r4.2 -o.55 &
+        echo "Launching xcompmgr ..."
+        xcompmgr &
+    else
+        echo "Warning: xcompmgr not executable"
+    fi
+else
+    echo "openbox not running; won't launch xcompmgr"
+fi
