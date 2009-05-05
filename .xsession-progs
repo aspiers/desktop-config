@@ -10,5 +10,6 @@ echo "### .xsession-progs ..."
 
 . $ZDOTDIR/lib/libproc.sh
 
-. $ZDOT_RUN_HOOKS .xsession-progs.d &
-
+for prog in $( . $ZDOT_FIND_HOOKS ".xsession-progs.d" ); do
+  "$prog"
+done
