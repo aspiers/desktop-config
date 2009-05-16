@@ -195,6 +195,9 @@
     <item label="xmag">
       <action name="Execute"><execute>xmag</execute></action>
     </item>
+    <item label="xkill">
+      <action name="Execute"><execute>xkill</execute></action>
+    </item>
   </menu>
 
   <menu id="fun-menu" label="Fun">
