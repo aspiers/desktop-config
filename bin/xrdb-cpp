@@ -8,19 +8,16 @@
 
 . $ZDOTDIR/lib/libdpy.sh
 
+#echo "display: ${dpy_width}x${dpy_height}" >&2
+
 emacs_font=$( cpp -I $ZDOTDIR/.Xresources.d \
                   -DWIDTH=$dpy_width \
                   $ZDOTDIR/.Xresources.d/all.rdb | \
                 awk '/^ *emacs.font/ {print $2}' )
 
-eval $( xlsfonts -ll -fn $emacs_font | \
-          awk '/ascent:/  {ascent=$2}
-               /descent:/ {descent=$2}
-               $1=="max"  {width=$2}
-               END {
-                 height=ascent+descent;
-                 print "font_char_width="  width;
-                 print "font_char_height=" height}' )
+eval $( get-font-geometry "$emacs_font" )
+
+#echo "emacs font: $emacs_font (${font_char_width}x$font_char_height)" >&2
 
 # Note: emacs used to seem to increase the size by 6x2 on startup (on
 # a 1024x768 display, anyhow).  So 78x42 actually ended up being
