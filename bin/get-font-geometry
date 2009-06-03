@@ -1,0 +1,28 @@
+#!/bin/sh
+
+me=`basename $0`
+
+usage () {
+    cat <<EOF >&2
+Usage: $me FONT
+EOF
+    exit 1
+}
+
+if [ "$1" == '-h' ] || [ "$1" == '--help' ] || [ $# != 1 ]; then
+    usage
+fi
+
+xlsfonts -ll -fn "$1" | \
+    awk '/ascent:/  {ascent=$2}
+         /descent:/ {descent=$2}
+         $1=="max"  {width=$2}
+         END {
+           if (ascent) {
+             height=ascent+descent;
+             print "font_char_width="   width
+             print "font_char_height="  height
+             print "font_char_ascent="  ascent
+             print "font_char_descent=" descent
+           }
+         }'
