@@ -8,12 +8,30 @@ font_char_width=6
 font_char_height=13
 
 # Take 20% of height:
-watchlogs_height=$(( (dpy_height / 5) / font_char_height ))
+watchlogs_height_px=$(( dpy_height / 5 ))
+watchlogs_height=$(( watchlogs_height_px / font_char_height ))
 
 # Maybe allow some space on the right for gkrellm
 right_margin=0
 #right_margin=90
-watchlogs_width=$(( (dpy_width - right_margin) / font_char_width ))
+watchlogs_width_px=$(( dpy_width - right_margin ))
+watchlogs_width=$(( watchlogs_width_px / font_char_width ))
+
+if [[ "$DESKTOP_SESSION" == *gnome* ]] &&
+   pgrep -u $UID gnome-panel >/dev/null
+then
+    if [ "`gconftool-2 \
+             -g /apps/panel/toplevels/bottom_panel_screen0/auto_hide`" \
+         == 'false' ]
+    then
+        bottom_margin=26
+    else
+        bottom_margin=7
+    fi
+else
+    # FIXME: kde
+    bottom_margin=0
+fi
 
 # Old style fake transparency: -tr -tint white -sh 70
 #
@@ -32,7 +50,7 @@ urxvt -fn $font -fb $font -is \
       +sk +sw +sb \
       -b 0 \
       -depth 32 -bg rgba:0000/0000/0000/4444 \
-      -g ${watchlogs_width}x${watchlogs_height}+0-0 \
+      -g ${watchlogs_width}x${watchlogs_height}+0-${bottom_margin} \
       -e watchlogs-system
 
 #rxvt -fn $font +sk +sw -tr -g ${watchlogs_width}x${watchlogs_height}+0-0 \
