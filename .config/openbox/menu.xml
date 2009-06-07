@@ -7,17 +7,24 @@
 
   <menu id="unison-menu" label="sync for _roaming">
     <separator label="unison" />
-    <item label="~/roaming (indian)">
+    <item label="~/roaming (to indian)">
       <action name="Execute"><execute>roam indian roaming</execute></action>
     </item>
-    <item label="~/ifolder (indian)">
+    <item label="~/ifolder (to indian)">
       <action name="Execute"><execute>roam indian ifolder</execute></action>
     </item>
-    <item label="both (indian)">
+    <item label="both (to indian)">
       <action name="Execute"><execute>roam indian roaming ifolder</execute></action>
     </item>
-    <item label="~/ifolder (pacific)">
-      <action name="Execute"><execute>roam pacific ifolder</execute></action>
+    <separator />
+    <item label="~/roaming (to atlantic)">
+      <action name="Execute"><execute>roam atlantic roaming</execute></action>
+    </item>
+    <item label="~/ifolder (to atlantic)">
+      <action name="Execute"><execute>roam atlantic ifolder</execute></action>
+    </item>
+    <item label="both (to atlantic)">
+      <action name="Execute"><execute>roam atlantic roaming ifolder</execute></action>
     </item>
   </menu>
 
