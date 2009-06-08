@@ -379,6 +379,11 @@
         <execute>wmctrl -a amarok</execute>
       </action>
     </item>
+    <item label="S_potify">
+      <action name="Execute">
+        <execute>wmctrl -a Spotify</execute>
+      </action>
+    </item>
     <item label="_xchat IRC">
       <action name="Execute">
         <execute>wmctrl -a xchat</execute>
