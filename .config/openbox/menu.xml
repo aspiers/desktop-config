@@ -59,31 +59,31 @@
 
   <menu id="comms-menu" label="Communications">
     <separator label="Communications" />
-    <item label="pidgin || gaim">
+    <item label="_pidgin">
       <action name="Execute"><execute>sh -c 'pidgin || gaim'</execute></action>
     </item>
-    <item label="kopete">
+    <item label="k_opete">
       <action name="Execute"><execute>kopete</execute></action>
     </item>
-    <item label="groupwise">
+    <item label="_groupwise">
       <action name="Execute"><execute>/opt/novell/groupwise/client/bin/groupwise</execute></action>
     </item>
-    <item label="thunderbird mail">
+    <item label="_thunderbird mail">
       <action name="Execute"><execute>thunderbird</execute></action>
     </item>
     <item label="thunderbird _addressbook">
       <action name="Execute"><execute>thunderbird -addressbook</execute></action>
     </item>
-    <item label="skype">
+    <item label="_skype">
       <action name="Execute"><execute>skype</execute></action>
     </item>
-    <item label="X-Chat">
+    <item label="_X-Chat">
       <action name="Execute"><execute>xchat</execute></action>
     </item>
-    <item label="ekiga">
+    <item label="_ekiga">
       <action name="Execute"><execute>ekiga</execute></action>
     </item>
-    <item label="umtsmon">
+    <item label="_umtsmon">
       <action name="Execute"><execute>umtsmon</execute></action>
     </item>
   </menu>
