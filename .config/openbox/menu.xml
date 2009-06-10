@@ -394,7 +394,7 @@
         <execute>wmctrl -a firefox</execute>
       </action>
     </item>
-    <item label="_gaim / pidgin">
+    <item label="_pidgin">
       <action name="Execute">
         <execute>wmctrl -a 'Buddy List'</execute>
       </action>
