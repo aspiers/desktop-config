@@ -481,9 +481,9 @@
         </action>
       </mousebind>
     </context>
-    <context name="Handle">
+    <context name="Left">
       <mousebind button="Left" action="Drag">
-        <action name="Move"/>
+        <action name="Resize"/>
       </mousebind>
       <mousebind button="Left" action="Click">
         <action name="Raise"/>
@@ -492,6 +492,52 @@
         <action name="Focus"/>
       </mousebind>
       <mousebind button="Middle" action="Press">
+        <action name="Lower"/>
+      </mousebind>
+      <mousebind button="Up" action="Click">
+        <action name="Raise"/>
+      </mousebind>
+      <mousebind button="Down" action="Click">
+        <action name="Lower"/>
+      </mousebind>
+    </context>
+    <context name="Right">
+      <mousebind button="Left" action="Drag">
+        <action name="Resize"/>
+      </mousebind>
+      <mousebind button="Left" action="Click">
+        <action name="Raise"/>
+      </mousebind>
+      <mousebind button="Left" action="Press">
+        <action name="Focus"/>
+      </mousebind>
+      <mousebind button="Middle" action="Press">
+        <action name="Lower"/>
+      </mousebind>
+      <mousebind button="Up" action="Click">
+        <action name="Raise"/>
+      </mousebind>
+      <mousebind button="Down" action="Click">
+        <action name="Lower"/>
+      </mousebind>
+    </context>
+    <context name="Bottom">
+      <mousebind button="Left" action="Drag">
+        <action name="Resize"/>
+      </mousebind>
+      <mousebind button="Left" action="Click">
+        <action name="Raise"/>
+      </mousebind>
+      <mousebind button="Left" action="Press">
+        <action name="Focus"/>
+      </mousebind>
+      <mousebind button="Middle" action="Press">
+        <action name="Lower"/>
+      </mousebind>
+      <mousebind button="Up" action="Click">
+        <action name="Raise"/>
+      </mousebind>
+      <mousebind button="Down" action="Click">
         <action name="Lower"/>
       </mousebind>
     </context>
