@@ -5,9 +5,9 @@ if egrep -iq 'AutoAddDevices.*(off|0)' /etc/X11/xorg.conf; then
 else
     # funny shit happens with evdev
     xmodmap /home/adam/.keymaps/X11/Kinesis-QWERTY-evdev
-
-    xset r 64 # autorepeat Delete
-    xset r 66 # autorepeat left-hand minus
-
-    # kbdrate to work around https://bugs.freedesktop.org/show_bug.cgi?id=17500
 fi
+
+xset r 64 # autorepeat Delete
+xset r 66 # autorepeat left-hand minus
+
+# kbdrate to work around https://bugs.freedesktop.org/show_bug.cgi?id=17500
