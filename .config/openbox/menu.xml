@@ -190,22 +190,25 @@
     <item label="gkrellm">
       <action name="Execute"><execute>gkrellm</execute></action>
     </item>
-    <item label="krandrtray">
+    <item label="k_randrtray">
       <action name="Execute"><execute>krandrtray</execute></action>
     </item>
-    <item label="kcolorchooser">
+    <item label="k_colorchooser">
       <action name="Execute"><execute>kcolorchooser</execute></action>
     </item>
-    <item label="kcalc">
+    <item label="k_calc">
       <action name="Execute"><execute>kcalc</execute></action>
+    </item>
+    <item label="gnome-_screenshot">
+      <action name="Execute"><execute>gnome-screenshot -i</execute></action>
     </item>
     <item label="ksnapshot">
       <action name="Execute"><execute>ksnapshot</execute></action>
     </item>
-    <item label="xmag">
+    <item label="x_mag">
       <action name="Execute"><execute>xmag</execute></action>
     </item>
-    <item label="xkill">
+    <item label="x_kill">
       <action name="Execute"><execute>xkill</execute></action>
     </item>
   </menu>
