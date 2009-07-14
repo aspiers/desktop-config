@@ -188,7 +188,7 @@
   <menu id="utils-menu" label="Utils">
     <separator label="Utils" />
     <item label="gkrellm">
-      <action name="Execute"><execute>gkrellm</execute></action>
+      <action name="Execute"><execute>sh -c "~/.xsession-progs.d/person-adam.spiers/50-gkrellm"</execute></action>
     </item>
     <item label="k_randrtray">
       <action name="Execute"><execute>krandrtray</execute></action>
