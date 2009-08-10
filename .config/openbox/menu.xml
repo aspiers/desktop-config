@@ -44,7 +44,7 @@
   <menu id="browser-menu" label="Browsers">
     <separator label="Browsers" />
     <item label="firefox">
-      <action name="Execute"><execute>firefox</execute></action>
+      <action name="Execute"><execute>my-firefox</execute></action>
     </item>
     <item label="konqueror">
       <action name="Execute"><execute>konqueror</execute></action>
