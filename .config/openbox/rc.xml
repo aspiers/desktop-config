@@ -265,7 +265,7 @@
     </keybind>
     <keybind key="W-f">
       <action name="Execute">
-        <execute>firefox</execute>
+        <execute>my-firefox</execute>
       </action>
     </keybind>
     <keybind key="W-g">
