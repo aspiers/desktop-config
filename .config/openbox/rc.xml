@@ -97,6 +97,18 @@
         <dialog>yes</dialog>
       </action>
     </keybind>
+    <keybind key="W-5">
+      <action name="Desktop">
+        <desktop>5</desktop>
+        <dialog>yes</dialog>
+      </action>
+    </keybind>
+    <keybind key="W-6">
+      <action name="Desktop">
+        <desktop>6</desktop>
+        <dialog>yes</dialog>
+      </action>
+    </keybind>
     <keybind key="M-W-1">
       <action name="SendToDesktop">
         <desktop>1</desktop>
@@ -118,6 +130,18 @@
     <keybind key="M-W-4">
       <action name="SendToDesktop">
         <desktop>4</desktop>
+        <follow>yes</follow>
+      </action>
+    </keybind>
+    <keybind key="M-W-5">
+      <action name="SendToDesktop">
+        <desktop>5</desktop>
+        <follow>yes</follow>
+      </action>
+    </keybind>
+    <keybind key="M-W-6">
+      <action name="SendToDesktop">
+        <desktop>6</desktop>
         <follow>yes</follow>
       </action>
     </keybind>
