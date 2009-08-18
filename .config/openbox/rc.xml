@@ -20,14 +20,8 @@
     <monitor>Any</monitor>
   </placement>
   <desktops>
-    <number>4</number>
+    <number>6</number>
     <firstdesk>1</firstdesk>
-    <names>
-      <name>One</name>
-      <name>Two</name>
-      <name>Three</name>
-      <name>Four</name>
-    </names>
     <popupTime>875</popupTime>
   </desktops>
   <resize>
