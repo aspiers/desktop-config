@@ -1,7 +1,18 @@
 #!/bin/sh
 
+# Black on white colour scheme for very bright environments.
+
 #gconftool-2 -g /apps/gnome-terminal/profiles/Default/palette
 gconftool-2 \
   -s /apps/gnome-terminal/profiles/Default/palette \
   -t string \
   '#FFFFFFFFFFFF:#EFEF29292929:#6F82DC280894:#E3E3D1D13D3D:#469E8929DEB7:#ADAD7F7FA8A8:#06C8AB4AAE14:#5F7861475DA9:#FFFFFFFFFFFF:#CCCC00000000:#6BDCB0A328A4:#A3A385850000:#72729F9FCFCF:#757550507B7B:#19546E146E14:#4C8C29A928CB'
+
+gconftool-2 \
+  -s /apps/gnome-terminal/profiles/Default/foreground_color \
+  -t string \
+  '#FFFFFFFFFFFF'
+
+gconftool-2 \
+  -s /apps/gnome-terminal/profiles/Default/theme_colors \
+  -t bool true
