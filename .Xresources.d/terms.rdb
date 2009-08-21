@@ -399,6 +399,9 @@ xterm*ttyModes: erase ^?
 URxvt.keysym.M-C-comma: perl:font-switcher:previous
 URxvt.keysym.M-C-period: perl:font-switcher:next
 
+/* This doesn't work :-( */
+URxvt*iso14755_52: false
+
 ! }}}
 ! {{{ meta key
 
