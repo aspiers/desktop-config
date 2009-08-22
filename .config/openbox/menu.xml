@@ -407,6 +407,11 @@
         <execute>wmctrl -a korganizer</execute>
       </action>
     </item>
+    <item label="_groupwise">
+      <action name="Execute">
+        <execute>wmctrl -a groupwise</execute>
+      </action>
+    </item>
     <item label="_skype">
       <action name="Execute">
         <execute>wmctrl -a skype</execute>
