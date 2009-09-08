@@ -29,3 +29,6 @@ fi
 
 echo "### Keyboard autorepeat ..."
 xset r rate 180 50
+
+echo "### GTK emacs keybindings theme ..."
+gconftool-2 --set /desktop/gnome/interface/gtk_key_theme Emacs --type string
