@@ -2,37 +2,84 @@
 
 GCONFTOOL=gconftool-2
 
+set_profile_defaults () {
+  profile="$1"
+
+  $GCONFTOOL \
+    -s /apps/gnome-terminal/profiles/$profile/default_show_menubar \
+    -t bool false
+
+  $GCONFTOOL \
+    -s /apps/gnome-terminal/profiles/$profile/scrollback_lines \
+    -t int 2000
+
+  $GCONFTOOL \
+    -s /apps/gnome-terminal/profiles/$profile/scrollbar_position \
+    -t string 'hidden' # or 'left' or 'right'
+
+  $GCONFTOOL \
+    -s /apps/gnome-terminal/profiles/$profile/scroll_on_keystroke \
+    -t bool true
+
+  $GCONFTOOL \
+    -s /apps/gnome-terminal/profiles/$profile/scroll_on_output \
+    -t bool true
+
+  $GCONFTOOL \
+    -s /apps/gnome-terminal/profiles/$profile/word_chars \
+    -t string 'A-Za-z0-9_'
+}
+
+
+##############################################################################
+# global settings
+
+$GCONFTOOL \
+  -s /apps/gnome-terminal/global/use_menu_accelerators \
+  -t bool false
+
+##############################################################################
+# keybindings (also global)
+
+for binding in next_tab prev_tab help; do
+  $GCONFTOOL \
+    -s /apps/gnome-terminal/keybindings/$binding \
+    -t string 'disabled'
+done
+
 ##############################################################################
 # Default profile
 
 profile=Default
 
-$GCONFTOOL \
-  -s /apps/gnome-terminal/profiles/Default/default_show_menubar \
-  -t bool false
+set_profile_defaults $profile
 
+# This controls foreground and background only.
+# If true, uses colours from system theme which most likely will 
+# be black on white.  Therefore we set our custom scheme to be
+# the opposite to allow an easy toggle.
 $GCONFTOOL \
-  -s /apps/gnome-terminal/profiles/Default/scrollback_lines \
-  -t int 2000
-
-$GCONFTOOL \
-  -s /apps/gnome-terminal/profiles/Default/scroll_on_keystroke \
+  -s /apps/gnome-terminal/profiles/$profile/use_theme_colors \
   -t bool true
 
-$GCONFTOOL \
-  -s /apps/gnome-terminal/profiles/Default/scroll_on_output \
-  -t bool true
+# White on black
+fg_colour='#FFFFFFFFFFFF'
+bg_colour='#000000000000'
 
 $GCONFTOOL \
-  -s /apps/gnome-terminal/profiles/Default/word_chars \
-  -t string 'A-Za-z0-9_'
+  -s /apps/gnome-terminal/profiles/$profile/foreground_color \
+  -t string \
+  $fg_colour
 
+$GCONFTOOL \
+  -s /apps/gnome-terminal/profiles/$profile/background_color \
+  -t string \
+  $bg_colour
 
 #
 # Black on white colour scheme for very bright environments.
 #
 
-fg_colour='#FFFFFFFFFFFF'
 normal_colours='#FFFFFFFFFFFF:#EFEF29292929:#6F82DC280894:#E3E3D1D13D3D:#469E8929DEB7:#ADAD7F7FA8A8:#06C8AB4AAE14:#5F7861475DA9'
   bold_colours='#FFFFFFFFFFFF:#CCCC00000000:#6BDCB0A328A4:#A3A385850000:#72729F9FCFCF:#757550507B7B:#19546E146E14:#4C8C29A928CB'
 
@@ -53,31 +100,4 @@ $GCONFTOOL \
   -t string \
   "$normal_colours:$bold_colours"
 
-$GCONFTOOL \
-  -s /apps/gnome-terminal/profiles/$profile/foreground_color \
-  -t string \
-  $fg_colour
 
-$GCONFTOOL \
-  -s /apps/gnome-terminal/profiles/$profile/theme_colors \
-  -t bool true
-
-##############################################################################
-# keybindings
-
-for binding in next_tab prev_tab help; do
-  $GCONFTOOL \
-    -s /apps/gnome-terminal/keybindings/$binding \
-    -t string 'disabled'
-done
-
-$GCONFTOOL \
-  -s /apps/gnome-terminal/global/use_menu_accelerators \
-  -t bool false
-
-##############################################################################
-# keybindings
-
-$GCONFTOOL \
-  -s /apps/gnome-terminal/global/use_menu_accelerators \
-  -t bool false
