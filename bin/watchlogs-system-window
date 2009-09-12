@@ -3,9 +3,8 @@
 . $ZDOTDIR/lib/libdpy.sh
 
 font=smoothansi
-# Each char in smoothansi is 13 pixels high by 6 pixels wide.
-font_char_width=6
-font_char_height=13
+
+eval $( get-font-geometry $font )
 
 # Take 20% of height:
 watchlogs_height_px=$(( dpy_height / 5 ))
