@@ -3,8 +3,8 @@
 . $ZDOTDIR/lib/libdpy.sh
 
 font=9x15
-font_char_width=9
-font_char_height=15
+
+eval $( get-font-geometry $font )
 
 # Take 80% of height, then allow for window border so that it just
 # touches the watchlogs window.
@@ -12,6 +12,8 @@ border_height=25
 height=$(( (dpy_height - border_height) * 4 / 5 / font_char_height ))
 
 width=90
+geometry=${width}x${height}+0+0
 
-#xterm -fn $font -g ${width}x${height}+0+0
-urxvt -fn $font -g ${width}x${height}+0+0
+#xterm -fn $font -g $geometry
+#urxvt -fn $font -g $geometry
+gnome-terminal --geometry=$geometry
