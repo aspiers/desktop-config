@@ -1,5 +1,7 @@
 #!/bin/sh
 
+. $ZDOTDIR/lib/libdpy.sh
+
 GCONFTOOL=gconftool-2
 
 set_profile_defaults () {
@@ -50,6 +52,7 @@ done
 ##############################################################################
 # Default profile
 
+profiles=/apps/gnome-terminal/profiles
 profile=Default
 
 set_profile_defaults $profile
@@ -59,7 +62,7 @@ set_profile_defaults $profile
 # be black on white.  Therefore we set our custom scheme to be
 # the opposite to allow an easy toggle.
 $GCONFTOOL \
-  -s /apps/gnome-terminal/profiles/$profile/use_theme_colors \
+  -s $profiles/$profile/use_theme_colors \
   -t bool true
 
 # White on black
@@ -67,12 +70,12 @@ fg_colour='#FFFFFFFFFFFF'
 bg_colour='#000000000000'
 
 $GCONFTOOL \
-  -s /apps/gnome-terminal/profiles/$profile/foreground_color \
+  -s $profiles/$profile/foreground_color \
   -t string \
   $fg_colour
 
 $GCONFTOOL \
-  -s /apps/gnome-terminal/profiles/$profile/background_color \
+  -s $profiles/$profile/background_color \
   -t string \
   $bg_colour
 
@@ -94,10 +97,18 @@ normal_colours='#FFFFFFFFFFFF:#FFFF00000000:#7999F3320000:#FFFFDDDD0000:#0000000
 normal_colours='#FFFFFFFFFFFF:#FFFF00000000:#7999F3320000:#FFFFDDDD0000:#00000000FFFF:#D6D30000F332:#0000E666E666:#000000000000'
   bold_colours='#FFFFFFFFFFFF:#BFFF00000000:#5EE6BFFF0000:#E666C6730000:#00000000BFFF:#AB310000BFFF:#0000BFFFBFFF:#B5ADB5ADB5AD'
 
-# $GCONFTOOL -g /apps/gnome-terminal/profiles/$profile/palette
+# $GCONFTOOL -g $profiles/$profile/palette
 $GCONFTOOL \
-  -s /apps/gnome-terminal/profiles/$profile/palette \
+  -s $profiles/$profile/palette \
   -t string \
   "$normal_colours:$bold_colours"
 
-
+# These don't work for some reason
+$GCONFTOOL \
+  -s $profiles/$profile/use_system_font \
+  -t boolean \
+  'false'
+$GCONFTOOL \
+  -s $profiles/$profile/font \
+  -t string \
+  'Monospace 12'
