@@ -79,6 +79,11 @@ $GCONFTOOL \
   -t string \
   $bg_colour
 
+$GCONFTOOL \
+  -s $profiles/$profile/background_darkness \
+  -t float \
+  0.94
+
 #
 # Black on white colour scheme for very bright environments.
 #
