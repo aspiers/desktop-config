@@ -33,6 +33,8 @@ emacs_width=83
 # just to left of gkrellm
 emacs_position=-80+0
 
+# N.B. HOME and ZDOTDIR will probably expand to the wrong thing when
+# applications which depend on them are run on a different host via ssh.
 cpp -I $ZDOTDIR/.Xresources.d \
     -DHOME=$HOME -DZDOTDIR=$ZDOTDIR \
     -DEMACS_GEOMETRY=${emacs_width}x${emacs_height}${emacs_position} \
