@@ -488,6 +488,10 @@ XTerm.VT100.charClass: 33:48,35-37:48,43:48,45-47:48,58:48,64:48,126:48
   Double click shall select the _whole_ word.
 */
 
+/*
+ N.B. ZDOTDIR will probably expand to the wrong thing when
+      urxvt is run on a non-local display.
+*/
 URxvt.perl-lib: ZDOTDIR/lib/urxvt/perl
 URxvt.perl-ext-common: default,selection-autotransform,font-switcher
 
