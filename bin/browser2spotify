@@ -1,3 +1,7 @@
 #!/bin/sh
 
+# set in firefox about:config:
+#  - network.protocol-handler.app.spotify ~/bin/browser2spotify
+#  - network.protocol-handler.external.spotify true
+
 exec wine "C:\Program Files\Spotify\spotify.exe" /uri "$@"
