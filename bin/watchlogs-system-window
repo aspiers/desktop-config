@@ -19,14 +19,28 @@ watchlogs_width=$(( watchlogs_width_px / font_char_width ))
 if [[ "$DESKTOP_SESSION" == *gnome* ]] &&
    pgrep -u $UID gnome-panel >/dev/null
 then
-    if [ "`gconftool-2 \
-             -g /apps/panel/toplevels/bottom_panel_screen0/auto_hide`" \
-         == 'false' ]
-    then
-        bottom_margin=26
-    else
+    panel=
+    for key in bottom_panel{,_screen0}; do
+        top=/apps/panel/toplevels
+        if gconftool-2 --dir-exists=$top/$key; then
+            panel=$top/$key
+            break
+        fi
+    done
+    if [ -z "$panel" ]; then
+        echo "Couldn't find gconf key for bottom panel; guessing margin of 7px"
         bottom_margin=7
-    fi
+    else
+        auto_hide="`gconftool-2 -g $panel/auto_hide`"
+        if [ "$auto_hide" = 'true' ]; then
+            echo "Panel auto-hidden; using bottom margin of 7px"
+            bottom_margin=7
+        else
+            height="`gconftool-2 -g $panel/size`"
+            echo "Panel not auto-hidden; using bottom margin of ${height}px"
+            bottom_margin=$height
+        fi
+    fi    
 else
     # FIXME: kde
     bottom_margin=0
