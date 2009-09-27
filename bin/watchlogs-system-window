@@ -20,13 +20,17 @@ if [[ "$DESKTOP_SESSION" == *gnome* ]] &&
    pgrep -u $UID gnome-panel >/dev/null
 then
     panel=
+
     for key in bottom_panel{,_screen0}; do
+        # Fedora 10 has bottom_panel
+        # SLES 11   has bottom_panel_screen0
         top=/apps/panel/toplevels
         if gconftool-2 --dir-exists=$top/$key; then
             panel=$top/$key
             break
         fi
     done
+
     if [ -z "$panel" ]; then
         echo "Couldn't find gconf key for bottom panel; guessing margin of 7px"
         bottom_margin=7
