@@ -153,6 +153,9 @@ keycode 0x69 =	Next
 ! This ends up being Meta_L for some reason
 keycode 0x9c =
 
+! On Fedora 11 this ends up being Super_R for some reason
+keycode 0x74 =
+
 clear Shift
 clear Lock
 clear Control
