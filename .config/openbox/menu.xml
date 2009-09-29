@@ -96,6 +96,9 @@
     <item label="gqview">
       <action name="Execute"><execute>gqview</execute></action>
     </item>
+    <item label="dia">
+      <action name="Execute"><execute>dia</execute></action>
+    </item>
     <item label="picasa">
       <action name="Execute"><execute>picasa</execute></action>
     </item>
