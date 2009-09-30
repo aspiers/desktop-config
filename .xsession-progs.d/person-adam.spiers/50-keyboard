@@ -1,22 +1,26 @@
 #!/bin/sh
 
+. $ZDOTDIR/lib/libhost.sh
+
+read_localhost_nickname
+
 my_xmodmap () {
     backup=$HOME/.Xmodmap.orig.`hostname -s`
     if ! [ -e "$backup" ]; then
         xmodmap -pke > "$backup"
     fi
 
-    case "${HOSTNAME%%.*}" in
+    case "$localhost_nickname" in
         atlantic)
             . $ZDOTDIR/.Xmodmap.d/lib/Kinesis     ;;
-       d600)
+        d600)
             xmodmap ~/.keymaps/X11/Dell-D600-Adam ;;
         indian|pacific)
             xmodmap ~/.keymaps/X11/Dell-D620-Adam ;;
         t23)
             xmodmap ~/.keymaps/X11/TP-T23-UK      ;;
         *)
-            echo "WARNING: didn't know which keymap to use with HOSTNAME=$HOSTNAME" >&2
+            echo "WARNING: didn't know which keymap to use with $localhost_nickname" >&2
     esac
 }
 
