@@ -34,5 +34,8 @@ fi
 echo "### Keyboard autorepeat ..."
 xset r rate 180 50
 
-echo "### GTK emacs keybindings theme ..."
-gconftool-2 --set /desktop/gnome/interface/gtk_key_theme Emacs --type string
+# Turns out I use Control-A to select all a lot with Gtk text entry.
+#theme=Emacs
+theme=Default
+echo "### GTK keybindings $theme theme ..."
+gconftool-2 --set /desktop/gnome/interface/gtk_key_theme $theme --type string
