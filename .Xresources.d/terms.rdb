@@ -45,7 +45,6 @@ nxterm*background:  TERM_BG
 
 ! pretty non-fake transparency
 URxvt*background:   rgba:0000/0000/0000/dddd
-URxvt*depth:        32
 
 XTerm*foreground:   TERM_FG
 xterm*foreground:   TERM_FG
