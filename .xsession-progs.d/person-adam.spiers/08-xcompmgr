@@ -8,15 +8,21 @@ echo "### xcompmgr ..."
 . $ZDOTDIR/lib/libhost.sh
 
 read_localhost_nickname
-if [ "$localhost_nickname" == 'd600' ]; then
-    echo "xcompmgr doesn't work on d600"
-    exit 0
-fi
 
-if [ "$localhost_nickname" == 'indian' ]; then
-    echo "xcompmgr doesn't work stablely on indian with EXA"
-    exit 0
-fi
+case "$localhost_nickname" in
+    d600)
+        echo "xcompmgr doesn't work on d600"
+        exit 0
+        ;;
+    indian)
+        echo "xcompmgr doesn't work stablely on indian with EXA"
+        exit 0
+        ;;
+    # atlantic)
+    #     echo "destabilises with F11?"
+    #     exit 0
+    #     ;;
+esac
 
 detect_wm () {
     if [ -n "$DESKTOP_SESSION" ]; then
