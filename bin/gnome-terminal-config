@@ -4,56 +4,45 @@
 
 GCONFTOOL=gconftool-2
 
+APP="/apps/gnome-terminal"
+
 set_profile_defaults () {
   profile="$1"
 
-  $GCONFTOOL \
-    -s /apps/gnome-terminal/profiles/$profile/default_show_menubar \
-    -t bool false
+  $GCONFTOOL -s $profile/default_show_menubar -t bool false
 
-  $GCONFTOOL \
-    -s /apps/gnome-terminal/profiles/$profile/scrollback_lines \
-    -t int 2000
+  $GCONFTOOL -s $profile/scrollback_lines -t int 2000
+  $GCONFTOOL -s $profile/scrollbar_position -t string 'hidden' 
+  # or 'left' or 'right'
 
-  $GCONFTOOL \
-    -s /apps/gnome-terminal/profiles/$profile/scrollbar_position \
-    -t string 'hidden' # or 'left' or 'right'
+  $GCONFTOOL -s $profile/scroll_on_keystroke -t bool true
+  $GCONFTOOL -s $profile/scroll_on_output -t bool true
 
-  $GCONFTOOL \
-    -s /apps/gnome-terminal/profiles/$profile/scroll_on_keystroke \
-    -t bool true
-
-  $GCONFTOOL \
-    -s /apps/gnome-terminal/profiles/$profile/scroll_on_output \
-    -t bool true
-
-  $GCONFTOOL \
-    -s /apps/gnome-terminal/profiles/$profile/word_chars \
-    -t string 'A-Za-z0-9_'
+  $GCONFTOOL -s $profile/word_chars -t string 'A-Za-z0-9_'
 }
 
 
 ##############################################################################
 # global settings
 
-$GCONFTOOL \
-  -s /apps/gnome-terminal/global/use_menu_accelerators \
-  -t bool false
+global="$APP/global"
+
+$GCONFTOOL -s $global/use_menu_accelerators -t bool false
 
 ##############################################################################
 # keybindings (also global)
 
 for binding in next_tab prev_tab help; do
   $GCONFTOOL \
-    -s /apps/gnome-terminal/keybindings/$binding \
+    -s $APP/keybindings/$binding \
     -t string 'disabled'
 done
 
 ##############################################################################
 # Default profile
 
-profiles=/apps/gnome-terminal/profiles
-profile=Default
+profiles=$APP/profiles
+profile=$profiles/Default
 
 set_profile_defaults $profile
 
@@ -61,23 +50,14 @@ set_profile_defaults $profile
 # If true, uses colours from system theme which most likely will 
 # be black on white.  Therefore we set our custom scheme to be
 # the opposite to allow an easy toggle.
-$GCONFTOOL \
-  -s $profiles/$profile/use_theme_colors \
-  -t bool true
+$GCONFTOOL -s $profile/use_theme_colors -t bool true
 
 # White on black
 fg_colour='#FFFFFFFFFFFF'
 bg_colour='#000000000000'
 
-$GCONFTOOL \
-  -s $profiles/$profile/foreground_color \
-  -t string \
-  $fg_colour
-
-$GCONFTOOL \
-  -s $profiles/$profile/background_color \
-  -t string \
-  $bg_colour
+$GCONFTOOL -s $profile/foreground_color -t string $fg_colour
+$GCONFTOOL -s $profile/background_color -t string $bg_colour
 
 $GCONFTOOL \
   -s $profiles/$profile/background_darkness \
@@ -102,18 +82,16 @@ normal_colours='#FFFFFFFFFFFF:#FFFF00000000:#7999F3320000:#FFFFDDDD0000:#0000000
 normal_colours='#FFFFFFFFFFFF:#FFFF00000000:#7999F3320000:#FFFFDDDD0000:#00000000FFFF:#D6D30000F332:#0000E666E666:#000000000000'
   bold_colours='#FFFFFFFFFFFF:#BFFF00000000:#5EE6BFFF0000:#E666C6730000:#00000000BFFF:#AB310000BFFF:#0000BFFFBFFF:#B5ADB5ADB5AD'
 
-# $GCONFTOOL -g $profiles/$profile/palette
-$GCONFTOOL \
-  -s $profiles/$profile/palette \
-  -t string \
-  "$normal_colours:$bold_colours"
+# $GCONFTOOL -g $profile/palette
+$GCONFTOOL -s $profile/palette -t string "$normal_colours:$bold_colours"
 
 # These don't work for some reason
-$GCONFTOOL \
-  -s $profiles/$profile/use_system_font \
-  -t boolean \
-  'false'
-$GCONFTOOL \
-  -s $profiles/$profile/font \
-  -t string \
-  'Monospace 12'
+$GCONFTOOL -s $profile/use_system_font -t boolean 'false'
+
+# See also the fonts section of ~/.Xresources.d/terms.rdb
+if [ "$dpy_height" -gt 1000 ]; then
+    fs=12
+else
+    fs=10
+fi
+$GCONFTOOL -s $profile/font -t string "Monospace $fs"
