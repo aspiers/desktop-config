@@ -43,8 +43,17 @@ XTerm*background:   TERM_BG
 xterm*background:   TERM_BG
 nxterm*background:  TERM_BG
 
-! pretty non-fake transparency
+! Pretty non-fake transparency.  urxvt(1) man page says:
+! 
+!   [Please note that many X servers (and libXft) are buggy with respect
+!   to "-depth 32" and/or alpha channels, and will cause all sorts of
+!   graphical corruption. This is harmless, but we can’t do anything about
+!   this, so watch out]
 URxvt*background:   rgba:0000/0000/0000/dddd
+! Slows down redraw for me when switching workspaces (except for
+! sticky windows) so disable by default and override on CLI for
+! watchlogs windows.
+!URxvt*depth:        32
 
 XTerm*foreground:   TERM_FG
 xterm*foreground:   TERM_FG
