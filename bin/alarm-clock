@@ -1,0 +1,37 @@
+#!/bin/sh
+
+me=`basename $0`
+
+usage () {
+    if [ -n "$1" ]; then
+        echo "$*" >&2
+        echo
+    fi
+
+cat <<EOF >&2
+Usage: $me TIME TRACK
+EOF
+    exit 1
+}
+
+if [ "$1" == '-h' ] || [ "$1" == '--help' ] || [ $# -ne 2 ]; then
+    usage
+fi
+
+time="$1"
+track="$2"
+
+case "$track" in
+    *.mp3) player=mpg123 ;;
+    *.ogg) player=ogg    ;;
+    *)
+        echo "${track##*.} not supported" >&2
+        exit 1
+        ;;
+esac
+
+at "$time" <<EOF
+quietrun $player "$track"
+EOF
+
+atq
