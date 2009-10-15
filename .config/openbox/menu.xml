@@ -131,6 +131,12 @@
     <item label="_pulseaudio mixer (pavucontrol)">
       <action name="Execute"><execute>pavucontrol</execute></action>
     </item>
+    <item label="pulseaudio device chooser (padevchooser)">
+      <action name="Execute"><execute>padevchooser</execute></action>
+    </item>
+    <item label="pulseaudio preferences">
+      <action name="Execute"><execute>paprefs</execute></action>
+    </item>
     <item label="pulseaudio VU _meter (pavumeter)">
       <action name="Execute"><execute>pavumeter</execute></action>
     </item>
