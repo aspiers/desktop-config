@@ -113,6 +113,21 @@
     </item>
   </menu>
 
+  <menu id="pulseaudio-menu" label="pulseaudio">
+    <item label="_mixer (pavucontrol)">
+      <action name="Execute"><execute>pavucontrol</execute></action>
+    </item>
+    <item label="_device chooser (padevchooser)">
+      <action name="Execute"><execute>padevchooser</execute></action>
+    </item>
+    <item label="_preferences (paprefs)">
+      <action name="Execute"><execute>paprefs</execute></action>
+    </item>
+    <item label="VU _meter (pavumeter)">
+      <action name="Execute"><execute>pavumeter</execute></action>
+    </item>
+  </menu>
+
   <menu id="audio-menu" label="Audio">
     <separator label="Audio" />
     <item label="AmaroK">
@@ -128,18 +143,7 @@
     <item label="_kmix">
       <action name="Execute"><execute>kmix</execute></action>
     </item>
-    <item label="_pulseaudio mixer (pavucontrol)">
-      <action name="Execute"><execute>pavucontrol</execute></action>
-    </item>
-    <item label="pulseaudio device chooser (padevchooser)">
-      <action name="Execute"><execute>padevchooser</execute></action>
-    </item>
-    <item label="pulseaudio preferences">
-      <action name="Execute"><execute>paprefs</execute></action>
-    </item>
-    <item label="pulseaudio VU _meter (pavumeter)">
-      <action name="Execute"><execute>pavumeter</execute></action>
-    </item>
+    <menu id="pulseaudio-menu" />
     <item label="gnome ALSA mixer">
       <action name="Execute"><execute>gnome-alsamixer</execute></action>
     </item>
