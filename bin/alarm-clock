@@ -9,12 +9,23 @@ usage () {
     fi
 
 cat <<EOF >&2
-Usage: $me TIME TRACK
+Usage: $me [options] TIME TRACK
+Options
+  -p, --preview    Preview the track before scheduling the alarm
 EOF
     exit 1
 }
 
-if [ "$1" == '-h' ] || [ "$1" == '--help' ] || [ $# -ne 2 ]; then
+if [ "$1" == '-h' ] || [ "$1" == '--help' ]; then
+    usage
+fi
+
+if [ "$1" = '-p' ] || [ "$1" = '--preview' ]; then
+    preview=yes
+    shift
+fi
+
+if [ $# -ne 2 ]; then
     usage
 fi
 
@@ -29,6 +40,13 @@ case "$track" in
         exit 1
         ;;
 esac
+
+if [ -n "$preview" ]; then
+    "$player" "$track"
+    echo
+    echo -n "Press Enter to schedule the alarm ... "
+    read
+fi
 
 at "$time" <<EOF
 quietrun $player "$track"
