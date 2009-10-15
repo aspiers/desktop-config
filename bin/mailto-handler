@@ -1,0 +1,7 @@
+#!/bin/sh
+
+address="${1#mailto:}"
+
+. ~/lib/personal-mail.sh
+
+mutt-term -F ~/.mutt/$MAIL_PROFILE "$address"
