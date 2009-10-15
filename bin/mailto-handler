@@ -1,7 +1,18 @@
-#!/bin/sh
-
-address="${1#mailto:}"
+#!/bin/bash
 
 . ~/lib/personal-mail.sh
 
-mutt-term -F ~/.mutt/$MAIL_PROFILE "$address"
+mutt_args=( -F ~/.mutt/$MAIL_PROFILE )
+
+url="$1"
+address="${url#mailto:}"
+
+case "$url" in
+    *'?subject='*)
+        subject="${1#*?subject=}"
+        address="${address%?subject=*}"
+        mutt_args=( "${mutt_args[@]}" -s "$subject" )
+        ;;
+esac
+
+mutt-term "${mutt_args[@]}" "$address"
