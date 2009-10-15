@@ -8,6 +8,4 @@ gconftool-2 -s /desktop/gnome/url-handlers/textedit/needs_terminal -t bool no
 
 # ~/.cfg-post.d/emacs for annotation/remember
 
-gconftool-2 -R /desktop/gnome/url-handlers
-
 gconftool-2 -s /apps/nautilus/preferences/show_desktop -t bool false
