@@ -49,8 +49,17 @@ if [ -n "$preview" ]; then
     read
 fi
 
+args=
+for track in "$@"; do
+    if [ -z "$args" ]; then
+        args="\"$track\""
+    else
+        args="$args \"$track\""
+    fi
+done
+
 at "$time" <<EOF
-quietrun $player "$@"
+quietrun $player $args
 EOF
 
 atq
