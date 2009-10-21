@@ -9,7 +9,7 @@ usage () {
     fi
 
 cat <<EOF >&2
-Usage: $me [options] TIME TRACK
+Usage: $me [options] TIME TRACK [TRACK...]
 Options
   -p, --preview    Preview the track before scheduling the alarm
 EOF
@@ -25,31 +25,32 @@ if [ "$1" = '-p' ] || [ "$1" = '--preview' ]; then
     shift
 fi
 
-if [ $# -ne 2 ]; then
+if [ $# -lt 2 ]; then
     usage
 fi
 
 time="$1"
-track="$2"
+shift
 
-case "$track" in
-    *.mp3) player=mpg123 ;;
-    *.ogg) player=ogg    ;;
-    *)
-        echo "${track##*.} not supported" >&2
-        exit 1
-        ;;
-esac
+# case "$track" in
+#     *.mp3) player=mpg123 ;;
+#     *.ogg) player=ogg123 ;;
+#     *)
+#         echo "${track##*.} not supported" >&2
+#         exit 1
+#         ;;
+# esac
+player=mplayer
 
 if [ -n "$preview" ]; then
-    "$player" "$track"
+    "$player" "$@"
     echo
     echo -n "Press Enter to schedule the alarm ... "
     read
 fi
 
 at "$time" <<EOF
-quietrun $player "$track"
+quietrun $player "$@"
 EOF
 
 atq
