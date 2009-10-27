@@ -338,6 +338,11 @@
       </action>
     </keybind>
     <!-- W-C-r reserved for KDE run command -->
+    <keybind key="W-S-s">
+      <action name="Execute">
+        <execute>gnome-screenshot -i -w -d 0</execute>
+      </action>
+    </keybind>
     <keybind key="W-t">
       <!-- Terminal -->
       <action name="Execute">
