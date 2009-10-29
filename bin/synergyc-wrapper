@@ -128,27 +128,23 @@ _log_it "pid $$ started up"
 while true; do
     read_conf
 
-    if AC-online; then
-#        _log_it "AC power online"
-        :
+    if ! AC-online; then
+        reason_not_to_run="AC power offline"
+    elif [ `get-connection-type "$servername"` != 'lan' ]; then
+        reason_not_to_run="not on direct wired connection to $servername"
+    elif ! grep -q $domainname /etc/resolv.conf; then
+        # dnsdomainname doesn't get changed by DHCP for some reason
+        #[ "`dnsdomainname 2>&1`" = $domainname ]
+        reason_not_to_run="$domainname not found in /etc/resolv.conf"
+    elif ! isup "$servername"; then
+        reason_not_to_run="cannot reach $servername"
     else
-        if [ -n "$pid" ]; then
-            _log_it "AC power offline; stopping $CLIENT_PROG"
-            _kill "$pid"
-            pid=
-        fi
-        sleep 5
-        continue
+        reason_not_to_run=
     fi
 
-    if grep -q $domainname /etc/resolv.conf && isup "$servername"; then
-    # dnsdomainname doesn't get changed by DHCP for some reason
-    #[ "`dnsdomainname 2>&1`" = $domainname ]
-#        _log_it "$servername up"
-        :
-    else
+    if [ -n "$reason_not_to_run" ]; then
         if [ -n "$pid" ]; then
-            _log_it "$servername down; stopping $CLIENT_PROG"
+            _log_it "$reason_not_to_run; stopping $CLIENT_PROG"
             _kill "$pid"
             pid=
         fi
