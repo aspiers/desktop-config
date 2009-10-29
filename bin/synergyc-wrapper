@@ -15,6 +15,7 @@ fi
 
 _log_it () {
     logger -t "$me[$$]" "$*"
+    echo "$me[$$]" "$*"
 }
 
 _alertme () {
@@ -30,7 +31,7 @@ sigexit () {
 }
 
 if ps -ef | egrep -v "grep| $$ " | grep -q "bash.*$0"; then
-    _log_it "$me already running; exiting." >&2
+    _log_it "$me already running; exiting."
     exit 1
 fi
 
@@ -147,6 +148,9 @@ while true; do
             _log_it "$reason_not_to_run; stopping $CLIENT_PROG"
             _kill "$pid"
             pid=
+        else
+            # In case anyone's watching STDERR
+            echo "Not running: $reason_not_to_run"
         fi
         sleep 5
         continue
