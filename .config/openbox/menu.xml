@@ -161,6 +161,10 @@
     <item label="transcribe">
       <action name="Execute"><execute>transcribe</execute></action>
     </item>
+    <item label="Band In A Box">
+      <action name="Execute"><execute>biab</execute></action>
+    </item>
+    <separator />
     <item label="_audacity">
       <action name="Execute"><execute>audacity</execute></action>
     </item>
