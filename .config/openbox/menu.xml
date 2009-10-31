@@ -399,7 +399,7 @@
         <execute>wmctrl -a amarok</execute>
       </action>
     </item>
-    <item label="S_potify">
+    <item label="Spotif_y">
       <action name="Execute">
         <execute>wmctrl -a Spotify</execute>
       </action>
