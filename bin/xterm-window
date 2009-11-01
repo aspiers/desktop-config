@@ -15,5 +15,5 @@ width=90
 geometry=${width}x${height}+0+0
 
 #xterm -fn $font -g $geometry
-#urxvt -fn $font -g $geometry
-gnome-terminal --geometry=$geometry
+#gnome-terminal --geometry=$geometry
+urxvt -fn $font -g $geometry
