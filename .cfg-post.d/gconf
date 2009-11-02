@@ -1,9 +1,3 @@
 #!/bin/sh
 
-gconftool-2 -s /desktop/gnome/url-handlers/mailto/command \
-  -t string \
-  'sh -c ". ~/lib/personal-mail.sh; mutt-term -F ~/.mutt/$MAIL_PROFILE '\'%s\'\"
-
-gconftool-2 -s /desktop/gnome/url-handlers/textedit/command -t string 'lilypond-invoke-editor "%s"'
-gconftool-2 -s /desktop/gnome/url-handlers/textedit/enabled -t bool yes
-gconftool-2 -s /desktop/gnome/url-handlers/textedit/needs_terminal -t bool no
+gconf-tweaks
