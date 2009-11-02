@@ -9,3 +9,9 @@ gconftool-2 -s /desktop/gnome/url-handlers/textedit/needs_terminal -t bool no
 # ~/.cfg-post.d/emacs for annotation/remember
 
 gconftool-2 -s /apps/nautilus/preferences/show_desktop -t bool false
+
+# Turns out I use Control-A to select all a lot with Gtk text entry.
+#theme=Emacs
+theme=Default
+echo "### GTK keybindings $theme theme ..."
+gconftool-2 --set /desktop/gnome/interface/gtk_key_theme $theme --type string
