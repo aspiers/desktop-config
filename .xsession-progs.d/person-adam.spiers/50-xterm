@@ -2,5 +2,5 @@
 
 . $ZDOTDIR/lib/libproc.sh
 
-xterm-window &
+xterm-window --top-left &
 

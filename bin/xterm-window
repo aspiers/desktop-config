@@ -12,7 +12,12 @@ border_height=25
 height=$(( (dpy_height - border_height) * 4 / 5 / font_char_height ))
 
 width=90
-geometry=${width}x${height}+0+0
+geometry=${width}x${height}
+
+if [ "$1" == '--top-left' ]; then
+    geometry=${geometry}+0+0
+    shift
+fi
 
 #xterm -fn $font -g $geometry
 #gnome-terminal --geometry=$geometry
