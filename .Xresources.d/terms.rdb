@@ -285,6 +285,7 @@ nxterm*scrollBar:   false
 Rxvt*scrollBar:     false
 xterm*rightScrollBar: true
 Rxvt*rightScrollBar: true
+!rxvt*scrollBar_right: true
 
 *scrollTtyOutput:   False
 *scrollKey:     True
