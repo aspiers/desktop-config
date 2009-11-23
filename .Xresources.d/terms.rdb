@@ -435,9 +435,12 @@ XTerm*PopOnBell:   true
 ! }}}
 ! {{{ terminal type
 
-xterm*termName:          xterm-color
-nxterm*termName:         xterm-color
-URxvt*termName:          xterm-color
+! Let the distribution set the right thing, and with luck
+! we'll sometimes get 88 colors.
+!
+! xterm*termName:          xterm-color
+! nxterm*termName:         xterm-color
+! URxvt*termName:          xterm-color
 
 ! }}}
 
