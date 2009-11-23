@@ -40,7 +40,7 @@ NEAR_CMD='killall xscreensaver'
 HCITOOL="/usr/bin/hcitool"
 
 # If set, this will consume battery from the frequent writes to disk!
-DEBUG=
+DEBUG=y
 
 # catch non-syslog stuff
 LOG="$HOME/.btproximity.log"

@@ -5,6 +5,8 @@ use warnings;
 
 use Getopt::Long;
 
+use XScreensaver;
+
 (my $ME = $0) =~ s,.*/,,;
 
 sub usage {
@@ -26,24 +28,6 @@ GetOptions(
 ) or usage();
 usage() if $opts{help} or @ARGV > 1;
 
-my $rc = $ARGV[0] || "$ENV{HOME}/.xscreensaver";
+my $config_file = $ARGV[0] || "$ENV{HOME}/.xscreensaver";
 
-open(RC, $rc)
-  or die "Couldn't open($rc): $!\n";
-undef $/;
-my $config = <RC>;
-close(RC);
-
-$config =~ /^programs:\s*\\\n(.+?)\n\n/ms
-  or die "Couldn't find hacks in $rc!\n";
-my $hacks = $1;
-$hacks =~ s/\\\n//g;
-$hacks =~ s/\\n/\n/g;
-$hacks =~ s/^\s+//gm;
-$hacks =~ s/[ \t]{2,}/ /gm;
-unless ($opts{'full-path'}) {
-  $hacks =~ s!/usr/libexec/xscreensaver/!!g;
-}
-#$hacks =~ s! -?-root\b!!g;
-$hacks =~ s/\\\s*\Z//;
-print $hacks;
+print "[$_]\n" for XScreensaver->read_hacks($config_file, $opts{'full-path'});
