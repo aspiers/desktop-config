@@ -40,7 +40,7 @@ shift
 #         exit 1
 #         ;;
 # esac
-player=mplayer
+player="mplayer -ao pulse"
 
 if [ -n "$preview" ]; then
     "$player" "$@"
@@ -59,7 +59,7 @@ for track in "$@"; do
 done
 
 at "$time" <<EOF
-quietrun $player $args
+quietrun $player $args </dev/null
 EOF
 
 atq
