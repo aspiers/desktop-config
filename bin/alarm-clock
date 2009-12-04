@@ -43,7 +43,7 @@ shift
 player="mplayer -ao pulse"
 
 if [ -n "$preview" ]; then
-    "$player" "$@"
+    $player "$@"
     echo
     echo -n "Press Enter to schedule the alarm ... "
     read
