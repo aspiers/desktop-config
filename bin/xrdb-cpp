@@ -33,10 +33,15 @@ emacs_width=83
 # just to left of gkrellm
 emacs_position=-80+0
 
+emacs_version=$( emacs --version | awk '{print $3; exit 0}' )
+emacs_major_version=${emacs_version%%.*}
+
 # N.B. HOME and ZDOTDIR will probably expand to the wrong thing when
 # applications which depend on them are run on a different host via ssh.
 cpp -I $ZDOTDIR/.Xresources.d \
     -DHOME=$HOME -DZDOTDIR=$ZDOTDIR \
     -DEMACS_GEOMETRY=${emacs_width}x${emacs_height}${emacs_position} \
+    -DEMACS_VERSION=$emacs_version \
+    -DEMACS_MAJOR_VERSION=$emacs_major_version \
     "$@" | sed -e 's/@@/\
 /g; s/[ \t]*$//g'
