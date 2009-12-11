@@ -222,6 +222,9 @@
     <item label="ksnapshot">
       <action name="Execute"><execute>ksnapshot</execute></action>
     </item>
+    <item label="k_mag">
+      <action name="Execute"><execute>kmag</execute></action>
+    </item>
     <item label="x_mag">
       <action name="Execute"><execute>xmag</execute></action>
     </item>
