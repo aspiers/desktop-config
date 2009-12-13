@@ -16,6 +16,9 @@ emacs_major_version=${emacs_version%%.*}
 # uncomment to force to 22 for testing
 #emacs_major_version=22
 
+# FIXME: what if set to Xft font in
+# $ZDOTDIR/lib/emacs/init/GNU_Emacs/as-custom-XX.Y.el ?
+
 emacs_font=$(
     cpp \
         -DEMACS_VERSION=$emacs_version \
