@@ -10,37 +10,53 @@
 
 #echo "display: ${dpy_width}x${dpy_height}" >&2
 
-emacs_font=$( cpp -I $ZDOTDIR/.Xresources.d \
-                  -DWIDTH=$dpy_width \
-                  $ZDOTDIR/.Xresources.d/all.rdb | \
-                awk '/^ *emacs.font/ {print $2}' )
+emacs_version=$( emacs --version | awk '{print $3; exit 0}' )
+emacs_major_version=${emacs_version%%.*}
 
-eval $( get-font-geometry "$emacs_font" )
+# uncomment to force to 22 for testing
+#emacs_major_version=22
 
-#echo "emacs font: $emacs_font (${font_char_width}x$font_char_height)" >&2
+emacs_font=$(
+    cpp \
+        -DEMACS_VERSION=$emacs_version \
+        -DEMACS_MAJOR_VERSION=$emacs_major_version \
+        -DWIDTH=$dpy_width \
+        -I $ZDOTDIR/.Xresources.d \
+        $ZDOTDIR/.Xresources.d/all.rdb | \
+    awk '/^ *emacs.font/ {print $2}'
+)
 
-# Note: emacs used to seem to increase the size by 6x2 on startup (on
-# a 1024x768 display, anyhow).  So 78x42 actually ended up being
-# 84x44.  This doesn't happen any more, at least not on SLED10.  We
-# take 80% of height (watchlogs-system takes 20%) and then allow 50
-# pixels to account for the window title and emacs toolbar.
-# Whatever's left goes to the emacs frame.
+if [ -n "$emacs_font" ]; then
+    eval $( get-font-geometry "$emacs_font" )
 
-emacs_height=$(( ((dpy_height * 4 / 5) - 50) / font_char_height ))
-#emacs_width=$(( (dpy_width - right_margin) / font_char_width ))
-emacs_width=83
+    #echo "emacs font: $emacs_font (${font_char_width}x$font_char_height)" >&2
+
+    # Note: emacs used to seem to increase the size by 6x2 on startup (on
+    # a 1024x768 display, anyhow).  So 78x42 actually ended up being
+    # 84x44.  This doesn't happen any more, at least not on SLED10.  We
+    # take 80% of height (watchlogs-system takes 20%) and then allow 50
+    # pixels to account for the window title and emacs toolbar.
+    # Whatever's left goes to the emacs frame.
+
+    emacs_height=$(( ((dpy_height * 4 / 5) - 50) / font_char_height ))
+    #emacs_width=$(( (dpy_width - right_margin) / font_char_width ))
+    emacs_width=83
+
+    emacs_geometry=${emacs_width}x${emacs_height}
+else
+    emacs_geometry=
+fi
 
 # just to left of gkrellm
 emacs_position=-80+0
 
-emacs_version=$( emacs --version | awk '{print $3; exit 0}' )
-emacs_major_version=${emacs_version%%.*}
+emacs_geometry=${emacs_geometry}${emacs_position}
 
 # N.B. HOME and ZDOTDIR will probably expand to the wrong thing when
 # applications which depend on them are run on a different host via ssh.
 cpp -I $ZDOTDIR/.Xresources.d \
     -DHOME=$HOME -DZDOTDIR=$ZDOTDIR \
-    -DEMACS_GEOMETRY=${emacs_width}x${emacs_height}${emacs_position} \
+    -DEMACS_GEOMETRY=$emacs_geometry \
     -DEMACS_VERSION=$emacs_version \
     -DEMACS_MAJOR_VERSION=$emacs_major_version \
     "$@" | sed -e 's/@@/\
