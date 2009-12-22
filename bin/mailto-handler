@@ -17,5 +17,5 @@ while (@params) {
 }
 push @args, '-s', $p{subject} if $p{subject};
 warn "Warning: mailto-handler cannot pass body '$p{body}' to mutt\n" if $p{body};
-system "echo", "mutt-term", @args, $uri->to;
+system "mutt-term", @args, $uri->to;
 EOF
