@@ -2,17 +2,20 @@
 
 . ~/lib/personal-mail.sh
 
-mutt_args=( -F ~/.mutt/$MAIL_PROFILE )
+perl -Mstrict -MURI -w - <<'EOF' "$@"
 
-url="$1"
-address="${url#mailto:}"
-
-case "$url" in
-    *'?subject='*)
-        subject="${1#*?subject=}"
-        address="${address%?subject=*}"
-        mutt_args=( "${mutt_args[@]}" -s "$subject" )
-        ;;
-esac
-
-mutt-term "${mutt_args[@]}" "$address"
+my @args = ( "-F", "~/.mutt/$ENV{MAIL_PROFILE}" );
+my $uri = URI->new(shift @ARGV);
+my $scheme = $uri->scheme || '';
+die "URI scheme was '$scheme' not 'mailto:'\n"
+  unless $scheme eq 'mailto';
+my @params = $uri->headers;
+my %p;
+while (@params) {
+  my $k = lc shift @params;
+  $p{$k} = shift @params;
+}
+push @args, '-s', $p{subject} if $p{subject};
+warn "Warning: mailto-handler cannot pass body '$p{body}' to mutt\n" if $p{body};
+system "echo", "mutt-term", @args, $uri->to;
+EOF
