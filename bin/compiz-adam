@@ -26,6 +26,11 @@ plugins=/apps/compiz/plugins
 echo "general settings ..."
 general=/apps/compiz/general/allscreens/options
 
+# disable highly annoying menu key
+workarounds=/apps/compiz/plugins/workarounds/allscreens/options
+gconftool-2 -s $workarounds/extra0_main_menu_key -t string 'Disabled'
+gconftool-2 -s $workarounds/extra1_main_menu_key -t string 'Disabled'
+
 # Note png is required for skydome and cube top/bottom if using png images
 gconftool-2 -s $general/active_plugins -t list --list-type=string \
     '[gconf,decoration,wobbly,fade,minimize,png,cube,rotate,zoom,scale,move,resize,switcher,place,annotate,water]'
