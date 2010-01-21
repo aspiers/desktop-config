@@ -17,6 +17,8 @@ my_xmodmap () {
             xmodmap ~/.keymaps/X11/Dell-D600-Adam ;;
         indian|pacific)
             xmodmap ~/.keymaps/X11/Dell-D620-Adam ;;
+        southern)
+            xmodmap ~/.keymaps/X11/Dell-D630-Adam ;;
         t23)
             xmodmap ~/.keymaps/X11/TP-T23-UK      ;;
         *)
