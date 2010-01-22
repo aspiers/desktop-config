@@ -124,6 +124,12 @@ ensure_correct_invocation_running () {
     return 0
 }
 
+wait_until_AC_online () {
+    while ! AC-online; do
+        sleep 10
+    done
+}
+
 _log_it "pid $$ started up"
 
 read_conf
@@ -141,7 +147,8 @@ while true; do
     read_conf
 
     if ! AC-online; then
-        reason_not_to_run="AC power offline"
+        wait_until_AC_online
+        reason_not_to_run="waited for AC power to come back online"
     elif [ -z "$IP" ]; then
         reason_not_to_run="couldn't determine IP of $servername"
     elif [ "`get-connection-type '$IP'`" != 'lan' ]; then
