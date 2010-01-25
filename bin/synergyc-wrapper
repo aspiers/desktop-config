@@ -133,26 +133,30 @@ wait_until_AC_online () {
 _log_it "pid $$ started up"
 
 read_conf
-if ! IP="`host $servername |
+get_IP () {
+    if ! IP="`host $servername |
               awk '/has address/ {print $4; found=1}
                    END           {exit found==1 ? 0 : 1}'`"
-then
-    echo "Couldn't determine IP of $servername; can't check connection type"
-    IP=
-else
-    echo "$servername has IP $IP"
-fi
+    then
+        echo "Couldn't determine IP of $servername; can't check connection type"
+        IP=
+    else
+        echo "$servername has IP $IP"
+    fi
+}
 
 while true; do
     read_conf
+    get_IP
+    connection_type="`get-connection-type $IP`"
 
     if ! AC-online; then
         wait_until_AC_online
         reason_not_to_run="waited for AC power to come back online"
     elif [ -z "$IP" ]; then
         reason_not_to_run="couldn't determine IP of $servername"
-    elif [ "`get-connection-type '$IP'`" != 'lan' ]; then
-        reason_not_to_run="not on direct wired connection to $servername"
+    elif [ "$connection_type" != 'lan' ]; then
+        reason_not_to_run="connection to $IP ($servername) is $connection_type, not direct wire"
     elif ! grep -q $domainname /etc/resolv.conf; then
         # dnsdomainname doesn't get changed by DHCP for some reason
         #[ "`dnsdomainname 2>&1`" = $domainname ]
