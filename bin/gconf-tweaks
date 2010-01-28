@@ -19,3 +19,6 @@ gconftool-2 --set /desktop/gnome/interface/gtk_key_theme $theme --type string
 gconftool-2 -s /desktop/gnome/url-handlers/spotify/needs_terminal false -t bool
 gconftool-2 -t string -s /desktop/gnome/url-handlers/spotify/command "$HOME/bin/browser2spotify %s"
 gconftool-2 -s /desktop/gnome/url-handlers/spotify/enabled true -t bool
+
+# see also compiz-adam and
+# [[mairix:m:20100128130021.GQ22621@suse.de][f:D Rahn s:setting GNOME mount options for removable media on SLES10 SP2]]
