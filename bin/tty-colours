@@ -112,9 +112,10 @@ sub set_colours {
     for (my $green = 0; $green < $cube_side; $green++) {
       for (my $blue = 0; $blue < $cube_side; $blue++) {
         # Original code mapped red (0..5) to (0, 95, 135, 175, 215, 255)
-        my $red_256 = $red * 256 / $cube_side;
-        my $green_256 = $green * 256 / $cube_side;
-        my $blue_256 = $blue * 256 / $cube_side;
+        my $step = 255 / ($cube_side - 1);
+        my $red_256   = $red * $step;
+        my $green_256 = $green * $step;
+        my $blue_256  = $blue * $step;
         my $colour_number = $system
                           + ($red * ($cube_side ** 2))
                           + ($green * $cube_side)
@@ -130,7 +131,7 @@ sub set_colours {
   debug(2, "");
 
   # greyscale ramp intentionally leaves out black and white
-  my $step = 256 / ($greyscale + 2);
+  my $step = 255 / ($greyscale + 2);
   for (my $grey = 0; $grey < $greyscale; $grey++) {
     my $level = $step * ($grey + 1);
     my $colour_number = $system + $cube_colours + $grey;
