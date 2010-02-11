@@ -6,7 +6,41 @@
 # reproduction of the standard ANSI colours, but possibly more
 # pleasing shades
 
-my $mode = $ARGV[0] || 256;
+use strict;
+use warnings;
+
+use Getopt::Long;
+
+Getopt::Long::Configure('bundling');
+
+my %opts = ( verbosity => 1 );
+GetOptions(
+  \%opts,
+  'help|h',
+  '88|8',
+  'set|s',
+  'quiet|q',
+) or usage();
+usage() if @ARGV > 0 or $opts{help};
+
+$opts{verbosity} = 0 if $opts{quiet};
+
+sub usage {
+  warn @_, "\n" if @_;
+
+  (my $ME = $0) =~ s,.*/,,;
+
+  die <<EOUSAGE;
+Usage: $ME [options]
+Options:
+  -h, --help     Show this help
+  -s, --set      Set colours
+  -8, --88       Use 88 colour mode
+  -q, --quiet    Don't output when setting
+EOUSAGE
+}
+
+my $mode = $opts{88} ? 88 : 256;
 my ($system, $cube_side, $greyscale);
 
 if ($mode == 256) {
@@ -36,34 +70,87 @@ my $total = $system + $cube_colours + $greyscale;
 die "BUG: Total colours $total doesn't match mode $mode\n"
   unless $mode == $total;
 
-print "Mode: $mode colours";
-print " (specify 88 as CLI argument to change)" unless $ARGV[0];
-print "\n\n";
+sub show_colours {
+  print "Mode: $mode colours";
+  print " (specify 88 as CLI argument to change)" unless $opts{88};
+  print "\n\n";
 
-print "System colours:\n";
-for ($colour = 0; $colour < ($system / 2); $colour++) {
+  print "System colours:\n";
+  for (my $colour = 0; $colour < ($system / 2); $colour++) {
     print "\e[48;5;${colour}m. ";
-}
-print "\e[0m\n";
-for ($colour = ($system / 2); $colour < $system; $colour++) {
+  }
+  print "\e[0m\n";
+  for (my $colour = ($system / 2); $colour < $system; $colour++) {
     print "\e[48;5;${colour}m. ";
-}
-print "\e[0m\n\n";
+  }
+  print "\e[0m\n\n";
 
-print "Colour cube, ${cube_side}x${cube_side}x${cube_side}:\n";
-for ($green = 0; $green < $cube_side; $green++) {
-    for ($red = 0; $red < $cube_side; $red++) {
-	for ($blue = 0; $blue < $cube_side; $blue++) {
-	    $colour = $system + ($red * ($cube_side ** 2)) + ($green * $cube_side) + $blue;
-	    print "\e[48;5;${colour}m. ";
-	}
-	print "\e[0m ";
+  print "Colour cube, ${cube_side}x${cube_side}x${cube_side}:\n";
+  for (my $green = 0; $green < $cube_side; $green++) {
+    for (my $red = 0; $red < $cube_side; $red++) {
+      for (my $blue = 0; $blue < $cube_side; $blue++) {
+        my $colour = $system + ($red * ($cube_side ** 2)) + ($green * $cube_side) + $blue;
+        print "\e[48;5;${colour}m. ";
+      }
+      print "\e[0m ";
     }
     print "\n";
+  }
+
+  print "\nGreyscale ramp:\n";
+  for (my $colour = $system + $cube_colours; $colour < $total; $colour++) {
+    print "\e[48;5;${colour}m. ";
+  }
+  print "\e[0m\n";
 }
 
-print "\nGrayscale ramp:\n";
-for ($colour = $system + $cube_colours; $colour < $total; $colour++) {
-    print "\e[48;5;${colour}m. ";
+sub set_colours {
+  # grep for "ESC ] Ps;Pt ST" in urxvt(7)
+
+  for (my $red = 0; $red < $cube_side; $red++) {
+    for (my $green = 0; $green < $cube_side; $green++) {
+      for (my $blue = 0; $blue < $cube_side; $blue++) {
+        # Original code mapped red (0..5) to (0, 95, 135, 175, 215, 255)
+        my $red_256 = $red * 256 / $cube_side;
+        my $green_256 = $green * 256 / $cube_side;
+        my $blue_256 = $blue * 256 / $cube_side;
+        my $colour_number = $system
+                          + ($red * ($cube_side ** 2))
+                          + ($green * $cube_side)
+                          + $blue;
+        debug(1, sprintf "Setting cube colour %d to rgb:%02x/%02x/%02x",
+                         $colour_number, $red_256, $green_256, $blue_256);
+        printf "\e]4;%d;rgb:%02x/%02x/%02x\e\\",
+          $colour_number, $red_256, $green_256, $blue_256;
+      }
+    }
+  }
+
+  debug(1, "");
+
+  # greyscale ramp intentionally leaves out black and white
+  my $step = 256 / ($greyscale + 2);
+  for (my $grey = 0; $grey < $greyscale; $grey++) {
+    my $level = $step * ($grey + 1);
+    my $colour_number = $system + $cube_colours + $grey;
+    debug(1, sprintf "Setting greyscale colour %d to rgb:%02x/%02x/%02x",
+                     $colour_number, $level, $level, $level);
+    printf "\e]4;%d;rgb:%02x/%02x/%02x\e\\",
+      $colour_number, $level, $level, $level;
+  }
+
+  debug(1, "");
 }
-print "\e[0m\n";
+
+if ($opts{set}) {
+  set_colours();
+  show_colours() if $opts{verbosity} > 0;
+}
+else {
+  show_colours();
+}
+
+sub debug {
+  my $level = shift;
+  warn @_, "\n" if $opts{verbosity} >= $level;
+}
