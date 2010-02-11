@@ -19,7 +19,7 @@ GetOptions(
   'help|h',
   '88|8',
   'set|s',
-  'quiet|q',
+  'verbosity|v+',
 ) or usage();
 usage() if @ARGV > 0 or $opts{help};
 
@@ -37,6 +37,7 @@ Options:
   -s, --set      Set colours
   -8, --88       Use 88 colour mode
   -q, --quiet    Don't output when setting
+  -v, --verbose[=N]    Increase [specify] verbosity (defaults to 1)
 EOUSAGE
 }
 
@@ -118,7 +119,7 @@ sub set_colours {
                           + ($red * ($cube_side ** 2))
                           + ($green * $cube_side)
                           + $blue;
-        debug(1, sprintf "Setting cube colour %d to rgb:%02x/%02x/%02x",
+        debug(2, sprintf "Setting cube colour %d to rgb:%02x/%02x/%02x",
                          $colour_number, $red_256, $green_256, $blue_256);
         printf "\e]4;%d;rgb:%02x/%02x/%02x\e\\",
           $colour_number, $red_256, $green_256, $blue_256;
@@ -126,25 +127,25 @@ sub set_colours {
     }
   }
 
-  debug(1, "");
+  debug(2, "");
 
   # greyscale ramp intentionally leaves out black and white
   my $step = 256 / ($greyscale + 2);
   for (my $grey = 0; $grey < $greyscale; $grey++) {
     my $level = $step * ($grey + 1);
     my $colour_number = $system + $cube_colours + $grey;
-    debug(1, sprintf "Setting greyscale colour %d to rgb:%02x/%02x/%02x",
+    debug(2, sprintf "Setting greyscale colour %d to rgb:%02x/%02x/%02x",
                      $colour_number, $level, $level, $level);
     printf "\e]4;%d;rgb:%02x/%02x/%02x\e\\",
       $colour_number, $level, $level, $level;
   }
 
-  debug(1, "");
+  debug(2, "");
 }
 
 if ($opts{set}) {
   set_colours();
-  show_colours() if $opts{verbosity} > 0;
+  show_colours() if $opts{verbosity} > 1;
 }
 else {
   show_colours();
