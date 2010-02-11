@@ -18,4 +18,6 @@ for dir in $HOME/.kde{,4}/Autostart; do
     fi
 done
 
+ln -s .xsession-progs.d ~/.XSP
+
 touch ~/.synergy-{client,server}-name
