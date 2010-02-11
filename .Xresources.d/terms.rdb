@@ -91,51 +91,88 @@ URxvt*italicULMode: false
 ! }}}
 ! {{{ other colours
 
-! N.B. updates here should be reflected in ~/.Eterm/themes/base.cfg
+! N.B. updates here could be reflected in ~/.Eterm/themes/base.cfg
+! if I gave a shit about Eterm.
 
-XTerm*color0: rgb:00/00/00
-XTerm*color1: rgb:aa/00/00
-XTerm*color2: rgb:00/88/00
-XTerm*color3: rgb:aa/55/22
-XTerm*color4: rgb:10/00/b6
-XTerm*color5: rgb:aa/00/aa
-!XTerm*color6: rgb:00/aa aa
-XTerm*color6: rgb:79/ae/a6
-XTerm*color7: rgb:e0/e0/e0
-XTerm*color8: rgb:55/55/55
-XTerm*color9: rgb:ff/44/44
-!XTerm*color10: rgb:44/ff/44
-XTerm*color10: rgb:9e/db/96
-!XTerm*color11: rgb:ff/ff/44
-XTerm*color11: rgb:f7/ff/a6
-!XTerm*color12: rgb:44/44/ff
-XTerm*color12: rgb:51/55/c8
-XTerm*color13: rgb:ff/44/ff
-!XTerm*color14: rgb:44/ff/ff
-XTerm*color14: rgb:be/eb/f4
-XTerm*color15: rgb:ff/ff/ff
+! Some nice themes at:
+! http://tuxtraining.com/2009/06/27/terminal-color-schemes-for-xdefaults-or-xresources-file
 
-Rxvt*color0: rgb:00/00/00
-Rxvt*color1: rgb:aa/00/00
-Rxvt*color2: rgb:00/88/00
-Rxvt*color3: rgb:aa/55/22
-Rxvt*color4: rgb:10/00/b6
-Rxvt*color5: rgb:aa/00/aa
-!Rxvt*color6: rgb:00/aa aa
-Rxvt*color6: rgb:79/ae/a6
-Rxvt*color7: rgb:e0/e0/e0
-Rxvt*color8: rgb:55/55/55
-Rxvt*color9: rgb:ff/44/44
-!Rxvt*color10: rgb:44/ff/44
-Rxvt*color10: rgb:9e/db/96
-!Rxvt*color11: rgb:ff/ff/44
-Rxvt*color11: rgb:f7/ff/a6
-!Rxvt*color12: rgb:44/44/ff
-Rxvt*color12: rgb:51/55/c8
-Rxvt*color13: rgb:ff/44/ff
-!Rxvt*color14: rgb:44/ff/ff
-Rxvt*color14: rgb:be/eb/f4
-Rxvt*color15: rgb:ff/ff/ff
+! theme 2 from above link
+#define BACKGROUND rgb:00/00/00
+#define FOREGROUND rgb:7f/7f/7f
+#define COLOR0     rgb:00/00/00
+#define COLOR1     rgb:9e/18/28
+#define COLOR2     rgb:ae/ce/92
+#define COLOR3     rgb:96/8a/38
+#define COLOR4     rgb:41/41/71
+#define COLOR5     rgb:96/3c/59
+#define COLOR6     rgb:41/81/79
+#define COLOR7     rgb:be/be/be
+#define COLOR8     rgb:66/66/66
+#define COLOR9     rgb:cf/61/71
+#define COLOR10    rgb:c5/f7/79
+#define COLOR11    rgb:ff/f7/96
+#define COLOR12    rgb:41/86/be
+#define COLOR13    rgb:cf/9e/be
+#define COLOR14    rgb:71/be/be
+#define COLOR15    rgb:ff/ff/ff
+
+! my theme
+! #define COLOR0 rgb:00/00/00
+! #define COLOR1 rgb:aa/00/00
+! #define COLOR2 rgb:00/88/00
+! #define COLOR3 rgb:aa/55/22
+! #define COLOR4 rgb:10/00/b6
+! #define COLOR5 rgb:aa/00/aa
+! !#define COLOR6 rgb:00/aa/aa
+! #define COLOR6 rgb:79/ae/a6
+! #define COLOR7 rgb:e0/e0/e0
+! #define COLOR8 rgb:55/55/55
+! #define COLOR9 rgb:ff/44/44
+! !#define COLOR10 rgb:44/ff/44
+! #define COLOR10 rgb:9e/db/96
+! !#define COLOR11 rgb:ff/ff/44
+! #define COLOR11 rgb:f7/ff/a6
+! !#define COLOR12 rgb:44/44/ff
+! #define COLOR12 rgb:51/55/c8
+! #define COLOR13 rgb:ff/44/ff
+! !#define COLOR14 rgb:44/ff/ff
+! #define COLOR14 rgb:be/eb/f4
+! #define COLOR15 rgb:ff/ff/ff
+
+XTerm*color0:  COLOR0
+XTerm*color1:  COLOR1
+XTerm*color2:  COLOR2
+XTerm*color3:  COLOR3
+XTerm*color4:  COLOR4
+XTerm*color5:  COLOR5
+XTerm*color6:  COLOR6
+XTerm*color7:  COLOR7
+XTerm*color8:  COLOR8
+XTerm*color9:  COLOR9
+XTerm*color10: COLOR10
+XTerm*color11: COLOR11
+XTerm*color12: COLOR12
+XTerm*color13: COLOR13
+XTerm*color14: COLOR14
+XTerm*color15: COLOR15
+
+Rxvt*color0:  COLOR0
+Rxvt*color1:  COLOR1
+Rxvt*color2:  COLOR2
+Rxvt*color3:  COLOR3
+Rxvt*color4:  COLOR4
+Rxvt*color5:  COLOR5
+Rxvt*color6:  COLOR6
+Rxvt*color7:  COLOR7
+Rxvt*color8:  COLOR8
+Rxvt*color9:  COLOR9
+Rxvt*color10: COLOR10
+Rxvt*color11: COLOR11
+Rxvt*color12: COLOR12
+Rxvt*color13: COLOR13
+Rxvt*color14: COLOR14
+Rxvt*color15: COLOR15
 
 ! }}}
 ! {{{ fonts
