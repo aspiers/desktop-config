@@ -1,62 +1,67 @@
 #!/usr/bin/perl
 # Author: Todd Larason <jtl@molehill.org>
-# $XFree86: xc/programs/xterm/vttests/256colors2.pl,v 1.2 2002/03/26 01:46:43 dickey Exp $
+# $XFree86: xc/programs/xterm/vttests/256colours2.pl,v 1.2 2002/03/26 01:46:43 dickey Exp $
 
-# use the resources for colors 0-15 - usually more-or-less a
-# reproduction of the standard ANSI colors, but possibly more
+# use the resources for colours 0-15 - usually more-or-less a
+# reproduction of the standard ANSI colours, but possibly more
 # pleasing shades
 
-sub set_colours {
-  # grep for "ESC ] Ps;Pt ST" in urxvt(7)
+my $mode = $ARGV[0] || 256;
+my ($system, $cube_side, $greyscale);
 
-  # colors 16-231 are a 6x6x6 color cube
-  for ($red = 0; $red < 6; $red++) {
-    for ($green = 0; $green < 6; $green++) {
-      for ($blue = 0; $blue < 6; $blue++) {
-        printf("\e]4;%d;rgb:%2.2x/%2.2x/%2.2x\e\\",
-               16 + ($red * 36) + ($green * 6) + $blue,
-               ($red ? ($red * 40 + 55) : 0),
-               ($green ? ($green * 40 + 55) : 0),
-               ($blue ? ($blue * 40 + 55) : 0));
-      }
-    }
-  }
-
-  # colors 232-255 are a grayscale ramp, intentionally leaving out
-  # black and white
-  for ($gray = 0; $gray < 24; $gray++) {
-    $level = ($gray * 10) + 8;
-    printf("\e]4;%d;rgb:%2.2x/%2.2x/%2.2x\e\\",
-	   232 + $gray, $level, $level, $level);
-  }
+if ($mode == 256) {
+  # 256 colour mode is
+  #     16 system colours
+  #  + 216 cube colours (6x6x6)
+  #  +  24 greyscale colours
+  $system    = 16;
+  $cube_side = 6;
+  $greyscale = 24;
+}
+elsif ($mode == 88) {
+  #  88 colour mode is
+  #     16 system colours
+  #  +  64 cube colours (4x4x4)
+  #  +   8 greyscale colours
+  $system    = 16;
+  $cube_side = 4;
+  $greyscale = 8;
+}
+else {
+  die "Invalid mode with $mode colours\n";
 }
 
-# display the colors
+my $cube_colours = $cube_side ** 3;
+my $total = $system + $cube_colours + $greyscale;
+die "BUG: Total colours $total doesn't match mode $mode\n"
+  unless $mode == $total;
 
-print "System colors:\n";
-for ($color = 0; $color < 8; $color++) {
-    print "\e[48;5;${color}m. ";
+print "Mode: $mode colours\n\n";
+
+print "System colours:\n";
+for ($colour = 0; $colour < ($system / 2); $colour++) {
+    print "\e[48;5;${colour}m. ";
 }
 print "\e[0m\n";
-for ($color = 8; $color < 16; $color++) {
-    print "\e[48;5;${color}m. ";
+for ($colour = ($system / 2); $colour < $system; $colour++) {
+    print "\e[48;5;${colour}m. ";
 }
 print "\e[0m\n\n";
 
-print "Color cube, 6x6x6:\n";
-for ($green = 0; $green < 6; $green++) {
-    for ($red = 0; $red < 6; $red++) {
-	for ($blue = 0; $blue < 6; $blue++) {
-	    $color = 16 + ($red * 36) + ($green * 6) + $blue;
-	    print "\e[48;5;${color}m. ";
+print "Colour cube, ${cube_side}x${cube_side}x${cube_side}:\n";
+for ($green = 0; $green < $cube_side; $green++) {
+    for ($red = 0; $red < $cube_side; $red++) {
+	for ($blue = 0; $blue < $cube_side; $blue++) {
+	    $colour = $system + ($red * ($cube_side ** 2)) + ($green * $cube_side) + $blue;
+	    print "\e[48;5;${colour}m. ";
 	}
 	print "\e[0m ";
     }
     print "\n";
 }
 
-print "Grayscale ramp:\n";
-for ($color = 232; $color < 256; $color++) {
-    print "\e[48;5;${color}m. ";
+print "\nGrayscale ramp:\n";
+for ($colour = $system + $cube_colours; $colour < $total; $colour++) {
+    print "\e[48;5;${colour}m. ";
 }
 print "\e[0m\n";
