@@ -36,7 +36,9 @@ my $total = $system + $cube_colours + $greyscale;
 die "BUG: Total colours $total doesn't match mode $mode\n"
   unless $mode == $total;
 
-print "Mode: $mode colours\n\n";
+print "Mode: $mode colours";
+print " (specify 88 as CLI argument to change)" unless $ARGV[0];
+print "\n\n";
 
 print "System colours:\n";
 for ($colour = 0; $colour < ($system / 2); $colour++) {
