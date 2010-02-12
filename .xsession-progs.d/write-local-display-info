@@ -1,0 +1,15 @@
+#!/bin/sh
+
+# Cache for use with run-with-local-X-display
+
+host=${HOST:-${HOSTNAME:-`hostname`}}
+host=${host%%.*}
+display_file=$HOME/.Xdisplay.$host
+
+cat <<EOF > "$display_file"
+export DISPLAY=$DISPLAY
+export XAUTHLOCALHOSTNAME=$XAUTHLOCALHOSTNAME
+export XAUTHORITY=$XAUTHORITY
+EOF
+
+chmod go-rwx "$display_file"
