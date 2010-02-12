@@ -9,6 +9,9 @@ gconftool-2 -s /desktop/gnome/url-handlers/textedit/needs_terminal -t bool no
 # ~/.cfg-post.d/emacs for annotation/remember
 
 gconftool-2 -s /apps/nautilus/preferences/show_desktop -t bool false
+# More GNOME incompetence
+# https://bugzilla.gnome.org/show_bug.cgi?id=571417#c31
+gconftool-2 -s /apps/nautilus/preferences/exit_with_last_window -t bool false
 
 # Turns out I use Control-A to select all a lot with Gtk text entry.
 #theme=Emacs
