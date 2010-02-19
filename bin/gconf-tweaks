@@ -1,27 +1,32 @@
 #!/bin/sh
 
-gconftool-2 -s /desktop/gnome/url-handlers/mailto/command -t string "mailto-handler '%s'"
+gconftool=$gconftool-2
 
-gconftool-2 -s /desktop/gnome/url-handlers/textedit/command -t string 'lilypond-invoke-editor "%s"'
-gconftool-2 -s /desktop/gnome/url-handlers/textedit/enabled -t bool yes
-gconftool-2 -s /desktop/gnome/url-handlers/textedit/needs_terminal -t bool no
+$gconftool -s /desktop/gnome/url-handlers/mailto/command -t string "mailto-handler '%s'"
+
+$gconftool -s /desktop/gnome/url-handlers/textedit/command -t string 'lilypond-invoke-editor "%s"'
+$gconftool -s /desktop/gnome/url-handlers/textedit/enabled -t bool yes
+$gconftool -s /desktop/gnome/url-handlers/textedit/needs_terminal -t bool no
 
 # ~/.cfg-post.d/emacs for annotation/remember
 
-gconftool-2 -s /apps/nautilus/preferences/show_desktop -t bool false
+$gconftool -s /apps/nautilus/preferences/show_desktop -t bool false
 # More GNOME incompetence
 # https://bugzilla.gnome.org/show_bug.cgi?id=571417#c31
-gconftool-2 -s /apps/nautilus/preferences/exit_with_last_window -t bool false
+$gconftool -s /apps/nautilus/preferences/exit_with_last_window -t bool false
 
 # Turns out I use Control-A to select all a lot with Gtk text entry.
 #theme=Emacs
 theme=Default
 echo "### GTK keybindings $theme theme ..."
-gconftool-2 --set /desktop/gnome/interface/gtk_key_theme $theme --type string
+$gconftool --set /desktop/gnome/interface/gtk_key_theme $theme --type string
 
-gconftool-2 -s /desktop/gnome/url-handlers/spotify/needs_terminal false -t bool
-gconftool-2 -t string -s /desktop/gnome/url-handlers/spotify/command "$HOME/bin/browser2spotify %s"
-gconftool-2 -s /desktop/gnome/url-handlers/spotify/enabled true -t bool
+$gconftool -s /desktop/gnome/url-handlers/spotify/needs_terminal false -t bool
+$gconftool -t string -s /desktop/gnome/url-handlers/spotify/command "$HOME/bin/browser2spotify %s"
+$gconftool -s /desktop/gnome/url-handlers/spotify/enabled true -t bool
 
 # see also compiz-adam and
 # [[mairix:m:20100128130021.GQ22621@suse.de][f:D Rahn s:setting GNOME mount options for removable media on SLES10 SP2]]
+
+$gconftool -s /apps/gnome-do/preferences/Do/CoreKeybindings/SummonKey \
+           -t string -s '<Shift><Super>d'
