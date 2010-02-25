@@ -23,10 +23,15 @@ $gconftool --set /desktop/gnome/interface/gtk_key_theme $theme --type string
 
 $gconftool -s /desktop/gnome/url-handlers/spotify/needs_terminal false -t bool
 $gconftool -t string -s /desktop/gnome/url-handlers/spotify/command "$HOME/bin/browser2spotify %s"
-$gconftool -s /desktop/gnome/url-handlers/spotify/enabled true -t bool
+$gconftool -s /desktop/gnome/url-handlers/spotify/enabled -t bool true
 
 # see also compiz-adam and
 # [[mairix:m:20100128130021.GQ22621@suse.de][f:D Rahn s:setting GNOME mount options for removable media on SLES10 SP2]]
 
 $gconftool -s /apps/gnome-do/preferences/Do/CoreKeybindings/SummonKey \
            -t string -s '<Shift><Super>d'
+
+# Fucking Windows key idiocy
+# found this from https://bugzilla.gnome.org/show_bug.cgi?id=150897
+# see also menu key setting in compiz-adam
+$gconftool -s /apps/metacity/general/enable_windows_keys -t bool false
