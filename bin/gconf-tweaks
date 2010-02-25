@@ -1,6 +1,6 @@
 #!/bin/sh
 
-gconftool=$gconftool-2
+gconftool=gconftool-2
 
 $gconftool -s /desktop/gnome/url-handlers/mailto/command -t string "mailto-handler '%s'"
 
