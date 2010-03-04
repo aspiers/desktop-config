@@ -1,4 +1,5 @@
 #!/bin/sh
 
-# Needed cos Eterm's -e is shite and won't accept args
+# Needed cos Eterm's -e is shite and won't accept args.
+# But I ditched Eterm and urxvt -e sudo iftop -i br0 works fine ...
 exec sudo iftop "$@"
