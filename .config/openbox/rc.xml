@@ -301,6 +301,11 @@
     </keybind>
     <keybind key="W-S-i">
       <action name="Execute">
+        <execute>top-term sudo nethogs br0</execute>
+      </action>
+    </keybind>
+    <keybind key="W-C-S-i">
+      <action name="Execute">
         <execute>top-term sudo iftop</execute>
       </action>
     </keybind>
