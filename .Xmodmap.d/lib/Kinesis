@@ -1,10 +1,10 @@
 #!/bin/sh
 
 if egrep -iq 'AutoAddDevices.*(off|0)' /etc/X11/xorg.conf; then
-    xmodmap /home/adam/.keymaps/X11/Kinesis-QWERTY
+    xmodmap $ZDOTDIR/.keymaps/X11/Kinesis-QWERTY
 else
     # funny shit happens with evdev
-    xmodmap /home/adam/.keymaps/X11/Kinesis-QWERTY-evdev
+    xmodmap $ZDOTDIR/.keymaps/X11/Kinesis-QWERTY-evdev
 fi
 
 xset r 64 # autorepeat Delete
