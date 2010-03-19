@@ -1,9 +1,17 @@
 #!/bin/sh
 
-if egrep -iq 'AutoAddDevices.*(off|0)' /etc/X11/xorg.conf; then
+. $ZDOTDIR/lib/libhost.sh
+
+read_localhost_nickname
+
+# On indian at least, with a Kinesis keyboard, the evdev map
+# is not the right one.
+if [ "$localhost_nickname" != 'atlantic' ] || \
+   egrep -iq 'AutoAddDevices.*(off|0)' /etc/X11/xorg.conf
+then
     xmodmap $ZDOTDIR/.keymaps/X11/Kinesis-QWERTY
 else
-    # funny shit happens with evdev
+    # funny shit happens with evdev on atlantic
     xmodmap $ZDOTDIR/.keymaps/X11/Kinesis-QWERTY-evdev
 fi
 
