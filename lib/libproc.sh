@@ -178,3 +178,25 @@ process_starttime () {
     #echo "btime $boot_time jif $jiffies_since_boot hz $hertz"
     return $starttime
 }
+
+# If we are running with -e flag, we can watch out for commands failing
+# via:
+#
+# trap check_success_on_exit EXIT
+#
+# [ do stuff ]
+#
+# success=hooray # keep exit handler happy
+
+check_success_on_exit () {
+    if [ "$success" != 'hooray' ]; then
+        cat <<EOF
+
+WARNING: script terminated prematurely!  The last command failed;
+please carefully examine the output immediately above this message for
+clues as to what went wrong.
+
+EOF
+    fi
+}
+
