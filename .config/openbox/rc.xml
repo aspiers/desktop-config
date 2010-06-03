@@ -284,6 +284,11 @@
     </keybind>
     <!-- W-b reserved for amarok -->
     <!-- W-c reserved for amarok -->
+    <keybind key="W-c">
+      <action name="Execute">
+        <execute>google-chrome</execute>
+      </action>
+    </keybind>
     <keybind key="W-e">
       <action name="Execute">
         <execute>ekiga</execute>
