@@ -93,7 +93,12 @@ keycode 0x14 =	minus		sterling
 keycode 0x17 =	Tab
 keycode 0x18 =	q		Q
 keycode 0x19 =	w		W
-keycode 0x1A =	e		E		End
+
+! This breaks Chrome:
+!keycode 0x1A =	e		E	#	End
+! http://code.google.com/p/chromium/issues/detail?id=24583
+
+keycode 0x1A =	e		E
 keycode 0x1B =	r		R
 keycode 0x1C =	t		T
 keycode 0x1D =	y		Y
@@ -108,7 +113,12 @@ keycode 0x27 =	s		S
 keycode 0x28 =	d		D
 keycode 0x29 =	f		F
 keycode 0x2A =	g		G
-keycode 0x2B =	h		H               Home
+
+keycode 0x2B =	h		H
+! This breaks Chrome:
+!keycode 0x2B =	h		H        #       Home
+! http://code.google.com/p/chromium/issues/detail?id=24583
+
 keycode 0x2C =	j		J
 keycode 0x2D =	k		K
 keycode 0x2E =	l		L
@@ -170,5 +180,7 @@ add    Control = Control_L
 add    Mod1    = Meta_L Meta_R
 !add    Mod2    = Alt_L Alt_R
 add    Mod2    = Alt_L
-add    Mod3    = Mode_switch
+! Apparently Mode_switch doesn't need to be a modifier for it to work.
+! Not sure if there is an advantage to having it as one?
+!add    Mod3    = Mode_switch
 add    Mod4    = Super_R
