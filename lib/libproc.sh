@@ -50,7 +50,7 @@ run_unless_running () {
 # Sample usage follows:
 # 
 #   clean_up () {
-#     [ -d "$lock" ] && rm "$lock"
+#     [ -L "$lock" ] && rm "$lock"
 #   }
 #   
 #   obtain_lock "$lock" "$cmd" || exit 1
