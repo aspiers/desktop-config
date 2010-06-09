@@ -102,6 +102,7 @@ obtain_lock () {
     esac
 
     local interactive=y
+    # Require both STDIN and STDOUT to be ttys to run interactively.
     if ! [ -t 0 ] || ! [ -t 1 ]; then
         interactive=
     fi
