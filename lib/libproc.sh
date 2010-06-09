@@ -31,10 +31,11 @@ run_unless_running () {
 
 # obtain_lock LOCKFILE COMMAND
 # 
-# Obtains a lock via ln -s LOCKINFO LOCKFILE, to protect against
-# COMMAND running concurrently.  Returns success (zero) iff lock was
-# obtained.  Cross-checks lock with process table and does the
-# sensible thing in each case.
+# Tries once to obtains a lock via ln -s LOCKINFO LOCKFILE, to protect
+# against COMMAND running concurrently.  Returns success (zero) iff
+# lock was obtained.  Does not block, although may prompt for user
+# guidance if running interactively - cross-checks lock with process
+# table and does the sensible thing in each case.
 #
 # Assumes that /proc/$pid/cmdline of the resulting command will
 # contain the first word of COMMAND.  This is so it can check whether
