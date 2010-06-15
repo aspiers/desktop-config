@@ -1,0 +1,15 @@
+#!/bin/sh
+
+host=${HOST:-$HOSTNAME}
+host=${host%%.*}
+
+. ~/.shared_env
+
+. $ZDOTDIR/lib/libproc.sh
+
+$ZDOTDIR/.xsession-progs.d/person-$ZDOTUSER/10-Xresources
+$ZDOTDIR/.xsession-progs.d/person-$ZDOTUSER/15-gconf-tweaks
+$ZDOTDIR/.xsession-progs.d/person-$ZDOTUSER/20-fonts
+$ZDOTDIR/.xsession-progs.d/person-$ZDOTUSER/30-gnome-terminal-config
+$ZDOTDIR/.xsession-progs.d/person-$ZDOTUSER/50-keyboard
+$ZDOTDIR/.xsession-progs.d/person-$ZDOTUSER/50-mouse
