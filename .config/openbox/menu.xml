@@ -131,7 +131,7 @@
     </item>
   </menu>
 
-  <menu id="audio-menu" label="Audio">
+  <menu id="audio-menu" label="Audio / music">
     <separator label="Audio" />
     <item label="AmaroK">
       <action name="Execute"><execute>amarok</execute></action>
@@ -167,6 +167,9 @@
     <item label="Band In A Box">
       <action name="Execute"><execute>biab</execute></action>
     </item>
+    <item label="Frescobaldi">
+      <action name="Execute"><execute>frescobaldi</execute></action>
+    </item>
     <separator />
     <item label="_audacity">
       <action name="Execute"><execute>audacity</execute></action>
@@ -185,8 +188,8 @@
     </item>
   </menu>
 
-  <menu id="office-menu" label="Office/PIM">
-    <separator label="Office/PIM" />
+  <menu id="office-menu" label="Office / PIM">
+    <separator label="Office / PIM" />
     <item label="korganizer">
       <action name="Execute"><execute>korganizer</execute></action>
     </item>
