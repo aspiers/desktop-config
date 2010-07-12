@@ -35,3 +35,6 @@ $gconftool -s /apps/gnome-do/preferences/Do/CoreKeybindings/SummonKey \
 # found this from https://bugzilla.gnome.org/show_bug.cgi?id=150897
 # see also menu key setting in compiz-adam
 $gconftool -s /apps/metacity/general/enable_windows_keys -t bool false
+
+# See xscreensaver(1) man page
+$gconftool -s /apps/gnome_settings_daemon/screensaver/start_screensaver -t bool false
