@@ -5,5 +5,6 @@
 if uname -r | grep -q xen && pgrep sawfish >/dev/null; then
   echo "xscreensaver crashes Xen dom0 with KDEWM=sawfish? not running"
 else
+  gconftool-2 --type boolean -s /apps/gnome_settings_daemon/screensaver/start_screensaver false
   run_if_executable xscreensaver -no-splash > ~/.xscreensaver.log 2>&1 &
 fi
