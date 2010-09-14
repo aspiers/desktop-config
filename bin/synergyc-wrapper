@@ -135,7 +135,7 @@ _log_it "pid $$ started up"
 read_conf
 get_IP () {
     if ! IP="`host $servername |
-              awk '/has address/ {print $4; found=1}
+              awk '/has address/ {print $4; found++}
                    END           {exit found==1 ? 0 : 1}'`"
     then
         echo "Couldn't determine IP of $servername; can't check connection type"
@@ -149,6 +149,7 @@ while true; do
     read_conf
     get_IP
     connection_type="`get-connection-type $IP`"
+    echo "Connection type is $connection_type"
 
     if ! AC-online; then
         wait_until_AC_online
