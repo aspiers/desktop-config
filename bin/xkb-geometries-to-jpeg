@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# Draw all XKB geometries as JPEG files.
+
+xkbdir=/usr/share/X11/xkb
+geomdir="$xkbdir/geometry"
+outdir=xkb-geometries
+[ -d "$outdir" ] || mkdir "$outdir"
+cd "$outdir"
+# Mirror subdirectories of xkb geometry/ directory under output directory
+( cd "$geomdir"; find * -type d ) | xargs mkdir -p
+
+awk '{print $3}' "$xkbdir/geometry.dir" |
+while read geom; do
+    if setxkbmap -geometry "$geom" -print |
+        xkbcomp -w 3 - - |
+        xkbprint - - |
+        gs -sDEVICE=jpeg -sOutputFile=- -r100 -q - |
+        jpegtran -rotate 270 > "$geom.jpeg"
+    then
+        echo "wrote $geom.jpeg"
+    else
+        echo "Failed to write $geom.jpeg"
+    fi
+done
