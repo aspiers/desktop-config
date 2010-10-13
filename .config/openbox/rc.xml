@@ -306,12 +306,12 @@
     </keybind>
     <keybind key="W-S-i">
       <action name="Execute">
-        <execute>top-term sudo nethogs br0</execute>
+        <execute>top-term sudo nethogs eth0</execute>
       </action>
     </keybind>
     <keybind key="W-C-S-i">
       <action name="Execute">
-        <execute>top-term sudo iftop</execute>
+        <execute>top-term sudo iftop -i eth0</execute>
       </action>
     </keybind>
     <keybind key="W-j">
@@ -766,7 +766,7 @@ Use devilspie instead, ubiquitous across window managers.
       <weight/>
       <slant/>
     </font>
-    <name>Clearlooks-Olive</name>
+    <name>Clearlooks</name>
   </theme>
   <margins>
     <left>0</left>
