@@ -1,6 +1,11 @@
 #!/bin/bash
 
-. ~/lib/personal-mail.sh
+case "$*" in
+    *novell*)
+        . ~/lib/novell-mail.sh ;;
+    *)
+        . ~/lib/personal-mail.sh ;;
+esac
 
 perl -Mstrict -MURI -w - <<'EOF' "$@"
 
