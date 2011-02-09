@@ -2,6 +2,8 @@
 
 * Recommendation: match on (in decreasing order of specificity):
 
+xprop | egrep 'WM_(NAME|WINDOW_ROLE|CLASS)'
+
   - window_name, e.g. "Slashdot" in firefox
     use devilspie's (debug) and use value of Window Title (misnamed)
     xprop | grep WM_NAME is less reliable
@@ -10,9 +12,8 @@
     use xprop | grep WM_WINDOW_ROLE to determine value
 
   - window_class, e.g. "Rxvt"
-    use xprop | grep WM_CLASS or devilspie's (debug) to determine value
-
-xprop | egrep 'WM_(NAME|WINDOW_ROLE|CLASS)'
+    use xprop | grep WM_CLASS or devilspie's (debug) to determine value;
+    with xprop take the second value after the comma
 
 * Logic
 
