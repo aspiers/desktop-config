@@ -1,4 +1,9 @@
 ;; Call window
+(if (and (matches (window_name) "Call Phones or Send SMS")
+         (is (window_class) "Skype"))
+   (begin (pin)))
+
+;; Call window
 (if (and (matches (window_name) "Call with")
          (is (window_role) "CallWindowForm"))
    (begin (pin)))
