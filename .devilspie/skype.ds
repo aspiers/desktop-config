@@ -4,7 +4,7 @@
    (begin (pin)))
 
 ;; Call window
-(if (and (matches (window_name) "Call with")
+(if (and (contains (window_name) "Call with")
          (is (window_role) "CallWindowForm"))
    (begin (pin)))
 
