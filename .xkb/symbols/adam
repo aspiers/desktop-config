@@ -1,76 +1,107 @@
 default partial
 xkb_symbols "laptop" {
     include "adam(laptop-left-alpha)"
-    include "adam(laptop-left-mods)"
-    include "adam(laptop-right-mods)"
+    include "adam(laptop-leftmods)"
     include "adam(us-backslash)"
     include "adam(us-3)"
+//    include "adam(meta)"
+//    include "adam(control-modifier-map)"
 };
 
-partial modifier_keys
-xkb_symbols "laptop-left-mods" {
+partial
+xkb_symbols "hhk" {
+    include "adam(hhk-left-alpha)"
+    include "adam(hhk-mods)"
+    include "adam(us-3)"
+//    include "adam(meta)"
+//    include "adam(control-modifier-map)"
+};
+
+partial  modifier_keys
+xkb_symbols "laptop-leftmods" {
     virtual_modifiers LControl, LAlt;
     key <LALT> {
-    	type[Group1] = "ONE_LEVEL",
-        symbols[Group1] = [ Control_L ],
+        [ Control_L, Control_L ],
         virtualMods = LControl
     };
-    //modifier_map Control { Control_L, Control_R };
 
     key <LWIN> {
         [ Alt_L, Meta_L ],
         virtualMods = LAlt
     };
-
-    key <META> { [ NoSymbol, Meta_L ] };
-    modifier_map Mod1   { <META> };
 };
 
-partial modifier_keys
-xkb_symbols "laptop-right-mods" {
-    key <RALT> {
-    	type[Group1] = "ONE_LEVEL",
-    	symbols[Group1] = [ Alt_R ],
+partial  modifier_keys
+xkb_symbols "hhk-mods" {
+    virtual_modifiers LAlt, LControl, RAlt;
+    key <LALT> {      
+        [ Alt_L, Meta_L ],
         virtualMods = LAlt
     };
 
-    virtual_modifiers Super;
-    key <MENU> {
-    	type[Group1] = "ONE_LEVEL",
-    	symbols[Group1] = [ Super_R ],
-	virtualMods = Super
+    key <LWIN> {
+        [ Control_L, Control_L ],
+        virtualMods = LControl
     };
 
-    key <RCTL> {
-    	type[Group1] = "ONE_LEVEL",
-    	symbols[Group1] = [ Menu ]
-    	//symbols[Group1] = [ Multi_key ]
-    	//symbols[Group1] = [ Mode_switch ]
+    key <BKSL> {
+        [ Alt_R, Alt_R ],
+        virtualMods = RAlt
     };
 };
 
+partial  modifier_keys
+xkb_symbols "control-modifier-map" {
+    // http://www.charvolant.org/~doug/xkb/html/node5.html
+    // claims that modifier_map is for the benefit of older
+    // programs.
+    modifier_map Control { Control_L, Control_R };
+};
+
+partial  modifier_keys
+xkb_symbols "meta" {
+    key <META> {        [ NoSymbol, Meta_L      ]       };
+    modifier_map Mod1   { <META> };
+};
+
 partial alphanumeric_keys 
-xkb_symbols "laptop-left-alpha" {
+xkb_symbols "left-alpha-base" {
     // from latin(basic)
-    key <TLDE>  { [         q,          Q,           at,  Greek_OMEGA ] };
     key <AD01>  { [         w,          W,      lstroke,      Lstroke ] };
     key <AD02>  { [         e,          E,            e,            E ] };
     key <AD03>  { [         r,          R,    paragraph,   registered ] };
     key <AD04>  { [         t,          T,       tslash,       Tslash ] };
     key <AD05>  { [     grave, asciitilde,   dead_grave,   dead_tilde ] };
 
-    key <CAPS>  { [         a,          A,           ae,           AE ] };
     key <AC01>  { [         s,          S,       ssharp,      section ] };
     key <AC02>  { [         d,          D,          eth,          ETH ] };
     key <AC03>  { [         f,          F,      dstroke,  ordfeminine ] };
     key <AC04>  { [         g,          G,          eng,          ENG ] };
-    key <AC05>  { [ backslash,        bar,          bar,    brokenbar ] };
+    key <AC05>  { [ backslash,        bar,      notsign,    brokenbar ] };
 
-    key <LCTL>  { [         z,          Z, guillemotleft,        less ] };
     key <AB01>  { [         x,          X, guillemotright,    greater ] };
     key <AB02>  { [         c,          C,         cent,    copyright ] };
     key <AB03>  { [         v,          V, leftdoublequotemark, leftsinglequotemark ]   };
-    key <AB04>  { [         b,          B, rightdoublequotemark, rightsinglequotemark ]   };
+};
+
+partial alphanumeric_keys 
+xkb_symbols "laptop-left-alpha" {
+    include "adam(left-alpha-base)"
+
+    // from latin(basic)
+    key <TLDE>  { [         q,          Q,           at,  Greek_OMEGA ] };
+    key <CAPS>  { [         a,          A,           ae,           AE ] };
+    key <LCTL>  { [         z,          Z, guillemotleft,        less ] };
+};
+
+partial alphanumeric_keys 
+xkb_symbols "hhk-left-alpha" {
+    include "adam(left-alpha-base)"
+
+    // from latin(basic)
+    key <ESC>   { [         q,          Q,           at,  Greek_OMEGA ] };
+    key <LCTL>  { [         a,          A,           ae,           AE ] };
+    key <AB04>  { [         z,          Z, guillemotleft,        less ] };
 };
 
 partial
