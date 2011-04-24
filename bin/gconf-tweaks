@@ -2,6 +2,11 @@
 
 gconftool=gconftool-2
 
+if [ -z "$DISPLAY" ]; then
+  echo "\$DISPLAY not set; aborting gconf-tweaks."
+  exit 0
+fi
+
 $gconftool -s /desktop/gnome/url-handlers/mailto/command -t string "mailto-handler '%s'"
 
 $gconftool -s /desktop/gnome/url-handlers/textedit/command -t string 'lilypond-invoke-editor "%s"'
