@@ -111,7 +111,9 @@ ensure_correct_invocation_running () {
     fi
 
     # No client running now
-    "$CLIENT_PROG" -n "$clientname" "$servername" &
+    # Use -1 to stop client spinning when trying to connect to
+    # a host which is up but has no synergys running.
+    "$CLIENT_PROG" -1 -n "$clientname" "$servername" &
     pid=$!
 
     if [ $? != 0 ]; then
