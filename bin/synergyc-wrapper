@@ -151,9 +151,11 @@ while true; do
     read_conf
     get_IP
     connection_type="`get-connection-type $IP`"
-    echo "Connection type is $connection_type"
+    echo "Connection type is '$connection_type'"
 
-    if ! AC-online; then
+    if [ -z "$connection_type" ]; then
+        reason_not_to_run="couldn't determine connection type to $IP"
+    elif ! AC-online; then
         wait_until_AC_online
         reason_not_to_run="waited for AC power to come back online"
     elif [ -z "$IP" ]; then
