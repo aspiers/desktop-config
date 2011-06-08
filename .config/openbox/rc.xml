@@ -352,7 +352,7 @@
     </keybind>
     <keybind key="W-S-R">
       <action name="Execute">
-        <execute>zsh -c 'dsa; roam indian ifolder roaming'</execute>
+        <execute>zsh -c 'dsa; roam adriatic roaming music'</execute>
       </action>
     </keybind>
     <!-- W-C-r reserved for KDE run command -->
