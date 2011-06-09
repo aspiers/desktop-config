@@ -17,6 +17,26 @@
       <action name="Execute"><execute>roam adriatic roaming music</execute></action>
     </item>
     <separator />
+    <item label="~/roaming (to southern)">
+      <action name="Execute"><execute>roam southern roaming</execute></action>
+    </item>
+    <item label="~/music (to southern)">
+      <action name="Execute"><execute>roam southern music</execute></action>
+    </item>
+    <item label="both (to southern)">
+      <action name="Execute"><execute>roam southern roaming music</execute></action>
+    </item>
+    <separator />
+    <item label="~/roaming (to linuxmce)">
+      <action name="Execute"><execute>roam linuxmce roaming</execute></action>
+    </item>
+    <item label="~/music (to linuxmce)">
+      <action name="Execute"><execute>roam linuxmce music</execute></action>
+    </item>
+    <item label="both (to linuxmce)">
+      <action name="Execute"><execute>roam linuxmce roaming music</execute></action>
+    </item>
+    <separator />
     <item label="~/roaming (to atlantic)">
       <action name="Execute"><execute>roam atlantic roaming</execute></action>
     </item>
