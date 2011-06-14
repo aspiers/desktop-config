@@ -1,11 +1,21 @@
 default partial
 xkb_symbols "laptop" {
     include "adam(laptop-left-alpha)"
-    include "adam(laptop-leftmods)"
+    include "adam(laptop-left-mods)"
     include "adam(us-backslash)"
     include "adam(us-3)"
 //    include "adam(meta)"
 //    include "adam(control-modifier-map)"
+};
+
+xkb_symbols "kinesis" {
+    include "adam(kinesis-left-thumb-pad)"
+    include "adam(kinesis-right-thumb-pad)"
+    include "adam(kinesis-caps-lock)"
+    include "adam(kinesis-swap-up-down)"
+    include "adam(kinesis-grave-tilde)"
+    include "adam(us-backslash)"
+    include "adam(us-3)"
 };
 
 partial
@@ -17,8 +27,10 @@ xkb_symbols "hhk" {
 //    include "adam(control-modifier-map)"
 };
 
-partial  modifier_keys
-xkb_symbols "laptop-leftmods" {
+
+
+partial modifier_keys
+xkb_symbols "laptop-left-mods" {
     virtual_modifiers LControl, LAlt;
     key <LALT> {
         [ Control_L, Control_L ],
@@ -113,4 +125,58 @@ xkb_symbols "us-backslash" {
 partial
 xkb_symbols "us-3" {
     key <AE03> { [          3, numbersign,    sterling,       EuroSign ] };
+};
+
+partial modifier_keys
+xkb_symbols "kinesis-left-thumb-pad" {
+    virtual_modifiers LControl, LAlt;
+    key <DELE> {
+        [ Alt_L, Meta_L ],
+        virtualMods = LAlt
+    };
+
+    key <LALT> { [ Delete ] };
+
+    key <META> { [ NoSymbol, Meta_L ] };
+    modifier_map Mod1   { <META> };
+
+    key <END> { [ Escape ] };
+};
+
+partial modifier_keys
+xkb_symbols "kinesis-right-thumb-pad" {
+    key <RALT> {
+    	type[Group1] = "ONE_LEVEL",
+    	symbols[Group1] = [ Menu ]
+    	//symbols[Group1] = [ Multi_key ]
+    	//symbols[Group1] = [ Mode_switch ]
+
+    	//type[Group1] = "ONE_LEVEL",
+    	//symbols[Group1] = [ Alt_R ],
+        //virtualMods = LAlt
+    };
+
+    virtual_modifiers Super;
+    key <RCTL> {
+    	type[Group1] = "ONE_LEVEL",
+    	symbols[Group1] = [ Super_R ],
+	virtualMods = Super
+    };
+};
+
+
+partial
+xkb_symbols "kinesis-caps-lock" {
+    key <CAPS> { [ minus, underscore ] };
+};
+
+partial
+xkb_symbols "kinesis-grave-tilde" {
+    key <TLDE>   { [ grave, asciitilde ] };
+};
+
+partial
+xkb_symbols "kinesis-swap-up-down" {
+    key <UP>   { [ Down ] };
+    key <DOWN> { [ Up   ] };
 };
