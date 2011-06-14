@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 . $ZDOTDIR/lib/libhost.sh
 
@@ -9,7 +9,8 @@ read_localhost_nickname
 if [ "$localhost_nickname" != 'atlantic' ] || \
    egrep -iq 'AutoAddDevices.*(off|0)' /etc/X11/xorg.conf
 then
-    xmodmap $ZDOTDIR/.keymaps/X11/Kinesis-QWERTY
+    #xmodmap $ZDOTDIR/.keymaps/X11/Kinesis-QWERTY
+    setxkbmap -symbols 'pc+us+gb+adam(kinesis)' -print | xkbcomp -I/home/adam/.xkb - $DISPLAY 2>&1 | egrep -v 'Warning: +No symbols defined for'
 else
     # funny shit happens with evdev on atlantic
     xmodmap $ZDOTDIR/.keymaps/X11/Kinesis-QWERTY-evdev
