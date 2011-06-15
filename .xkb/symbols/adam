@@ -2,6 +2,7 @@ default partial
 xkb_symbols "laptop" {
     include "adam(laptop-left-alpha)"
     include "adam(laptop-left-mods)"
+    include "adam(laptop-right-mods)"
     include "adam(us-backslash)"
     include "adam(us-3)"
 //    include "adam(meta)"
@@ -28,10 +29,10 @@ xkb_symbols "hhk" {
 };
 
 
-
 partial modifier_keys
 xkb_symbols "laptop-left-mods" {
     virtual_modifiers LControl, LAlt;
+
     key <LALT> {
         [ Control_L, Control_L ],
         virtualMods = LControl
@@ -43,9 +44,28 @@ xkb_symbols "laptop-left-mods" {
     };
 };
 
+partial modifier_keys
+xkb_symbols "laptop-right-mods" {
+    virtual_modifiers Super, RAlt;
+
+    key <RALT> {
+        [ Alt_L ],
+        virtualMods = LAlt
+    };
+
+    key <MENU> {
+    	type[Group1] = "ONE_LEVEL",
+    	symbols[Group1] = [ Super_R ],
+	virtualMods = Super
+    };
+
+    key <RCTL> { [ Menu ] };
+};
+
 partial  modifier_keys
 xkb_symbols "hhk-mods" {
     virtual_modifiers LAlt, LControl, RAlt;
+
     key <LALT> {      
         [ Alt_L, Meta_L ],
         virtualMods = LAlt
@@ -130,24 +150,33 @@ xkb_symbols "us-3" {
 partial modifier_keys
 xkb_symbols "kinesis-left-thumb-pad" {
     virtual_modifiers LControl, LAlt;
+
     key <DELE> {
-        [ Alt_L, Meta_L ],
+        [ Meta_L ],
         virtualMods = LAlt
     };
+    modifier_map Mod1 { <DELE> };
 
     key <LALT> { [ Delete ] };
 
     key <META> { [ NoSymbol, Meta_L ] };
-    modifier_map Mod1   { <META> };
+    modifier_map Mod1 { <META> };
+
+    key <HOME> {
+        [ Alt_L ],
+        virtualMods = LAlt
+    };
 
     key <END> { [ Escape ] };
 };
 
 partial modifier_keys
 xkb_symbols "kinesis-right-thumb-pad" {
-    key <RALT> {
-    	type[Group1] = "ONE_LEVEL",
-    	symbols[Group1] = [ Menu ]
+    virtual_modifiers Super;
+
+    key <RALT> { [ Menu ]
+    	//type[Group1] = "ONE_LEVEL",
+    	//symbols[Group1] = [ Menu ]
     	//symbols[Group1] = [ Multi_key ]
     	//symbols[Group1] = [ Mode_switch ]
 
@@ -156,7 +185,6 @@ xkb_symbols "kinesis-right-thumb-pad" {
         //virtualMods = LAlt
     };
 
-    virtual_modifiers Super;
     key <RCTL> {
     	type[Group1] = "ONE_LEVEL",
     	symbols[Group1] = [ Super_R ],
