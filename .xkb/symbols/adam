@@ -49,8 +49,8 @@ xkb_symbols "laptop-right-mods" {
     virtual_modifiers Super, RAlt;
 
     key <RALT> {
-        [ Alt_L ],
-        virtualMods = LAlt
+        [ Alt_R ],
+        virtualMods = RAlt
     };
 
     key <MENU> {
@@ -62,7 +62,7 @@ xkb_symbols "laptop-right-mods" {
     key <RCTL> { [ Menu ] };
 };
 
-partial  modifier_keys
+partial modifier_keys
 xkb_symbols "hhk-mods" {
     virtual_modifiers LAlt, LControl, RAlt;
 
@@ -82,7 +82,7 @@ xkb_symbols "hhk-mods" {
     };
 };
 
-partial  modifier_keys
+partial modifier_keys
 xkb_symbols "control-modifier-map" {
     // http://www.charvolant.org/~doug/xkb/html/node5.html
     // claims that modifier_map is for the benefit of older
@@ -90,7 +90,7 @@ xkb_symbols "control-modifier-map" {
     modifier_map Control { Control_L, Control_R };
 };
 
-partial  modifier_keys
+partial modifier_keys
 xkb_symbols "meta" {
     key <META> {        [ NoSymbol, Meta_L      ]       };
     modifier_map Mod1   { <META> };
