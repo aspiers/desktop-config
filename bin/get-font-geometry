@@ -25,4 +25,8 @@ xlsfonts -ll -fn "$1" | \
              print "font_char_ascent="  ascent
              print "font_char_descent=" descent
            }
+           else {
+             #print STDERR "Couldn'\''t find font '"$1"'"
+             exit 1
+           }
          }'
