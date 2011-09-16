@@ -85,12 +85,6 @@
     <item label="_pidgin">
       <action name="Execute"><execute>sh -c 'pidgin || gaim'</execute></action>
     </item>
-    <item label="k_opete">
-      <action name="Execute"><execute>kopete</execute></action>
-    </item>
-    <item label="_groupwise">
-      <action name="Execute"><execute>/opt/novell/groupwise/client/bin/groupwise</execute></action>
-    </item>
     <item label="_thunderbird mail">
       <action name="Execute"><execute>thunderbird</execute></action>
     </item>
