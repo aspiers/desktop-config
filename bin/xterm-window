@@ -4,7 +4,12 @@
 
 font=9x15
 
-eval $( get-font-geometry $font )
+shell=$( get-font-geometry $font )
+if [ $? != 0 ]; then
+    echo "Failed to get geometry of $font font; aborting." >&2
+    exit 1
+fi
+eval "$shell"
 
 # Take 80% of height, then allow for window border so that it just
 # touches the watchlogs window.
