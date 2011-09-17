@@ -392,6 +392,16 @@
         <execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-agenda-review"</execute>
       </action>
     </item>
+    <item label="Google _Calendar">
+      <action name="Execute">
+        <execute>google-chrome https://www.google.com/calendar/</execute>
+      </action>
+    </item>
+    <item label="add _event(s) to Google Calendar">
+      <action name="Execute">
+        <execute>urxvt -e sh -c 'while true; do rlwrap gca; div; done'</execute>
+      </action>
+    </item>
     <item label="_q: remember">
       <action name="Execute">
         <execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-remember"</execute>
