@@ -1,0 +1,21 @@
+#!/bin/bash
+
+label=
+if [ "$1" == '-c' ] || [ "$1" == '--code' ]; then
+    shift
+    label='-label name'
+fi
+
+geom="$1"
+
+if setxkbmap -geometry "$geom" -print |
+    xkbcomp -w 3 - - |
+    xkbprint $label - - |
+    gs -sDEVICE=jpeg -sOutputFile=- -r100 -q - |
+    jpegtran -rotate 270 > "$geom.jpeg"
+then
+    echo "wrote $geom.jpeg"
+else
+    echo "Failed to write $geom.jpeg"
+    exit 1
+fi
