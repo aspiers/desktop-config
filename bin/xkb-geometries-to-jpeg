@@ -12,14 +12,5 @@ cd "$outdir"
 
 awk '{print $3}' "$xkbdir/geometry.dir" |
 while read geom; do
-    if setxkbmap -geometry "$geom" -print |
-        xkbcomp -w 3 - - |
-        xkbprint - - |
-        gs -sDEVICE=jpeg -sOutputFile=- -r100 -q - |
-        jpegtran -rotate 270 > "$geom.jpeg"
-    then
-        echo "wrote $geom.jpeg"
-    else
-        echo "Failed to write $geom.jpeg"
-    fi
+    xkb-geometry-to-jpeg "$geom"
 done
