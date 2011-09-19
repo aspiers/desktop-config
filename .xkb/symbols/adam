@@ -147,11 +147,7 @@ xkb_symbols "laptop-left-alpha" {
 
 partial alphanumeric_keys 
 xkb_symbols "hhk-left-alpha" {
-<<<<<<< variant A
     include "adam(left-alpha-common)"
->>>>>>> variant B
-    include "adam(left-alpha-base)"
-======= end
 
     // from latin(basic)
     key <ESC>   { [         q,          Q,           at,  Greek_OMEGA ] };
