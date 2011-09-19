@@ -1,21 +1,37 @@
 #!/bin/bash
 
-label=
+unset label suffix
 if [ "$1" == '-n' ] || [ "$1" == '--name' ]; then
+    # Label with symbol names e.g. <LALT>
     shift
     label='-label name'
+    suffix='-name'
+elif [ "$1" == '-c' ] || [ "$1" == '--code' ]; then
+    # Label with decimal scancode, e.g. 64
+    shift
+    label='-label code'
+    suffix='-code'
+else
+    # Label with symbols, e.g. Alt_L
+    # This is the default.
+    if [ "$1" == '-s' ] || [ "$1" == '--symbols' ]; then
+        shift
+    fi
+    label='-label symbols'
+    suffix='-symbols'
 fi
 
 geom="$1"
 
+out="$geom$suffix.jpeg"
 if setxkbmap -geometry "$geom" -print |
     xkbcomp -w 3 - - |
     xkbprint $label - - |
     gs -sDEVICE=jpeg -sOutputFile=- -r100 -q - |
-    jpegtran -rotate 270 > "$geom.jpeg"
+    jpegtran -rotate 270 > "$out"
 then
-    echo "wrote $geom.jpeg"
+    echo "wrote $out"
 else
-    echo "Failed to write $geom.jpeg"
+    echo "Failed to write $out"
     exit 1
 fi
