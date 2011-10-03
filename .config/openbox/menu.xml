@@ -286,8 +286,11 @@
     <menu id="graphics-menu" />
     <menu id="audio-menu" />
     <menu id="office-menu" />
-    <item label="vmware">
+    <item label="VMware Workstation">
       <action name="Execute"><execute>vmware</execute></action>
+    </item>
+    <item label="VirtualBox">
+      <action name="Execute"><execute>virtualbox</execute></action>
     </item>
     <menu id="utils-menu" />
     <menu id="fun-menu" />
