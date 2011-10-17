@@ -113,6 +113,11 @@ ensure_correct_invocation_running () {
     # No client running now
     # Use -1 to stop client spinning when trying to connect to
     # a host which is up but has no synergys running.
+    if ! which "$CLIENT_PROG" >&/dev/null; then
+        _log_it "Couldn't find $CLIENT_PROG; is it installed?"
+        return 1
+    fi
+
     "$CLIENT_PROG" -1 -n "$clientname" "$servername" &
     pid=$!
 
