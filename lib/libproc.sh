@@ -1,6 +1,10 @@
 #!/bin/sh
 
-# useful process handling functions
+# Useful process handling functions.
+#
+# Use via:
+#
+#   . $ZDOTDIR/lib/libproc.sh
 
 executable_p () {
     which "$1" >/dev/null 2>&1
