@@ -98,23 +98,63 @@ URxvt*italicULMode: false
 ! http://tuxtraining.com/2009/06/27/terminal-color-schemes-for-xdefaults-or-xresources-file
 
 ! theme 2 from above link
-#define BACKGROUND rgb:00/00/00
-#define FOREGROUND rgb:7f/7f/7f
-#define COLOR0     rgb:00/00/00
-#define COLOR1     rgb:9e/18/28
-#define COLOR2     rgb:ae/ce/92
-#define COLOR3     rgb:96/8a/38
-#define COLOR4     rgb:41/41/71
-#define COLOR5     rgb:96/3c/59
-#define COLOR6     rgb:41/81/79
-#define COLOR7     rgb:be/be/be
-#define COLOR8     rgb:66/66/66
-#define COLOR9     rgb:cf/61/71
-#define COLOR10    rgb:c5/f7/79
-#define COLOR11    rgb:ff/f7/96
-#define COLOR12    rgb:41/86/be
-#define COLOR13    rgb:cf/9e/be
-#define COLOR14    rgb:71/be/be
+! #define BACKGROUND rgb:00/00/00
+! #define FOREGROUND rgb:7f/7f/7f
+! #define COLOR0     rgb:00/00/00
+! #define COLOR1     rgb:9e/18/28
+! #define COLOR2     rgb:ae/ce/92
+! #define COLOR3     rgb:96/8a/38
+! #define COLOR4     rgb:41/41/71
+! #define COLOR5     rgb:96/3c/59
+! #define COLOR6     rgb:41/81/79
+! #define COLOR7     rgb:be/be/be
+! #define COLOR8     rgb:66/66/66
+! #define COLOR9     rgb:cf/61/71
+! #define COLOR10    rgb:c5/f7/79
+! #define COLOR11    rgb:ff/f7/96
+! #define COLOR12    rgb:41/86/be
+! #define COLOR13    rgb:cf/9e/be
+! #define COLOR14    rgb:71/be/be
+! #define COLOR15    rgb:ff/ff/ff
+
+! theme 4 from above link
+! #define BACKGROUND rgb:00/00/00
+! #define FOREGROUND rgb:ff/ff/ff
+! #define COLOR0     rgb:00/00/00
+! #define COLOR1     rgb:d3/62/65
+! #define COLOR2     rgb:ae/ce/91
+! #define COLOR3     rgb:e7/e1/8c
+! #define COLOR4     rgb:7a/7a/b0
+! #define COLOR5     rgb:96/3c/59
+! #define COLOR6     rgb:41/81/79
+! #define COLOR7     rgb:be/be/be
+! #define COLOR8     rgb:66/66/66
+! #define COLOR9     rgb:ef/81/71
+! #define COLOR10    rgb:e5/f7/79
+! #define COLOR11    rgb:ff/f7/96
+! #define COLOR12    rgb:41/86/be
+! #define COLOR13    rgb:ef/9e/be
+! #define COLOR14    rgb:71/be/be
+! #define COLOR15    rgb:ff/ff/ff
+                   
+! theme 8 from above link
+#define BACKGROUND rgb:10/10/10
+#define FOREGROUND rgb:d3/d3/d3
+#define COLOR0     rgb:10/10/10
+#define COLOR1     rgb:cd/5c/5c
+#define COLOR2     rgb:2e/8b/57
+#define COLOR3     rgb:f0/e6/8c
+#define COLOR4     rgb:b0/c4/de
+#define COLOR5     rgb:ba/55/d3
+#define COLOR6     rgb:46/82/b4
+#define COLOR7     rgb:d3/d3/d3
+#define COLOR8     rgb:4d/4d/4d
+#define COLOR9     rgb:ff/6a/6a
+#define COLOR10    rgb:8f/bc/8f
+#define COLOR11    rgb:ff/fa/cd
+#define COLOR12    rgb:1e/90/ff
+#define COLOR13    rgb:db/70/93
+#define COLOR14    rgb:5f/9e/a0
 #define COLOR15    rgb:ff/ff/ff
 
 ! my theme
