@@ -282,24 +282,23 @@ FontAndLabel  (6, 10x20,      10x20)
 ! urxvt does not like fkp for some reason
 !URxvt.font-switcher-list:  Micro|nexus|smoothansi|9x15|10x20|12x24
 
-URxvt.font-switcher-list:  \
-    xft:DejaVu Sans Mono:pixelsize=6  | \
-    5x7                               | \
-    nexus                             | \
-    xft:DejaVu Sans Mono:pixelsize=9  | \
-    smoothansi                        | \
-    xft:DejaVu Sans Mono:pixelsize=10 | \
-    xft:DejaVu Sans Mono:pixelsize=11 | \
-    8x13                              | \
-    xft:DejaVu Sans Mono:pixelsize=12 | \
-    xft:DejaVu Sans Mono:pixelsize=13 | \
-    9x15                              | \
-    xft:DejaVu Sans Mono:pixelsize=14 | \
-    xft:DejaVu Sans Mono:pixelsize=15 | \
-    xft:DejaVu Sans Mono:pixelsize=16 | \
-    10x20                             | \
-    xft:DejaVu Sans Mono:pixelsize=17 | \
-    xft:DejaVu Sans Mono:pixelsize=18 | \
+URxvt.font-switcher-list: xft:DejaVu Sans Mono:pixelsize=6  | \\
+    5x7                               | \\
+    nexus                             | \\
+    xft:DejaVu Sans Mono:pixelsize=9  | \\
+    smoothansi                        | \\
+    xft:DejaVu Sans Mono:pixelsize=10 | \\
+    xft:DejaVu Sans Mono:pixelsize=11 | \\
+    8x13                              | \\
+    xft:DejaVu Sans Mono:pixelsize=12 | \\
+    xft:DejaVu Sans Mono:pixelsize=13 | \\
+    9x15                              | \\
+    xft:DejaVu Sans Mono:pixelsize=14 | \\
+    xft:DejaVu Sans Mono:pixelsize=15 | \\
+    xft:DejaVu Sans Mono:pixelsize=16 | \\
+    10x20                             | \\
+    xft:DejaVu Sans Mono:pixelsize=17 | \\
+    xft:DejaVu Sans Mono:pixelsize=18 | \\
     12x24
 
 !URxvt.font-switcher-list:  5x8|6x10|7x13|8x13|9x15|10x20
