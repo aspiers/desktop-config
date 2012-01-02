@@ -25,7 +25,7 @@ if [ "$1" = '-p' ] || [ "$1" = '--preview' ]; then
     shift
 fi
 
-if [ $# -lt 2 ]; then
+if [ $# -lt 1 ]; then
     usage
 fi
 
@@ -40,7 +40,8 @@ shift
 #         exit 1
 #         ;;
 # esac
-player="mplayer -ao pulse"
+#player="mplayer -ao pulse"
+player="mpc play"
 
 if [ -n "$preview" ]; then
     $player "$@"
@@ -58,7 +59,7 @@ for track in "$@"; do
     fi
 done
 
-at "$time" <<EOF
+at $time <<EOF
 quietrun $player $args </dev/null
 EOF
 
