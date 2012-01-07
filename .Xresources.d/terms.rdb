@@ -285,9 +285,7 @@ FontAndLabel  (6, 10x20,      10x20)
 URxvt.font-switcher-list: xft:DejaVu Sans Mono:pixelsize=6  | \\
     5x7                               | \\
     nexus                             | \\
-    xft:DejaVu Sans Mono:pixelsize=9  | \\
     smoothansi                        | \\
-    xft:DejaVu Sans Mono:pixelsize=10 | \\
     xft:DejaVu Sans Mono:pixelsize=11 | \\
     8x13                              | \\
     xft:DejaVu Sans Mono:pixelsize=12 | \\
