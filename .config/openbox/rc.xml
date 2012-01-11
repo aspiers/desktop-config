@@ -306,12 +306,12 @@
     </keybind>
     <keybind key="W-S-i">
       <action name="Execute">
-        <execute>top-term sudo nethogs eth0</execute>
+        <execute>sh -c 'top-term sudo nethogs `gw-dev`'</execute>
       </action>
     </keybind>
     <keybind key="W-C-S-i">
       <action name="Execute">
-        <execute>top-term sudo iftop -i eth0</execute>
+        <execute>sh -c 'top-term sudo iftop -i `gw-dev`'</execute>
       </action>
     </keybind>
     <keybind key="W-j">
