@@ -329,6 +329,12 @@
         <execute>kmix</execute>
       </action>
     </keybind>
+    <keybind key="W-S-l">
+      <!-- logs -->
+      <action name="Execute">
+        <execute>watchlogs-novell-mail-window</execute>
+      </action>
+    </keybind>
     <keybind key="W-o">
       <action name="ShowMenu">
         <menu>org-menu</menu>
