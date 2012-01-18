@@ -73,7 +73,7 @@ die "BUG: Total colours $total doesn't match mode $mode\n"
 
 sub show_colours {
   print "Mode: $mode colours";
-  print " (specify 88 as CLI argument to change)" unless $opts{88};
+  print " (specify --88 as CLI argument to change)" unless $opts{88};
   print "\n\n";
 
   print "System colours:\n";
