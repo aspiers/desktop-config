@@ -25,12 +25,6 @@ case "$localhost_nickname" in
 esac
 
 detect_wm () {
-    if [ -n "$DESKTOP_SESSION" ]; then
-        wm="$DESKTOP_SESSION"
-        echo "Detected window manager from \$DESKTOP_SESSION as $wm"
-        return
-    fi
-
     if executable_p wmctrl; then
         wm=`wmctrl -m | awk '/^Name: / { print $2 }'`
         if [ -n "$wm" ]; then
@@ -43,6 +37,13 @@ detect_wm () {
         echo "wmctrl not executable" >&2
     fi
     
+    if [ -n "$DESKTOP_SESSION" ]; then
+        wm="$DESKTOP_SESSION"
+        # This could be 'xfce'
+        echo "Detected window manager from \$DESKTOP_SESSION as $wm"
+        return
+    fi
+
     echo "Warning: couldn't determine window manager" >&2
     wm=
 }
