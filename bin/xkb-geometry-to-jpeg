@@ -1,27 +1,62 @@
 #!/bin/bash
 
-unset label suffix
-if [ "$1" == '-n' ] || [ "$1" == '--name' ]; then
-    # Label with symbol names e.g. <LALT>
-    shift
-    label='-label name'
-    suffix='-name'
-elif [ "$1" == '-c' ] || [ "$1" == '--code' ]; then
-    # Label with decimal scancode, e.g. 64
-    shift
-    label='-label code'
-    suffix='-code'
-else
-    # Label with symbols, e.g. Alt_L
-    # This is the default.
-    if [ "$1" == '-s' ] || [ "$1" == '--symbols' ]; then
+me=`basename $0`
+
+usage () {
+    # Call as: usage [EXITCODE] [USAGE MESSAGE]
+    exit_code=1
+    if [[ "$1" == [0-9] ]]; then
+        exit_code="$1"
         shift
     fi
-    label='-label symbols'
-    suffix='-symbols'
-fi
+    if [ -n "$1" ]; then
+        echo "$*" >&2
+        echo
+    fi
 
-geom="$1"
+    cat <<EOF >&2
+Usage: $me [options] GEOMETRY
+Options
+   -n, --name     Label with symbol names e.g. <LALT>
+   -c, --code     Label with decimal scancode, e.g. 64
+   -s, --symbols  Label with symbols, e.g. Alt_L (this is the default)
+
+GEOMETRY
+EOF
+    exit "$exit_code"
+}
+
+parse_opts () {
+    if [ "$1" == '-h' ] || [ "$1" == '--help' ]; then
+        usage 0
+    fi
+
+    unset label suffix
+    if [ "$1" == '-n' ] || [ "$1" == '--name' ]; then
+        shift
+        label='-label name'
+        suffix='-name'
+    elif [ "$1" == '-c' ] || [ "$1" == '--code' ]; then
+        shift
+        label='-label code'
+        suffix='-code'
+    else
+        if [ "$1" == '-s' ] || [ "$1" == '--symbols' ]; then
+            shift
+        fi
+        label='-label symbols'
+        suffix='-symbols'
+    fi
+
+    if [ $# != 1 ]; then
+        usage
+    fi
+
+    geom="$1"
+}
+
+parse_opts "$@"
+
 
 out="$geom$suffix.jpeg"
 if setxkbmap -geometry "$geom" -print |
