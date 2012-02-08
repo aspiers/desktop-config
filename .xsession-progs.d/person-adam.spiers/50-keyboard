@@ -10,6 +10,8 @@ my_xmodmap () {
         xmodmap -pke > "$backup"
     fi
 
+    # FIXME: call to keymap-menu
+
     case "$localhost_nickname" in
         atlantic)
             . $ZDOTDIR/.Xmodmap.d/lib/Kinesis     ;;
