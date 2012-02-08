@@ -245,6 +245,6 @@ xkb_symbols "kinesis-insert" {
     //     xkbcomp -I/home/adam/.xkb -xkb - -
     //
     // Go figure :-/
-    key <LSGT>  { [ Insert ] };
-    key <INS>   { [ Insert ] };
+    key <LSGT>  { [ Insert, Insert ] };
+    key <INS>   { [ Insert, Insert ] };
 };
