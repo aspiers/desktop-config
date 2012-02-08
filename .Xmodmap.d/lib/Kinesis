@@ -8,7 +8,9 @@ read_localhost_nickname
 # is not the right one.
 if [ "$localhost_nickname" != 'atlantic' ]; then
     #xmodmap $ZDOTDIR/.keymaps/X11/Kinesis-QWERTY
-    setxkbmap -symbols 'pc+us+gb+adam(kinesis)' -print | xkbcomp -I/home/adam/.xkb - $DISPLAY 2>&1 | egrep -v 'Warning: +No symbols defined for'
+    setxkbmap -symbols 'pc+us+gb+adam(kinesis)' -geometry 'kinesis' -print | \
+        xkbcomp -I/home/adam/.xkb - $DISPLAY 2>&1 | \
+        egrep -v 'Warning: +No symbols defined for'
 else
     # funny shit happens with evdev on atlantic, even on Fedora 15
     xmodmap $ZDOTDIR/.keymaps/X11/Kinesis-QWERTY-evdev
