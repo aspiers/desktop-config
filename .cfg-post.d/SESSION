@@ -4,7 +4,11 @@ touch ~/.Xresources.d/local.rdb
 
 # also change SESSION/.xsession
 for dir in ~/.X_fonts ~/.truetype; do
-  mkfontdir "$dir"
+    if [ -e "$dir" ]; then
+        mkfontdir "$dir"
+    else
+        echo "Warning: $dir does not exist; cannot run mkfontdir on it" >&2
+    fi
 done
 
 mkdir -p ~/.xsession-progs.d
