@@ -4,25 +4,26 @@
 
 read_localhost_nickname
 
-my_xmodmap () {
-    backup=$HOME/.Xmodmap.orig.`hostname -s`
-    if ! [ -e "$backup" ]; then
-        xmodmap -pke > "$backup"
-    fi
-
-    # FIXME: call to keymap-menu
-
+apply_keymap () {
     case "$localhost_nickname" in
         atlantic)
-            . $ZDOTDIR/.Xmodmap.d/lib/Kinesis     ;;
-        d600)
-            xmodmap ~/.keymaps/X11/Dell-D600-Adam ;;
-        indian|pacific)
-            xmodmap ~/.keymaps/X11/Dell-D620-Adam ;;
+            keymap-menu kinesis
+            ;;
+        pacific)
+            #keymap-menu gb
+            ;;
+        indian)
+            #keymap-menu gb
+            ;;
         southern)
-            xmodmap ~/.keymaps/X11/Dell-D630-Adam ;;
-        t23)
-            xmodmap ~/.keymaps/X11/TP-T23-UK      ;;
+            keymap-menu d630-hacked
+            ;;
+        mediacentre)
+            keymap-menu gyration-hacked
+            ;;
+        adriatic)
+            keymap-menu n150-hacked
+            ;;
         *)
             echo "WARNING: didn't know which keymap to use with $localhost_nickname" >&2
     esac
@@ -30,9 +31,9 @@ my_xmodmap () {
 
 echo "### Xmodmap ..."
 if [ -z "$VNCDESKTOP" ]; then
-    my_xmodmap
+    set_keymap
 else
-    echo "\$VNCDESKTOP is $VNCDESKTOP, not running .Xmodmap hooks"
+    echo "\$VNCDESKTOP is $VNCDESKTOP, not touching keymap"
 fi
 
 # GTK keybinding theme set in gconf-tweaks
