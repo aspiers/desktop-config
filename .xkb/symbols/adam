@@ -1,12 +1,8 @@
-default partial
-xkb_symbols "laptop" {
-    include "adam(laptop-left-alpha)"
-    include "adam(laptop-left-mods)"
-    include "adam(laptop-right-mods)"
-    include "adam(us-backslash)"
-    include "adam(us-3)"
-//    include "adam(meta)"
-//    include "adam(control-modifier-map)"
+xkb_symbols "samsung-n150+" {
+    include "pc"
+    include "us"
+    include "gb"
+    include "adam(laptop)"
 };
 
 xkb_symbols "kinesis" {
@@ -20,8 +16,10 @@ xkb_symbols "kinesis" {
     include "adam(us-3)"
 };
 
-partial
 xkb_symbols "hhk" {
+    include "pc"
+    include "us"
+    include "gb"
     include "adam(hhk-left-alpha)"
     include "adam(hhk-mods)"
     include "adam(us-3)"
@@ -29,8 +27,10 @@ xkb_symbols "hhk" {
 //    include "adam(control-modifier-map)"
 };
 
-partial
 xkb_symbols "gyration" {
+    include "pc(pc105)"
+    include "us"
+    include "gb"
     include "adam(laptop-left-alpha)"
     include "adam(gyration-left-mods)"
     include "adam(us-3)"
@@ -38,6 +38,17 @@ xkb_symbols "gyration" {
 //    include "adam(control-modifier-map)"
 };
 
+
+default partial
+xkb_symbols "laptop" {
+    include "adam(laptop-left-alpha)"
+    include "adam(laptop-left-mods)"
+    include "adam(laptop-right-mods)"
+    include "adam(us-backslash)"
+    include "adam(us-3)"
+//    include "adam(meta)"
+//    include "adam(control-modifier-map)"
+};
 
 partial modifier_keys
 xkb_symbols "laptop-left-mods" {
