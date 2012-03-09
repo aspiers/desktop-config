@@ -15,7 +15,7 @@ usage () {
     fi
 
     cat <<EOF >&2
-Usage: $me [options] GEOMETRY
+Usage: $me [options] GEOMETRY [OUTDIR|OUTFILE]
 Options
    -n, --name     Label with symbol names e.g. <LALT>
    -c, --code     Label with decimal scancode, e.g. 64
@@ -48,7 +48,7 @@ parse_opts () {
         suffix='-symbols'
     fi
 
-    if [ $# != 1 ]; then
+    if [ $# != 1 -a $# != 2 ]; then
         usage
     fi
 
@@ -57,8 +57,16 @@ parse_opts () {
 
 parse_opts "$@"
 
-
 out="$geom$suffix.jpeg"
+if [ -n "$2" ]; then
+    if [ -d "$2" ]; then
+        out="${out##*/}"
+        out="$2/$out"
+    else
+        out="$2"
+    fi
+fi
+
 if setxkbmap -geometry "$geom" -print |
     xkbcomp -w 3 - - |
     xkbprint $label - - |
