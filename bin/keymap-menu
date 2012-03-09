@@ -66,7 +66,8 @@ EOF
         4) keymap=kinesis         ;;
         5) keymap=d600-normal     ;;
         6) keymap=n150-hacked     ;;
-        7) keymap=ms-natural      ;;
+        #7) keymap=ms-natural      ;;
+        7) keymap=w520-hacked     ;;
         8) keymap=gyration-hacked ;;
         9) keymap=hhkl            ;;
         #10) keymap=dvorak   ;;
@@ -123,6 +124,9 @@ get_keymap_settings () {
             ;;
         n150-hacked)
             xkb='-symbols adam(samsung-n150+)'
+            ;;
+        w520-hacked)
+            xkb='-symbols adam(lenovo-w520)'
             ;;
         ms-natural)
             xmodmap=MS-Natural-105

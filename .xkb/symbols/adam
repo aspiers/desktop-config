@@ -5,6 +5,13 @@ xkb_symbols "samsung-n150+" {
     include "adam(laptop)"
 };
 
+xkb_symbols "lenovo-w520" {
+    include "pc(pc105)"
+    include "us"
+    include "gb"
+    include "adam(laptop)"
+};
+
 xkb_symbols "kinesis" {
     include "adam(kinesis-left-thumb-pad)"
     include "adam(kinesis-right-thumb-pad)"
