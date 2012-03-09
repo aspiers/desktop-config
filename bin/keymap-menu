@@ -35,6 +35,7 @@ setup_symlinks () {
             echo -n " $op"
         fi
     done
+    echo
 }
 
 get_interactive_keymap_choice () {
