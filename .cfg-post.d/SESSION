@@ -2,6 +2,8 @@
 
 touch ~/.Xresources.d/local.rdb
 
+~/bin/keymap-menu --install-symlinks
+
 # also change SESSION/.xsession
 for dir in ~/.X_fonts ~/.truetype; do
     if [ -e "$dir" ]; then
