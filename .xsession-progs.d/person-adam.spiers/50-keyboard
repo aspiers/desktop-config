@@ -13,7 +13,7 @@ apply_keymap () {
             #keymap-menu gb
             ;;
         indian)
-            #keymap-menu gb
+            keymap-menu w520-hacked
             ;;
         southern)
             keymap-menu d630-hacked
@@ -31,7 +31,7 @@ apply_keymap () {
 
 echo "### Xmodmap ..."
 if [ -z "$VNCDESKTOP" ]; then
-    set_keymap
+    apply_keymap
 else
     echo "\$VNCDESKTOP is $VNCDESKTOP, not touching keymap"
 fi

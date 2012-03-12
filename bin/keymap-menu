@@ -128,7 +128,7 @@ get_keymap_settings () {
             xkb='-symbols adam(samsung-n150+)'
             ;;
         w520-hacked)
-            xkb='-symbols adam(lenovo-w520)'
+            xkb='-keycodes lenovo(w520) -symbols adam(lenovo-w520) -geometry digital_vndr/pc(pc102)'
             ;;
         ms-natural)
             xmodmap=MS-Natural-105

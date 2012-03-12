@@ -9,7 +9,10 @@ xkb_symbols "lenovo-w520" {
     include "pc(pc105)"
     include "us"
     include "gb"
-    include "adam(laptop)"
+    include "adam(left-alpha-common)"
+    include "adam(xcv2)"
+    include "adam(standard-qaz)"
+    include "adam(laptop-left-mods)"
 };
 
 xkb_symbols "kinesis" {
@@ -148,16 +151,31 @@ xkb_symbols "left-alpha-common" {
     key <AC03>  { [         f,          F,      dstroke,  ordfeminine ] };
     key <AC04>  { [         g,          G,          eng,          ENG ] };
     key <AC05>  { [ backslash,        bar,      notsign,    brokenbar ] };
+};
 
+partial alphanumeric_keys
+xkb_symbols "xcv1" {
     key <AB01>  { [         x,          X, guillemotright,    greater ] };
     key <AB02>  { [         c,          C,         cent,    copyright ] };
     key <AB03>  { [         v,          V, leftdoublequotemark, leftsinglequotemark ]   };
 };
 
+partial alphanumeric_keys
+xkb_symbols "xcv2" {
+    key <BKSL>  { [         x,          X, guillemotright,    greater ] };
+    key <AB01>  { [         c,          C,         cent,    copyright ] };
+    key <AB02>  { [         v,          V, leftdoublequotemark, leftsinglequotemark ]   };
+};
+
 partial alphanumeric_keys 
 xkb_symbols "laptop-left-alpha" {
     include "adam(left-alpha-common)"
+    include "adam(xcv1)"
+    include "adam(standard-qaz)"
+};
 
+partial alphanumeric_keys 
+xkb_symbols "standard-qaz" {
     // from latin(basic)
     key <TLDE>  { [         q,          Q,           at,  Greek_OMEGA ] };
     key <CAPS>  { [         a,          A,           ae,           AE ] };
@@ -167,7 +185,12 @@ xkb_symbols "laptop-left-alpha" {
 partial alphanumeric_keys 
 xkb_symbols "hhk-left-alpha" {
     include "adam(left-alpha-common)"
+    include "adam(xcv1)"
+    include "adam(hhk-qaz)"
+};
 
+partial alphanumeric_keys 
+xkb_symbols "hhk-qaz" {
     // from latin(basic)
     key <ESC>   { [         q,          Q,           at,  Greek_OMEGA ] };
     key <LCTL>  { [         a,          A,           ae,           AE ] };
