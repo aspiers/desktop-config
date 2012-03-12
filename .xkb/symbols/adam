@@ -16,7 +16,7 @@ xkb_symbols "kinesis" {
     include "adam(kinesis-left-thumb-pad)"
     include "adam(kinesis-right-thumb-pad)"
     include "adam(kinesis-caps-lock)"
-    include "adam(kinesis-swap-up-down)"
+    include "adam(swap-up-down)"
     include "adam(kinesis-grave-tilde)"
     include "adam(kinesis-insert)"
     include "adam(us-backslash)"
@@ -242,7 +242,7 @@ xkb_symbols "kinesis-grave-tilde" {
 };
 
 partial
-xkb_symbols "kinesis-swap-up-down" {
+xkb_symbols "swap-up-down" {
     key <UP>   { [ Down ] };
     key <DOWN> { [ Up   ] };
 };
