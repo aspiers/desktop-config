@@ -53,19 +53,19 @@ parse_opts () {
     fi
 
     geom="$1"
+
+    out="$geom$suffix.jpeg"
+    if [ -n "$2" ]; then
+        if [ -d "$2" ]; then
+            out="${out##*/}"
+            out="$2/$out"
+        else
+            out="$2"
+        fi
+    fi
 }
 
 parse_opts "$@"
-
-out="$geom$suffix.jpeg"
-if [ -n "$2" ]; then
-    if [ -d "$2" ]; then
-        out="${out##*/}"
-        out="$2/$out"
-    else
-        out="$2"
-    fi
-fi
 
 if setxkbmap -geometry "$geom" -print |
     xkbcomp -w 3 - - |
