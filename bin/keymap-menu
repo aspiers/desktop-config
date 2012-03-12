@@ -48,11 +48,12 @@ Choose from one of the following keymaps:
   4) Kinesis Essential
   5) Dell D600 "untouched" - as labelled
   6) Samsung N150+ hacked to suit Adam
-  7) Microsoft Natural 105-key
+  7) Lenovo W520 hacked to suit Adam
   8) Gyration wireless keyboard hacked to suit Adam
   9) HHKL
 
 EOF
+#  7) Microsoft Natural 105-key
 # 10) Dvorak (applies incrementally over existing keymap)
 
     echo -n "Enter your choice now > "
