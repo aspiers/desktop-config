@@ -13,6 +13,8 @@ xkb_symbols "lenovo-w520" {
     include "adam(xcv2)"
     include "adam(standard-qaz)"
     include "adam(laptop-left-mods)"
+    include "adam(laptop-right-mods)"
+    key <AC12> { [numbersign, asciitilde,   dead_grave,   dead_breve ] };
 };
 
 xkb_symbols "kinesis" {
