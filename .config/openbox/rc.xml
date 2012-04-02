@@ -342,7 +342,7 @@
     </keybind>
     <keybind key="W-p">
       <action name="Execute">
-        <execute>gaim</execute>
+        <execute>pavucontrol</execute>
       </action>
     </keybind>
     <keybind key="W-r">
