@@ -85,6 +85,9 @@
     <item label="_pidgin">
       <action name="Execute"><execute>sh -c 'pidgin || gaim'</execute></action>
     </item>
+    <item label="_Choqok">
+      <action name="Execute"><execute>choqok</execute></action>
+    </item>
     <item label="_groupwise">
       <action name="Execute"><execute>/opt/novell/groupwise/client/bin/groupwise</execute></action>
     </item>
