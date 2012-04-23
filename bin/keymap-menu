@@ -195,6 +195,11 @@ main () {
 
     [ $# -gt 1 ] && usage
 
+    if [ -z "$DISPLAY" ]; then
+        echo "\$DISPLAY was not set; aborting." >&2
+        exit 1
+    fi
+
     if [ "$1" = '--install-symlinks' ]; then
         setup_symlinks
         exit 0
