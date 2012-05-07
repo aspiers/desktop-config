@@ -1,6 +1,7 @@
 #!/bin/bash
 
 CLIENT_PROG=synergyc
+CLIENT_OPTS='-d NOTE' # INFO too verbose in 1.4.8
 HOST_NAME_FILE=$HOME/.localhost-nickname
 CLIENT_NAME_FILE=$HOME/.synergy-client-name
 SERVER_NAME_FILE=$HOME/.synergy-server-name
@@ -118,7 +119,7 @@ ensure_correct_invocation_running () {
         return 1
     fi
 
-    "$CLIENT_PROG" -1 -n "$clientname" "$servername" &
+    "$CLIENT_PROG" $CLIENT_OPTS -1 -n "$clientname" "$servername" &
     pid=$!
 
     if [ $? != 0 ]; then
