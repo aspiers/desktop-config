@@ -125,7 +125,7 @@ get_keymap_settings () {
             xmodmap=Dell-D600-untouched
             ;;
         n150-hacked)
-            xkb='-symbols adam(samsung-n150+)'
+            xkb='-symbols adam(samsung-n150plus)'
             ;;
         w520-hacked)
             xkb='-keycodes lenovo(w520) -symbols adam(lenovo-w520) -geometry digital_vndr/pc(pc102)'
