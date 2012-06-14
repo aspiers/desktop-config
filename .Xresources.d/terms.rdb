@@ -287,7 +287,6 @@ URxvt.font-switcher-list: xft:Inconsolata:pixelsize=6  | \\
     nexus                        | \\
     xft:Inconsolata:pixelsize=11 | \\
     smoothansi                   | \\
-    xft:Inconsolata:pixelsize=12 | \\
     xft:Inconsolata:pixelsize=13 | \\
     xft:Inconsolata:pixelsize=14 | \\
     8x13                         | \\
