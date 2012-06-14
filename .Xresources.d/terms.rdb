@@ -282,22 +282,25 @@ FontAndLabel  (6, 10x20,      10x20)
 ! urxvt does not like fkp for some reason
 !URxvt.font-switcher-list:  Micro|nexus|smoothansi|9x15|10x20|12x24
 
-URxvt.font-switcher-list: xft:DejaVu Sans Mono:pixelsize=6  | \\
-    5x7                               | \\
-    nexus                             | \\
-    smoothansi                        | \\
-    xft:DejaVu Sans Mono:pixelsize=11 | \\
-    8x13                              | \\
-    xft:DejaVu Sans Mono:pixelsize=12 | \\
-    xft:DejaVu Sans Mono:pixelsize=13 | \\
-    9x15                              | \\
-    xft:DejaVu Sans Mono:pixelsize=14 | \\
-    xft:DejaVu Sans Mono:pixelsize=15 | \\
-    xft:DejaVu Sans Mono:pixelsize=16 | \\
-    10x20                             | \\
-    xft:DejaVu Sans Mono:pixelsize=17 | \\
-    xft:DejaVu Sans Mono:pixelsize=18 | \\
-    12x24
+URxvt.font-switcher-list: xft:Inconsolata:pixelsize=6  | \\
+    5x7                          | \\
+    nexus                        | \\
+    xft:Inconsolata:pixelsize=11 | \\
+    smoothansi                   | \\
+    xft:Inconsolata:pixelsize=12 | \\
+    xft:Inconsolata:pixelsize=13 | \\
+    xft:Inconsolata:pixelsize=14 | \\
+    8x13                         | \\
+    9x15                         | \\
+    xft:Inconsolata:pixelsize=16 | \\
+    xft:Inconsolata:pixelsize=18 | \\
+    10x20                        | \\
+    xft:Inconsolata:pixelsize=20 | \\
+    xft:Inconsolata:pixelsize=22 | \\
+    xft:Inconsolata:pixelsize=24 | \\
+    xft:Inconsolata:pixelsize=26 | \\
+    xft:Inconsolata:pixelsize=28 | \\
+    xft:Inconsolata:pixelsize=30
 
 !URxvt.font-switcher-list:  5x8|6x10|7x13|8x13|9x15|10x20
 
