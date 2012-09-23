@@ -1,12 +1,32 @@
 #!/bin/sh
 
+if [ "$1" = "-q" ]; then
+    require_X=    # don't fail if X not running
+else
+    require_X=yep # fail if X not running
+fi
+
+exit_no_X () {
+    msg="$1"
+    if [ -n "$require_X" ]; then
+        echo "$msg" >&2
+        exit 1
+    else
+        echo "$msg"
+        exit 0
+    fi
+}
+
 host=${HOST:-${HOSTNAME:-`hostname`}}
 host=${host%%.*}
 display_file=$HOME/.Xdisplay.$host
 if [ -e $display_file ]; then
-  . "$display_file"
-  "$@"
+    . "$display_file"
+    re="/[X] (.+ )?${DISPLAY%.*}"
+    if ! ps -ef | egrep -q "$re"; then
+        exit_no_X "Didn't find /${re//\//\\/}/ in process table"
+    fi
+    "$@"
 else
-  echo "$display_file does not exist; aborting." >&2
-  exit 1
+    exit_no_X "$display_file does not exist; aborting."
 fi
