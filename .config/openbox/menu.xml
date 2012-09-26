@@ -260,6 +260,9 @@
     <item label="x_kill">
       <action name="Execute"><execute>xkill</execute></action>
     </item>
+    <item label="x_wininfo">
+      <action name="Execute"><execute>xterm -e sh -c 'while true; do xwininfo; sleep 1; done'</execute></action>
+    </item>
   </menu>
 
   <menu id="fun-menu" label="Fun">
