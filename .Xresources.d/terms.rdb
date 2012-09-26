@@ -581,7 +581,15 @@ XTerm.VT100.charClass: 33:48,35-37:48,43:48,45-47:48,58:48,64:48,126:48
       urxvt is run on a non-local display.
 */
 URxvt.perl-lib: ZDOTDIR/lib/urxvt/perl
-URxvt.perl-ext-common: default,selection-autotransform,font-switcher
+URxvt.perl-ext-common: default,selection-autotransform,matcher,font-switcher
+
+URxvt.urlLauncher: url-handler
+!URxvt.urlLauncher: ctoolu-activate
+URxvt.colorUL: #86a2be
+URxvt.matcher.pattern.1: \\bwww\\.[\\w-]+\\.[\\w./?&@#-]*[\\w/-]
+URxvt.matcher.pattern.2: \\b(?i:bug|bnc)[ #-]?\\d{6,}\\b
+URxvt.matcher.pattern.3: \\b(?i:fate|feature)[ #-]?\\d{4,}\\b
+URxvt.matcher.pattern.4: (?i)swamp[ #-]?\\d+
 
 /* Irrelevant since we're using the Perl selection code */
 URxvt.tripleclickwords: true
