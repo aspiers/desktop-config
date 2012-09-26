@@ -551,7 +551,7 @@ XTerm.VT100.charClass: 33:48,35-37:48,43:48,45-47:48,58:48,64:48,126:48
     @         [    \    ]    ^    _    `    {    |    }    ~  
     64,       91,  92,  93,  94,  48,  96,  123, 124, 125, 126,
 
-  Wether this works also with _wrapped_ selections, depends on
+  Whether this works also with _wrapped_ selections, depends on
    - the terminal emulator:  Neither MIT X11R5/6 nor Suns openwin xterm
      know about that.  Use the 'xfree xterm' or 'rxvt'.  Both compile on
      all major platforms.
