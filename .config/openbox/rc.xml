@@ -395,6 +395,11 @@
       </action>
     </keybind>
     <!-- W-x reserved for amarok -->
+    <keybind key="W-y">
+      <action name="Execute">
+        <execute>ctoolu-activate</execute>
+      </action>
+    </keybind>
     <!-- W-z reserved for amarok -->
   </keyboard>
   <mouse>
