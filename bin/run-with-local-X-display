@@ -2,6 +2,7 @@
 
 if [ "$1" = "-q" ]; then
     require_X=    # don't fail if X not running
+    shift
 else
     require_X=yep # fail if X not running
 fi
