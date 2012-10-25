@@ -67,6 +67,7 @@ parse_opts () {
     fi
 
     if [ -z "$geometry" ]; then
+        # No reliable way to detect $DISPLAY's current geometry so we can default to it :-/
         usage "Must specify -geometry GEOMETRY before other setxkbmap arguments"
     fi
 
