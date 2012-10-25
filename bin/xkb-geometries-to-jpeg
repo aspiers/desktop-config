@@ -12,5 +12,5 @@ cd "$outdir"
 
 awk '{print $3}' "$xkbdir/geometry.dir" |
 while read geom; do
-    xkb-geometry-to-jpeg "$geom"
+    xkb-geometry-to-jpeg -geometry "$geom"
 done

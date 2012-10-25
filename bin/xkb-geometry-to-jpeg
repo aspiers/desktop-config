@@ -15,60 +15,78 @@ usage () {
     fi
 
     cat <<EOF >&2
-Usage: $me [options] GEOMETRY [OUTDIR|OUTFILE]
+Usage: $me [options] SETXKBMAP-ARGS
 Options
+   -o             Set output file/dir
    -n, --name     Label with symbol names e.g. <LALT>
    -c, --code     Label with decimal scancode, e.g. 64
    -s, --symbols  Label with symbols, e.g. Alt_L (this is the default)
-
-GEOMETRY
 EOF
     exit "$exit_code"
 }
 
 parse_opts () {
-    if [ "$1" == '-h' ] || [ "$1" == '--help' ]; then
-        usage 0
-    fi
+    geometry=
+    label='-label symbols'
+    suffix='-symbols'
 
-    unset label suffix
-    if [ "$1" == '-n' ] || [ "$1" == '--name' ]; then
-        shift
-        label='-label name'
-        suffix='-name'
-    elif [ "$1" == '-c' ] || [ "$1" == '--code' ]; then
-        shift
-        label='-label code'
-        suffix='-code'
-    else
-        if [ "$1" == '-s' ] || [ "$1" == '--symbols' ]; then
-            shift
-        fi
-        label='-label symbols'
-        suffix='-symbols'
-    fi
+    while [ $# != 0 ]; do
+        case "$1" in
+            -h|--help)
+                usage 0
+                ;;
+            -n|--name)
+                shift
+                label='-label name'
+                suffix='-name'
+                ;;
+            -c|--code)
+                shift
+                label='-label code'
+                suffix='-code'
+                ;;
+            -s|--symbols)
+                shift
+                ;;
+            -o)
+                out="$2"
+                shift 2
+                ;;
+            -geometry)
+                geometry="$2"
+                shift 2
+                ;;
+            *)
+                break
+                ;;
+        esac
+    done
 
-    if [ $# != 1 -a $# != 2 ]; then
+    if [ $# = 0 ]; then
         usage
     fi
 
-    geom="$1"
-
-    out="$geom$suffix.jpeg"
-    if [ -n "$2" ]; then
-        if [ -d "$2" ]; then
-            out="${out##*/}"
-            out="$2/$out"
-        else
-            out="$2"
-        fi
+    if [ -z "$geometry" ]; then
+        usage "Must specify -geometry GEOMETRY before other setxkbmap arguments"
     fi
+
+    outfile="$geometry$suffix.jpeg"
+    if [ -n "$out" ]; then
+        if [ -d "$out" ]; then
+            out="${out##*/}"
+            out="$out/$outfile"
+        fi
+    else
+        out="$outfile"
+    fi
+
+    setxkbmap_args=( -geometry "$geometry" "$@" )
 }
 
 parse_opts "$@"
 
-if setxkbmap -geometry "$geom" -print |
-    xkbcomp -w 3 - - |
+if setxkbmap "${setxkbmap_args[@]}" -print |
+    xkbcomp -I$ZDOTDIR/.xkb -w 3 - - |
     xkbprint $label - - |
     gs -sDEVICE=jpeg -sOutputFile=- -r100 -q - |
     jpegtran -rotate 270 > "$out"
