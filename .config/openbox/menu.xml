@@ -162,6 +162,9 @@
     <item label="spotify">
       <action name="Execute"><execute>spotify</execute></action>
     </item>
+    <item label="SpotifyController">
+      <action name="Execute"><execute>SpotifyController</execute></action>
+    </item>
     <item label="_xmms">
       <action name="Execute"><execute>xmms</execute></action>
     </item>
