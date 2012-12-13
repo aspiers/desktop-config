@@ -54,10 +54,10 @@ run_unless_running () {
 # Sample usage follows:
 # 
 #   clean_up () {
-#     [ -L "$lock" ] && rm "$lock"
+#       [ -L "$LOCK" ] && rm "$LOCK"
 #   }
 #   
-#   obtain_lock "$lock" "$cmd" || exit 1
+#   obtain_lock "$LOCK" "$cmd" || exit 1
 #   # Signal must be trapped *after* obtaining lock, otherwise failure
 #   # to obtain the lock would remove an active lock.  This leaves a
 #   # tiny window within which unexpected failure of the script could
