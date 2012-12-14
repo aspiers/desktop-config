@@ -66,6 +66,9 @@
     <item label="chrome">
       <action name="Execute"><execute>google-chrome</execute></action>
     </item>
+    <item label="chromium">
+      <action name="Execute"><execute>chromium</execute></action>
+    </item>
     <item label="firefox">
       <action name="Execute"><execute>my-firefox</execute></action>
     </item>
