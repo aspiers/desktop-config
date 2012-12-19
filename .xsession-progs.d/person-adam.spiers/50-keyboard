@@ -6,10 +6,10 @@ read_localhost_nickname
 
 apply_keymap () {
     case "$localhost_nickname" in
-        atlantic)
+        pacific)
             keymap-menu kinesis
             ;;
-        pacific)
+        atlantic)
             #keymap-menu gb
             ;;
         indian)
