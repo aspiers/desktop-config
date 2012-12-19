@@ -24,6 +24,6 @@ if [ "$1" == '--top-left' ]; then
     shift
 fi
 
-#xterm -fn $font -g $geometry
-#gnome-terminal --geometry=$geometry
-urxvt -fn $font -g $geometry
+#xterm -fn $font -g $geometry "$@"
+#gnome-terminal --geometry=$geometry "$@"
+urxvt -fn $font -g $geometry "$@"
