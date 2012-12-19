@@ -41,7 +41,8 @@ shift
 #         ;;
 # esac
 #player="mplayer -ao pulse"
-player="mpc play"
+player="/home/adam/.rvm/bin/rvm 1.9.3 do spotify-dbus PlayPause"
+#player="mpc play"
 
 if [ -n "$preview" ]; then
     $player "$@"
