@@ -86,17 +86,48 @@ sub show_colours {
   }
   print "\e[0m\n\n";
 
+  my $red_inc   = $cube_side ** 2;
+  my $green_inc = $cube_side ** 1;
+  my $blue_inc  = $cube_side ** 0;
+  # Moving one cube to the right increases the amount of red
+  # Moving one row down          increases the amount of green
+  # Moving one colour right      increases the amount of blue
+
   print "Colour cube, ${cube_side}x${cube_side}x${cube_side}:\n";
+
+  # Print red shift axis above cubes.
+  my $cube_width = $cube_side * 2;
+  print "    ";
+  for (my $red = 0; $red < $cube_side; $red++) {
+    printf "%-${cube_width}s ", "+" . ($system + $red * $red_inc);
+  }
+  print "\n";
+
+  # Print color cubes, with green shift axis in left margin
   for (my $green = 0; $green < $cube_side; $green++) {
+    printf "%3s ", $green ? "+" . ($green * $green_inc) : '';
     for (my $red = 0; $red < $cube_side; $red++) {
       for (my $blue = 0; $blue < $cube_side; $blue++) {
-        my $colour = $system + ($red * ($cube_side ** 2)) + ($green * $cube_side) + $blue;
+        my $colour = $system
+                   + ($red   * $red_inc  )
+                   + ($green * $green_inc)
+                   + ($blue  * $blue_inc );
         print "\e[48;5;${colour}m. ";
       }
       print "\e[0m ";
     }
     print "\n";
   }
+
+  # Print blue shift axes underneath cubes.
+  print "    ";
+  for (my $red = 0; $red < $cube_side; $red++) {
+    for (my $blue = 0; $blue < $cube_side; $blue++) {
+      printf "%-2d", $blue;
+    }
+    print " ";
+  }
+  print "\n";
 
   print "\nGreyscale ramp:\n";
   for (my $colour = $system + $cube_colours; $colour < $total; $colour++) {
