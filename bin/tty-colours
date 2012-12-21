@@ -95,8 +95,16 @@ sub show_colours {
 
   print "Colour cube, ${cube_side}x${cube_side}x${cube_side}:\n";
 
+  my $cube_width  = $cube_side * 2;
+  my $left_margin = 4;
+  my $intercube_margin = 1;
+  my $line_length = $left_margin
+                  + ($cube_width + $intercube_margin) * $cube_side;
+  my $line_centre = int($line_length / 2);
+  my $centred = $line_centre - 1;
+  print "\n", ' ' x $centred, "red\n";
+
   # Print red shift axis above cubes.
-  my $cube_width = $cube_side * 2;
   print "    ";
   for (my $red = 0; $red < $cube_side; $red++) {
     printf "%-${cube_width}s ", "+" . ($system + $red * $red_inc);
@@ -105,7 +113,7 @@ sub show_colours {
 
   # Print color cubes, with green shift axis in left margin
   for (my $green = 0; $green < $cube_side; $green++) {
-    printf "%3s ", $green ? "+" . ($green * $green_inc) : '';
+    printf "%3s ", $green ? "+" . ($green * $green_inc) : 'grn';
     for (my $red = 0; $red < $cube_side; $red++) {
       for (my $blue = 0; $blue < $cube_side; $blue++) {
         my $colour = $system
@@ -128,6 +136,8 @@ sub show_colours {
     print " ";
   }
   print "\n";
+  $centred = $line_centre - 1;
+  print ' ' x $centred, "blue\n";
 
   print "\nGreyscale ramp:\n";
   for (my $colour = $system + $cube_colours; $colour < $total; $colour++) {
