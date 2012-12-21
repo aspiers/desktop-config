@@ -103,6 +103,7 @@ sub show_colours {
     print "\e[48;5;${colour}m. ";
   }
   print "\e[0m\n";
+  print "\nSee also show-colours.\n";
 }
 
 sub set_colours {
