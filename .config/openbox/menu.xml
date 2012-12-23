@@ -274,7 +274,7 @@
   <menu id="fun-menu" label="Fun">
     <separator label="Fun" />
     <item label="Google Earth">
-      <action name="Execute"><execute>googleearth</execute></action>
+      <action name="Execute"><execute>google-earth</execute></action>
     </item>
     <item label="Stellarium">
       <action name="Execute"><execute>sh -c 'stellarium &gt; ~/.stellarium/log 2&gt;&amp;1'</execute></action>
