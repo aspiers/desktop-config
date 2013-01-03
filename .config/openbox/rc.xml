@@ -18,6 +18,7 @@
     <!-- 'Smart' or 'UnderMouse' -->
     <center>yes</center>
     <monitor>Any</monitor>
+    <primaryMonitor></primaryMonitor>
   </placement>
   <desktops>
     <number>6</number>
@@ -765,13 +766,16 @@ Use devilspie instead, ubiquitous across window managers.
       <weight/>
       <slant/>
     </font>
-    <font place="OnScreenDisplay">
+    <name>Clearlooks</name>
+    <font place="ActiveOnScreenDisplay">
+      <name/>
+    </font>
+    <font place="InactiveOnScreenDisplay">
       <name>Sans</name>
       <size>8</size>
-      <weight/>
-      <slant/>
+      <weight></weight>
+      <slant></slant>
     </font>
-    <name>Clearlooks</name>
   </theme>
   <margins>
     <left>0</left>
