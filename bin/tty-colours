@@ -37,10 +37,11 @@ Usage: $ME [options]
 Options:
   -h, --help        Show this help
   -s, --set         Set colours (optionally darkening by SKEW factor)
-  -k, --skew=[SKEW] With -s, darken by SKEW factor (defaults to 1.3)
+  -k, --skew=[SKEW] Darken by SKEW factor [defaults to 1.3]
+                    Without -s, show proposed changes.
   -8, --88          Use 88 colour mode
   -q, --quiet       Don't output when setting
-  -v, --verbose[=N] Increase [specify] verbosity (defaults to 1)
+  -v, --verbose[=N] Increase [specify] verbosity [defaults to 1]
 EOUSAGE
 }
 
@@ -156,6 +157,25 @@ sub skew {
   return int($new + 0.5);
 }
 
+sub set_colour {
+  my ($type, $colour_number, $red_256, $green_256, $blue_256) = @_;
+  if ($opts{set}) {
+    debug(2, sprintf "Setting $type colour %d to rgb:%02x/%02x/%02x",
+          $colour_number, $red_256, $green_256, $blue_256);
+    printf "\e]4;%d;rgb:%02x/%02x/%02x\e\\",
+      $colour_number, $red_256, $green_256, $blue_256;     
+  }
+  else {
+    printf "Would set %d to rgb:%02x/%02x/%02x\n",
+      $colour_number, $red_256, $green_256, $blue_256;     
+  }
+}
+
+sub set_grey {
+  my ($colour_number, $level) = @_;
+  set_colour('greyscale', $colour_number, $level, $level, $level);
+}
+
 sub set_colours {
   # grep for "ESC ] Ps;Pt ST" in urxvt(7)
 
@@ -173,10 +193,7 @@ sub set_colours {
                           + ($red * ($cube_side ** 2))
                           + ($green * $cube_side)
                           + $blue;
-        debug(2, sprintf "Setting cube colour %d to rgb:%02x/%02x/%02x",
-                         $colour_number, $red_256, $green_256, $blue_256);
-        printf "\e]4;%d;rgb:%02x/%02x/%02x\e\\",
-          $colour_number, $red_256, $green_256, $blue_256;
+        set_colour('cube', $colour_number, $red_256, $green_256, $blue_256);
       }
     }
   }
@@ -186,12 +203,9 @@ sub set_colours {
   # greyscale ramp intentionally leaves out black and white
   my $grey_step = 255 / ($greyscale + 2);
   for (my $grey = 0; $grey < $greyscale; $grey++) {
-    my $level = $grey_step * ($grey + 1);
     my $colour_number = $system + $cube_colours + $grey;
-    debug(2, sprintf "Setting greyscale colour %d to rgb:%02x/%02x/%02x",
-                     $colour_number, $level, $level, $level);
-    printf "\e]4;%d;rgb:%02x/%02x/%02x\e\\",
-      $colour_number, $level, $level, $level;
+    my $level = $grey_step * ($grey + 1);
+    set_grey($colour_number, $level);
   }
 
   debug(2, "");
@@ -203,9 +217,11 @@ if ($opts{set}) {
 }
 else {
   if (exists $opts{skew}) {
-    usage("--skew only makes sense with --set");
+    set_colours();
   }
-  show_colours();
+  else {
+    show_colours();
+  }
 }
 
 sub debug {
