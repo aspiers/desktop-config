@@ -1,6 +1,6 @@
 #!/bin/sh
 
 if [ -n "$DISPLAY" ] && pid=`pgrep -u "${USER:-$USERNAME}" '^openbox'`; then
-    unset STY TMUX TMUX_PANE IN_SCREEN
+    unset STY TMUX TMUX_PANE IN_SCREEN TERM
     openbox --replace &
 fi
