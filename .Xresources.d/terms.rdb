@@ -581,7 +581,7 @@ XTerm.VT100.charClass: 33:48,35-37:48,43:48,45-47:48,58:48,64:48,126:48
       urxvt is run on a non-local display.
 */
 URxvt.perl-lib: ZDOTDIR/lib/urxvt/perl
-URxvt.perl-ext-common: default,selection-autotransform,matcher,font-switcher
+URxvt.perl-ext-common: default,selection-autotransform,matcher,font-switcher,osc-xterm-clipboard
 
 URxvt.urlLauncher: url-handler
 !URxvt.urlLauncher: ctoolu-activate
