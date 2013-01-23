@@ -316,7 +316,7 @@
     <menu id="unison-menu" />
     <separator />
     <item label="xterm">
-      <action name="Execute"><execute>xterm</execute></action>
+      <action name="Execute"><execute>xterm-window</execute></action>
     </item>
     <item label="System _logs">
       <action name="Execute"><execute>watchlogs-system-window</execute></action>
