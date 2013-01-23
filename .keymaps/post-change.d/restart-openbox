@@ -2,5 +2,7 @@
 
 if [ -n "$DISPLAY" ] && pid=`pgrep -u "${USER:-$USERNAME}" '^openbox'`; then
     unset STY TMUX TMUX_PANE IN_SCREEN TERM
-    openbox --replace &
+    host=${HOST:-$HOSTNAME}
+    host=${host%%.*}
+    openbox --replace > ~/.xsession-my-errors.${host} 2>&1 &
 fi
