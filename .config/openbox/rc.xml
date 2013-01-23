@@ -287,7 +287,8 @@
     <!-- W-c reserved for amarok -->
     <keybind key="W-c">
       <action name="Execute">
-        <execute>google-chrome</execute>
+        <!-- <execute>google-chrome</execute> -->
+        <execute>chromium</execute>
       </action>
     </keybind>
     <keybind key="W-e">
