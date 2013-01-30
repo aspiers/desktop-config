@@ -237,7 +237,7 @@ sub cube_to_flat {
 sub find_colour {
   my ($colour) = @_;
   usage("$colour is not a valid colour.  Use RRGGBB format.")
-    unless $colour =~ /^([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i;
+    unless $colour =~ /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i;
 
   my @target_components = ($1, $2, $3);
   my @achieved_components;
