@@ -75,6 +75,19 @@ my $total = $system + $cube_colours + $greyscale;
 die "BUG: Total colours $total doesn't match mode $mode\n"
   unless $mode == $total;
 
+if ($opts{set}) {
+  set_colours();
+  show_colours() if $opts{verbosity} > 1;
+}
+else {
+  if (exists $opts{skew}) {
+    set_colours();
+  }
+  else {
+    show_colours();
+  }
+}
+
 sub show_colours {
   print "Mode: $mode colours";
   print " (specify --88 as CLI argument to change)" unless $opts{88};
@@ -209,19 +222,6 @@ sub set_colours {
   }
 
   debug(2, "");
-}
-
-if ($opts{set}) {
-  set_colours();
-  show_colours() if $opts{verbosity} > 1;
-}
-else {
-  if (exists $opts{skew}) {
-    set_colours();
-  }
-  else {
-    show_colours();
-  }
 }
 
 sub debug {
