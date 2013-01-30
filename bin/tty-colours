@@ -18,6 +18,7 @@ GetOptions(
   \%opts,
   'help|h',
   '88|8',
+  'find|f:s',
   'set|s',
   'skew|k:f',
   'verbosity|v+',
@@ -39,6 +40,7 @@ Options:
   -s, --set         Set colours (optionally darkening by SKEW factor)
   -k, --skew=[SKEW] Darken by SKEW factor [defaults to 1.3]
                     Without -s, show proposed changes.
+  -f, --find=RRGGBB Find the colour closest to the given RRGGBB colour
   -8, --88          Use 88 colour mode
   -q, --quiet       Don't output when setting
   -v, --verbose[=N] Increase [specify] verbosity [defaults to 1]
@@ -46,7 +48,7 @@ EOUSAGE
 }
 
 my $mode = $opts{88} ? 88 : 256;
-my ($system, $cube_side, $greyscale);
+my ($system, $cube_side, $greyscale, $max);
 
 if ($mode == 256) {
   # 256 colour mode is
@@ -70,12 +72,18 @@ else {
   die "Invalid mode with $mode colours\n";
 }
 
+$max  = $cube_side - 1;
+my $step = 255 / $max;
+
 my $cube_colours = $cube_side ** 3;
 my $total = $system + $cube_colours + $greyscale;
 die "BUG: Total colours $total doesn't match mode $mode\n"
   unless $mode == $total;
 
-if ($opts{set}) {
+if ($opts{find}) {
+  find_colour($opts{find});
+}
+elsif ($opts{set}) {
   set_colours();
   show_colours() if $opts{verbosity} > 1;
 }
@@ -192,9 +200,6 @@ sub set_grey {
 sub set_colours {
   # grep for "ESC ] Ps;Pt ST" in urxvt(7)
 
-  my $max  = $cube_side - 1;
-  my $step = 255 / $max;
-
   for (my $red = 0; $red < $cube_side; $red++) {
     for (my $green = 0; $green < $cube_side; $green++) {
       for (my $blue = 0; $blue < $cube_side; $blue++) {
@@ -202,10 +207,7 @@ sub set_colours {
         my $red_256   = skew($red   * $step, 255);
         my $green_256 = skew($green * $step, 255);
         my $blue_256  = skew($blue  * $step, 255);
-        my $colour_number = $system
-                          + ($red * ($cube_side ** 2))
-                          + ($green * $cube_side)
-                          + $blue;
+        my $colour_number = cube_to_flat($red, $green, $blue);
         set_colour('cube', $colour_number, $red_256, $green_256, $blue_256);
       }
     }
@@ -222,6 +224,48 @@ sub set_colours {
   }
 
   debug(2, "");
+}
+
+sub cube_to_flat {
+  my ($red, $green, $blue) = @_;
+  return $system
+       + ($red * ($cube_side ** 2))
+       + ($green * $cube_side)
+       + $blue;
+}
+
+sub find_colour {
+  my ($colour) = @_;
+  usage("$colour is not a valid colour.  Use RRGGBB format.")
+    unless $colour =~ /^([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i;
+
+  my @target_components = ($1, $2, $3);
+  my @achieved_components;
+  my @achieved_components_256;
+  # For each of red, green and blue, find the component available
+  # in the palette closest to the component we actually want.
+  for my $i (0, 1, 2) {
+    # best fit so far
+    my $best;
+    my $best_256 = -999;
+    my $target = hex($target_components[$i]);
+    printf "$i: Aiming for $target (0x%02x)\n", $target;
+    for (my $j = 0; $j < $cube_side; $j++) {
+      my $available = skew($j * $step, 255);
+      printf "$i:   Considering 0x%02x\n", $available;
+      if (abs($available - $target) < abs($best_256 - $target)) {
+        print "$i:      New closest: $j\n";
+        $best = $j;
+        $best_256 = $available;
+      }
+    }
+    $achieved_components[$i]     = $best;
+    $achieved_components_256[$i] = $best_256;
+  }
+  printf "color%d %d/%d/%d #%02x%02x%02x\n",
+    cube_to_flat(@achieved_components),
+    @achieved_components,
+    @achieved_components_256;
 }
 
 sub debug {
