@@ -289,11 +289,9 @@ URxvt.font-switcher-list: xft:Inconsolata:pixelsize=6  | \\
     smoothansi                   | \\
     xft:Inconsolata:pixelsize=13 | \\
     xft:Inconsolata:pixelsize=14 | \\
-    8x13                         | \\
     9x15                         | \\
     xft:Inconsolata:pixelsize=16 | \\
     xft:Inconsolata:pixelsize=18 | \\
-    10x20                        | \\
     xft:Inconsolata:pixelsize=20 | \\
     xft:Inconsolata:pixelsize=22 | \\
     xft:Inconsolata:pixelsize=24 | \\
@@ -301,6 +299,7 @@ URxvt.font-switcher-list: xft:Inconsolata:pixelsize=6  | \\
     xft:Inconsolata:pixelsize=28 | \\
     xft:Inconsolata:pixelsize=30
 
+!URxvt.font-switcher-list:  8x13|9x15|10x20
 !URxvt.font-switcher-list:  5x8|6x10|7x13|8x13|9x15|10x20
 
 URxvt.intensityStyles: true
