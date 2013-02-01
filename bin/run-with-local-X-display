@@ -23,7 +23,7 @@ host=${host%%.*}
 display_file=$HOME/.Xdisplay.$host
 if [ -e $display_file ]; then
     . "$display_file"
-    re="/[X] (.+ )?${DISPLAY%.*}"
+    re="/[X](org)? (.+ )?${DISPLAY%.*}"
     if ! ps -ef | egrep -q "$re"; then
         exit_no_X "Didn't find /${re//\//\\/}/ in process table"
     fi
