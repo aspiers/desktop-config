@@ -6,10 +6,6 @@ host=${HOST:-${HOSTNAME:-`hostname`}}
 host=${host%%.*}
 display_file=$HOME/.Xdisplay.$host
 
-cat <<EOF > "$display_file"
-export DISPLAY=$DISPLAY
-export XAUTHLOCALHOSTNAME=$XAUTHLOCALHOSTNAME
-export XAUTHORITY=$XAUTHORITY
-EOF
+env | sed -n '/^\(DISPLAY\|XAUTH\|DBUS\)/{s/^/export /;p}' "$display_file"
 
 chmod go-rwx "$display_file"
