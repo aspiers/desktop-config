@@ -583,7 +583,8 @@ URxvt.perl-lib: ZDOTDIR/lib/urxvt/perl
 URxvt.perl-ext-common: default,selection-autotransform,matcher,font-switcher,osc-xterm-clipboard
 
 URxvt.urlLauncher: url-handler
-!URxvt.urlLauncher: ctoolu-activate
+URxvt.url-launcher: url-handler
+!URxvt.url-launcher: ctoolu-activate
 URxvt.colorUL: #86a2be
 URxvt.matcher.pattern.1: \\bwww\\.[\\w-]+\\.[\\w./?&@#-]*[\\w/-]
 URxvt.matcher.pattern.2: \\b(?i:bug|bnc)[ #-]?\\d{6,}\\b
