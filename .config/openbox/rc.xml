@@ -311,6 +311,11 @@
         <execute>sh -c 'top-term sudo nethogs `gw-dev`'</execute>
       </action>
     </keybind>
+    <keybind key="W-C-i">
+      <action name="Execute">
+        <execute>sh -c 'top-term sudo iotop'</execute>
+      </action>
+    </keybind>
     <keybind key="W-C-S-i">
       <action name="Execute">
         <execute>sh -c 'top-term sudo iftop -i `gw-dev`'</execute>
