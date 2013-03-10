@@ -172,6 +172,9 @@
       <action name="Execute"><execute>xmms</execute></action>
     </item>
     <separator />
+    <item label="xfce4-_mixer">
+      <action name="Execute"><execute>xfce4-mixer</execute></action>
+    </item>
     <item label="_kmix">
       <action name="Execute"><execute>kmix</execute></action>
     </item>
