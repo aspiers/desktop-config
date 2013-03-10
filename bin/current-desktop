@@ -1,9 +1,12 @@
 #!/bin/sh
 
-if ! which wmctrl >/dev/null 2>&1; then
-  me=`basename $0`
-  echo "$me: wmctrl not found; aborting." >&2
-  exit 1
+if which wmctrl >/dev/null 2>&1; then
+    wmctrl -d -v 2>&1 | sed -ne '/^Current desktop ID.*: /{s///;p}'
+elif which xdotool >/dev/null 2>&1; then
+    xdotool get_desktop
+else
+    me=`basename $0`
+    echo "$me: didn't find wmctrl or xdotool; aborting." >&2
+    exit 1
 fi
 
-wmctrl -d -v 2>&1 | sed -ne '/^Current desktop ID.*: /{s///;p}'
