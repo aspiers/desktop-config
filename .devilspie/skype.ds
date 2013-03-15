@@ -5,10 +5,10 @@
 
 ;; Call window
 (if (and (contains (window_name) "Call with")
-         (is (window_role) "CallWindowForm"))
+         (or (is (window_role) "CallWindowForm") (is (window_class) "Skype")))
    (begin (pin)))
 
 ;; Chat window
-(if (and (matches (window_name) "Skype.*Chat")
-         (is (window_role) "Chats"))
+(if (and (contains (window_name) "Skype")
+         (matches (window_role) "Chats|ConversationsWindow"))
    (begin (pin)))
