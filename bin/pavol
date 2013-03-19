@@ -1,0 +1,89 @@
+#!/bin/bash
+
+SINK_NAME="alsa_output.pci-0000_00_1b.0.analog-stereo"
+VOL_MAX="0x20000"
+STEPS="128" # 2^n
+VOL_STEP=$((VOL_MAX / STEPS))
+
+current_volume=`pacmd dump | grep -P "^set-sink-volume $SINK_NAME\s+" | perl -p -i -e 's/.+\s(.x.+)$/$1/'`
+MUTE_STATE=`pacmd dump | grep -P "^set-sink-mute $SINK_NAME\s+" | perl -p -i -e 's/.+\s(yes|no)$/$1/'`
+
+getvol () {
+    echo "$current_volume"
+}
+
+setvol () {
+    pactl set-sink-volume $SINK_NAME `printf "0x%X" $1`
+}
+
+louder () {
+    new_volume=$((current_volume + VOL_STEP))
+    if [ $new_volume -gt $((VOL_MAX)) ]; then
+        new_volume=$((VOL_MAX))
+    fi
+    setvol $new_volume
+}
+
+quieter () {
+    new_volume=$((current_volume - VOL_STEP))
+    if [ $(($new_volume)) -lt $((0x00000)) ]; then
+        new_volume=$((0x00000))
+    fi
+    setvol $new_volume
+}
+
+mute () {
+    if [ $MUTE_STATE = no ]; then
+        pactl set-sink-mute $SINK_NAME 1
+    elif [ $MUTE_STATE = yes ]; then
+        pactl set-sink-mute $SINK_NAME 0
+    fi
+}
+
+bar () {
+    BAR=""
+    if [ $MUTE_STATE = yes ]; then
+        BAR="mute"
+        ITERATOR=$((STEPS / 2 - 2))
+        while [ $ITERATOR -gt 0 ]; do
+            BAR=" ${BAR} "
+            ITERATOR=$((ITERATOR - 1))
+        done
+    else
+        DENOMINATOR=$((VOL_MAX / STEPS))
+        LINES=$((current_volume / DENOMINATOR))
+        DOTS=$((STEPS - LINES))
+        while [ $LINES -gt 0 ]; do
+            BAR="${BAR}|"
+            LINES=$((LINES - 1))
+        done
+        while [ $DOTS -gt 0 ]; do
+            BAR="${BAR}."
+            DOTS=$((DOTS - 1))
+        done
+    fi
+    echo "$BAR"
+}
+
+case "$1" in
+    louder)
+        louder
+        ;;
+    quieter)
+        quieter
+        ;;
+    mute)
+        mute
+        ;;
+    set)
+        setvol "$2"
+        ;;
+    get)
+        getvol
+        ;;
+    *)
+        echo >&2 "Unrecognised subcommand '$1'"
+        exit 1
+        ;;
+esac
+
