@@ -1,0 +1,9 @@
+#!/bin/sh
+
+if ! id=$( current-winid ); then
+    me=`basename $0`
+    echo "$me: couldn't find current window id; aborting." >&2
+    exit 1
+fi
+    
+xprop -id "$id" WM_NAME | sed 's/^WM_NAME(STRING) = "\(.\+\)"/\1/'
