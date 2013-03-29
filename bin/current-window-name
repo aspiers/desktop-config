@@ -1,6 +1,6 @@
 #!/bin/sh
 
-if ! id=$( current-winid ); then
+if ! id=$( current-window-id ); then
     me=`basename $0`
     echo "$me: couldn't find current window id; aborting." >&2
     exit 1
