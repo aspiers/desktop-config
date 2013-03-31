@@ -426,9 +426,9 @@
         <execute>urxvt -e sh -c 'while true; do rlwrap gca; div; done'</execute>
       </action>
     </item>
-    <item label="_q: remember">
+    <item label="_q: capture">
       <action name="Execute">
-        <execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-remember"</execute>
+        <execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-capture"</execute>
       </action>
     </item>
     <separator label="by category" />
