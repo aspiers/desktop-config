@@ -30,6 +30,10 @@ parse_opts () {
     label='-label symbols'
     suffix='-symbols'
 
+    if [ $# = 0 ]; then
+        usage
+    fi
+
     while [ $# != 0 ]; do
         case "$1" in
             -h|--help)
@@ -61,10 +65,6 @@ parse_opts () {
                 ;;
         esac
     done
-
-    if [ $# = 0 ]; then
-        usage
-    fi
 
     if [ -z "$geometry" ]; then
         # No reliable way to detect $DISPLAY's current geometry so we can default to it :-/
