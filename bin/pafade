@@ -10,6 +10,7 @@ safe_pavol () {
 pa_silent () {
     # bash sucks!
     curvol=$( safe_pavol get ) || exit $?
+    echo "$curvol"
     [ "$curvol" = '0x000' ]
 }
 
