@@ -1,11 +1,23 @@
 #!/bin/bash
 
-while [ `pavol get` != '0x000' ]; do
-    pavol quieter
-    pavol get
+safe_pavol () {
+    if ! pavol "$@"; then
+        echo >&2 "ERROR: pavol $* failed; aborting."
+        exit 1
+    fi
+}
+
+pa_silent () {
+    # bash sucks!
+    curvol=$( safe_pavol get ) || exit $?
+    [ "$curvol" = '0x000' ]
+}
+
+while ! pa_silent; do
+    safe_pavol quieter
     sleep 10
 done
 
 ~/.rvm/bin/rvm 1.9.3 do spotify-dbus PlayPause
 
-pavol set 0x9000
+safe_pavol set 0x9000
