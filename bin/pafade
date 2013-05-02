@@ -1,5 +1,27 @@
 #!/bin/bash
 
+usage () {
+    # Call as: usage [EXITCODE] [USAGE MESSAGE]
+    exit_code=1
+    if [[ "$1" == [0-9] ]]; then
+        exit_code="$1"
+        shift
+    fi
+    if [ -n "$1" ]; then
+        echo >&2 "$*"
+        echo
+    fi
+
+    me=`basename $0`
+
+    cat <<EOF >&2
+Usage: $me FADE-LENGTH
+
+Fade length is given in seconds
+EOF
+    exit "$exit_code"
+}
+
 safe_pavol () {
     if ! pavol "$@"; then
         echo >&2 "ERROR: pavol $* failed; aborting."
@@ -14,11 +36,34 @@ pa_silent () {
     [ "$curvol" = '0x000' ]
 }
 
-while ! pa_silent; do
-    safe_pavol quieter
-    sleep 10
-done
+fade () {
+    curvol=$( safe_pavol get ) || exit $?
+    decrement=$(( $curvol / $fade_length ))
 
-~/.rvm/bin/rvm 1.9.3 do spotify-dbus PlayPause
+    while ! pa_silent; do
+        newvol=$(( $curvol - $decrement ))
+        safe_pavol set $( printf "0x%x" $newvol )
+        curvol=$( safe_pavol get ) || exit $?
+        sleep 1
+    done
+}
 
-safe_pavol set 0x9000
+pause () {
+    ~/.rvm/bin/rvm 1.9.3 do spotify-dbus PlayPause
+}
+
+main () {
+    if [ "$1" == '-h' ] || [ "$1" == '--help' ]; then
+        usage 0
+    fi
+    if [ $# != 1 ]; then
+        usage
+    fi
+    fade_length="$1"
+
+    fade "$fade_length"
+    pause
+    safe_pavol set 0x9000
+}
+
+main "$@"
