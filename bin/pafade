@@ -1,5 +1,7 @@
 #!/bin/bash
 
+TARGET_VOL=0x9000
+
 usage () {
     # Call as: usage [EXITCODE] [USAGE MESSAGE]
     exit_code=1
@@ -17,7 +19,8 @@ usage () {
     cat <<EOF >&2
 Usage: $me FADE-LENGTH
 
-Fade length is given in seconds
+Fade length is given in seconds.  If negative, performs
+a fade-in rather than fade-out.
 EOF
     exit "$exit_code"
 }
@@ -29,41 +32,73 @@ safe_pavol () {
     fi
 }
 
-pa_silent () {
-    # bash sucks!
-    curvol=$( safe_pavol get ) || exit $?
-    echo "$curvol"
-    [ "$curvol" = '0x000' ]
+fade_out () {
+    fade_length="$1"
+    fade_to 0x0000 "$fade_length"
+    pause
+    safe_pavol set "$TARGET_VOL"
 }
 
-fade () {
-    curvol=$( safe_pavol get ) || exit $?
-    decrement=$(( $curvol / $fade_length ))
+fade_in () {
+    fade_length="$1"
+    safe_pavol set 0x0000
+    play
+    fade_to "$TARGET_VOL" "$fade_length"
+}
 
-    while ! pa_silent; do
-        newvol=$(( $curvol - $decrement ))
+fade_to () {
+    target_vol="$1" fade_length="$2"
+
+    curvol=$( safe_pavol get ) || exit $?
+    delta=$(( $target_vol - $curvol ))
+    step=$(( $delta / $fade_length ))
+
+    while true; do
+        curvol=$( safe_pavol get ) || exit $?
+        newvol=$(( $curvol + $step ))
         safe_pavol set $( printf "0x%x" $newvol )
         curvol=$( safe_pavol get ) || exit $?
+        echo "$curvol"
+        if (( step > 0 && curvol >= target_vol )) ||
+           (( step < 0 && curvol <= target_vol ))
+        then
+            break
+        fi
         sleep 1
     done
 }
 
-pause () {
+_stop () {
+    ~/.rvm/bin/rvm 1.9.3 do spotify-dbus Stop
+}
+
+play () {
+    _stop
     ~/.rvm/bin/rvm 1.9.3 do spotify-dbus PlayPause
+}
+
+pause () {
+    _stop
 }
 
 main () {
     if [ "$1" == '-h' ] || [ "$1" == '--help' ]; then
         usage 0
     fi
+
     if [ $# != 1 ]; then
         usage
     fi
-    fade_length="$1"
 
-    fade "$fade_length"
-    pause
-    safe_pavol set 0x9000
+    fade_length="$1"
+    case "$fade_length" in
+        -*)
+            fade_in "${fade_length#-}"
+            ;;
+        *)
+            fade_out "$fade_length"
+            ;;
+    esac
 }
 
 main "$@"
