@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 me=`basename $0`
 
@@ -51,17 +51,13 @@ if [ -n "$preview" ]; then
     read
 fi
 
-args=
+args=()
 for track in "$@"; do
-    if [ -z "$args" ]; then
-        args="\"$track\""
-    else
-        args="$args \"$track\""
-    fi
+    args+="$track"
 done
 
 at $time <<EOF
-quietrun $player $args </dev/null
+quietrun $player ${args[@]} </dev/null
 EOF
 
 atq
