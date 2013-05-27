@@ -28,12 +28,13 @@ xkb_symbols "kinesis" {
     include "adam(us-3)"
 };
 
-xkb_symbols "hhk" {
+xkb_symbols "hhkl" {
     include "pc"
     include "us"
     include "gb"
-    include "adam(hhk-left-alpha)"
-    include "adam(hhk-mods)"
+    include "adam(hhkl-left-alpha)"
+    include "adam(hhkl-mods)"
+    include "adam(hhkl-escape)"
     include "adam(us-3)"
 //    include "adam(meta)"
 //    include "adam(control-modifier-map)"
@@ -106,7 +107,7 @@ xkb_symbols "laptop-right-mods" {
 };
 
 partial modifier_keys
-xkb_symbols "hhk-mods" {
+xkb_symbols "hhkl-mods" {
     virtual_modifiers LAlt, LControl, RAlt;
 
     key <LALT> {      
@@ -169,6 +170,13 @@ xkb_symbols "xcv2" {
     key <AB02>  { [         v,          V, leftdoublequotemark, leftsinglequotemark ]   };
 };
 
+partial alphanumeric_keys
+xkb_symbols "xcv3" {
+    key <LFSH>  { [         x,          X, guillemotright,    greater ] };
+    key <AB01>  { [         c,          C,         cent,    copyright ] };
+    key <AB02>  { [         v,          V, leftdoublequotemark, leftsinglequotemark ]   };
+};
+
 partial alphanumeric_keys 
 xkb_symbols "laptop-left-alpha" {
     include "adam(left-alpha-common)"
@@ -185,18 +193,23 @@ xkb_symbols "standard-qaz" {
 };
 
 partial alphanumeric_keys 
-xkb_symbols "hhk-left-alpha" {
+xkb_symbols "hhkl-left-alpha" {
     include "adam(left-alpha-common)"
-    include "adam(xcv1)"
-    include "adam(hhk-qaz)"
+    include "adam(xcv3)"
+    include "adam(hhkl-qaz)"
 };
 
 partial alphanumeric_keys 
-xkb_symbols "hhk-qaz" {
+xkb_symbols "hhkl-qaz" {
     // from latin(basic)
     key <ESC>   { [         q,          Q,           at,  Greek_OMEGA ] };
     key <LCTL>  { [         a,          A,           ae,           AE ] };
-    key <AB04>  { [         z,          Z, guillemotleft,        less ] };
+    key <AB03>  { [         z,          Z, guillemotleft,        less ] };
+};
+
+partial alphanumeric_keys
+xkb_symbols "hhkl-escape" {
+    key <TLDE> { [ Escape, Escape ] };
 };
 
 partial
