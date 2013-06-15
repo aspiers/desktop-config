@@ -48,19 +48,6 @@
     </item>
   </menu>
 
-  <menu id="wwwoffle-menu" label="wwwoffle">
-    <separator label="wwwoffle" />
-    <item label="go online">
-      <action name="Execute"><execute>wwwoffle -online</execute></action>
-    </item>
-    <item label="go offline">
-      <action name="Execute"><execute>wwwoffle -offline</execute></action>
-    </item>
-    <item label="fetch">
-      <action name="Execute"><execute>wwwoffle -fetch</execute></action>
-    </item>
-  </menu>
-
   <menu id="browser-menu" label="Browsers">
     <separator label="Browsers" />
     <item label="chrome">
@@ -315,7 +302,6 @@
     </item>
     <menu id="utils-menu" />
     <menu id="fun-menu" />
-    <menu id="wwwoffle-menu" />
     <menu id="unison-menu" />
     <separator />
     <item label="xterm">
