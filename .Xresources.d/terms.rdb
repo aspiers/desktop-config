@@ -590,7 +590,6 @@ URxvt.matcher.pattern.2: \\b(?i:bug|bnc)[ #-]?\\d{6,}\\b
 URxvt.matcher.pattern.3: \\b(?i:fate|feature)[ #-]?\\d{4,}\\b
 URxvt.matcher.pattern.4: (?i)swamp[ #-]?\\d+
 URxvt.matcher.pattern.5: \\bmairixp?:\/\/[\\w.:@-]+
-URxvt.matcher.pattern.5: \\bmairixp?:\/\/[\\w.:@-]+
 
 /* Irrelevant since we're using the Perl selection code */
 URxvt.tripleclickwords: true
