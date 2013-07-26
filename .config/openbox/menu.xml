@@ -229,6 +229,9 @@
 
   <menu id="utils-menu" label="Utils">
     <separator label="Utils" />
+    <item label="_thunar">
+      <action name="Execute"><execute>thunar</execute></action>
+    </item>
     <item label="gkrellm">
       <action name="Execute"><execute>sh -c "~/.xsession-progs.d/person-adam.spiers/50-gkrellm"</execute></action>
     </item>
