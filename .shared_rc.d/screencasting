@@ -1,0 +1,174 @@
+# see also https://github.com/lolilolicon/FFcast2
+
+# https://github.com/gotbletu/shownotes/blob/master/ffmpeg_x11grab_screencast.txt
+
+ffx_channels="1"           # mono / stereo audio
+ffx_alsa="hw:0,0"          # alsa; run 'cat /proc/asound/pcm' to change to the correct numbers
+ffx_pulse="pulse"          # pulseaudio; might have to install pavucontrol to change volume
+ffx_fps="30"               # frame per seconds
+ffx_audio="pcm_s16le"      # audio codec
+ffx_video="libx264"        # video codec
+ffx_preset="medium"        # preset error? run 'x264 -h' replace with fast,superfast, slow ..etc
+ffx_crf="0"                # quality for constant quality mode http://trac.ffmpeg.org/wiki/x264EncodingGuide
+ffx_threads="auto"         # number of threads to use
+#ffx_scale="scale=1280:720" # scale resolution, no black bars on sides of video on youtube
+
+ffx-alsa () {
+    audio_input_opts=(
+        -f alsa
+        -i "$ffx_alsa"
+    )
+}
+
+ffx-pulse () {
+    audio_input_opts=(
+        -f alsa
+        -i default # lots of people use 'pulse' but that doesn't work for me
+    )
+}
+
+ffx-full () {
+    ffx_wininfo="$( xwininfo -root )"
+    ffx_viewport=
+}
+
+ffx-winselect () {
+    ffx_wininfo="$(xwininfo -frame)"
+    ffx_top_left_x=$(
+        echo "$ffx_wininfo" | \
+            awk '/Absolute upper-left X: / { print $4 }'
+    )
+    ffx_top_left_y=$(
+        echo "$ffx_wininfo" | \
+            awk '/Absolute upper-left Y: / { print $4 }'
+    )
+    ffx_viewport="+$ffx_top_left_x+$ffx_top_left_y"
+}
+
+ffx () {
+    ffx_geometry=$(
+        echo "$ffx_wininfo" | \
+            awk '/-geometry/ {print $2}' | \
+            grep -oEe '[0-9]+x[0-9]+'
+    )
+
+    ffmpeg_opts=(
+        # audio options
+        "${audio_input_opts[@]}"
+        -ac $ffx_channels
+        -acodec $ffx_audio
+
+        # video options
+        -f x11grab
+        -i $DISPLAY$ffx_viewport
+        -s $ffx_geometry
+        -r $ffx_fps
+        #-pix_fmt yuv420p
+        #-vf $ffx_scale
+
+        -vcodec $ffx_video # has to come after -i for some reason
+
+        # general options
+        -preset $ffx_preset
+        -crf $ffx_crf
+        -threads $ffx_threads
+
+        -y # overwrite existing file
+
+        "$@"
+    )
+
+    echo ffmpeg "${ffmpeg_opts[@]}"
+    ffmpeg "${ffmpeg_opts[@]}"
+}
+
+ffx-full-alsa () {
+    ffx-alsa
+    ffx-full
+    ffx "$@"
+}
+
+ffx-full-pa () {
+    ffx-pulse
+    ffx-full
+    ffx "$@"
+}
+
+ffx-winselect-alsa () {
+    ffx-alsa
+    ffx-winselect
+    ffx "$@"
+}
+
+ffx-winselect-pa () {
+    ffx-pulse
+    ffx-winselect
+    ffx "$@"
+}
+
+# encoding tricks from http://ubuntuforums.org/showthread.php?t=1392026
+
+ffx-encode-mp4 () {
+    input="$1"
+
+    ffmpeg_opts=(
+        -i "$input"
+
+        # audio
+        -acodec libfaac
+        -ab 128k
+        -ac 2
+
+        # video
+        -vcodec libx264
+
+        # other
+        -preset slow
+        -crf 22
+        -threads 0
+
+        "${input%.*}.mp4"
+    )
+
+    ffmpeg "${ffmpeg_opts[@]}"
+}
+
+ffx-encode-webm () {
+    input="$1"
+
+    ffmpeg_opts=(
+        -i "$input"
+
+        # audio
+        -an # disable audio
+
+        # video
+        -vcodec libvpx
+        -b 1000k
+        -pass 1
+
+        "${input%.*}.webm"
+    )
+
+    echo ffmpeg "${ffmpeg_opts[@]}"
+    ffmpeg "${ffmpeg_opts[@]}"
+
+    ffmpeg_opts=(
+        -i "$input"
+
+        # audio
+        -acodec libvorbis
+        -ab 128k
+        -ac $ffx_channels
+
+        # video
+        -vcodec libvpx
+        -b 1000k
+        -pass 2
+
+        "${input%.*}.webm"
+    )
+
+    echo ffmpeg "${ffmpeg_opts[@]}"
+    ffmpeg "${ffmpeg_opts[@]}"
+}
