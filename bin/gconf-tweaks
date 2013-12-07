@@ -43,3 +43,7 @@ $gconftool -s /apps/metacity/general/enable_windows_keys -t bool false
 
 # See xscreensaver(1) man page.  This is better done when starting xscreensaver though.
 #$gconftool -s /apps/gnome_settings_daemon/screensaver/start_screensaver -t bool false
+
+$gconftool -t string -s /desktop/gnome/url-handlers/magnet/command "/usr/bin/transmission '%s'"
+$gconftool -t bool -s /desktop/gnome/url-handlers/magnet/needs_terminal false
+$gconftool -t bool -s /desktop/gnome/url-handlers/magnet/enabled true
