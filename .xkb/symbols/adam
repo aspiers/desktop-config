@@ -240,13 +240,13 @@ xkb_symbols "kinesis-right-thumb-pad" {
     virtual_modifiers Super;
 
     key <RALT> { [ Menu ]
-    	//type[Group1] = "ONE_LEVEL",
-    	//symbols[Group1] = [ Menu ]
-    	//symbols[Group1] = [ Multi_key ]
-    	//symbols[Group1] = [ Mode_switch ]
+        //type[Group1] = "ONE_LEVEL",
+        //symbols[Group1] = [ Menu ]
+        //symbols[Group1] = [ Multi_key ]
+        //symbols[Group1] = [ Mode_switch ]
 
-    	//type[Group1] = "ONE_LEVEL",
-    	//symbols[Group1] = [ Alt_R ],
+        //type[Group1] = "ONE_LEVEL",
+        //symbols[Group1] = [ Alt_R ],
         //virtualMods = LAlt
     };
 
@@ -261,10 +261,10 @@ xkb_symbols "kinesis-right-thumb-pad" {
         // is a bug which got fixed in 13.1:
         //
         //   https://bugs.freedesktop.org/show_bug.cgi?id=57242
-    	type[Group1] = "ONE_LEVEL",
+        type[Group1] = "ONE_LEVEL",
 
-    	symbols[Group1] = [ Super_R ],
-	virtualMods = Super
+        symbols[Group1] = [ Super_R ],
+        virtualMods = Super
     };
 };
 
