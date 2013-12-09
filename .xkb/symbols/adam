@@ -215,20 +215,22 @@ xkb_symbols "kinesis-left-thumb-pad" {
     virtual_modifiers LControl, LAlt;
 
     key <DELE> {
-        [ Meta_L ],
-        virtualMods = LAlt
+        [ Meta_L ]
+        //virtualMods = LAlt
     };
     modifier_map Mod1 { <DELE> };
 
     key <LALT> { [ Delete ] };
 
-    key <META> { [ NoSymbol, Meta_L ] };
-    modifier_map Mod1 { <META> };
+    // WTF? There is no META key...
+    // key <META> { [ NoSymbol, Meta_L ] };
+    // modifier_map Mod1 { <META> };
 
     key <HOME> {
         [ Alt_L ],
         virtualMods = LAlt
     };
+    modifier_map Mod2 { <HOME> };
 
     key <END> { [ Escape ] };
 };
