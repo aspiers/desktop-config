@@ -96,6 +96,12 @@ else {
   }
 }
 
+sub bg {
+  my ($col) = @_;
+  system 'tput', 'setab', $col;
+  #print "\e[48;5;${col}m";
+}
+
 sub show_colours {
   print "Mode: $mode colours";
   print " (specify --88 as CLI argument to change)" unless $opts{88};
@@ -103,11 +109,13 @@ sub show_colours {
 
   print "System colours:\n";
   for (my $colour = 0; $colour < ($system / 2); $colour++) {
-    print "\e[48;5;${colour}m. ";
+    bg($colour);
+    print ". ";
   }
   print "\e[0m\n";
   for (my $colour = ($system / 2); $colour < $system; $colour++) {
-    print "\e[48;5;${colour}m. ";
+    bg($colour);
+    print ". ";
   }
   print "\e[0m\n\n";
 
@@ -145,7 +153,8 @@ sub show_colours {
                    + ($red   * $red_inc  )
                    + ($green * $green_inc)
                    + ($blue  * $blue_inc );
-        print "\e[48;5;${colour}m. ";
+        bg($colour);
+        print ". ";
       }
       print "\e[0m ";
     }
@@ -166,7 +175,8 @@ sub show_colours {
 
   print "\nGreyscale ramp:\n";
   for (my $colour = $system + $cube_colours; $colour < $total; $colour++) {
-    print "\e[48;5;${colour}m. ";
+    bg($colour);
+    print ". ";
   }
   print "\e[0m\n";
   print "\nSee also show-colours.\n";
