@@ -13,7 +13,7 @@ for dir in ~/.X_fonts ~/.truetype; do
     fi
 done
 
-mkdir -p ~/.xsession-progs.d
+mkdir -p ~/.xsession-progs.d ~/.log
 
 for dir in $HOME/.kde{,4}/Autostart; do
     old=$dir/xsession-progs
