@@ -1,0 +1,5 @@
+#!/bin/bash
+
+if which rescuetime >&/dev/null; then
+  rescuetime &
+fi
