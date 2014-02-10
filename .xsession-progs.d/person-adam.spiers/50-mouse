@@ -1,4 +1,15 @@
 #!/bin/sh
 
 echo "### Mouse ..."
-xset m 2 4
+
+. ~/lib/libhost.sh
+read_localhost_nickname
+
+case "$localhost_nickname" in
+    pacific)
+        xset m 1.5 5
+        ;;
+    *)
+        xset m 2 4
+        ;;
+esac
