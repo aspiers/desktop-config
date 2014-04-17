@@ -355,6 +355,11 @@
         <execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-jump-personal-diary"</execute>
       </action>
     </item>
+    <item label="_gtd-timer">
+      <action name="Execute">
+        <execute>sh -c "urxvt -fn smoothansi -geometry 90x15-0-0 -e gtd-timer ~/mail/personal/offlineimap/INBOX"</execute>
+      </action>
+    </item>
   </menu>
 
   <menu id="org-work-menu" label="_work">
@@ -366,6 +371,11 @@
     <item label="_diary">
       <action name="Execute">
         <execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-jump-work-diary"</execute>
+      </action>
+    </item>
+    <item label="_gtd-timer">
+      <action name="Execute">
+        <execute>sh -c "urxvt -fn smoothansi -geometry 90x15-0-0 -e gtd-timer ~/mail/novell/offlineimap/INBOX"</execute>
       </action>
     </item>
   </menu>
