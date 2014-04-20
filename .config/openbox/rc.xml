@@ -357,7 +357,7 @@
         <execute>pavucontrol</execute>
       </action>
     </keybind>
-    <keybind key="W-S-p">
+    <keybind key="W-M-p">
       <action name="Execute">
         <execute>xfce4-mixer</execute>
       </action>

@@ -137,8 +137,8 @@ get_keymap_settings () {
         gyration-hacked)
             xkb='-symbols adam(gyration)'
             ;;
-        hhk)
-            xkb='-geometry hhk -symbols adam(hhk)'
+        hhkl)
+            xkb='-geometry hhk -symbols adam(hhkl)'
             ;;
         dvorak)
             xmodmap=dvorak
