@@ -357,7 +357,7 @@
     </item>
     <item label="_gtd-timer">
       <action name="Execute">
-        <execute>sh -c "urxvt -fn smoothansi -geometry 90x15-0-0 -e gtd-timer ~/mail/personal/offlineimap/INBOX"</execute>
+        <execute>sh -c "urxvt -fn smoothansi -geometry 90x15-0-0 -e sh -c \"gtd-timer ~/mail/personal/offlineimap/INBOX; sleep 60\""</execute>
       </action>
     </item>
   </menu>
@@ -375,7 +375,7 @@
     </item>
     <item label="_gtd-timer">
       <action name="Execute">
-        <execute>sh -c "urxvt -fn smoothansi -geometry 90x15-0-0 -e gtd-timer ~/mail/novell/offlineimap/INBOX"</execute>
+        <execute>sh -c "urxvt -fn smoothansi -geometry 90x15-0-0 -e sh -c \"gtd-timer ~/mail/novell/offlineimap/INBOX; sleep 60\""</execute>
       </action>
     </item>
   </menu>
