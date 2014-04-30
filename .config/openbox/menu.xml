@@ -88,7 +88,7 @@
       <action name="Execute"><execute>thunderbird -addressbook</execute></action>
     </item>
     <item label="_skype">
-      <action name="Execute"><execute>skype</execute></action>
+      <action name="Execute"><execute>sh -c "PULSE_LATENCY_MSEC=60 skype"</execute></action>
     </item>
     <item label="_X-Chat">
       <action name="Execute"><execute>xchat</execute></action>
