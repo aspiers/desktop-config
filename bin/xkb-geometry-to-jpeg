@@ -88,7 +88,7 @@ parse_opts "$@"
 
 if setxkbmap "${setxkbmap_args[@]}" -print |
     xkbcomp -I$ZDOTDIR/.xkb -w 3 - - |
-    xkbprint $label - - |
+    xkbprint -color $label - - |
     gs -sDEVICE=jpeg -sOutputFile=- -r300 -q - |
     jpegtran -rotate 270 > "$out"
 then

@@ -48,19 +48,6 @@
     </item>
   </menu>
 
-  <menu id="wwwoffle-menu" label="wwwoffle">
-    <separator label="wwwoffle" />
-    <item label="go online">
-      <action name="Execute"><execute>wwwoffle -online</execute></action>
-    </item>
-    <item label="go offline">
-      <action name="Execute"><execute>wwwoffle -offline</execute></action>
-    </item>
-    <item label="fetch">
-      <action name="Execute"><execute>wwwoffle -fetch</execute></action>
-    </item>
-  </menu>
-
   <menu id="browser-menu" label="Browsers">
     <separator label="Browsers" />
     <item label="chrome">
@@ -101,7 +88,7 @@
       <action name="Execute"><execute>thunderbird -addressbook</execute></action>
     </item>
     <item label="_skype">
-      <action name="Execute"><execute>skype</execute></action>
+      <action name="Execute"><execute>sh -c "PULSE_LATENCY_MSEC=60 skype"</execute></action>
     </item>
     <item label="_X-Chat">
       <action name="Execute"><execute>xchat</execute></action>
@@ -161,6 +148,9 @@
     </item>
     <item label="ario">
       <action name="Execute"><execute>ario</execute></action>
+    </item>
+    <item label="_clementine">
+      <action name="Execute"><execute>clementine</execute></action>
     </item>
     <item label="spotify">
       <action name="Execute"><execute>spotify</execute></action>
@@ -242,6 +232,9 @@
 
   <menu id="utils-menu" label="Utils">
     <separator label="Utils" />
+    <item label="_thunar">
+      <action name="Execute"><execute>thunar</execute></action>
+    </item>
     <item label="gkrellm">
       <action name="Execute"><execute>sh -c "~/.xsession-progs.d/person-adam.spiers/50-gkrellm"</execute></action>
     </item>
@@ -307,15 +300,14 @@
     <menu id="graphics-menu" />
     <menu id="audio-menu" />
     <menu id="office-menu" />
+    <item label="VirtualBox">
+      <action name="Execute"><execute>VirtualBox</execute></action>
+    </item>
     <item label="VMware Workstation">
       <action name="Execute"><execute>vmware</execute></action>
     </item>
-    <item label="VirtualBox">
-      <action name="Execute"><execute>virtualbox</execute></action>
-    </item>
     <menu id="utils-menu" />
     <menu id="fun-menu" />
-    <menu id="wwwoffle-menu" />
     <menu id="unison-menu" />
     <separator />
     <item label="xterm">
@@ -363,6 +355,11 @@
         <execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-jump-personal-diary"</execute>
       </action>
     </item>
+    <item label="_gtd-timer">
+      <action name="Execute">
+        <execute>sh -c "urxvt -fn smoothansi -geometry 90x15-0-0 -e sh -c \"gtd-timer ~/mail/personal/offlineimap/INBOX; sleep 60\""</execute>
+      </action>
+    </item>
   </menu>
 
   <menu id="org-work-menu" label="_work">
@@ -374,6 +371,11 @@
     <item label="_diary">
       <action name="Execute">
         <execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-jump-work-diary"</execute>
+      </action>
+    </item>
+    <item label="_gtd-timer">
+      <action name="Execute">
+        <execute>sh -c "urxvt -fn smoothansi -geometry 90x15-0-0 -e sh -c \"gtd-timer ~/mail/novell/offlineimap/INBOX; sleep 60\""</execute>
       </action>
     </item>
   </menu>

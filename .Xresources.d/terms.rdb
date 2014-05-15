@@ -290,7 +290,6 @@ URxvt.font-switcher-list: xft:Inconsolata:pixelsize=6  | \\
     xft:Inconsolata:pixelsize=13 | \\
     xft:Inconsolata:pixelsize=14 | \\
     9x15                         | \\
-    xft:Inconsolata:pixelsize=16 | \\
     xft:Inconsolata:pixelsize=18 | \\
     xft:Inconsolata:pixelsize=20 | \\
     xft:Inconsolata:pixelsize=22 | \\

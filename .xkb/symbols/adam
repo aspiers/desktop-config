@@ -257,20 +257,22 @@ xkb_symbols "kinesis-left-thumb-pad" {
     virtual_modifiers LControl, LAlt;
 
     key <DELE> {
-        [ Meta_L ],
-        virtualMods = LAlt
+        [ Meta_L ]
+        //virtualMods = LAlt
     };
     modifier_map Mod1 { <DELE> };
 
     key <LALT> { [ Delete ] };
 
-    key <META> { [ NoSymbol, Meta_L ] };
-    modifier_map Mod1 { <META> };
+    // WTF? There is no META key...
+    // key <META> { [ NoSymbol, Meta_L ] };
+    // modifier_map Mod1 { <META> };
 
     key <HOME> {
         [ Alt_L ],
         virtualMods = LAlt
     };
+    modifier_map Mod2 { <HOME> };
 
     key <END> { [ Escape ] };
 };
@@ -280,20 +282,31 @@ xkb_symbols "kinesis-right-thumb-pad" {
     virtual_modifiers Super;
 
     key <RALT> { [ Menu ]
-    	//type[Group1] = "ONE_LEVEL",
-    	//symbols[Group1] = [ Menu ]
-    	//symbols[Group1] = [ Multi_key ]
-    	//symbols[Group1] = [ Mode_switch ]
+        //type[Group1] = "ONE_LEVEL",
+        //symbols[Group1] = [ Menu ]
+        //symbols[Group1] = [ Multi_key ]
+        //symbols[Group1] = [ Mode_switch ]
 
-    	//type[Group1] = "ONE_LEVEL",
-    	//symbols[Group1] = [ Alt_R ],
+        //type[Group1] = "ONE_LEVEL",
+        //symbols[Group1] = [ Alt_R ],
         //virtualMods = LAlt
     };
 
     key <RCTL> {
-    	type[Group1] = "ONE_LEVEL",
-    	symbols[Group1] = [ Super_R ],
-	virtualMods = Super
+        // This causes a spurious warning:
+        //
+        //   'Type "ONE_LEVEL" has 1 levels, but <RCTL> has 2 symbols'
+        //
+        // but is required otherwise Multi_key ends up being on the
+        // 2nd level, which means that Super-< passes an unwanted
+        // Multi_key event to the synergy client.  Also, the warning
+        // is a bug which got fixed in 13.1:
+        //
+        //   https://bugs.freedesktop.org/show_bug.cgi?id=57242
+        type[Group1] = "ONE_LEVEL",
+
+        symbols[Group1] = [ Super_R ],
+        virtualMods = Super
     };
 };
 
