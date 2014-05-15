@@ -51,6 +51,7 @@ Choose from one of the following keymaps:
   7) Lenovo W520 hacked to suit Adam
   8) Gyration wireless keyboard hacked to suit Adam
   9) HHKL
+ 10) US QWERTY hacked to suit Adam
 
 EOF
 #  7) Microsoft Natural 105-key
@@ -72,6 +73,7 @@ EOF
         7) keymap=w520-hacked     ;;
         8) keymap=gyration-hacked ;;
         9) keymap=hhkl            ;;
+        10) keymap=us-qwerty-hacked ;;
         #10) keymap=dvorak   ;;
 
         *)
@@ -143,6 +145,9 @@ get_keymap_settings () {
         dvorak)
             xmodmap=dvorak
             loadkeys=/usr/lib/kbd/keymaps/i386/dvorak/dvorak.kmap.gz
+            ;;
+        us-qwerty-hacked)
+            xkb='-symbols adam(us-qwerty-hacked) -geometry pc(pc104)'
             ;;
         *)
             echo "Invalid keymap '$keymap'."
