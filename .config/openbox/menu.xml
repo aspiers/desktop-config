@@ -73,7 +73,7 @@
   <menu id="comms-menu" label="Communications">
     <separator label="Communications" />
     <item label="_pidgin">
-      <action name="Execute"><execute>sh -c 'pidgin || gaim'</execute></action>
+      <action name="Execute"><execute>pidgin</execute></action>
     </item>
     <item label="_Choqok">
       <action name="Execute"><execute>choqok</execute></action>
