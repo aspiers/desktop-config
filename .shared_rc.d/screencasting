@@ -7,11 +7,18 @@ Run ffx-full, or ffx-winselect, or ffx-rectselect, or set:
   ffx_geometry=$ffx_geometry
   ffx_viewport=$ffx_viewport
 
-To align:
+To set a window to 1280 by 720:
+
+  # allow border of 1 by 23 with openbox (full decoration is 1+1 by 20+5)
+  xdotool search --onlyvisible chrome windowsize 1281 697
+  # or:
+  xdotool windowselect windowsize 1281 697
+
+To produce a reference window of a given size:
 
   c=red; xeyes +shape -bg $c -outline $c -fg $c -geometry 1280x720+50+50
 
-but don't forget to undecorate window!
+(but don't forget to undecorate the window since decorations expand it!)
 
 Run ffx-pulse (default), or
 
@@ -19,9 +26,9 @@ Run ffx-pulse (default), or
 
 To record:
 
-  file=foo.mp4; sleep 2; ffx [extra ffmpeg options] $file AD mplayer $file
+  file=foo.mp4; sleep 2; ffx [extra ffmpeg options] $file && mplayer $file
 
-Upscale to 1080p for YouTube (duh):
+Upscale to 1080p to prevent YouTube from destroying quality (doh!):
 
   ffmpeg -i $file -vf scale=1920:1080 ${file%.*}-1080.${file##*.}
 
