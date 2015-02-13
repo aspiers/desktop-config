@@ -1,35 +1,83 @@
+# -*- mode: sh -*-
+
+ffx-help () {
+    cat <<EOF
+Run ffx-full, or ffx-winselect, or ffx-rectselect, or set:
+
+  ffx_geometry=$ffx_geometry
+  ffx_viewport=$ffx_viewport
+
+To align:
+
+  c=red; xeyes +shape -bg $c -outline $c -fg $c -geometry 1280x720+50+50
+
+but don't forget to undecorate window!
+
+Run ffx-pulse (default), or
+
+  ffx-alsa hw:0,0  # cat /proc/asound/pcm
+
+To record:
+
+  file=foo.mp4; sleep 2; ffx [extra ffmpeg options] $file AD mplayer $file
+
+Upscale to 1080p for YouTube (duh):
+
+  ffmpeg -i $file -vf scale=1920:1080 ${file%.*}-1080.${file##*.}
+
+Extract a frame for thumbnail:
+
+  ffmpeg -ss 00:01:23 -i $file -t 1 -r 1 frame%d.png
+EOF
+}
+
 # see also https://github.com/lolilolicon/FFcast2
 
 # https://github.com/gotbletu/shownotes/blob/master/ffmpeg_x11grab_screencast.txt
 
+# Settings recommended for YouTube
+# https://support.google.com/youtube/answer/1722171?hl=en
 ffx_channels="1"           # mono / stereo audio
-ffx_alsa="hw:0,0"          # alsa; run 'cat /proc/asound/pcm' to change to the correct numbers
-ffx_pulse="pulse"          # pulseaudio; might have to install pavucontrol to change volume
-ffx_fps="30"               # frame per seconds
-ffx_audio="pcm_s16le"      # audio codec
-ffx_video="libx264"        # video codec
-ffx_preset="medium"        # preset error? run 'x264 -h' replace with fast,superfast, slow ..etc
-ffx_crf="0"                # quality for constant quality mode http://trac.ffmpeg.org/wiki/x264EncodingGuide
-ffx_threads="auto"         # number of threads to use
+ffx_fps="30"               # frames per second
+ffx_acodec="flac"          # audio codec
+#ffx_acodec="pcm_s16le"
+
+# settings recommended for YouTube:
+# https://support.google.com/youtube/answer/1722171?hl=en
+ffx_vcodec="libx264" 
+ffx_preset="slow"          # preset error? run 'x264 -h' replace with fast,superfast, slow ..etc
+                           # - requires x264 installed.
+ffx_crf="18"               # quality for constant quality mode
+ffx_profile="high"         # h264 profile
+
 #ffx_scale="scale=1280:720" # scale resolution, no black bars on sides of video on youtube
+ffx_geometry=1280x720      # ideal for YouTube; overwritten by ffx-{full,winselect}
+ffx_viewport=+0+0          # easy-to-use default
 
 ffx-alsa () {
     audio_input_opts=(
         -f alsa
-        -i "$ffx_alsa"
+        -i "$1"
     )
 }
 
 ffx-pulse () {
+    # Needs to be compiled with --enable-libpulse
+    # https://www.ffmpeg.org/ffmpeg-devices.html#pulse
     audio_input_opts=(
-        -f alsa
+        -f pulse
         -i default # lots of people use 'pulse' but that doesn't work for me
     )
 }
 
+#ffx-alsa hw:2,1
+ffx-pulse
+
 ffx-full () {
     ffx_wininfo="$( xwininfo -root )"
     ffx_viewport=
+    _ffx_geom_from_wininfo
+    _ffx_report_geom_viewport
 }
 
 ffx-winselect () {
@@ -43,130 +91,54 @@ ffx-winselect () {
             awk '/Absolute upper-left Y: / { print $4 }'
     )
     ffx_viewport="+$ffx_top_left_x+$ffx_top_left_y"
+    _ffx_geom_from_wininfo
+    _ffx_report_geom_viewport
 }
 
-ffx () {
+ffx-rectselect () {
+    ffx_wininfo="$(xrectsel)"
+    ffx_geometry="${ffx_wininfo%%+*}"
+    ffx_viewport="+${ffx_wininfo#*+}"
+    _ffx_report_geom_viewport
+}
+
+_ffx_geom_from_wininfo () {
     ffx_geometry=$(
         echo "$ffx_wininfo" | \
             awk '/-geometry/ {print $2}' | \
             grep -oEe '[0-9]+x[0-9]+'
     )
+}
 
+_ffx_report_geom_viewport () {
+    echo "Geometry: $ffx_geometry"
+    echo "Viewport: $ffx_viewport"
+}
+
+ffx () {
     ffmpeg_opts=(
         # audio options
         "${audio_input_opts[@]}"
         -ac $ffx_channels
-        -acodec $ffx_audio
+        -acodec $ffx_acodec
 
         # video options
         -f x11grab
+        -video_size $ffx_geometry # has to be after x11 grab and before -i!
+        -framerate $ffx_fps
         -i $DISPLAY$ffx_viewport
-        -s $ffx_geometry
-        -r $ffx_fps
-        #-pix_fmt yuv420p
         #-vf $ffx_scale
 
-        -vcodec $ffx_video # has to come after -i for some reason
+        -vcodec $ffx_vcodec # has to come after -i for some reason
+        -preset $ffx_preset
+        -profile:v $ffx_profile
+        -crf $ffx_crf  # quality for constant quality mode
+        -pix_fmt yuv420p
+
+        -r $ffx_fps
 
         # general options
-        -preset $ffx_preset
-        -crf $ffx_crf
-        -threads $ffx_threads
-
-        -y # overwrite existing file
-
         "$@"
-    )
-
-    echo ffmpeg "${ffmpeg_opts[@]}"
-    ffmpeg "${ffmpeg_opts[@]}"
-}
-
-ffx-full-alsa () {
-    ffx-alsa
-    ffx-full
-    ffx "$@"
-}
-
-ffx-full-pa () {
-    ffx-pulse
-    ffx-full
-    ffx "$@"
-}
-
-ffx-winselect-alsa () {
-    ffx-alsa
-    ffx-winselect
-    ffx "$@"
-}
-
-ffx-winselect-pa () {
-    ffx-pulse
-    ffx-winselect
-    ffx "$@"
-}
-
-# encoding tricks from http://ubuntuforums.org/showthread.php?t=1392026
-
-ffx-encode-mp4 () {
-    input="$1"
-
-    ffmpeg_opts=(
-        -i "$input"
-
-        # audio
-        -acodec libfaac
-        -ab 128k
-        -ac 2
-
-        # video
-        -vcodec libx264
-
-        # other
-        -preset slow
-        -crf 22
-        -threads 0
-
-        "${input%.*}.mp4"
-    )
-
-    ffmpeg "${ffmpeg_opts[@]}"
-}
-
-ffx-encode-webm () {
-    input="$1"
-
-    ffmpeg_opts=(
-        -i "$input"
-
-        # audio
-        -an # disable audio
-
-        # video
-        -vcodec libvpx
-        -b 1000k
-        -pass 1
-
-        "${input%.*}.webm"
-    )
-
-    echo ffmpeg "${ffmpeg_opts[@]}"
-    ffmpeg "${ffmpeg_opts[@]}"
-
-    ffmpeg_opts=(
-        -i "$input"
-
-        # audio
-        -acodec libvorbis
-        -ab 128k
-        -ac $ffx_channels
-
-        # video
-        -vcodec libvpx
-        -b 1000k
-        -pass 2
-
-        "${input%.*}.webm"
     )
 
     echo ffmpeg "${ffmpeg_opts[@]}"
