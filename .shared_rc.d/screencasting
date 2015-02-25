@@ -1,7 +1,7 @@
 # -*- mode: sh -*-
 
 ffx-help () {
-    cat <<EOF
+    cat <<'EOF'
 First run a command to choose which area of the screen to record:
 
   ffx-full        records the whole desktop
@@ -10,8 +10,8 @@ First run a command to choose which area of the screen to record:
 
 These all set the same two shell variables:
 
-  ffx_geometry=$ffx_geometry
-  ffx_viewport=$ffx_viewport
+  ffx_geometry (e.g. '1280x720')
+  ffx_viewport (e.g. '0+0')
 
 To resize a window to 1280x720 (say) to perfectly fit a 720p video
 recording, you can use xdotool e.g.
