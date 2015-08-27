@@ -153,7 +153,7 @@
       <action name="Execute"><execute>ario</execute></action>
     </item>
     <item label="_clementine">
-      <action name="Execute"><execute>clementine</execute></action>
+      <action name="Execute"><execute>clementine &gt;&amp; ~/.log/clementine.log</execute></action>
     </item>
     <item label="spotify">
       <action name="Execute"><execute>spotify</execute></action>
