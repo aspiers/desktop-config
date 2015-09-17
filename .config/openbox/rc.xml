@@ -159,6 +159,12 @@
       </action>
     </keybind>
     <keybind key="W-slash">
+      <action name="NextWindow"/>
+    </keybind>
+    <keybind key="S-W-slash">
+      <action name="PreviousWindow"/>
+    </keybind>
+    <keybind key="C-W-slash">
       <action name="NextWindow">
         <finalactions>
           <action name="Focus"/>
@@ -166,7 +172,7 @@
         </finalactions>
       </action>
     </keybind>
-    <keybind key="S-W-slash">
+    <keybind key="C-S-W-slash">
       <action name="PreviousWindow">
         <finalactions>
           <action name="Focus"/>
@@ -174,51 +180,45 @@
         </finalactions>
       </action>
     </keybind>
-    <keybind key="C-W-slash">
-      <action name="NextWindow"/>
-    </keybind>
-    <keybind key="C-S-W-slash">
-      <action name="PreviousWindow"/>
-    </keybind>
     <keybind key="W-Left">
+      <action name="DirectionalFocusWest"/>
+    </keybind>
+    <keybind key="W-Right">
+      <action name="DirectionalFocusEast"/>
+    </keybind>
+    <keybind key="W-Up">
+      <action name="DirectionalFocusNorth"/>
+    </keybind>
+    <keybind key="W-Down">
+      <action name="DirectionalFocusSouth"/>
+    </keybind>
+    <keybind key="C-W-Left">
       <action name="DirectionalFocusWest">
         <finalactions>
           <action name="Focus"/>
         </finalactions>
       </action>
     </keybind>
-    <keybind key="W-Right">
+    <keybind key="C-W-Right">
       <action name="DirectionalFocusEast">
         <finalactions>
           <action name="Focus"/>
         </finalactions>
       </action>
     </keybind>
-    <keybind key="W-Up">
+    <keybind key="C-W-Up">
       <action name="DirectionalFocusNorth">
         <finalactions>
           <action name="Focus"/>
         </finalactions>
       </action>
     </keybind>
-    <keybind key="W-Down">
+    <keybind key="C-W-Down">
       <action name="DirectionalFocusSouth">
         <finalactions>
           <action name="Focus"/>
         </finalactions>
       </action>
-    </keybind>
-    <keybind key="C-W-Left">
-      <action name="DirectionalFocusWest"/>
-    </keybind>
-    <keybind key="C-W-Right">
-      <action name="DirectionalFocusEast"/>
-    </keybind>
-    <keybind key="C-W-Up">
-      <action name="DirectionalFocusNorth"/>
-    </keybind>
-    <keybind key="C-W-Down">
-      <action name="DirectionalFocusSouth"/>
     </keybind>
     <keybind key="S-W-Left">
       <action name="MoveToEdgeWest"/>
