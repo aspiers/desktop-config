@@ -159,21 +159,65 @@
       </action>
     </keybind>
     <keybind key="W-slash">
-      <action name="NextWindow"/>
+      <action name="NextWindow">
+        <finalactions>
+          <action name="Focus"/>
+          <action name="Unshade"/>
+        </finalactions>
+      </action>
     </keybind>
     <keybind key="S-W-slash">
+      <action name="PreviousWindow">
+        <finalactions>
+          <action name="Focus"/>
+          <action name="Unshade"/>
+        </finalactions>
+      </action>
+    </keybind>
+    <keybind key="C-W-slash">
+      <action name="NextWindow"/>
+    </keybind>
+    <keybind key="C-S-W-slash">
       <action name="PreviousWindow"/>
     </keybind>
     <keybind key="W-Left">
-      <action name="DirectionalFocusWest"/>
+      <action name="DirectionalFocusWest">
+        <finalactions>
+          <action name="Focus"/>
+        </finalactions>
+      </action>
     </keybind>
     <keybind key="W-Right">
-      <action name="DirectionalFocusEast"/>
+      <action name="DirectionalFocusEast">
+        <finalactions>
+          <action name="Focus"/>
+        </finalactions>
+      </action>
     </keybind>
     <keybind key="W-Up">
-      <action name="DirectionalFocusNorth"/>
+      <action name="DirectionalFocusNorth">
+        <finalactions>
+          <action name="Focus"/>
+        </finalactions>
+      </action>
     </keybind>
     <keybind key="W-Down">
+      <action name="DirectionalFocusSouth">
+        <finalactions>
+          <action name="Focus"/>
+        </finalactions>
+      </action>
+    </keybind>
+    <keybind key="C-W-Left">
+      <action name="DirectionalFocusWest"/>
+    </keybind>
+    <keybind key="C-W-Right">
+      <action name="DirectionalFocusEast"/>
+    </keybind>
+    <keybind key="C-W-Up">
+      <action name="DirectionalFocusNorth"/>
+    </keybind>
+    <keybind key="C-W-Down">
       <action name="DirectionalFocusSouth"/>
     </keybind>
     <keybind key="S-W-Left">
@@ -363,13 +407,11 @@
       </action>
     </keybind>
     <keybind key="W-r">
-      <action name="Execute">
-        <execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-remember"</execute>
-      </action>
+      <action name="Raise"/>
     </keybind>
     <keybind key="W-S-R">
       <action name="Execute">
-        <execute>zsh -c 'dsa; roam adriatic roaming music'</execute>
+        <execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-remember"</execute>
       </action>
     </keybind>
     <!-- W-C-r reserved for KDE run command -->
