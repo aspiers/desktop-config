@@ -4,7 +4,7 @@ touch ~/.Xresources.d/local.rdb
 
 ~/bin/keymap-menu --install-symlinks
 
-# also change SESSION/.xsession
+# also change desktop-config/.xsession
 for dir in ~/.X_fonts ~/.truetype; do
     if [ -e "$dir" ]; then
         mkfontdir "$dir"
