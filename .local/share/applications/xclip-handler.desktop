@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Copy to clipboard
+Exec=xclip-handler '%u'
+Icon=xfce4-clipman-plugin
+Type=Application
+Terminal=false
+MimeType=x-scheme-handler/xclip;
