@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# Ensure ~/.local/share/applications/mimeapps.list has an appropriate
+# entry for handling xclip:// links.
+if ! xdg-mime query default x-scheme-handler/xclip | grep -q xclip-handler; then
+    xdg-mime default xclip-handler.desktop x-scheme-handler/xclip
+fi
