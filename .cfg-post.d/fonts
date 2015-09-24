@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# also change desktop-config/.xsession
+for dir in ~/.X_fonts ~/.truetype; do
+    if [ -e "$dir" ]; then
+        mkfontdir "$dir"
+    else
+        echo "Warning: $dir does not exist; cannot run mkfontdir on it" >&2
+    fi
+done
