@@ -11,15 +11,19 @@ automatically generate references/hyperlinks to web pages, and then in
 conjunction with a custom protocol handler, copy them to your Xorg
 clipboard and/or into your running `emacs`.
 
-There are currently backends for github, bugzilla, Jenkins, etherpad,
-and [FATE](https://fate.suse.com).  The next one to add will probably
-be Trello.
-
 For example, if I visit https://github.com/aspiers/git-deps/issues/37,
 via a single click of a bookmarklet this Markdown-formatted link will
 be copied to my clipboard ready for pasting:
 
     [aspiers/git-deps#37: detect whether commit A depends on commit B](https://github.com/aspiers/git-deps/issues/37)
+
+Notice how the link text is formatted, with the github organization,
+repository name, and issue number all nicely combined in [the canonical
+github reference format](https://help.github.com/articles/writing-on-github/#references).
+
+There are currently backends for github, bugzilla, Jenkins, etherpad,
+and [FATE](https://fate.suse.com).  The next one to add will probably
+be Trello.
 
 Similarly I have a
 [custom search engine](http://www.slideshare.net/mauilibrarian2/create-a-custom-search-engine-in-chromes-omnibox)
