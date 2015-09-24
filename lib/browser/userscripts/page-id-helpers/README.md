@@ -1,7 +1,9 @@
 # Userscripts and bookmarklets for generating references/links to web pages
 
 Use Linux?  Fed up of manually copying and pasting references and
-hyperlinks to web pages?  We can help!
+hyperlinks to web pages?  We can help!  Well - with the copying part,
+at least.  You still have to paste the result where you need it,
+since noone's figured out how to write telepathic code yet.
 
 This directory contains userscripts which provide Javascript helper
 functions allowing the easy creation of bookmarklets which
