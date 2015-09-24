@@ -65,6 +65,9 @@ For these to work, you need to do the following:
 -   Install the userscripts in your browser.  Make sure the 
     [default helpers](00 default page id helpers.user.js) are before
     the others in the execution order.
+-   Add / adjust `@match` lines in the userscripts to correspond to the
+    sites for which you want them to activate.  (Or even better,
+    send me [pull requests](https://help.github.com/articles/using-pull-requests/)!)
 -   Install [`xclip-handler`](../../../../bin/xclip-handler) as an
     executable script somewhere on your `$PATH` (e.g. `~/bin`).
 -   Install [`xclip-handler.desktop`](../../../../.local/share/applications/xclip-handler.desktop)
