@@ -1,0 +1,14 @@
+#!/bin/bash
+
+mkdir -p ~/.xsession-progs.d
+
+for dir in $HOME/.kde{,4}/Autostart; do
+    old=$dir/xsession-progs
+    if [ -e $old ]; then
+        if rm $old; then
+            echo "Removed obsolete symlink $old"
+        fi
+    fi
+done
+
+[ -h ~/.XSP ] || ln -s .xsession-progs.d ~/.XSP

@@ -4,18 +4,6 @@ touch ~/.Xresources.d/local.rdb
 
 ~/bin/keymap-menu --install-symlinks
 
-
-mkdir -p ~/.xsession-progs.d ~/.log
-
-for dir in $HOME/.kde{,4}/Autostart; do
-    old=$dir/xsession-progs
-    if [ -e $old ]; then
-        if rm $old; then
-            echo "Removed obsolete symlink $old"
-        fi
-    fi
-done
-
-[ -h ~/.XSP ] || ln -s .xsession-progs.d ~/.XSP
+mkdir -p ~/.log
 
 touch ~/.synergy-{client,server}-name
