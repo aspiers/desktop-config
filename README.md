@@ -20,6 +20,9 @@ files which look useful to you.
 
 ## Documentation
 
-There are no docs yet; sorry.  If you want to know how one particular
-thing works, just [get in touch](mailto:desktop-config@adamspiers.org)
-and I'll try to document it for you.
+-   [Userscripts and bookmarklets for generating references/links to web pages](lib/browser/userscripts/page-id-helpers/README.md)
+
+Other than the above, there are no docs yet; sorry.  If you want to
+know how one particular thing works, just
+[get in touch](mailto:desktop-config@adamspiers.org) and I'll try to
+document it for you.
