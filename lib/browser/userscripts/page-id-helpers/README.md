@@ -52,6 +52,8 @@ Here are the bookmarklets, grouped into two types.
     -    `javascript:location.href = 'xclip://' + encodeURIComponent2(document.title)`
 -   Copy a Markdown-formatted link to the page
     -    `javascript:location.href = 'xclip://' + encodeURIComponent2('[' + page_title() + '](' + location.href + ')')`
+-   Copy an HTML-formatted reference to the page (URL + description)
+    -    `javascript:location.href = 'xclip://' + encodeURIComponent2('<a href="' + location.href + '">' + page_title() + '</a>')`
 -   Copy a plain-text reference to the page (URL + description)
     -    `javascript:location.href = 'xclip://' + encodeURIComponent2(location.href + ' - ' + page_title())`
 -   Copy a short identifier for the page
