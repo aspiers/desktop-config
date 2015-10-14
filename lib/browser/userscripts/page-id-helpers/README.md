@@ -49,13 +49,13 @@ Here are the bookmarklets, grouped into two types.
 ## 1. Bookmarklets which use a custom protocol handler for `xclip://...` URLs
 
 -   Copy `document.title`
-    -    `javascript:location.href='xclip://'+encodeURIComponent2(document.title)`
+    -    `javascript:location.href = 'xclip://' + encodeURIComponent2(document.title)`
 -   Copy a Markdown-formatted link to the page
-    -    `javascript:location.href='xclip://'+encodeURIComponent2('[' + page_title() + '](' + location.href + ')')`
+    -    `javascript:location.href = 'xclip://' + encodeURIComponent2('[' + page_title() + '](' + location.href + ')')`
 -   Copy a short identifier for the page
     -    `javascript:location.href = "xclip://" + encodeURIComponent2(page_id())`
 -   Copy a longer identifier for the page (i.e. a formatted version of `document.title`)
-    -    `javascript:location.href='xclip://'+encodeURIComponent2(page_title())`
+    -    `javascript:location.href = 'xclip://' + encodeURIComponent2(page_title())`
 
 ### Installation
 
