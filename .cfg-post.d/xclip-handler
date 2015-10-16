@@ -2,6 +2,10 @@
 
 # Ensure ~/.local/share/applications/mimeapps.list has an appropriate
 # entry for handling xclip:// links.
+xdg-mime default xclip-handler.desktop x-scheme-handler/xclip
+
+# This should succeed even without running the above, but it's worth checking
+# anyway.
 if ! xdg-mime query default x-scheme-handler/xclip | grep -q xclip-handler; then
-    xdg-mime default xclip-handler.desktop x-scheme-handler/xclip
+    echo "WARNING: xdg-mime failed to install handler for xclip:// !" >&2
 fi
