@@ -26,3 +26,8 @@ Other than the above, there are no docs yet; sorry.  If you want to
 know how one particular thing works, just
 [get in touch](mailto:desktop-config@adamspiers.org) and I'll try to
 document it for you.
+
+## License
+
+GPL v3 except for individual files which state otherwise; see the
+[COPYING](COPYING) file for details.
