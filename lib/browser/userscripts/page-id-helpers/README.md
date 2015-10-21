@@ -50,8 +50,10 @@ Here are the bookmarklets, grouped into two types.
 
 -   Copy `document.title`
     -    `javascript:location.href = 'xclip://' + encodeURIComponent2(document.title)`
--   Copy a Markdown-formatted link to the page
+-   Copy a [Markdown-formatted link](http://daringfireball.net/projects/markdown/syntax#link) to the page
     -    `javascript:location.href = 'xclip://' + encodeURIComponent2('[' + page_title() + '](' + location.href + ')')`
+-   Copy a [reStructuredText-formatted link](http://docutils.sourceforge.net/docs/user/rst/quickref.html#external-hyperlink-targets) to the page
+    -    ```javascript:location.href = 'xclip://' + encodeURIComponent2('`' + page_title() + ' <' + location.href + '>`_')```
 -   Copy an HTML-formatted reference to the page (URL + description)
     -    `javascript:location.href = 'xclip://' + encodeURIComponent2('<a href="' + location.href + '">' + page_title() + '</a>')`
 -   Copy a plain-text reference to the page (URL + description)
