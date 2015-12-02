@@ -1,9 +1,9 @@
 default xkb_keycodes "aspiers" {
-	include "evdev(evdev)"
+    include "evdev(evdev)"
 
-	// There will be warnings from xkbcomp because of multiple definitions.
+    // There will be warnings from xkbcomp because of multiple definitions.
 
-	<LCTL> = 64;
-	<AB01> = 37;
-	<LALT> = 133;
+    <LCTL> = 64;
+    <AB01> = 37;
+    <LALT> = 133;
 };
