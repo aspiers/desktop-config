@@ -679,7 +679,16 @@
       </mousebind>
     </context>
     <context name="Client">
-  </context>
+      <mousebind button="Left" action="Press">
+        <action name="Focus"/>
+      </mousebind>
+      <mousebind button="Middle" action="Press">
+        <action name="Focus"/>
+      </mousebind>
+      <mousebind button="Right" action="Press">
+        <action name="Focus"/>
+      </mousebind>
+    </context>
     <context name="Icon">
       <mousebind button="Left" action="Press">
         <action name="Focus"/>
