@@ -10,8 +10,9 @@ if ! xdg-mime query default application/x-supportconfig | grep -q supportconfig-
     echo "WARNING: xdg-mime failed to install handler for supportconfigs!" >&2
 fi
 
-# Once desktop-config is stowed, these seem to be equivalent, and
+# Once desktop-config is stowed, these two seem to be equivalent, and
 # result in a copy being installed in
 # ~/.local/share/mime/applications/x-supportconfig.xml
-update-mime-database
+#
+#update-mime-database ~/.local/share/mime
 xdg-mime install ~/.local/share/mime/packages/suse-supportconfig.xml
