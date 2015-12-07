@@ -1,3 +1,0 @@
-#!/bin/sh
-
-urxvt-256color -g 200x60 -e supportconfig-tmux "$@"
