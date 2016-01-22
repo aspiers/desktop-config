@@ -58,8 +58,8 @@ Here are the bookmarklets, grouped into two types.
     -    `javascript:location.href = 'xclip://' + encodeURIComponent2('[' + location.href + ' ' + page_title() + ']')`
 -   Copy an HTML-formatted reference to the page (URL + description)
     -    `javascript:location.href = 'xclip://' + encodeURIComponent2('<a href="' + location.href + '">' + page_title() + '</a>')`
--   Copy a plain-text reference to the page (URL + description)
-    -    `javascript:location.href = 'xclip://' + encodeURIComponent2(location.href + ' - ' + page_title())`
+-   Copy a plain-text reference to the page (URL + description; useful for pasting into [Trello](https://trello.com/), since Trello ignores link text when the link is a URL it recognises, e.g. another Trello card or a github pull request)
+    -    `javascript:location.href = 'xclip://' + encodeURIComponent2(location.href + ' (' + page_title() + ')')`
 -   Copy a short identifier for the page
     -    `javascript:location.href = "xclip://" + encodeURIComponent2(page_id())`
 -   Copy a longer description for the page (i.e. a formatted version of `document.title`)
