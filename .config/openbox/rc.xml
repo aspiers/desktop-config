@@ -438,21 +438,6 @@
     </keybind>
     <!-- W-v reserved for amarok -->
     <!-- W-C-v reserved for amarok -->
-    <keybind key="W-w">
-      <action name="Execute">
-        <execute>wwwoffle -online</execute>
-      </action>
-    </keybind>
-    <keybind key="W-S-w">
-      <action name="Execute">
-        <execute>wwwoffle -offline</execute>
-      </action>
-    </keybind>
-    <keybind key="W-C-w">
-      <action name="Execute">
-        <execute>wwwoffle -fetch</execute>
-      </action>
-    </keybind>
     <!-- W-x reserved for amarok -->
     <keybind key="W-y">
       <action name="Execute">
