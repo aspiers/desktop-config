@@ -1,10 +1,9 @@
 default xkb_keycodes "w520" {
-	include "evdev(evdev)"
+        include "evdev(evdev)"
 
-	// There will be warnings from xkbcomp because of multiple definitions.
+        // There will be warnings from xkbcomp because of multiple definitions.
 
-	<BKSL> = 94;
+        <BKSL> = 94;
         //<TLDE> = 51;
         <AC12> = 51;
-        
 };

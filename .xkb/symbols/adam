@@ -151,7 +151,7 @@ partial modifier_keys
 xkb_symbols "hhkl-mods" {
     virtual_modifiers LAlt, LControl, RAlt;
 
-    key <LALT> {      
+    key <LALT> {
         [ Alt_L, Meta_L ],
         virtualMods = LAlt
     };
@@ -181,7 +181,7 @@ xkb_symbols "meta" {
     modifier_map Mod1   { <META> };
 };
 
-partial alphanumeric_keys 
+partial alphanumeric_keys
 xkb_symbols "left-alpha-common" {
     // from latin(basic)
     key <AD01>  { [         w,          W,      lstroke,      Lstroke ] };
@@ -218,14 +218,14 @@ xkb_symbols "xcv3" {
     key <AB02>  { [         v,          V, leftdoublequotemark, leftsinglequotemark ]   };
 };
 
-partial alphanumeric_keys 
+partial alphanumeric_keys
 xkb_symbols "laptop-left-alpha" {
     include "adam(left-alpha-common)"
     include "adam(xcv1)"
     include "adam(standard-qaz)"
 };
 
-partial alphanumeric_keys 
+partial alphanumeric_keys
 xkb_symbols "standard-qaz" {
     // from latin(basic)
     key <TLDE>  { [         q,          Q,           at,  Greek_OMEGA ] };
@@ -233,14 +233,14 @@ xkb_symbols "standard-qaz" {
     key <LCTL>  { [         z,          Z, guillemotleft,        less ] };
 };
 
-partial alphanumeric_keys 
+partial alphanumeric_keys
 xkb_symbols "hhkl-left-alpha" {
     include "adam(left-alpha-common)"
     include "adam(xcv3)"
     include "adam(hhkl-qaz)"
 };
 
-partial alphanumeric_keys 
+partial alphanumeric_keys
 xkb_symbols "hhkl-qaz" {
     // from latin(basic)
     key <ESC>   { [         q,          Q,           at,  Greek_OMEGA ] };
@@ -342,15 +342,15 @@ xkb_symbols "swap-up-down" {
 partial
 xkb_symbols "kinesis-insert" {
     // The following command shows the insert key as <INS> (code 118):
-    // 
+    //
     // setxkbmap -symbols 'pc+us+gb+adam(kinesis)' -geometry kinesis -print | \
     //     xkbcomp -I/home/adam/.xkb - - | \
     //     xkbprint -label code - - | \
     //     gs -sDEVICE=jpeg -sOutputFile=- -r100 -q - | \
     //     jpegtran -rotate 270 >| kinesis-codes.jpeg
-    // 
+    //
     // but xev shows it as code 94 which is <LSGT> according to:
-    // 
+    //
     // setxkbmap -symbols 'pc+us+gb+adam(kinesis)' -geometry kinesis -print | \
     //     xkbcomp -I/home/adam/.xkb -xkb - -
     //

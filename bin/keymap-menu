@@ -96,7 +96,7 @@ get_keymap_settings () {
             xkb='-symbols pc+us+gb'
             #xmodmap=Dell-D630-normal
             ;;
-        d620-hacked) 
+        d620-hacked)
             xmodmap=Dell-D620-Adam
             ;;
         d630-hacked)
