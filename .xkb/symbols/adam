@@ -13,7 +13,9 @@ xkb_symbols "lenovo-w520" {
     include "adam(xcv2)"
     include "adam(standard-qaz)"
     include "adam(laptop-left-mods)"
-    include "adam(laptop-right-mods)"
+    include "adam(right-alt)"
+    include "adam(menu-super-right)"
+    include "adam(right-ctrl-menu)"
     key <AC12> { [numbersign, asciitilde,   dead_grave,   dead_breve ] };
 };
 
@@ -68,7 +70,9 @@ default partial
 xkb_symbols "laptop" {
     include "adam(laptop-left-alpha)"
     include "adam(laptop-left-mods)"
-    include "adam(laptop-right-mods)"
+    include "adam(right-alt)"
+    include "adam(menu-super-right)"
+    include "adam(right-ctrl-menu)"
     include "adam(us-backslash)"
     include "adam(us-3)"
 //    include "adam(meta)"
@@ -101,20 +105,28 @@ xkb_symbols "gyration-left-mods" {
 };
 
 partial modifier_keys
-xkb_symbols "laptop-right-mods" {
-    virtual_modifiers Super, RAlt;
+xkb_symbols "right-alt" {
+    virtual_modifiers RAlt;
 
     key <RALT> {
         [ Alt_R ],
         virtualMods = RAlt
     };
+};
+
+partial modifier_keys
+xkb_symbols "menu-super-right" {
+    virtual_modifiers Super;
 
     key <MENU> {
         type[Group1] = "ONE_LEVEL",
         symbols[Group1] = [ Super_R ],
         virtualMods = Super
     };
+};
 
+partial modifier_keys
+xkb_symbols "right-ctrl-menu" {
     key <RCTL> { [ Menu ] };
 };
 
