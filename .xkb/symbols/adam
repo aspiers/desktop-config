@@ -16,7 +16,7 @@ xkb_symbols "lenovo-w520" {
     include "adam(right-alt)"
     include "adam(menu-super-right)"
     include "adam(right-ctrl-menu)"
-    key <AC12> { [numbersign, asciitilde,   dead_grave,   dead_breve ] };
+    include "adam(hash-tilde-by-enter)"
 };
 
 xkb_symbols "us-qwerty-hacked" {
@@ -262,6 +262,11 @@ xkb_symbols "us-backslash" {
 partial alphanumeric_keys
 xkb_symbols "us-3" {
     key <AE03> { [          3, numbersign,    sterling,       EuroSign ] };
+};
+
+partial alphanumeric_keys
+xkb_symbols "hash-tilde-by-enter" {
+    key <AC12> { [numbersign, asciitilde,   dead_grave,   dead_breve ] };
 };
 
 partial modifier_keys
