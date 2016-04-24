@@ -1,3 +1,15 @@
+xkb_symbols "dell-e7450" {
+    include "pc(pc105)"
+    include "us"
+    include "gb"
+    include "adam(left-alpha-common)"
+    include "adam(xcv2)"
+    include "adam(standard-qaz)"
+    include "adam(laptop-left-mods)"
+    include "adam(right-ctrl-super-right)"
+    include "adam(hash-tilde-by-enter)"
+};
+
 xkb_symbols "samsung-n150plus" {
     include "pc"
     include "us"
@@ -119,6 +131,17 @@ xkb_symbols "menu-super-right" {
     virtual_modifiers Super;
 
     key <MENU> {
+        type[Group1] = "ONE_LEVEL",
+        symbols[Group1] = [ Super_R ],
+        virtualMods = Super
+    };
+};
+
+partial modifier_keys
+xkb_symbols "right-ctrl-super-right" {
+    virtual_modifiers Super;
+
+    key <RCTL> {
         type[Group1] = "ONE_LEVEL",
         symbols[Group1] = [ Super_R ],
         virtualMods = Super
