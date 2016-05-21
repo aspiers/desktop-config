@@ -201,4 +201,17 @@ EOF
         --device default \
         -o "$@"
 }
+
+# Speed up a video by the given factor
+ffmpeg-scale () {
+    factor="$1" in="$2"
+    percent=$(( factor * 100 ))
+    percent="${percent%.*}"
+    suffix="${in##*.}"
+    prefix="${in%.*}"
+    out="$prefix-${percent}%.$suffix"
+    ffmpeg -i "$in" \
+           -filter_complex "[0:v]setpts=1/${factor}*PTS[v];[0:a]atempo=${factor}[a]" \
+           -map "[v]" -map "[a]" \
+           "$out"
 }
