@@ -46,7 +46,10 @@ desktop/window before recording starts.  Hit Control-C to stop and it
 will automatically play the result back:
 
   # Make sure you have enough spare disk space!
+
   file=foo.mp4; sleep 2; ffx $extra_ffmpeg_opts $file && mplayer $file
+  # recordmydesktop version:
+  file=foo.ogv; sleep 2; ffx-rmd $extra_rmd_opts $file && mplayer $file
 
 After, upscale to 1080p to prevent YouTube from destroying quality (doh!):
 
@@ -169,4 +172,27 @@ ffx () {
 
     echo ffmpeg "${ffmpeg_opts[@]}"
     ffmpeg "${ffmpeg_opts[@]}"
+
+ffx-xy () {
+    ffx_x="${ffx_geometry%x*}"
+    ffx_y="${ffx_geometry#*x}"
+}
+
+ffx-rmd () {
+    ffx-xy
+    cat <<'EOF'
+
+Press C-M-s to stop recording! or C-M-p to pause.
+
+EOF
+    recordmydesktop \
+        --on-the-fly-encoding \
+        --fps $ffx_fps \
+        -x 1 \
+        -y 1 \
+        --width $ffx_x \
+        --height $ffx_y \
+        --device default \
+        -o "$@"
+}
 }
