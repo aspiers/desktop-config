@@ -46,7 +46,7 @@ desktop/window before recording starts.  Hit Control-C to stop and it
 will automatically play the result back:
 
   # Make sure you have enough spare disk space!
-  file=foo.mp4; sleep 2; ffx [extra ffmpeg options] $file && mplayer $file
+  file=foo.mp4; sleep 2; ffx $extra_ffmpeg_opts $file && mplayer $file
 
 After, upscale to 1080p to prevent YouTube from destroying quality (doh!):
 
