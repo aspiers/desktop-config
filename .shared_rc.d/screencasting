@@ -170,8 +170,12 @@ ffx () {
         "$@"
     )
 
-    echo ffmpeg "${ffmpeg_opts[@]}"
-    ffmpeg "${ffmpeg_opts[@]}"
+    : ${ffx_ffmpeg:=ffmpeg}
+
+    echo "Running: $ffx_ffmpeg ${ffmpeg_opts[*]}"
+    $ffx_ffmpeg "${ffmpeg_opts[@]}"
+    echo "Finished: $ffx_ffmpeg ${ffmpeg_opts[*]}"
+}
 
 ffx-xy () {
     ffx_x="${ffx_geometry%x*}"
