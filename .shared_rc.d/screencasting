@@ -146,6 +146,8 @@ _ffx_report_geom_viewport () {
 
 ffx () {
     ffmpeg_opts=(
+        "${ffx_early_opts[@]}"
+
         # audio options
         "${audio_input_opts[@]}"
         -ac $ffx_channels
