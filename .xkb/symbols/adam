@@ -1,3 +1,15 @@
+xkb_symbols "dell-e7450" {
+    include "pc(pc105)"
+    include "us"
+    include "gb"
+    include "adam(left-alpha-common)"
+    include "adam(xcv2)"
+    include "adam(standard-qaz)"
+    include "adam(laptop-left-mods)"
+    include "adam(right-ctrl-super-right)"
+    include "adam(hash-tilde-by-enter)"
+};
+
 xkb_symbols "samsung-n150plus" {
     include "pc"
     include "us"
@@ -13,8 +25,10 @@ xkb_symbols "lenovo-w520" {
     include "adam(xcv2)"
     include "adam(standard-qaz)"
     include "adam(laptop-left-mods)"
-    include "adam(laptop-right-mods)"
-    key <AC12> { [numbersign, asciitilde,   dead_grave,   dead_breve ] };
+    include "adam(right-alt)"
+    include "adam(menu-super-right)"
+    include "adam(right-ctrl-menu)"
+    include "adam(hash-tilde-by-enter)"
 };
 
 xkb_symbols "us-qwerty-hacked" {
@@ -68,7 +82,9 @@ default partial
 xkb_symbols "laptop" {
     include "adam(laptop-left-alpha)"
     include "adam(laptop-left-mods)"
-    include "adam(laptop-right-mods)"
+    include "adam(right-alt)"
+    include "adam(menu-super-right)"
+    include "adam(right-ctrl-menu)"
     include "adam(us-backslash)"
     include "adam(us-3)"
 //    include "adam(meta)"
@@ -101,20 +117,39 @@ xkb_symbols "gyration-left-mods" {
 };
 
 partial modifier_keys
-xkb_symbols "laptop-right-mods" {
-    virtual_modifiers Super, RAlt;
+xkb_symbols "right-alt" {
+    virtual_modifiers RAlt;
 
     key <RALT> {
         [ Alt_R ],
         virtualMods = RAlt
     };
+};
+
+partial modifier_keys
+xkb_symbols "menu-super-right" {
+    virtual_modifiers Super;
 
     key <MENU> {
         type[Group1] = "ONE_LEVEL",
         symbols[Group1] = [ Super_R ],
         virtualMods = Super
     };
+};
 
+partial modifier_keys
+xkb_symbols "right-ctrl-super-right" {
+    virtual_modifiers Super;
+
+    key <RCTL> {
+        type[Group1] = "ONE_LEVEL",
+        symbols[Group1] = [ Super_R ],
+        virtualMods = Super
+    };
+};
+
+partial modifier_keys
+xkb_symbols "right-ctrl-menu" {
     key <RCTL> { [ Menu ] };
 };
 
@@ -139,7 +174,7 @@ partial modifier_keys
 xkb_symbols "hhkl-mods" {
     virtual_modifiers LAlt, LControl, RAlt;
 
-    key <LALT> {      
+    key <LALT> {
         [ Alt_L, Meta_L ],
         virtualMods = LAlt
     };
@@ -169,7 +204,7 @@ xkb_symbols "meta" {
     modifier_map Mod1   { <META> };
 };
 
-partial alphanumeric_keys 
+partial alphanumeric_keys
 xkb_symbols "left-alpha-common" {
     // from latin(basic)
     key <AD01>  { [         w,          W,      lstroke,      Lstroke ] };
@@ -206,14 +241,14 @@ xkb_symbols "xcv3" {
     key <AB02>  { [         v,          V, leftdoublequotemark, leftsinglequotemark ]   };
 };
 
-partial alphanumeric_keys 
+partial alphanumeric_keys
 xkb_symbols "laptop-left-alpha" {
     include "adam(left-alpha-common)"
     include "adam(xcv1)"
     include "adam(standard-qaz)"
 };
 
-partial alphanumeric_keys 
+partial alphanumeric_keys
 xkb_symbols "standard-qaz" {
     // from latin(basic)
     key <TLDE>  { [         q,          Q,           at,  Greek_OMEGA ] };
@@ -221,14 +256,14 @@ xkb_symbols "standard-qaz" {
     key <LCTL>  { [         z,          Z, guillemotleft,        less ] };
 };
 
-partial alphanumeric_keys 
+partial alphanumeric_keys
 xkb_symbols "hhkl-left-alpha" {
     include "adam(left-alpha-common)"
     include "adam(xcv3)"
     include "adam(hhkl-qaz)"
 };
 
-partial alphanumeric_keys 
+partial alphanumeric_keys
 xkb_symbols "hhkl-qaz" {
     // from latin(basic)
     key <ESC>   { [         q,          Q,           at,  Greek_OMEGA ] };
@@ -247,9 +282,14 @@ xkb_symbols "us-backslash" {
 //    key <BKSL> { [ backslash, asciitilde ] };
 };
 
-partial
+partial alphanumeric_keys
 xkb_symbols "us-3" {
     key <AE03> { [          3, numbersign,    sterling,       EuroSign ] };
+};
+
+partial alphanumeric_keys
+xkb_symbols "hash-tilde-by-enter" {
+    key <AC12> { [numbersign, asciitilde,   dead_grave,   dead_breve ] };
 };
 
 partial modifier_keys
@@ -330,15 +370,15 @@ xkb_symbols "swap-up-down" {
 partial
 xkb_symbols "kinesis-insert" {
     // The following command shows the insert key as <INS> (code 118):
-    // 
+    //
     // setxkbmap -symbols 'pc+us+gb+adam(kinesis)' -geometry kinesis -print | \
     //     xkbcomp -I/home/adam/.xkb - - | \
     //     xkbprint -label code - - | \
     //     gs -sDEVICE=jpeg -sOutputFile=- -r100 -q - | \
     //     jpegtran -rotate 270 >| kinesis-codes.jpeg
-    // 
+    //
     // but xev shows it as code 94 which is <LSGT> according to:
-    // 
+    //
     // setxkbmap -symbols 'pc+us+gb+adam(kinesis)' -geometry kinesis -print | \
     //     xkbcomp -I/home/adam/.xkb -xkb - -
     //

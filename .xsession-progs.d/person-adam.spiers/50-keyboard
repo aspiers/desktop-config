@@ -6,6 +6,9 @@ read_localhost_nickname
 
 apply_keymap () {
     case "$localhost_nickname" in
+        arabian)
+            keymap-menu e7450-hacked
+            ;;
         pacific)
             keymap-menu kinesis
             ;;

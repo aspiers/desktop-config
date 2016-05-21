@@ -96,7 +96,10 @@ get_keymap_settings () {
             xkb='-symbols pc+us+gb'
             #xmodmap=Dell-D630-normal
             ;;
-        d620-hacked) 
+        e7450-hacked)
+            xkb='-keycodes lenovo(w520) -symbols adam(dell-e7450) -geometry pc(pc104)'
+            ;;
+        d620-hacked)
             xmodmap=Dell-D620-Adam
             ;;
         d630-hacked)
