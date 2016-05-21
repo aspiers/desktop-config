@@ -70,7 +70,7 @@ ffx_acodec="flac"          # audio codec
 
 # settings recommended for YouTube:
 # https://support.google.com/youtube/answer/1722171?hl=en
-ffx_vcodec="libx264" 
+ffx_vcodec="libx264"
 ffx_preset="slow"          # preset error? run 'x264 -h' replace with fast,superfast, slow ..etc
                            # - requires x264 installed.
 ffx_crf="18"               # quality for constant quality mode
