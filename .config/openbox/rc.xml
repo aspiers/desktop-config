@@ -345,6 +345,12 @@
         <execute>my-firefox</execute>
       </action>
     </keybind>
+    <keybind key="W-S-f">
+      <!-- File manager -->
+      <action name="Execute">
+        <execute>thunar</execute>
+      </action>
+    </keybind>
     <keybind key="W-g">
       <action name="Execute">
         <execute>/opt/novell/groupwise/client/bin/groupwise</execute>
