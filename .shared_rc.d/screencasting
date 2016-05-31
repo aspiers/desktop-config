@@ -159,6 +159,8 @@ ffx () {
     ffmpeg_opts=(
         "${ffx_early_opts[@]}"
 
+        -thread_queue_size 512
+
         # audio options
         "${audio_input_opts[@]}"
         -ac $ffx_channels
