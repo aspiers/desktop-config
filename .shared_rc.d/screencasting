@@ -83,6 +83,9 @@ ffx_profile="high"         # h264 profile
 ffx_geometry=1280x720      # ideal for YouTube; overwritten by ffx-{full,winselect}
 ffx_viewport=+0+0          # easy-to-use default
 
+ffx_early_opts=(
+)
+
 ffx-alsa () {
     audio_input_opts=(
         -f alsa
