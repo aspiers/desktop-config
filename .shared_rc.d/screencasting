@@ -148,6 +148,14 @@ _ffx_report_geom_viewport () {
 }
 
 ffx () {
+    video_input_opts=(
+        -vcodec $ffx_vcodec # has to come after -i for some reason
+        -preset $ffx_preset
+        -profile:v $ffx_profile
+        -crf $ffx_crf  # quality for constant quality mode
+        -pix_fmt yuv420p
+    )
+
     ffmpeg_opts=(
         "${ffx_early_opts[@]}"
 
@@ -162,13 +170,7 @@ ffx () {
         -framerate $ffx_fps
         -i $DISPLAY$ffx_viewport
         #-vf $ffx_scale
-
-        -vcodec $ffx_vcodec # has to come after -i for some reason
-        -preset $ffx_preset
-        -profile:v $ffx_profile
-        -crf $ffx_crf  # quality for constant quality mode
-        -pix_fmt yuv420p
-
+        "${video_input_opts[@]}"
         -r $ffx_fps
 
         # general options
