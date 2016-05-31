@@ -168,9 +168,9 @@ ffx () {
 
         # video options
         -f x11grab
-        -video_size $ffx_geometry # has to be after x11 grab and before -i!
-        -framerate $ffx_fps
+        -video_size $ffx_geometry # has to be after x11 grab and before -i !
         -i $DISPLAY$ffx_viewport
+        -framerate $ffx_fps
         #-vf $ffx_scale
         "${video_input_opts[@]}"
         -r $ffx_fps
