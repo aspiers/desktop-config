@@ -49,21 +49,21 @@ Here are the bookmarklets, grouped into two types.
 ## 1. Bookmarklets which use a custom protocol handler for `xclip://...` URLs
 
 -   Copy `document.title`
-    -    `javascript:location.href = 'xclip://' + encodeURIComponent2(document.title)`
+    -    `javascript:xclip(document.title)`
 -   Copy a [Markdown-formatted link](http://daringfireball.net/projects/markdown/syntax#link) to the page
-    -    `javascript:location.href = 'xclip://' + encodeURIComponent2('[' + page_title() + '](' + location.href + ')')`
+    -    `javascript:xclip('[' + page_title() + '](' + location.href + ')')`
 -   Copy a [reStructuredText-formatted link](http://docutils.sourceforge.net/docs/user/rst/quickref.html#external-hyperlink-targets) to the page
-    -    ```javascript:location.href = 'xclip://' + encodeURIComponent2('`' + page_title() + ' <' + location.href + '>`_')```
+    -    ```javascript:xclip('`' + page_title() + ' <' + location.href + '>`_')```
 -   Copy a [MediaWiki-formatted link](https://www.mediawiki.org/wiki/Help:Links#External_links) to the page
-    -    `javascript:location.href = 'xclip://' + encodeURIComponent2('[' + location.href + ' ' + page_title() + ']')`
+    -    `javascript:xclip('[' + location.href + ' ' + page_title() + ']')`
 -   Copy an HTML-formatted reference to the page (URL + description)
-    -    `javascript:location.href = 'xclip://' + encodeURIComponent2('<a href="' + location.href + '">' + page_title() + '</a>')`
+    -    `javascript:xclip('<a href="' + location.href + '">' + page_title() + '</a>')`
 -   Copy a plain-text reference to the page (URL + description; useful for pasting into [Trello](https://trello.com/), since Trello ignores link text when the link is a URL it recognises, e.g. another Trello card or a github pull request)
-    -    `javascript:location.href = 'xclip://' + encodeURIComponent2(location.href + ' (' + page_title() + ')')`
+    -    `javascript:xclip(location.href + ' (' + page_title() + ')')`
 -   Copy a short identifier for the page
-    -    `javascript:location.href = "xclip://" + encodeURIComponent2(page_id())`
+    -    `javascript:xclip(page_id())`
 -   Copy a longer description for the page (i.e. a formatted version of `document.title`)
-    -    `javascript:location.href = 'xclip://' + encodeURIComponent2(page_title())`
+    -    `javascript:xclip(page_title())`
 
 ### Installation
 
