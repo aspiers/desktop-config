@@ -90,9 +90,9 @@ These are only useful if you use `emacs` and [Org mode](http://orgmode.org/) ...
 and if you don't, what the hell are you thinking? ;-)
 
 -   org store link
-    -   `javascript:location.href='org-protocol://store-link://'+encodeURIComponent2(location.href)+'/'+encodeURIComponent2(page_title())+'/'+encodeURIComponent2(window.getSelection())`
+    -   `javascript:org_protocol('store-link', page_title())`
 -   org capture
-    -   `javascript:location.href='org-protocol://capture://'+encodeURIComponent2(location.href)+'/'+encodeURIComponent2(page_title())+'/'+encodeURIComponent2(window.getSelection())`
+    -   `javascript:org_protocol('capture', page_title())`
 
 ### Installation
 
