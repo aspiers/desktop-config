@@ -47,3 +47,6 @@ $gconftool -s /apps/metacity/general/enable_windows_keys -t bool false
 $gconftool -t string -s /desktop/gnome/url-handlers/magnet/command "/usr/bin/transmission '%s'"
 $gconftool -t bool -s /desktop/gnome/url-handlers/magnet/needs_terminal false
 $gconftool -t bool -s /desktop/gnome/url-handlers/magnet/enabled true
+
+# http://askubuntu.com/a/594147/373907
+$gconftool -t bool -s /apps/gnome-keyring/daemon-components/ssh false
