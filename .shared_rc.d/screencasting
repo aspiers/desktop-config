@@ -83,6 +83,9 @@ ffx_profile="high"         # h264 profile
 ffx_geometry=1280x720      # ideal for YouTube; overwritten by ffx-{full,winselect}
 ffx_viewport=+0+0          # easy-to-use default
 
+ffx_early_opts=(
+)
+
 ffx-alsa () {
     audio_input_opts=(
         -f alsa
@@ -145,8 +148,18 @@ _ffx_report_geom_viewport () {
 }
 
 ffx () {
+    video_input_opts=(
+        -vcodec $ffx_vcodec # has to come after -i for some reason
+        -preset $ffx_preset
+        -profile:v $ffx_profile
+        -crf $ffx_crf  # quality for constant quality mode
+        -pix_fmt yuv420p
+    )
+
     ffmpeg_opts=(
         "${ffx_early_opts[@]}"
+
+        -thread_queue_size 512
 
         # audio options
         "${audio_input_opts[@]}"
@@ -155,17 +168,11 @@ ffx () {
 
         # video options
         -f x11grab
-        -video_size $ffx_geometry # has to be after x11 grab and before -i!
-        -framerate $ffx_fps
+        -video_size $ffx_geometry # has to be after x11 grab and before -i !
         -i $DISPLAY$ffx_viewport
+        -framerate $ffx_fps
         #-vf $ffx_scale
-
-        -vcodec $ffx_vcodec # has to come after -i for some reason
-        -preset $ffx_preset
-        -profile:v $ffx_profile
-        -crf $ffx_crf  # quality for constant quality mode
-        -pix_fmt yuv420p
-
+        "${video_input_opts[@]}"
         -r $ffx_fps
 
         # general options
