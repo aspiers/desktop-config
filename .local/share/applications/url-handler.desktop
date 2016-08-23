@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Open URLs
+Exec=url-handler '%u'
+Icon=web-browser
+Type=Application
+Terminal=false
+MimeType=x-scheme-handler/http;x-scheme-handler/https;

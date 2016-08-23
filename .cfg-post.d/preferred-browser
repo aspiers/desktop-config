@@ -1,0 +1,72 @@
+#!/bin/bash
+
+#PREFERRED_BROWSER=google-chrome
+#PREFERRED_BROWSER=chromium
+#PREFERRED_BROWSER=firefox
+PREFERRED_BROWSER=url-handler
+
+PREFERRED_BROWSER_APP=$PREFERRED_BROWSER.desktop
+
+# https://bugzilla.suse.com/show_bug.cgi?id=995144
+# bsc#995144 (xfce4-settings-manager Preferred Applications doesn't associate application with mimetype
+
+# Don't yet know how to check that $PREFERRED_BROWSER_APP is valid
+# http://unix.stackexchange.com/questions/305315/how-to-programmatically-query-the-freedesktop-application-database
+# so we just copy a function directly from xdg-mime:
+# --------- 8< --------- 8< --------- 8< --------- 8< ---------
+desktop_file_to_binary()
+{
+    search="${XDG_DATA_HOME:-$HOME/.local/share}:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
+    desktop="`basename "$1"`"
+    IFS=:
+    for dir in $search; do
+        unset IFS
+        [ "$dir" ] && [ -d "$dir/applications" ] || continue
+        file="$dir/applications/$desktop"
+        [ -r "$file" ] || continue
+        # Remove any arguments (%F, %f, %U, %u, etc.).
+        command="`grep -E "^Exec(\[[^]=]*])?=" "$file" | cut -d= -f 2- | first_word`"
+        command="`which "$command"`"
+        readlink -f "$command"
+        return
+    done
+}
+# This handles backslashes but not quote marks.
+first_word()
+{
+    read first rest
+    echo "$first"
+}
+# --------- 8< --------- 8< --------- 8< --------- 8< ---------
+
+if [ -z "`desktop_file_to_binary $PREFERRED_BROWSER_APP`" ]; then
+    echo "$PREFERRED_BROWSER_APP not installed?" >&2
+    exit 1
+fi
+
+check_preferred_browser () {
+    de="$1"
+    XDG_CURRENT_DESKTOP=$de \
+        xdg-settings check default-web-browser $PREFERRED_BROWSER_APP
+}
+
+for de in GNOME KDE XFCE; do
+    if [ "`check_preferred_browser $de`" = yes ]; then
+        echo "Default web browser for $de already $PREFERRED_BROWSER_APP"
+    else
+        XDG_CURRENT_DESKTOP=$de \
+            xdg-settings set default-web-browser $PREFERRED_BROWSER_APP
+        echo "Setting default web browser for $de to $PREFERRED_BROWSER_APP"
+    fi
+done
+
+# Doing the above for GNOME will effectively do this anyway (read
+# the xdg-setting script source code).
+#xdg-mime default $PREFERRED_BROWSER_APP x-scheme-handler/http
+#xdg-mime default $PREFERRED_BROWSER_APP x-scheme-handler/https
+
+if ! xdg-mime query default x-scheme-handler/http |
+        grep -q "$PREFERRED_BROWSER_APP"
+then
+    echo "WARNING: $0 failed to set preferred browser to $PREFERRED_BROWSER !" >&2
+fi
