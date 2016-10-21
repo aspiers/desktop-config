@@ -23,10 +23,10 @@ github reference format](https://help.github.com/articles/writing-on-github/#ref
 
 There are currently backends for:
 
--   various instances of bugzilla, Jenkins, etherpad, gerrit,
--   [Launchpad](https://launchpad.net),
--   [GitHub](https://github.com),
--   [Trello](https://trello.com),
+-   various instances of bugzilla / Jenkins / etherpad / gerrit
+-   [Launchpad](https://launchpad.net)
+-   [GitHub](https://github.com)
+-   [Trello](https://trello.com)
 -   [Open Build Service](http://openbuildservice.org/)
 -   [FATE](https://fate.suse.com)
 
