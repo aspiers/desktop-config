@@ -21,9 +21,16 @@ Notice how the link text is formatted, with the github organization,
 repository name, and issue number all nicely combined in [the canonical
 github reference format](https://help.github.com/articles/writing-on-github/#references).
 
-There are currently backends for github, bugzilla, Jenkins, etherpad,
-and [FATE](https://fate.suse.com).  The next one to add will probably
-be Trello.
+There are currently backends for:
+
+-   various instances of bugzilla, Jenkins, etherpad, gerrit,
+-   [Launchpad](https://launchpad.net),
+-   [GitHub](https://github.com),
+-   [Trello](https://trello.com),
+-   [Open Build Service](http://openbuildservice.org/)
+-   [FATE](https://fate.suse.com)
+
+Contributions to extend this further are of course welcome!
 
 Similarly I have a
 [custom search engine](http://www.slideshare.net/mauilibrarian2/create-a-custom-search-engine-in-chromes-omnibox)
