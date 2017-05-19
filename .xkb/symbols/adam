@@ -39,7 +39,7 @@ xkb_symbols "us-qwerty-hacked" {
     include "adam(xcv3)"
     include "adam(standard-qaz)"
     include "adam(laptop-left-mods)"
-    include "adam(keyboard-right-mods)"
+    include "adam(right-alt-super-right)"
     key <AB03> { [ Shift_L ] };
 };
 
@@ -154,15 +154,18 @@ xkb_symbols "right-ctrl-menu" {
 };
 
 partial modifier_keys
-xkb_symbols "keyboard-right-mods" {
-    virtual_modifiers Super, RAlt;
+xkb_symbols "right-alt-super-right" {
+    virtual_modifiers Super;
 
     key <RALT> {
         type[Group1] = "ONE_LEVEL",
         symbols[Group1] = [ Super_R ],
         virtualMods = Super
     };
+};
 
+partial modifier_keys
+xkb_symbols "right-win-multi-key" {
     key <RWIN> { [ Multi_key ] };
 //      type[Group1] = "ONE_LEVEL",
 //      symbols[Group1] = [ Multi_key ]
