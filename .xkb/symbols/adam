@@ -254,7 +254,7 @@ xkb_symbols "laptop-left-alpha" {
 partial alphanumeric_keys
 xkb_symbols "standard-qaz" {
     // from latin(basic)
-    key <TLDE>  { [         q,          Q,           at,  Greek_OMEGA ] };
+    key <AE00>  { [         q,          Q,           at,  Greek_OMEGA ] };
     key <CAPS>  { [         a,          A,           ae,           AE ] };
     key <LCTL>  { [         z,          Z, guillemotleft,        less ] };
 };
