@@ -34,7 +34,7 @@ run_unless_running () {
 }
 
 # obtain_lock LOCKFILE COMMAND
-# 
+#
 # Tries once to obtains a lock via ln -s LOCKINFO LOCKFILE, to protect
 # against COMMAND running concurrently.  Returns success (zero) iff
 # lock was obtained.  Does not block, although may prompt for user
@@ -50,13 +50,13 @@ run_unless_running () {
 #
 # N.B. Any code calling this function is responsible for clearing the
 # lock when COMMAND stops!
-# 
+#
 # Sample usage follows:
-# 
+#
 #   clean_up () {
 #       [ -L "$LOCK" ] && rm "$LOCK"
 #   }
-#   
+#
 #   obtain_lock "$LOCK" "$cmd" || exit 1
 #   # Signal must be trapped *after* obtaining lock, otherwise failure
 #   # to obtain the lock would remove an active lock.  This leaves a
@@ -205,4 +205,3 @@ clues as to what went wrong.
 EOF
     fi
 }
-
