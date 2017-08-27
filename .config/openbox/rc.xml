@@ -21,7 +21,7 @@
     <primaryMonitor></primaryMonitor>
   </placement>
   <desktops>
-    <number>6</number>
+    <number>8</number>
     <firstdesk>1</firstdesk>
     <popupTime>875</popupTime>
     <names>
@@ -31,6 +31,8 @@
       <name>Desktop 4</name>
       <name>Desktop 5</name>
       <name>Desktop 6</name>
+      <name>Desktop 7</name>
+      <name>Desktop 8</name>
     </names>
   </desktops>
   <resize>
@@ -112,6 +114,18 @@
         <dialog>yes</dialog>
       </action>
     </keybind>
+    <keybind key="W-7">
+      <action name="Desktop">
+        <desktop>7</desktop>
+        <dialog>yes</dialog>
+      </action>
+    </keybind>
+    <keybind key="W-8">
+      <action name="Desktop">
+        <desktop>8</desktop>
+        <dialog>yes</dialog>
+      </action>
+    </keybind>
     <keybind key="M-W-1">
       <action name="SendToDesktop">
         <desktop>1</desktop>
@@ -145,6 +159,18 @@
     <keybind key="M-W-6">
       <action name="SendToDesktop">
         <desktop>6</desktop>
+        <follow>yes</follow>
+      </action>
+    </keybind>
+    <keybind key="M-W-7">
+      <action name="SendToDesktop">
+        <desktop>7</desktop>
+        <follow>yes</follow>
+      </action>
+    </keybind>
+    <keybind key="M-W-8">
+      <action name="SendToDesktop">
+        <desktop>8</desktop>
         <follow>yes</follow>
       </action>
     </keybind>
