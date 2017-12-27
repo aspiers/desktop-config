@@ -1,0 +1,11 @@
+#!/bin/bash
+
+while true; do
+    inotifywait -q /dev/input/by-path
+    echo "Input device event detected for DISPLAY=$DISPLAY"
+    logger sleeping 1
+    sleep 1
+
+    ~/.XSP/person-adam.spiers/50-keyboard
+    ~/.XSP/person-adam.spiers/60-keyboard-repeat
+done
