@@ -6,8 +6,16 @@ xkb_symbols "dell-e7450" {
     include "adam(xcv2)"
     include "adam(standard-qaz)"
     include "adam(laptop-left-mods)"
+    include "adam(right-alt)"
     include "adam(right-ctrl-super-right)"
     include "adam(hash-tilde-by-enter)"
+    include "adam(standard-modifier-maps)"
+
+    key <MUTE> { [ XF86AudioMute         ] };
+    key <I225> { [ XF86Search            ] };
+    key <KPDC> { [ KP_Decimal            ] };
+    key <I232> { [ XF86MonBrightnessDown ] };
+    key <I233> { [ XF86MonBrightnessUp   ] };
 };
 
 xkb_symbols "samsung-n150plus" {
@@ -93,7 +101,7 @@ xkb_symbols "laptop" {
 
 partial modifier_keys
 xkb_symbols "laptop-left-mods" {
-    virtual_modifiers LControl, LAlt;
+    virtual_modifiers LControl, LMeta;
 
     key <LALT> {
         [ Control_L, Control_L ],
@@ -101,8 +109,8 @@ xkb_symbols "laptop-left-mods" {
     };
 
     key <LWIN> {
-        [ Alt_L, Meta_L ],
-        virtualMods = LAlt
+        [ Meta_L ],
+        virtualMods = LMeta
     };
 };
 
@@ -124,6 +132,8 @@ xkb_symbols "right-alt" {
         [ Alt_R ],
         virtualMods = RAlt
     };
+
+    modifier_map Mod3 { Alt_L, Alt_R };
 };
 
 partial modifier_keys
@@ -194,6 +204,18 @@ xkb_symbols "hhkl-mods" {
 };
 
 partial modifier_keys
+xkb_symbols "standard-modifier-maps" {
+    include "adam(shift-modifier-map)"
+    include "adam(control-modifier-map)"
+    include "adam(meta-modifier-map)"
+};
+
+partial modifier_keys
+xkb_symbols "shift-modifier-map" {
+    modifier_map Shift { Shift_L, Shift_R };
+};
+
+partial modifier_keys
 xkb_symbols "control-modifier-map" {
     // http://www.charvolant.org/~doug/xkb/html/node5.html
     // claims that modifier_map is for the benefit of older
@@ -202,9 +224,13 @@ xkb_symbols "control-modifier-map" {
 };
 
 partial modifier_keys
+xkb_symbols "meta-modifier-map" {
+    modifier_map Mod1 { Meta_L, Meta_R };
+};
+
+partial modifier_keys
 xkb_symbols "meta" {
     key <META> {        [ NoSymbol, Meta_L      ]       };
-    modifier_map Mod1   { <META> };
 };
 
 partial alphanumeric_keys
