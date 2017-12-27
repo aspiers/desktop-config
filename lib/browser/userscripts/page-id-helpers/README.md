@@ -29,6 +29,7 @@ There are currently backends for:
 -   [Trello](https://trello.com)
 -   [Open Build Service](http://openbuildservice.org/)
 -   [FATE](https://fate.suse.com)
+-   [SUSE Jira](https://suse-jira.dyndns.org)
 
 Contributions to extend this further are of course welcome!
 
@@ -77,7 +78,7 @@ Here are the bookmarklets, grouped into two types.
 For these to work, you need to do the following:
 
 -   Ensure you have `xclip` installed.
--   Install the userscripts in your browser.  Make sure the 
+-   Install the userscripts in your browser.  Make sure the
     [default helpers](00 default page id helpers.user.js) are before
     the others in the execution order.
 -   Add / adjust `@match` lines in the userscripts to correspond to the

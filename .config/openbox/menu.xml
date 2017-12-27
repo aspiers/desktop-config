@@ -289,13 +289,13 @@
     <item label="xscreensaver">
       <action name="Execute"><execute>xscreensaver-demo</execute></action>
     </item>
-    <item label="Save screen">
+    <item label="Save screen (C-W-l)">
       <action name="Execute"><execute>xscreensaver-command -activate</execute></action>
     </item>
-    <item label="Lock screen">
+    <item label="Lock screen (C-M-W-l)">
       <action name="Execute"><execute>xscreensaver-command -lock</execute></action>
     </item>
-    <item label="Blank all screens">
+    <item label="Blank all screens (C-M-W-b)">
       <action name="Execute"><execute>blank-all-screens</execute></action>
     </item>
     <item label="Exit">

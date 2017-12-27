@@ -14,9 +14,9 @@ These all set the same two shell variables:
   ffx_viewport (e.g. '0+0')
 
 To resize a window to 1280x720 (say) to perfectly fit a 720p video
-recording, you can use xdotool e.g.
+recording, use xdotool, or simply:
 
-  xdotool windowselect windowsize 1280 720
+  ffx-resize 1280 720
 
 but this will set the size of the content, excluding window
 decorations (title/border), so if you want the decorations included in
@@ -28,11 +28,11 @@ the video you will need to use smaller dimensions, e.g.
 so in this case full window decorations are 2x25
 
   # allow for window border of 1x23 with openbox
-  xdotool windowselect windowsize 1279 697
+  ffx-resize 1279 697
 
 To produce a reference window of a given size:
 
-  c=red; xeyes +shape -bg $c -outline $c -fg $c -geometry 1280x720+50+50
+  ffx-xeyes red 1280 720
 
 but don't forget to undecorate the window since again decorations expand it!
 
@@ -81,16 +81,35 @@ ffx_profile="high"         # h264 profile
 
 #ffx_scale="scale=1280:720" # scale resolution, no black bars on sides of video on youtube
 ffx_geometry=1280x720      # ideal for YouTube; overwritten by ffx-{full,winselect}
-ffx_viewport=+0+0          # easy-to-use default
+ffx_viewport=+0,0          # easy-to-use default
 
 ffx_early_opts=(
 )
 
 ffx-alsa () {
-    audio_input_opts=(
-        -f alsa
-        -i "$1"
-    )
+    if [ -z "$1" ]; then
+        aplay -L
+        echo
+        echo "Specify 1st arg from the above (see https://superuser.com/a/53977/104997)"
+    else
+        audio_input_opts=(
+            -f alsa
+            -i "${1}"
+        )
+    fi
+}
+
+ffx-jack () {
+    if [ -z "$1" ]; then
+        jack_lsp -c
+        echo
+        echo "See https://www.ffmpeg.org/ffmpeg-devices.html#jack"
+    else
+        audio_input_opts=(
+            -f jack
+            -i ffmpeg
+        )
+    fi
 }
 
 ffx-pulse () {
@@ -122,7 +141,7 @@ ffx-winselect () {
         echo "$ffx_wininfo" | \
             awk '/Absolute upper-left Y: / { print $4 }'
     )
-    ffx_viewport="+$ffx_top_left_x+$ffx_top_left_y"
+    ffx_viewport="+$ffx_top_left_x,$ffx_top_left_y"
     _ffx_geom_from_wininfo
     _ffx_report_geom_viewport
 }
@@ -221,4 +240,16 @@ ffmpeg-scale () {
            -filter_complex "[0:v]setpts=1/${factor}*PTS[v];[0:a]atempo=${factor}[a]" \
            -map "[v]" -map "[a]" \
            "$out"
+}
+
+ffx-xeyes () {
+    width="${1:-1280}" height="${2-720}" colour="${3:-red}"
+    xeyes +shape -bg "$colour" -outline "$colour" -fg "$colour" \
+          -geometry "${width}x${height}+50+50" &
+    echo "Now undecorate the xeyes window to see ${width}x${height}"
+}
+
+ffx-resize () {
+    width="${1:-1280}" height="${2-720}"
+    xdotool selectwindow windowsize "$width" "$height"
 }
