@@ -8,6 +8,9 @@ apply_keymap () {
     if lsusb | grep -q 0d3d:0001; then
         echo "Found Kinesis keyboard attached; using kinesis keymap ..."
         keymap-menu kinesis
+    elif lsusb | grep -q 1209:2301; then
+        echo "Found Keyboardio Model 01 attached; using model01 keymap ..."
+        keymap-menu model01
     else
         apply_local_keymap
     fi

@@ -47,7 +47,7 @@ Choose from one of the following keymaps:
   3) Dell D630 hacked to suit Adam
   4) Kinesis Essential
   5) Dell D600 "untouched" - as labelled
-  6) Samsung N150+ hacked to suit Adam
+  6) Keyboardio Model 01
   7) Lenovo W520 hacked to suit Adam
   8) Gyration wireless keyboard hacked to suit Adam
   9) HHKL
@@ -68,7 +68,7 @@ EOF
         3) keymap=d630-hacked     ;;
         4) keymap=kinesis         ;;
         5) keymap=d600-normal     ;;
-        6) keymap=n150-hacked     ;;
+        6) keymap=model01         ;;
         #7) keymap=ms-natural      ;;
         7) keymap=w520-hacked     ;;
         8) keymap=gyration-hacked ;;
@@ -151,6 +151,10 @@ get_keymap_settings () {
             ;;
         us-qwerty-hacked)
             xkb='-symbols adam(us-qwerty-hacked) -geometry pc(pc104)'
+            ;;
+        model01)
+            xkb='-symbols pc+us+gb'
+            #xmodmap=Dell-D630-normal
             ;;
         *)
             echo "Invalid keymap '$keymap'."
