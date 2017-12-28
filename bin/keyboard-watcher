@@ -7,5 +7,7 @@ while true; do
     sleep 1
 
     ~/.XSP/person-adam.spiers/50-keyboard
-    ~/.XSP/person-adam.spiers/60-keyboard-repeat
+
+    # ~/.XSP/person-adam.spiers/60-keyboard-repeat is run via
+    # ~/.keymaps/post-change.d/keyboard-repeat
 done
