@@ -18,6 +18,13 @@ xkb_symbols "dell-e7450" {
     key <I233> { [ XF86MonBrightnessUp   ] };
 };
 
+xkb_symbols "keyboardio-model01" {
+    include "pc(pc105)"
+    include "us"
+    include "gb"
+    include "adam(model01-right-ctrl-super-r)"
+};
+
 xkb_symbols "samsung-n150plus" {
     include "pc"
     include "us"
@@ -181,6 +188,12 @@ xkb_symbols "right-win-multi-key" {
 //      symbols[Group1] = [ Multi_key ]
 //      symbols[Group1] = [ Mode_switch ]
 //    };
+};
+
+// Stop Shift+Super_R being Multi_key
+partial modifier_keys
+xkb_symbols "model01-right-ctrl-super-r" {
+    key <RWIN> { [ Super_R, Super_R ] };
 };
 
 partial modifier_keys

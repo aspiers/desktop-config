@@ -153,8 +153,7 @@ get_keymap_settings () {
             xkb='-symbols adam(us-qwerty-hacked) -geometry pc(pc104)'
             ;;
         model01)
-            xkb='-symbols pc+us+gb'
-            #xmodmap=Dell-D630-normal
+            xkb='-symbols adam(keyboardio-model01)'
             ;;
         *)
             echo "Invalid keymap '$keymap'."
