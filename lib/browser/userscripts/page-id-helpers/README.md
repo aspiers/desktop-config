@@ -64,6 +64,8 @@ Here are the bookmarklets, grouped into two types.
     -    ```javascript:xclip('`' + page_title() + ' <' + location.href + '>`_')```
 -   Copy a [MediaWiki-formatted link](https://www.mediawiki.org/wiki/Help:Links#External_links) to the page
     -    `javascript:xclip('[' + location.href + ' ' + page_title() + ']')`
+-   Copy a [JIRA-formatted link](https://jira.atlassian.com/secure/WikiRendererHelpAction.jspa?section=links) to the page
+    -    `javascript:xclip('[' + page_title() + '|' + location.href + ']')`
 -   Copy an HTML-formatted reference to the page (URL + description)
     -    `javascript:xclip('<a href="' + location.href + '">' + page_title() + '</a>')`
 -   Copy a plain-text reference to the page (URL + description; useful for pasting into [Trello](https://trello.com/), since Trello ignores link text when the link is a URL it recognises, e.g. another Trello card or a github pull request)
