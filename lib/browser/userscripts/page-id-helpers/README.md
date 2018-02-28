@@ -64,6 +64,8 @@ Here are the bookmarklets, grouped into two types.
     -    ```javascript:xclip('`' + page_title() + ' <' + location.href + '>`_')```
 -   Copy a [MediaWiki-formatted link](https://www.mediawiki.org/wiki/Help:Links#External_links) to the page
     -    `javascript:xclip('[' + location.href + ' ' + page_title() + ']')`
+-   Copy a [JIRA-formatted link](https://jira.atlassian.com/secure/WikiRendererHelpAction.jspa?section=links) to the page
+    -    `javascript:xclip('[' + page_title() + '|' + location.href + ']')`
 -   Copy an HTML-formatted reference to the page (URL + description)
     -    `javascript:xclip('<a href="' + location.href + '">' + page_title() + '</a>')`
 -   Copy a plain-text reference to the page (URL + description; useful for pasting into [Trello](https://trello.com/), since Trello ignores link text when the link is a URL it recognises, e.g. another Trello card or a github pull request)
@@ -78,9 +80,7 @@ Here are the bookmarklets, grouped into two types.
 For these to work, you need to do the following:
 
 -   Ensure you have `xclip` installed.
--   Install the userscripts in your browser.  Make sure the
-    [default helpers](00 default page id helpers.user.js) are before
-    the others in the execution order.
+-   Install the userscripts in your browser.
 -   Add / adjust `@match` lines in the userscripts to correspond to the
     sites for which you want them to activate.  (Or even better,
     send me [pull requests](https://help.github.com/articles/using-pull-requests/)!)

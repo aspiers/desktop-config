@@ -207,6 +207,9 @@
     <item label="k_calc">
       <action name="Execute"><execute>kcalc</execute></action>
     </item>
+    <item label="spectacle">
+      <action name="Execute"><execute>spectacle</execute></action>
+    </item>
     <item label="gnome-_screenshot">
       <action name="Execute"><execute>gnome-screenshot -i</execute></action>
     </item>
