@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# See .cfg-post.d/desktop-config and
+# .config/systemd/user/keyboard-watcher.service for how this gets run.
+
 while true; do
     inotifywait -q /dev/input/by-path
     echo "Input device event detected for DISPLAY=$DISPLAY"
