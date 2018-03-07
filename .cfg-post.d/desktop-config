@@ -18,3 +18,4 @@ systemctl --user set-environment \
     XAUTHLOCALHOSTNAME=$host
 
 systemctl --user enable keyboard-watcher.service
+systemctl --user start keyboard-watcher.service
