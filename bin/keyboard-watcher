@@ -3,6 +3,13 @@
 # See .cfg-post.d/desktop-config and
 # .config/systemd/user/keyboard-watcher.service for how this gets run.
 
+#
+if ! which inotifywait >&/dev/null; then
+    echo "ERROR: Couldn't find inotifywait; aborting." >&2
+    echo "Try: sudo zypper in inotify-tools" >&2
+    exit 1
+fi
+
 while true; do
     inotifywait -q /dev/input/by-path
     echo "Input device event detected for DISPLAY=$DISPLAY"
