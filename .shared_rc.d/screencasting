@@ -101,14 +101,29 @@ ffx-alsa () {
 
 ffx-jack () {
     if [ -z "$1" ]; then
-        jack_lsp -c
-        echo
-        echo "See https://www.ffmpeg.org/ffmpeg-devices.html#jack"
+        cat <<EOF
+jack devices:
+
+`jack_lsp -c`
+
+See https://www.ffmpeg.org/ffmpeg-devices.html#jack although can be enough
+to just connect the output of a device into ffmpeg without any extra processes
+running.  Unfortunately this can't be done until ffmpeg has already started
+recording (for some reason not good enough to ensure the ffmpeg output file
+is already there and then omit ffmpeg's -y option in order to make ffmpeg
+pause at the overwrite prompt before recording, since this screws up the
+video ... go figure.)
+
+So just use jack_connect or some GUI to hook stuff up after recording has
+started, and then crop the beginning of the video later.
+EOF
     else
         audio_input_opts=(
             -f jack
             -i ffmpeg
         )
+        echo "Set audio_input_opts=( $audio_input_opts )"
+        echo "Start recording, *then* jack_connect devices to ffmpeg input."
     fi
 }
 
