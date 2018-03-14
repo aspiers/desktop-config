@@ -1,4 +1,4 @@
 #!/bin/bash
 
 echo "### Keyboard autorepeat ..."
-xset r rate 180 50
+xset r rate 200 50
