@@ -32,7 +32,7 @@ so in this case full window decorations are 2x25
 
 To produce a reference window of a given size:
 
-  ffx-xeyes red 1280 720
+  ffx-xeyes [1280 [720 [red]]]
 
 but don't forget to undecorate the window since again decorations expand it!
 
