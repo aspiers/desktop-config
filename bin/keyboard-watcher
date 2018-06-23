@@ -16,7 +16,7 @@ while true; do
     logger sleeping 1
     sleep 1
 
-    ~/.XSP/person-adam.spiers/50-keyboard
+    setup-keyboard
 
     # ~/.XSP/person-adam.spiers/60-keyboard-repeat is run via
     # ~/.keymaps/post-change.d/keyboard-repeat
