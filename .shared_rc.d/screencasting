@@ -36,9 +36,10 @@ To produce a reference window of a given size:
 
 but don't forget to undecorate the window since again decorations expand it!
 
-By default, ffx-pulse is run to set audio source to pulseaudio.  For ALSA:
+By default, ffx-pulse is run to set audio source to pulseaudio.  Other options:
 
   ffx-alsa hw:0,0  # cat /proc/asound/pcm
+  ffx-no-audio
 
 or JACK:
 
@@ -89,6 +90,10 @@ ffx_viewport=+0,0          # easy-to-use default
 
 ffx_early_opts=(
 )
+
+ffx-no-audio () {
+    audio_input_opts=( -an )
+}
 
 ffx-alsa () {
     if [ -z "$1" ]; then

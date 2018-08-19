@@ -1,54 +1,13 @@
-#!/bin/sh
+#!/bin/bash
 
-. $ZDOTDIR/lib/libhost.sh
+host=${HOST:-${HOSTNAME:-`hostname`}}
+host=${host%%.*}
 
-read_localhost_nickname
+systemctl --user set-environment \
+    PATH=/home/adam/bin:/usr/local/bin:/usr/X11R6/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin \
+    ZDOTDIR=$ZDOTDIR \
+    DISPLAY=:0 \
+    XAUTHLOCALHOSTNAME=$host
 
-apply_keymap () {
-    if lsusb | grep -q 0d3d:0001; then
-        echo "Found Kinesis keyboard attached; using kinesis keymap ..."
-        keymap-menu kinesis
-    elif lsusb | grep -q 1209:2301; then
-        echo "Found Keyboardio Model 01 attached; using model01 keymap ..."
-        keymap-menu model01
-    else
-        apply_local_keymap
-    fi
-}
-
-apply_local_keymap () {
-    case "$localhost_nickname" in
-        arabian)
-            keymap-menu e7450-hacked
-            ;;
-        pacific)
-            keymap-menu kinesis
-            ;;
-        atlantic)
-            #keymap-menu gb
-            ;;
-        indian)
-            keymap-menu w520-hacked
-            ;;
-        southern)
-            keymap-menu d630-hacked
-            ;;
-        mediacentre)
-            keymap-menu gyration-hacked
-            ;;
-        adriatic)
-            keymap-menu n150-hacked
-            ;;
-        *)
-            echo "WARNING: didn't know which keymap to use with $localhost_nickname" >&2
-    esac
-}
-
-echo "### Xmodmap ..."
-if [ -z "$VNCDESKTOP" ]; then
-    apply_keymap
-else
-    echo "\$VNCDESKTOP is $VNCDESKTOP, not touching keymap"
-fi
-
-# GTK keybinding theme set in gconf-tweaks
+systemctl --user enable keyboard-watcher.service
+systemctl --user start keyboard-watcher.service

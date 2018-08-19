@@ -7,15 +7,3 @@ touch ~/.Xresources.d/local.rdb
 mkdir -p ~/.log
 
 touch ~/.synergy-{client,server}-name
-
-host=${HOST:-${HOSTNAME:-`hostname`}}
-host=${host%%.*}
-
-systemctl --user set-environment \
-    PATH=/home/adam/bin:/usr/local/bin:/usr/X11R6/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin \
-    ZDOTDIR=$ZDOTDIR \
-    DISPLAY=:0 \
-    XAUTHLOCALHOSTNAME=$host
-
-systemctl --user enable keyboard-watcher.service
-systemctl --user start keyboard-watcher.service
