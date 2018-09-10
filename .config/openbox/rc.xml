@@ -413,7 +413,7 @@
         <menu>org-menu</menu>
       </action>
     </keybind>
-    <keybind key="W-p"> <!-- this one doesn't work for some fucking stupid reason -->
+    <keybind key="W-p">
       <action name="Execute">
         <execute>pavucontrol</execute>
       </action>
