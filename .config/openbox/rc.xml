@@ -402,16 +402,6 @@
         <menu>jump-to-app-menu</menu>
       </action>
     </keybind>
-    <keybind key="W-k">
-      <action name="Execute">
-        <execute>korganizer</execute>
-      </action>
-    </keybind>
-    <keybind key="W-S-k">
-      <action name="Execute">
-        <execute>kmix</execute>
-      </action>
-    </keybind>
     <keybind key="W-S-l">
       <!-- logs -->
       <action name="Execute">
