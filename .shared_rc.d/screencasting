@@ -41,6 +41,10 @@ By default, ffx-pulse is run to set audio source to pulseaudio.  Other options:
   ffx-alsa hw:0,0  # cat /proc/asound/pcm
   ffx-no-audio
 
+or JACK:
+
+  ffx-jack
+
 Now you are ready to actually record the video!  Use the following
 command which gives you 2 seconds to switch to the right
 desktop/window before recording starts.  Hit Control-C to stop and it
@@ -107,28 +111,26 @@ ffx-alsa () {
 ffx-jack () {
     if [ -z "$1" ]; then
         cat <<EOF
-jack devices:
+You must pick a jack device to record from:
 
 `jack_lsp -c`
 
-See https://www.ffmpeg.org/ffmpeg-devices.html#jack although can be enough
-to just connect the output of a device into ffmpeg without any extra processes
-running.  Unfortunately this can't be done until ffmpeg has already started
-recording (for some reason not good enough to ensure the ffmpeg output file
-is already there and then omit ffmpeg's -y option in order to make ffmpeg
-pause at the overwrite prompt before recording, since this screws up the
-video ... go figure.)
+See ~/org/notes/ffmpeg.org
 
-So just use jack_connect or some GUI to hook stuff up after recording has
-started, and then crop the beginning of the video later.
+JACK recording was *not* configured; give a parameter.
 EOF
     else
         audio_input_opts=(
             -f jack
             -i ffmpeg
         )
-        echo "Set audio_input_opts=( $audio_input_opts )"
-        echo "Start recording, *then* jack_connect devices to ffmpeg input."
+        cat <<EOF
+Set audio_input_opts=( $audio_input_opts )
+Start recording, *then* run e.g.:
+
+    jack_connect $1 ffmpeg:input_1
+    jack_connect ${1/1/2} ffmpeg:input_2
+EOF
     fi
 }
 
