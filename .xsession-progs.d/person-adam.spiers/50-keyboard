@@ -5,11 +5,8 @@ host=${host%%.*}
 
 setup-keyboard
 
-systemctl --user set-environment \
-    PATH=/home/adam/bin:/usr/local/bin:/usr/X11R6/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin \
-    ZDOTDIR=$ZDOTDIR \
-    DISPLAY=:0 \
-    XAUTHLOCALHOSTNAME=$host
+here=`dirname $0`
+. $here/00-systemd-user-env
 
 systemctl --user enable keyboard-watcher.service
 systemctl --user start keyboard-watcher.service
