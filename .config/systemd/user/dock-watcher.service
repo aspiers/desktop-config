@@ -1,0 +1,4 @@
+[Service]
+ExecStart=/bin/sh -c ${HOME}/bin/dock-watcher
+Restart=always
+NoNewPrivileges=false

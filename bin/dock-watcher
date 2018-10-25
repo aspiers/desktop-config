@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# See .cfg-post.d/desktop-config and
+# .config/systemd/user/dock-watcher.service for how this gets run.
+
+handlers=$HOME/.config/dock-event-handlers.d
+
+if ! which inotifywait >&/dev/null; then
+    echo "ERROR: Couldn't find inotifywait; aborting." >&2
+    echo "Try: sudo zypper in inotify-tools" >&2
+    exit 1
+fi
+
+while true; do
+    inotifywait -q --exclude '([^d]...|[^o]..|[^c].|[^k])$' /var/run
+    echo "Docking device event detected"
+    logger sleeping 1s after docking device event detected
+    sleep 1
+
+    if [ -d "$handlers" ]; then
+        for h in $handlers/*; do
+            if [ -x "$h" ]; then
+                "$h"
+            fi
+        done
+    fi
+done

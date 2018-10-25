@@ -1,0 +1,10 @@
+#!/bin/bash
+
+host=${HOST:-${HOSTNAME:-`hostname`}}
+host=${host%%.*}
+
+here=`dirname $0`
+. $here/00-systemd-user-env
+
+systemctl --user enable dock-watcher.service
+systemctl --user start dock-watcher.service
