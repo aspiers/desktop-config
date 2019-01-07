@@ -1,7 +1,5 @@
 #!/bin/sh
 
-echo "### Mouse ..."
-
 . ~/lib/libhost.sh
 read_localhost_nickname
 

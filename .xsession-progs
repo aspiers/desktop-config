@@ -12,7 +12,9 @@ echo "### .xsession-progs ..."
 
 for prog in $( . $ZDOT_FIND_HOOKS ".xsession-progs.d" ); do
     if [ -x "$prog" ]; then
+        echo "### $prog ..."
         "$prog"
+        echo
     else
         echo "WARNING: $prog not executable; skipping"
     fi

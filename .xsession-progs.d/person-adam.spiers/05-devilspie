@@ -2,7 +2,6 @@
 
 . $ZDOTDIR/lib/libproc.sh
 
-echo "### devilspie ..."
 if executable_p devilspie2; then
   devilspie2 >& ~/.log/devilspie2-${HOST%%.*}.log &
 elif executable_p devilspie; then

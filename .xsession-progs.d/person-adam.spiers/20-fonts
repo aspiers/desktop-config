@@ -1,6 +1,5 @@
 #!/bin/sh
 
-echo "### Fonts ..."
 # also change SESSION/.cfg-post.d/SESSION
 for dir in $ZDOTDIR/.X_fonts $ZDOTDIR/.truetype; do
   if [ -d $dir ]; then

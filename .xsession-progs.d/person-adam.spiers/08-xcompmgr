@@ -2,8 +2,6 @@
 
 # Needed for proper urxvt alpha channel compositing
 
-echo "### xcompmgr ..."
-
 . $ZDOTDIR/lib/libproc.sh
 . $ZDOTDIR/lib/libhost.sh
 
@@ -32,7 +30,7 @@ detect_wm () {
     else
         echo "wmctrl not executable" >&2
     fi
-    
+
     if [ -n "$DESKTOP_SESSION" ]; then
         wm="$DESKTOP_SESSION"
         # This could be 'xfce'

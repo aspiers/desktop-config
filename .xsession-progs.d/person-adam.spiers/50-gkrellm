@@ -2,6 +2,5 @@
 
 . $ZDOTDIR/lib/libproc.sh
 
-echo "### gkrellm ..."
 [ -z "$VNCDESKTOP" ] && run_if_executable gkrellm -geometry -0+0 &
 

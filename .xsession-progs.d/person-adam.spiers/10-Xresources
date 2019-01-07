@@ -1,6 +1,5 @@
 #!/bin/sh
 
-echo "### Xresources ..."
 all=$ZDOTDIR/.Xresources.d/all.rdb
 if [ -e $all ]; then
   xrdb-as -merge $all && echo "merged $all"
