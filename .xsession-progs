@@ -11,5 +11,9 @@ echo "### .xsession-progs ..."
 . $ZDOTDIR/lib/libproc.sh
 
 for prog in $( . $ZDOT_FIND_HOOKS ".xsession-progs.d" ); do
-  "$prog"
+    if [ -x "$prog" ]; then
+        "$prog"
+    else
+        echo "WARNING: $prog not executable; skipping"
+    fi
 done
