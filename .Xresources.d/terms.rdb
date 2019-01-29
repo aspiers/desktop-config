@@ -586,7 +586,7 @@ URxvt.url-launcher: url-handler
 !URxvt.url-launcher: ctoolu-activate
 URxvt.colorUL: #86a2be
 URxvt.matcher.pattern.1: \\bwww\\.[\\w-]+\\.[\\w./?&@#-]*[\\w/-]
-URxvt.matcher.pattern.2: \\b(?i:bug|bnc)[ #-]?\\d{6,}\\b
+URxvt.matcher.pattern.2: \\b(?i:bug|bsc|bnc|boo)[ #-]?\\d{6,}\\b
 URxvt.matcher.pattern.3: \\b(?i:fate|feature)[ #-]?\\d{4,}\\b
 URxvt.matcher.pattern.4: (?i)swamp[ #-]?\\d+
 URxvt.matcher.pattern.5: \\bmairixp?:\/\/[\\w.:@-]+
