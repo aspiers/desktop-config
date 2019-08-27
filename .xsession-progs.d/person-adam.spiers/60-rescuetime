@@ -1,5 +1,5 @@
 #!/bin/bash
 
-if which rescuetime >&/dev/null; then
-  rescuetime &
+if which rescuetime >/dev/null; then
+  rescuetime >~/.log/rescuetime.log 2>&1 &
 fi

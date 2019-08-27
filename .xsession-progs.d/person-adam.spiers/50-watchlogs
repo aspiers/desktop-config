@@ -2,5 +2,5 @@
 
 . $ZDOTDIR/lib/libproc.sh
 
-run_if_executable watchlogs-system-window &
+run_if_executable watchlogs-system-window >/dev/null &
 
