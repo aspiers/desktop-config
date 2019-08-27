@@ -2,5 +2,6 @@
 
 . $ZDOTDIR/lib/libproc.sh
 
-[ -z "$VNCDESKTOP" ] && run_if_executable gkrellm -geometry -0+0 &
-
+if [ -z "$VNCDESKTOP" ] && which gkrellm >/dev/null; then
+    nohup gkrellm -geometry -0+0 </dev/null >/dev/null 2>&1 &
+fi
