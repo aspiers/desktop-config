@@ -36,6 +36,10 @@ To produce a reference window of a given size:
 
 but don't forget to undecorate the window since again decorations expand it!
 
+To grab a frame (e.g. for a thumbnail):
+
+  ffx-grab
+
 By default, ffx-pulse is run to set audio source to pulseaudio.  Other options:
 
   ffx-alsa hw:0,0  # cat /proc/asound/pcm
@@ -220,6 +224,28 @@ ffx () {
         "$@"
     )
 
+    _ffx_run_ffmpeg
+}
+
+ffx-grab () {
+    ffmpeg_opts=(
+        "${ffx_early_opts[@]}"
+
+        # video options
+        -f x11grab
+        -video_size $ffx_geometry # has to be after x11 grab and before -i !
+        -i $DISPLAY$ffx_viewport
+        -framerate 1
+        -vframes 1
+
+        # general options
+        "$@"
+    )
+
+    _ffx_run_ffmpeg
+}
+
+_ffx_run_ffmpeg () {
     : ${ffx_ffmpeg:=ffmpeg}
 
     echo "Running: $ffx_ffmpeg ${ffmpeg_opts[*]}"
