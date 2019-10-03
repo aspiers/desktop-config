@@ -56,9 +56,6 @@
     <item label="_X-Chat">
       <action name="Execute"><execute>xchat</execute></action>
     </item>
-    <item label="_ekiga">
-      <action name="Execute"><execute>ekiga</execute></action>
-    </item>
     <item label="_umtsmon">
       <action name="Execute"><execute>umtsmon</execute></action>
     </item>

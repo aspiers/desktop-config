@@ -361,11 +361,6 @@
         <!-- <execute>chromium</execute> -->
       </action>
     </keybind>
-    <keybind key="W-e">
-      <action name="Execute">
-        <execute>ekiga</execute>
-      </action>
-    </keybind>
     <keybind key="W-f">
       <action name="Execute">
         <execute>my-firefox</execute>
@@ -375,11 +370,6 @@
       <!-- File manager -->
       <action name="Execute">
         <execute>thunar</execute>
-      </action>
-    </keybind>
-    <keybind key="W-g">
-      <action name="Execute">
-        <execute>/opt/novell/groupwise/client/bin/groupwise</execute>
       </action>
     </keybind>
     <keybind key="W-S-i">
