@@ -1,0 +1,110 @@
+#! perl
+#
+# font-switcher plugin for rxvt-unicode
+# Copyright (C) 2009 Adam Spiers <urxvt-font-switcher@adamspiers.org>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+# This rxvt-unicode extension allows on-the-fly changing of fonts by
+# moving left/right through a chosen list of fonts.  The list is
+# delimited by '|' and configurable via X resources, e.g.
+#
+#   URxvt.font-switcher-list:  5x8|6x10|7x13|8x13|9x15|10x20
+#
+# Next/previous keys should also be bound for moving through the list,
+# e.g.
+#
+#   URxvt.keysym.M-C-comma:  perl:font-switcher:previous
+#   URxvt.keysym.M-C-period: perl:font-switcher:next
+
+use strict;
+use warnings;
+
+my @font_list;
+
+sub timed_popup {
+   my ($self, $text, $timeout) = @_;
+   $self->{font_switcher}{overlay} = {
+      ov => $self->overlay_simple (0, -1, $text),
+      to => urxvt::timer
+        ->new
+        ->start (urxvt::NOW + $timeout)
+        ->cb (sub {
+                delete $self->{font_switcher}{overlay};
+              }),
+   };
+}
+
+sub on_init {
+   my ($self) = @_;
+   my $font_list = $self->x_resource ('font-switcher-list');
+   if ($font_list) {
+      @font_list = split /\s*\|\s*/, $font_list;
+   }
+}
+
+
+sub on_user_command {
+   my ($self, $string) = @_;
+   unless (@font_list) {
+      timed_popup ($self, "font-switcher-list resource was empty", 2);
+      return;
+   }
+
+   my $current_font = $self->resource ('font');
+   my $current_index;
+   for my $i (0 .. $#font_list) {
+      if ($current_font eq $font_list[$i]) {
+         $current_index = $i;
+         last;
+      }
+   }
+
+   unless ($string =~ /^font-switcher:(previous|next)$/i) {
+      timed_popup ($self, "keysym command should be 'font-switcher:previous' or 'font-switcher:next'", 2);
+      return;
+   }
+   my $command = $1;
+   my $direction = $command eq 'next' ? 1 : -1;
+
+   # This way wraps round
+   #   my $new_index = defined $current_index ?
+   #     ($current_index + $direction) % @font_list : 0;
+
+   # This way has a hard stop at the start or end of the list.
+   my $new_index = defined $current_index ?
+     ($current_index + $direction) : 0;
+   $new_index = 0 if $new_index < 0;
+   $new_index = $#font_list if $new_index > $#font_list;
+
+   my $new_font = $font_list[$new_index];
+   # Thanks to Aron Griffis for this trick for handling bold fonts.
+   my $bold_font = ($new_font =~ /^xft:/) ? "$new_font:bold" : "";
+   timed_popup ($self, "$new_index $new_font", 1);
+
+   # This has no effect by itself, but is used for the next time we
+   # lookup.  Also seems the Right Thing To Do.
+   $self->resource (    font => $new_font );
+   $self->resource (boldFont => $bold_font);
+
+   # There's no API for changing font yet...
+   # http://thread.gmane.org/gmane.comp.terminal-emulators.rxvt-unicode.general/255
+   # $self->set_fonts($new_font);
+
+   # so we do it via an escape sequence:
+   $self->cmd_parse (sprintf "\33]710;%s\007", $new_font);
+   $self->cmd_parse (sprintf "\33]711;%s\007", $bold_font);
+   $self->want_refresh;         # seems to help
+}
