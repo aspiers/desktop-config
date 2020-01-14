@@ -24,6 +24,11 @@ apply_local_keymap () {
         pacific)
             keymap-menu kinesis
             ;;
+        aegean)
+            keymap-menu w520-hacked
+            ;;
+        ionian)
+            ;;
         atlantic)
             #keymap-menu gb
             ;;
