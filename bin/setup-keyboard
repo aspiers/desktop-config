@@ -25,7 +25,7 @@ apply_local_keymap () {
             keymap-menu kinesis
             ;;
         aegean)
-            keymap-menu w520-hacked
+            keymap-menu e7450-hacked
             ;;
         ionian)
             ;;
