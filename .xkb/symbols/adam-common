@@ -58,6 +58,20 @@ xkb_symbols "right-ctrl-super-right" {
 };
 
 partial modifier_keys
+xkb_symbols "print-super-right" {
+    virtual_modifiers Super;
+
+    // This is really <PRSC> but for some reason it causes
+    // BadValue; maybe because of a clash with pc(editing)
+    // included from pc(pc105).
+    key <CUT> {
+        type[Group1] = "ONE_LEVEL",
+        symbols[Group1] = [ Super_R ],
+        virtualMods = Super
+    };
+};
+
+partial modifier_keys
 xkb_symbols "right-ctrl-menu" {
     key <RCTL> { [ Menu ] };
 };

@@ -25,7 +25,7 @@ apply_local_keymap () {
             keymap-menu kinesis
             ;;
         aegean)
-            keymap-menu e7450-hacked
+            keymap-menu thinkpad-x1-extreme-g2-hacked
             ;;
         ionian)
             ;;

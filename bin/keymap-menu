@@ -96,6 +96,9 @@ get_keymap_settings () {
             xkb='-symbols pc+us+gb'
             #xmodmap=Dell-D630-normal
             ;;
+        thinkpad-x1-extreme-g2-hacked)
+            xkb='-keycodes lenovo(thinkpad-x1-extreme-g2-uk) -symbols adam(thinkpad-x1-extreme-g2) -geometry pc(pc104)'
+            ;;
         e7450-hacked)
             xkb='-keycodes dell(e7450-uk) -symbols adam(dell-e7450) -geometry pc(pc104)'
             ;;
