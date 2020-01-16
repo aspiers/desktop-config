@@ -2,14 +2,34 @@ xkb_symbols "dell-e7450" {
     include "pc(pc105)"
     include "us"
     include "gb"
-    include "adam(left-alpha-common)"
-    include "adam(xcv2)"
-    include "adam(standard-qaz)"
-    include "adam(laptop-left-mods)"
-    include "adam(right-alt)"
-    include "adam(right-ctrl-super-right)"
-    include "adam(hash-tilde-by-enter)"
-    include "adam(standard-modifier-maps)"
+    include "adam-common(left-alpha-common)"
+    include "adam-common(xcv2)"
+    include "adam-common(standard-qaz)"
+    include "adam-common(laptop-left-mods)"
+    include "adam-common(right-alt)"
+    include "adam-common(right-ctrl-super-right)"
+    include "adam-common(hash-tilde-by-enter)"
+    include "adam-common(standard-modifier-maps)"
+
+    key <MUTE> { [ XF86AudioMute         ] };
+    key <I225> { [ XF86Search            ] };
+    key <KPDC> { [ KP_Decimal            ] };
+    key <I232> { [ XF86MonBrightnessDown ] };
+    key <I233> { [ XF86MonBrightnessUp   ] };
+};
+
+xkb_symbols "dell-e7450" {
+    include "pc(pc105)"
+    include "us"
+    include "gb"
+    include "adam-common(left-alpha-common)"
+    include "adam-common(xcv2)"
+    include "adam-common(standard-qaz)"
+    include "adam-common(laptop-left-mods)"
+    include "adam-common(right-alt)"
+    include "adam-common(right-ctrl-super-right)"
+    include "adam-common(hash-tilde-by-enter)"
+    include "adam-common(standard-modifier-maps)"
 
     key <MUTE> { [ XF86AudioMute         ] };
     key <I225> { [ XF86Search            ] };
@@ -22,409 +42,87 @@ xkb_symbols "keyboardio-model01" {
     include "pc(pc105)"
     include "us"
     include "gb"
-    include "adam(model01-right-ctrl-super-r)"
+    include "adam-common(model01-right-ctrl-super-r)"
 };
 
 xkb_symbols "samsung-n150plus" {
     include "pc"
     include "us"
     include "gb"
-    include "adam(laptop)"
+    include "adam-common(laptop)"
 };
 
 xkb_symbols "lenovo-w520" {
     include "pc(pc105)"
     include "us"
     include "gb"
-    include "adam(left-alpha-common)"
-    include "adam(xcv2)"
-    include "adam(standard-qaz)"
-    include "adam(laptop-left-mods)"
-    include "adam(right-alt)"
-    include "adam(menu-super-right)"
-    include "adam(right-ctrl-menu)"
-    include "adam(hash-tilde-by-enter)"
+    include "adam-common(left-alpha-common)"
+    include "adam-common(xcv2)"
+    include "adam-common(standard-qaz)"
+    include "adam-common(laptop-left-mods)"
+    include "adam-common(right-alt)"
+    include "adam-common(menu-super-right)"
+    include "adam-common(right-ctrl-menu)"
+    include "adam-common(hash-tilde-by-enter)"
 };
 
 xkb_symbols "us-qwerty-hacked" {
     include "pc(pc105)"
     include "us"
     include "gb"
-    include "adam(left-alpha-common)"
-    include "adam(xcv3)"
-    include "adam(standard-qaz)"
-    include "adam(laptop-left-mods)"
-    include "adam(right-alt-super-right)"
+    include "adam-common(left-alpha-common)"
+    include "adam-common(xcv3)"
+    include "adam-common(standard-qaz)"
+    include "adam-common(laptop-left-mods)"
+    include "adam-common(right-alt-super-right)"
     key <AB03> { [ Shift_L ] };
 };
 
 xkb_symbols "kinesis" {
-    include "adam(kinesis-left-thumb-pad)"
-    include "adam(kinesis-right-thumb-pad)"
-    include "adam(kinesis-caps-lock)"
-    include "adam(swap-up-down)"
-    include "adam(kinesis-grave-tilde)"
-    include "adam(kinesis-insert)"
-    include "adam(us-backslash)"
-    include "adam(us-3)"
+    include "adam-common(kinesis-left-thumb-pad)"
+    include "adam-common(kinesis-right-thumb-pad)"
+    include "adam-common(kinesis-caps-lock)"
+    include "adam-common(swap-up-down)"
+    include "adam-common(kinesis-grave-tilde)"
+    include "adam-common(kinesis-insert)"
+    include "adam-common(us-backslash)"
+    include "adam-common(us-3)"
 };
 
 xkb_symbols "hhkl" {
     include "pc"
     include "us"
     include "gb"
-    include "adam(hhkl-left-alpha)"
-    include "adam(hhkl-mods)"
-    include "adam(hhkl-escape)"
-    include "adam(us-3)"
-//    include "adam(meta)"
-//    include "adam(control-modifier-map)"
+    include "adam-common(hhkl-left-alpha)"
+    include "adam-common(hhkl-mods)"
+    include "adam-common(hhkl-escape)"
+    include "adam-common(us-3)"
+//    include "adam-common(meta)"
+//    include "adam-common(control-modifier-map)"
 };
 
 xkb_symbols "gyration" {
     include "pc(pc105)"
     include "us"
     include "gb"
-    include "adam(laptop-left-alpha)"
-    include "adam(gyration-left-mods)"
-    include "adam(us-3)"
-//    include "adam(meta)"
-//    include "adam(control-modifier-map)"
+    include "adam-common(laptop-left-alpha)"
+    include "adam-common(gyration-left-mods)"
+    include "adam-common(us-3)"
+//    include "adam-common(meta)"
+//    include "adam-common(control-modifier-map)"
 };
 
 
 default partial
 xkb_symbols "laptop" {
-    include "adam(laptop-left-alpha)"
-    include "adam(laptop-left-mods)"
-    include "adam(right-alt)"
-    include "adam(menu-super-right)"
-    include "adam(right-ctrl-menu)"
-    include "adam(us-backslash)"
-    include "adam(us-3)"
-//    include "adam(meta)"
-//    include "adam(control-modifier-map)"
+    include "adam-common(laptop-left-alpha)"
+    include "adam-common(laptop-left-mods)"
+    include "adam-common(right-alt)"
+    include "adam-common(menu-super-right)"
+    include "adam-common(right-ctrl-menu)"
+    include "adam-common(us-backslash)"
+    include "adam-common(us-3)"
+//    include "adam-common(meta)"
+//    include "adam-common(control-modifier-map)"
 };
 
-partial modifier_keys
-xkb_symbols "laptop-left-mods" {
-    virtual_modifiers LControl, LMeta;
-
-    key <LALT> {
-        [ Control_L, Control_L ],
-        virtualMods = LControl
-    };
-
-    key <LWIN> {
-        [ Meta_L ],
-        virtualMods = LMeta
-    };
-};
-
-partial modifier_keys
-xkb_symbols "gyration-left-mods" {
-    virtual_modifiers LControl;
-
-    key <LSGT> {
-        [ Control_L, Control_L ],
-        virtualMods = LControl
-    };
-};
-
-partial modifier_keys
-xkb_symbols "right-alt" {
-    virtual_modifiers RAlt;
-
-    key <RALT> {
-        [ Alt_R ],
-        virtualMods = RAlt
-    };
-
-    modifier_map Mod3 { Alt_L, Alt_R };
-};
-
-partial modifier_keys
-xkb_symbols "menu-super-right" {
-    virtual_modifiers Super;
-
-    key <MENU> {
-        type[Group1] = "ONE_LEVEL",
-        symbols[Group1] = [ Super_R ],
-        virtualMods = Super
-    };
-};
-
-partial modifier_keys
-xkb_symbols "right-ctrl-super-right" {
-    virtual_modifiers Super;
-
-    key <RCTL> {
-        type[Group1] = "ONE_LEVEL",
-        symbols[Group1] = [ Super_R ],
-        virtualMods = Super
-    };
-};
-
-partial modifier_keys
-xkb_symbols "right-ctrl-menu" {
-    key <RCTL> { [ Menu ] };
-};
-
-partial modifier_keys
-xkb_symbols "right-alt-super-right" {
-    virtual_modifiers Super;
-
-    key <RALT> {
-        type[Group1] = "ONE_LEVEL",
-        symbols[Group1] = [ Super_R ],
-        virtualMods = Super
-    };
-};
-
-partial modifier_keys
-xkb_symbols "right-win-multi-key" {
-    key <RWIN> { [ Multi_key ] };
-//      type[Group1] = "ONE_LEVEL",
-//      symbols[Group1] = [ Multi_key ]
-//      symbols[Group1] = [ Mode_switch ]
-//    };
-};
-
-// Stop Shift+Super_R being Multi_key
-partial modifier_keys
-xkb_symbols "model01-right-ctrl-super-r" {
-    key <RWIN> { [ Super_R, Super_R ] };
-};
-
-partial modifier_keys
-xkb_symbols "hhkl-mods" {
-    virtual_modifiers LAlt, LControl, RAlt;
-
-    key <LALT> {
-        [ Alt_L, Meta_L ],
-        virtualMods = LAlt
-    };
-
-    key <LWIN> {
-        [ Control_L, Control_L ],
-        virtualMods = LControl
-    };
-
-    key <BKSL> {
-        [ Alt_R, Alt_R ],
-        virtualMods = RAlt
-    };
-};
-
-partial modifier_keys
-xkb_symbols "standard-modifier-maps" {
-    include "adam(shift-modifier-map)"
-    include "adam(control-modifier-map)"
-    include "adam(meta-modifier-map)"
-};
-
-partial modifier_keys
-xkb_symbols "shift-modifier-map" {
-    modifier_map Shift { Shift_L, Shift_R };
-};
-
-partial modifier_keys
-xkb_symbols "control-modifier-map" {
-    // http://www.charvolant.org/~doug/xkb/html/node5.html
-    // claims that modifier_map is for the benefit of older
-    // programs.
-    modifier_map Control { Control_L, Control_R };
-};
-
-partial modifier_keys
-xkb_symbols "meta-modifier-map" {
-    modifier_map Mod1 { Meta_L, Meta_R };
-};
-
-partial modifier_keys
-xkb_symbols "meta" {
-    key <META> {        [ NoSymbol, Meta_L      ]       };
-};
-
-partial alphanumeric_keys
-xkb_symbols "left-alpha-common" {
-    // from latin(basic)
-    key <AD01>  { [         w,          W,      lstroke,      Lstroke ] };
-    key <AD02>  { [         e,          E,            e,            E ] };
-    key <AD03>  { [         r,          R,    paragraph,   registered ] };
-    key <AD04>  { [         t,          T,       tslash,       Tslash ] };
-    key <AD05>  { [     grave, asciitilde,   dead_grave,   dead_tilde ] };
-
-    key <AC01>  { [         s,          S,       ssharp,      section ] };
-    key <AC02>  { [         d,          D,          eth,          ETH ] };
-    key <AC03>  { [         f,          F,      dstroke,  ordfeminine ] };
-    key <AC04>  { [         g,          G,          eng,          ENG ] };
-    key <AC05>  { [ backslash,        bar,      notsign,    brokenbar ] };
-};
-
-partial alphanumeric_keys
-xkb_symbols "xcv1" {
-    key <AB01>  { [         x,          X, guillemotright,    greater ] };
-    key <AB02>  { [         c,          C,         cent,    copyright ] };
-    key <AB03>  { [         v,          V, leftdoublequotemark, leftsinglequotemark ]   };
-};
-
-partial alphanumeric_keys
-xkb_symbols "xcv2" {
-    key <BKSL>  { [         x,          X, guillemotright,    greater ] };
-    key <AB01>  { [         c,          C,         cent,    copyright ] };
-    key <AB02>  { [         v,          V, leftdoublequotemark, leftsinglequotemark ]   };
-};
-
-partial alphanumeric_keys
-xkb_symbols "xcv3" {
-    key <LFSH>  { [         x,          X, guillemotright,    greater ] };
-    key <AB01>  { [         c,          C,         cent,    copyright ] };
-    key <AB02>  { [         v,          V, leftdoublequotemark, leftsinglequotemark ]   };
-};
-
-partial alphanumeric_keys
-xkb_symbols "laptop-left-alpha" {
-    include "adam(left-alpha-common)"
-    include "adam(xcv1)"
-    include "adam(standard-qaz)"
-};
-
-partial alphanumeric_keys
-xkb_symbols "standard-qaz" {
-    // from latin(basic)
-    key <AE00>  { [         q,          Q,           at,  Greek_OMEGA ] };
-    key <CAPS>  { [         a,          A,           ae,           AE ] };
-    key <LCTL>  { [         z,          Z, guillemotleft,        less ] };
-};
-
-partial alphanumeric_keys
-xkb_symbols "hhkl-left-alpha" {
-    include "adam(left-alpha-common)"
-    include "adam(xcv3)"
-    include "adam(hhkl-qaz)"
-};
-
-partial alphanumeric_keys
-xkb_symbols "hhkl-qaz" {
-    // from latin(basic)
-    key <ESC>   { [         q,          Q,           at,  Greek_OMEGA ] };
-    key <LCTL>  { [         a,          A,           ae,           AE ] };
-    key <AB03>  { [         z,          Z, guillemotleft,        less ] };
-};
-
-partial alphanumeric_keys
-xkb_symbols "hhkl-escape" {
-    key <TLDE> { [ Escape, Escape ] };
-};
-
-partial
-xkb_symbols "us-backslash" {
-    key <BKSL> { [ backslash,        bar,       notsign,        brokenbar ] };
-//    key <BKSL> { [ backslash, asciitilde ] };
-};
-
-partial alphanumeric_keys
-xkb_symbols "us-3" {
-    key <AE03> { [          3, numbersign,    sterling,       EuroSign ] };
-};
-
-partial alphanumeric_keys
-xkb_symbols "hash-tilde-by-enter" {
-    key <AC12> { [numbersign, asciitilde,   dead_grave,   dead_breve ] };
-};
-
-partial modifier_keys
-xkb_symbols "kinesis-left-thumb-pad" {
-    virtual_modifiers LControl, LAlt;
-
-    key <DELE> {
-        [ Meta_L ]
-        //virtualMods = LAlt
-    };
-    modifier_map Mod1 { <DELE> };
-
-    key <LALT> { [ Delete ] };
-
-    // WTF? There is no META key...
-    // key <META> { [ NoSymbol, Meta_L ] };
-    // modifier_map Mod1 { <META> };
-
-    key <HOME> {
-        [ Alt_L ],
-        virtualMods = LAlt
-    };
-    modifier_map Mod2 { <HOME> };
-
-    key <END> { [ Escape ] };
-};
-
-partial modifier_keys
-xkb_symbols "kinesis-right-thumb-pad" {
-    virtual_modifiers Super;
-
-    key <RALT> { [ Menu ]
-        //type[Group1] = "ONE_LEVEL",
-        //symbols[Group1] = [ Menu ]
-        //symbols[Group1] = [ Multi_key ]
-        //symbols[Group1] = [ Mode_switch ]
-
-        //type[Group1] = "ONE_LEVEL",
-        //symbols[Group1] = [ Alt_R ],
-        //virtualMods = LAlt
-    };
-
-    key <RCTL> {
-        // This causes a spurious warning:
-        //
-        //   'Type "ONE_LEVEL" has 1 levels, but <RCTL> has 2 symbols'
-        //
-        // but is required otherwise Multi_key ends up being on the
-        // 2nd level, which means that Super-< passes an unwanted
-        // Multi_key event to the synergy client.  Also, the warning
-        // is a bug which got fixed in 13.1:
-        //
-        //   https://bugs.freedesktop.org/show_bug.cgi?id=57242
-        type[Group1] = "ONE_LEVEL",
-
-        symbols[Group1] = [ Super_R ],
-        virtualMods = Super
-    };
-};
-
-
-partial
-xkb_symbols "kinesis-caps-lock" {
-    key <CAPS> { [ minus, underscore ] };
-};
-
-partial
-xkb_symbols "kinesis-grave-tilde" {
-    key <TLDE>   { [ grave, asciitilde ] };
-};
-
-partial
-xkb_symbols "swap-up-down" {
-    key <UP>   { [ Down ] };
-    key <DOWN> { [ Up   ] };
-};
-
-partial
-xkb_symbols "kinesis-insert" {
-    // The following command shows the insert key as <INS> (code 118):
-    //
-    // setxkbmap -symbols 'pc+us+gb+adam(kinesis)' -geometry kinesis -print | \
-    //     xkbcomp -I/home/adam/.xkb - - | \
-    //     xkbprint -label code - - | \
-    //     gs -sDEVICE=jpeg -sOutputFile=- -r100 -q - | \
-    //     jpegtran -rotate 270 >| kinesis-codes.jpeg
-    //
-    // but xev shows it as code 94 which is <LSGT> according to:
-    //
-    // setxkbmap -symbols 'pc+us+gb+adam(kinesis)' -geometry kinesis -print | \
-    //     xkbcomp -I/home/adam/.xkb -xkb - -
-    //
-    // Go figure :-/
-    key <LSGT>  { [ Insert, Insert ] };
-    key <INS>   { [ Insert, Insert ] };
-};
