@@ -1,5 +1,6 @@
 ! #include <local.rdb>
 #include <defines.rdb>
+#include <hidpi.rdb>
 #include <emacs.rdb>
 #include <terms.rdb>
 

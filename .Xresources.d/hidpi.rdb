@@ -1,0 +1,4 @@
+! https://wiki.archlinux.org/index.php/HiDPI#X_Resources
+#if WIDTH > 2000
+Xft.dpi: 192
+#endif
