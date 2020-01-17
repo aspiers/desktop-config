@@ -1,0 +1,8 @@
+#!/bin/bash
+
+case "$WINDOWMANAGER" in
+    i3)
+        xsetroot -solid black
+        ;;
+esac
+
