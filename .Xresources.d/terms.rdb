@@ -227,14 +227,23 @@ xterm*fontMenu*font##fontNum*Label:  label (fontName)@@\
 nxterm*VT100*font##fontNum:          fontName@@\
 nxterm*fontMenu*font##fontNum*Label: label (fontName)
 
+! set default font
 #if WIDTH >= 1400
+! bigger than 1400
+#if WIDTH >= 2200
+! bigger than 2200
 *SimpleMenu*font: *helvetica*r*normal*12*
 
 ! Note: the default font is automatically inserted into the order
 ! according to its size.  That means we effectively have 7 font slots
 ! to play around with.
+#define DEFAULTFONT xft:Hack:pixelsize=26
+
+#else
 
 #define DEFAULTFONT 9x15
+
+#endif
 
 xterm*font:  DEFAULTFONT
 nxterm*font: DEFAULTFONT
@@ -296,7 +305,17 @@ URxvt.font-switcher-list: xft:Hack:pixelsize=6  | \\
     xft:Hack:pixelsize=24 | \\
     xft:Hack:pixelsize=26 | \\
     xft:Hack:pixelsize=28 | \\
-    xft:Hack:pixelsize=30
+    xft:Hack:pixelsize=30 | \\
+    xft:Hack:pixelsize=32 | \\
+    xft:Hack:pixelsize=34 | \\
+    xft:Hack:pixelsize=36 | \\
+    xft:Hack:pixelsize=38 | \\
+    xft:Hack:pixelsize=40 | \\
+    xft:Hack:pixelsize=42 | \\
+    xft:Hack:pixelsize=44 | \\
+    xft:Hack:pixelsize=46 | \\
+    xft:Hack:pixelsize=48 | \\
+    xft:Hack:pixelsize=50
 
 !URxvt.font-switcher-list:  8x13|9x15|10x20
 !URxvt.font-switcher-list:  5x8|6x10|7x13|8x13|9x15|10x20
