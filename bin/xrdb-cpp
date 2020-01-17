@@ -24,6 +24,7 @@ emacs_font=$(
         -DEMACS_VERSION=$emacs_version \
         -DEMACS_MAJOR_VERSION=$emacs_major_version \
         -DWIDTH=$dpy_width \
+        -DHEIGHT=$dpy_height \
         -I $ZDOTDIR/.Xresources.d \
         $ZDOTDIR/.Xresources.d/all.rdb | \
     awk '/^ *emacs.font/ {print $2}'
