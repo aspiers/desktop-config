@@ -1,6 +1,5 @@
 #!/bin/bash
 
-SERVER=indian
 TIMEOUT=64
 
 changed=
@@ -23,22 +22,5 @@ else
         # Always takes some time for the new config to settle, so don't
         # start exponential back-off too early.  Wifi takes longer to settle.
         sleep 6
-    fi
-fi
-
-if [ -n "$changed" ]; then
-    for (( i=1; i<TIMEOUT; i*=2 )); do
-        if isup $SERVER; then
-            logger "openvpn server $SERVER is up; adding routes ..."
-            zsh -c "dsa && share-vpn $USER $SERVER"
-            break
-        else
-            logger "Can't reach openvpn server $SERVER yet; sleeping $i secs ..."
-            sleep $i
-        fi
-    done
-
-    if [ "$i" -ge $TIMEOUT ]; then
-        logger "Timed out waiting for $SERVER to become reachable"
     fi
 fi
