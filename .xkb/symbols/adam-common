@@ -342,3 +342,11 @@ xkb_symbols "kinesis-insert" {
     key <LSGT>  { [ Insert, Insert ] };
     key <INS>   { [ Insert, Insert ] };
 };
+
+partial
+xkb_symbols "volume-controls" {
+    key <MUTE> { [ XF86AudioMute ] };
+    key <VOL-> { [ XF86AudioLowerVolume ] };
+    key <VOL+> { [ XF86AudioRaiseVolume ] };
+    key <MMUT> { [ XF86AudioMicMute ] };
+};
