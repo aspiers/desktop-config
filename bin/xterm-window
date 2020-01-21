@@ -3,6 +3,7 @@
 . $ZDOTDIR/lib/libdpy.sh
 
 font=9x15
+#font=$( xrdb -query | awk '/^xterm\*font:/ {print $2}' )
 
 shell=$( get-font-geometry $font )
 if [ $? != 0 ]; then
