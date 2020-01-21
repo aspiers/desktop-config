@@ -13,6 +13,9 @@ if [ "$1" == '-h' ] || [ "$1" == '--help' ] || [ $# != 1 ]; then
     usage
 fi
 
+# FIXME: handle truetype via ttf2afm:
+# https://unix.stackexchange.com/questions/167452/extract-bounding-box-dimensions-for-truetype-font
+
 xlsfonts -ll -fn "$1" | \
     awk '/ascent:/  {ascent=$2}
          /descent:/ {descent=$2}
