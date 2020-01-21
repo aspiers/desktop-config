@@ -3,6 +3,9 @@
 . ~/lib/libhost.sh
 read_localhost_nickname
 
+# FIXME: switch to xinput
+# https://wiki.archlinux.org/index.php/Mouse_acceleration
+
 case "$localhost_nickname" in
     pacific)
         xset m 2 5
