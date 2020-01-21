@@ -130,7 +130,7 @@ ensure_correct_invocation_running () {
         pid=
         return 1
     fi
-    
+
     _log_it "launched $CLIENT_PROG -n $clientname $servername (pid $pid)"
     return 0
 }
