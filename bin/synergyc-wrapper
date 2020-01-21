@@ -44,6 +44,9 @@ if [ "$1" == '-a' ]; then
 fi
 
 read_client_conf () {
+    nickname=
+    [ -f "$HOST_NAME_FILE" ] && nickname="$(<$HOST_NAME_FILE)"
+
     clientname=
     [ -f "$CLIENT_NAME_FILE" ] && clientname="$(<$CLIENT_NAME_FILE)"
     [ -n "$clientname" ] && return 0
@@ -161,12 +164,12 @@ while true; do
 
     if [ -z "$connection_type" ]; then
         reason_not_to_run="couldn't determine connection type to $IP"
-    elif ! AC-online; then
-        wait_until_AC_online
-        reason_not_to_run="waited for AC power to come back online"
+    # elif ! AC-online; then
+    #     #wait_until_AC_online
+    #     reason_not_to_run="waited for AC power to come back online"
     elif [ -z "$IP" ]; then
         reason_not_to_run="couldn't determine IP of $servername"
-    elif [ "$connection_type" != 'lan' ]; then
+    elif [ "$connection_type" != 'lan' -a "$nickname" != 'aegean' ]; then
         reason_not_to_run="connection to $IP ($servername) is $connection_type, not direct wire"
     elif ! grep -q $domainname /etc/resolv.conf; then
         # dnsdomainname doesn't get changed by DHCP for some reason
