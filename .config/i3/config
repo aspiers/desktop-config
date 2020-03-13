@@ -208,3 +208,4 @@ bar {
 }
 
 for_window [class="Gitk"] floating enable
+for_window [class="pavucontrol"] floating enable
