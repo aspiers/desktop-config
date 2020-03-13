@@ -209,3 +209,5 @@ bar {
 
 for_window [class="Gitk"] floating enable
 for_window [class="pavucontrol"] floating enable
+# xprop's WM_NAME is same as i3's title
+for_window [title="Event Tester"] floating enable
