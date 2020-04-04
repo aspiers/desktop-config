@@ -56,6 +56,7 @@ bindsym $mod+Shift+Return exec dmenu_run
 bindsym $mod+Return exec --no-startup-id i3-dmenu-desktop
 
 # change focus
+focus_wrapping no
 bindsym $mod+h focus left
 bindsym $mod+j focus down
 bindsym $mod+k focus up
