@@ -216,6 +216,7 @@ for_window [title="Event Tester"] floating enable
 bindsym $mod+c exec "google-chrome-stable"
 #bindsym $mod+f exec "firefox"
 bindsym $mod+Shift+f exec "thunar"
+bindsym $mod+Control+s exec "spectacle"
 bindsym $mod+p exec "pavucontrol"
 bindkey $mod+Shift+i exec "top-term sudo nethogs `gw-dev`"
 bindkey $mod+Control+i exec "top-term sudo iotop"
