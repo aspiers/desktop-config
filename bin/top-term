@@ -10,7 +10,7 @@ font=smoothansi
 #Eterm -t top
 unset COLUMNS
 cmd="${1:-top}"
-shift
+[ -n "$1" ] && shift
 
 geometry=90x40
 case "$cmd" in
