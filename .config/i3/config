@@ -44,6 +44,10 @@ floating_modifier Mod1
 
 # start a terminal
 bindsym $mod+t exec i3-sensible-terminal
+bindsym $mod+Shift+t exec top-term htop
+bindsym $mod+Shift+i exec sh -c 'top-term sudo nethogs `gw-dev`'
+bindsym $mod+Control+i exec top-term sudo iotop
+bindsym $mod+Control+Shift+i exec sh -c 'top-term sudo iftop -i `gw-dev`'
 
 # kill focused window
 bindsym $mod+Shift+q kill
