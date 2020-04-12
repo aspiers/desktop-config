@@ -18,7 +18,7 @@
     <!-- 'Smart' or 'UnderMouse' -->
     <center>yes</center>
     <monitor>Any</monitor>
-    <primaryMonitor></primaryMonitor>
+    <primaryMonitor/>
   </placement>
   <desktops>
     <number>8</number>
@@ -837,8 +837,8 @@ Use devilspie instead, ubiquitous across window managers.
     <font place="InactiveOnScreenDisplay">
       <name>Sans</name>
       <size>8</size>
-      <weight></weight>
-      <slant></slant>
+      <weight/>
+      <slant/>
     </font>
   </theme>
   <margins>
