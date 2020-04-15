@@ -214,6 +214,8 @@ bar {
 
 for_window [class="Gitk"] floating enable
 for_window [class="Pavucontrol"] floating enable
+for_window [class="guvcview"] floating enable
+for_window [class="Guvcview"] floating enable
 # xprop's WM_NAME is same as i3's title
 for_window [title="Event Tester"] floating enable
 for_window [title="Emoji Picker"] floating enable
