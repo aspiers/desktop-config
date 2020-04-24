@@ -366,6 +366,11 @@
         <execute>my-firefox</execute>
       </action>
     </keybind>
+    <keybind key="W-g">
+      <action name="Execute">
+        <execute>~/software/telegram/Telegram</execute>
+      </action>
+    </keybind>
     <keybind key="W-S-f">
       <!-- File manager -->
       <action name="Execute">
