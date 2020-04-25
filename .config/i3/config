@@ -159,20 +159,37 @@ bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'You pressed the exit shortcu
 mode "resize" {
         # These bindings trigger as soon as you enter the resize mode
 
-        # Pressing left will shrink the window’s width.
-        # Pressing right will grow the window’s width.
-        # Pressing up will shrink the window’s height.
-        # Pressing down will grow the window’s height.
-        bindsym h resize shrink width 10 px or 2 ppt
-        bindsym j resize grow height 10 px or 2 ppt
-        bindsym k resize shrink height 10 px or 2 ppt
-        bindsym l resize grow width 10 px or 2 ppt
+        bindsym $mod+h resize shrink width 50 px or 10 ppt
+        bindsym $mod+j resize grow height 50 px or 10 ppt
+        bindsym $mod+k resize shrink height 50 px or 10 ppt
+        bindsym $mod+l resize grow width 50 px or 10 ppt
+
+        bindsym h resize shrink width 50 px or 10 ppt
+        bindsym j resize grow height 50 px or 10 ppt
+        bindsym k resize shrink height 50 px or 10 ppt
+        bindsym l resize grow width 50 px or 10 ppt
 
         # same bindings, but for the arrow keys
-        bindsym Left resize shrink width 10 px or 2 ppt
-        bindsym Down resize grow height 10 px or 2 ppt
-        bindsym Up resize shrink height 10 px or 2 ppt
-        bindsym Right resize grow width 10 px or 2 ppt
+        bindsym Left resize shrink width 50 px or 10 ppt
+        bindsym Down resize grow height 50 px or 10 ppt
+        bindsym Up resize shrink height 50 px or 10 ppt
+        bindsym Right resize grow width 50 px or 10 ppt
+
+        bindsym $mod+Shift+h resize shrink width 10 px or 2 ppt
+        bindsym $mod+Shift+j resize grow height 10 px or 2 ppt
+        bindsym $mod+Shift+k resize shrink height 10 px or 2 ppt
+        bindsym $mod+Shift+l resize grow width 10 px or 2 ppt
+
+        bindsym Shift+h resize shrink width 10 px or 2 ppt
+        bindsym Shift+j resize grow height 10 px or 2 ppt
+        bindsym Shift+k resize shrink height 10 px or 2 ppt
+        bindsym Shift+l resize grow width 10 px or 2 ppt
+
+        # same bindings, but for the arrow keys
+        bindsym Shift+Left resize shrink width 10 px or 2 ppt
+        bindsym Shift+Down resize grow height 10 px or 2 ppt
+        bindsym Shift+Up resize shrink height 10 px or 2 ppt
+        bindsym Shift+Right resize grow width 10 px or 2 ppt
 
         # back to normal: Enter or Escape or $mod+r
         bindsym Return mode "default"
@@ -189,3 +206,16 @@ bindsym $mod+r mode "resize"
 bar {
         status_command i3status
 }
+
+for_window [class="Gitk"] floating enable
+for_window [class="pavucontrol"] floating enable
+# xprop's WM_NAME is same as i3's title
+for_window [title="Event Tester"] floating enable
+
+bindsym $mod+c exec "google-chrome-stable"
+#bindsym $mod+f exec "firefox"
+bindsym $mod+Shift+f exec "thunar"
+bindsym $mod+p exec "pavucontrol"
+bindkey $mod+Shift+i exec "top-term sudo nethogs `gw-dev`"
+bindkey $mod+Control+i exec "top-term sudo iotop"
+bindkey $mod+Control+Shift+i exec "top-term sudo iftop -i `gw-dev`"
