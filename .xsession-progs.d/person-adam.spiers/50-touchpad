@@ -1,5 +1,17 @@
 #!/bin/sh
 
+. ~/lib/libhost.sh
+read_localhost_nickname
+
+case "$localhost_nickname" in
+    pacific)
+        xset m 2 5
+        ;;
+    *)
+        xset m 2 4
+        ;;
+esac
+
 if grep -q '^ *Driver.*synaptics' /etc/X11/xorg.conf; then
     echo "Synaptics touchpad detected in X11 config."
     if which synclient >/dev/null 2>&1; then
