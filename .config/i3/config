@@ -220,6 +220,7 @@ bar {
         status_command i3status
 }
 
+for_window [class="Git-gui"] floating enable
 for_window [class="Gitk"] floating enable
 for_window [class="Pavucontrol"] floating enable
 for_window [class="guvcview"] floating enable
