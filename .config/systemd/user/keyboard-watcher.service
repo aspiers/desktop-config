@@ -2,3 +2,6 @@
 ExecStart=/bin/sh -c ${HOME}/bin/keyboard-watcher
 Restart=always
 NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
