@@ -53,11 +53,11 @@
     <item label="_skype">
       <action name="Execute"><execute>sh -c "PULSE_LATENCY_MSEC=60 skypeforlinux"</execute></action>
     </item>
-    <item label="_X-Chat">
-      <action name="Execute"><execute>xchat</execute></action>
-    </item>
     <item label="_umtsmon">
       <action name="Execute"><execute>umtsmon</execute></action>
+    </item>
+    <item label="_zoom">
+      <action name="Execute"><execute>zoom</execute></action>
     </item>
   </menu>
 
