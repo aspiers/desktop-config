@@ -7,6 +7,10 @@ case "$localhost_nickname" in
     pacific)
         xset m 2 5
         ;;
+    aegean)
+        # Disable tap to click
+        synclient MaxTapTime=0
+        ;;
     *)
         xset m 2 4
         ;;
