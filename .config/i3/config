@@ -231,6 +231,8 @@ for_window [title="Emoji Picker"] floating enable
 for_window [title="MetaMask Notification"] floating enable
 for_window [class="zoom"] floating enable
 for_window [class="Telegram"] floating enable
+for_window [class="Transcribe"] floating enable
+for_window [class="MPlayer"] floating enable
 
 bindsym $mod+c exec "google-chrome-stable"
 #bindsym $mod+f exec "firefox"
