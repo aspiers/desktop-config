@@ -1,3 +1,3 @@
 #!/bin/bash
 
-watchlogs-window -e watchlogs-system
+watchlogs-window -e lnav-system

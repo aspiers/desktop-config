@@ -1,0 +1,6 @@
+:filter-out systemd\[1\]: Started Session \d+ of user adam\.
+:filter-out systemd\[1\]: session-\d+\.scope: Succeeded\.
+:filter-out systemd-logind\[\d+\]: New session \d+ of user adam\.
+:filter-out systemd-logind\[\d+\]: Removed session \d+
+:filter-out systemd-logind\[\d+\]: Session \d+ logged out\. Waiting for processes to exit\.
+:filter-out sshd\[\d+\]: pam_unix\(sshd:session\): session closed for user adam

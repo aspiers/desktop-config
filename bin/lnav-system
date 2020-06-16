@@ -1,0 +1,9 @@
+#!/bin/bash
+
+lnav \
+    -q \
+    ~/.xsession-*errors* \
+    ~/.Xclients-*errors* \
+    ~/.log/*.log \
+    <(jcf --since="2 days ago") \
+    -f $0.filters
