@@ -1,2 +1,0 @@
-(if (is (window_class) "Key-mon")
-   (begin (pin)))

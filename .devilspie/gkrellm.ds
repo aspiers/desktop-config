@@ -1,6 +1,0 @@
-(if (is (window_name) "gkrellm")
-   (begin
-     (pin)
-     (skip_tasklist)
-     (below)
-     (undecorate)))

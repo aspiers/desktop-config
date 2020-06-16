@@ -1,4 +1,0 @@
-(if (and (is (window_role) "conversation")
-         (or (is (window_class) "Gaim")
-             (is (window_class) "Pidgin")))
-   (begin (pin)))

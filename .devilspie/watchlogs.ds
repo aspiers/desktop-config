@@ -1,6 +1,0 @@
-(if (matches (window_name) "^watchlogs.*")
-   (begin
-     (pin)
-     (skip_tasklist)
-     (below)
-     (undecorate)))
