@@ -1,7 +1,7 @@
 #!/usr/bin/env xdg-open
 [Desktop Entry]
 Name=Open URLs
-Exec=url-handler '%u'
+Exec=url-handler
 Icon=web-browser
 Type=Application
 Terminal=false
