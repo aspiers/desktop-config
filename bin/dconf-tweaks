@@ -1,0 +1,10 @@
+#!/bin/sh
+
+dconf=dconf
+
+if [ -z "$DISPLAY" ]; then
+  echo "\$DISPLAY not set; aborting gconf-tweaks."
+  exit 0
+fi
+
+$dconf -s /desktop/gnome/url-handlers/mailto/command -t string "mailto-handler '%s'"
