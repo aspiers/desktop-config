@@ -8,7 +8,7 @@ case "$localhost_nickname" in
         xset m 2 5
         ;;
     aegean)
-        # Disable tap to click
+        echo "Disabling tap to click"
         synclient MaxTapTime=0
         ;;
     *)
