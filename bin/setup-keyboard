@@ -11,6 +11,9 @@ apply_keymap () {
     elif lsusb | grep -q 1209:2301; then
         echo "Found Keyboardio Model 01 attached; using model01 keymap ..."
         keymap-menu model01
+    elif lsusb | grep -q 1209:2303; then
+        echo "Found Keyboardio Atreus attached; using atreus keymap ..."
+        keymap-menu atreus
     else
         apply_local_keymap
     fi
