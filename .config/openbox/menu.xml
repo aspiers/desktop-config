@@ -380,7 +380,7 @@
         <execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-agenda-review"</execute>
       </action>
     </item>
-    <item label="Google _Calendar">
+    <item label="Google Ca_lendar">
       <action name="Execute">
         <execute>google-chrome https://www.google.com/calendar/</execute>
       </action>
