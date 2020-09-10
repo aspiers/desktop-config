@@ -62,6 +62,7 @@ xkb_symbols "keyboardio-model01" {
     include "pc(pc105)"
     include "us"
     include "gb"
+    include "adam-common(volume-controls)"
 //    include "adam-common(model01-right-ctrl-super-r)"
 };
 
