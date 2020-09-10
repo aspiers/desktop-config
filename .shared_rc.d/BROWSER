@@ -1,3 +1,4 @@
 #!/bin/bash
 
-export BROWSER=url-handler
+# Used by man -H
+export BROWSER=$ZDOTDIR/bin/url-handler
