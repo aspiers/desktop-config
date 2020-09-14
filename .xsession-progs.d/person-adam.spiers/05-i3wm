@@ -1,0 +1,15 @@
+#!/bin/bash
+
+if [ "$WINDOWMANAGER" != i3 ]; then
+    exit 0
+fi
+
+# FIXME
+# for i in {2..6}; do
+#     if i3-msg workspace number $i &&
+#             i3-msg open &&
+#             i3-msg border none
+#     then
+#         echo "Made i3 workspace $i permanent"
+#     fi
+# done
