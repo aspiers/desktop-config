@@ -363,7 +363,7 @@
     </keybind>
     <keybind key="W-f">
       <action name="Execute">
-        <execute>my-firefox</execute>
+        <execute>firefox</execute>
       </action>
     </keybind>
     <keybind key="W-g">
