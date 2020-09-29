@@ -2,5 +2,11 @@
 
 . $ZDOTDIR/lib/libproc.sh
 
-xterm-window --top-left >/dev/null &
-
+case "$WINDOWMANAGER" in
+    i3)
+        i3-sensible-terminal &
+        ;;
+    *)
+        xterm-window --top-left >/dev/null &
+        ;;
+esac
