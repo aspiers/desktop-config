@@ -2,6 +2,13 @@
 
 . $ZDOTDIR/lib/libproc.sh
 
+case "$WINDOWMANAGER" in
+    i3)
+        echo "# i3: skipping watchlogs-system-window"
+        exit 0
+        ;;
+esac
+
 if [ -z "$VNCDESKTOP" ] && which gkrellm >/dev/null; then
     gkrellm -geometry -0+0 </dev/null >/dev/null 2>&1 &
 fi

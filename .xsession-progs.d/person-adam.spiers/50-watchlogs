@@ -2,5 +2,11 @@
 
 . $ZDOTDIR/lib/libproc.sh
 
-run_if_executable watchlogs-system-window >/dev/null &
+case "$WINDOWMANAGER" in
+    i3)
+        echo "# i3: skipping watchlogs-system-window"
+        exit 0
+        ;;
+esac
 
+run_if_executable watchlogs-system-window >/dev/null &
