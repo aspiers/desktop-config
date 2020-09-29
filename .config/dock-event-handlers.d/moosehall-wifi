@@ -1,10 +1,11 @@
-#!/bin/bash
+#!/bin/zsh
 
 TIMEOUT=64
 
 changed=
 
 if lsusb | grep -q 'Dell.*E-Port Replicator'; then
+    pacific_lan
     if [ "`nmcli radio wifi`" = 'enabled' ]; then
         logger "Connected to docking station; turning wifi off"
         nmcli radio wifi off
