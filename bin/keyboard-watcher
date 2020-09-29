@@ -1,5 +1,7 @@
 #!/bin/bash
 
+SETUP=setup-keyboard
+
 # See .cfg-post.d/desktop-config and
 # .config/systemd/user/keyboard-watcher.service for how this gets run.
 
@@ -10,13 +12,18 @@ if ! which inotifywait >&/dev/null; then
     exit 1
 fi
 
+if ! which $SETUP >&/dev/null; then
+    echo "ERROR: Couldn't find $SETUP; aborting." >&2
+    exit 1
+fi
+
 while true; do
     inotifywait -q /dev/input/by-path
     echo "Input device event detected for DISPLAY=$DISPLAY"
     logger sleeping 1
     sleep 1
 
-    setup-keyboard
+    $SETUP
 
     # ~/.XSP/person-adam.spiers/60-keyboard-repeat is run via
     # ~/.keymaps/post-change.d/keyboard-repeat
