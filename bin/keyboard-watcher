@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SETUP=setup-keyboard
+SETUP=$HOME/bin/setup-keyboard
 
 # See .cfg-post.d/desktop-config and
 # .config/systemd/user/keyboard-watcher.service for how this gets run.
