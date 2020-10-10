@@ -47,6 +47,9 @@ apply_local_keymap () {
         adriatic)
             keymap-menu n150-hacked
             ;;
+        slate)
+            : no keymap setup required
+            ;;
         *)
             echo "WARNING: didn't know which keymap to use with $localhost_nickname" >&2
     esac
