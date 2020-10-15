@@ -36,18 +36,6 @@ xkb_symbols "right-alt" {
 };
 
 partial modifier_keys
-xkb_symbols "print-right-alt" {
-    virtual_modifiers RAlt;
-
-    key <CUT> {
-        [ Alt_R ],
-        virtualMods = RAlt
-    };
-
-    modifier_map Mod3 { Alt_L, Alt_R };
-};
-
-partial modifier_keys
 xkb_symbols "menu-super-right" {
     virtual_modifiers Super;
 
