@@ -353,8 +353,11 @@
         <execute>amarok</execute>
       </action>
     </keybind>
-    <!-- W-b reserved for amarok -->
-    <!-- W-c reserved for amarok -->
+    <keybind key="W-b">
+      <action name="Execute">
+        <execute>brave-browser</execute>
+      </action>
+    </keybind>
     <keybind key="W-c">
       <action name="Execute">
         <execute>google-chrome</execute>
