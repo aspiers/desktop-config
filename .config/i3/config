@@ -251,6 +251,7 @@ for_window [class="Transcribe"] floating enable
 for_window [class="MPlayer"] floating enable
 for_window [class="qjackctl"] floating enable
 
+bindsym $mod+b exec "brave-browser"
 bindsym $mod+c exec "google-chrome-stable"
 #bindsym $mod+f exec "firefox"
 bindsym $mod+g exec "~/software/telegram/Telegram"
