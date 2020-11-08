@@ -16,7 +16,7 @@ case "$localhost_nickname" in
         ;;
 esac
 
-if grep -q '^ *Driver.*synaptics' /etc/X11/xorg.conf; then
+if grep -rq '^ *Driver.*synaptics' /etc/X11/xorg.conf*; then
     echo "Synaptics touchpad detected in X11 config."
     if which synclient >/dev/null 2>&1; then
         echo "Tweaking parameters via synclient..."
