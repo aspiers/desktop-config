@@ -7,6 +7,9 @@
 
   <menu id="browser-menu" label="Browsers">
     <separator label="Browsers" />
+    <item label="brave">
+      <action name="Execute"><execute>brave-browser</execute></action>
+    </item>
     <item label="chrome">
       <action name="Execute"><execute>google-chrome</execute></action>
     </item>
