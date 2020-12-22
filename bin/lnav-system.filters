@@ -4,3 +4,5 @@
 :filter-out systemd-logind\[\d+\]: Removed session \d+
 :filter-out systemd-logind\[\d+\]: Session \d+ logged out\. Waiting for processes to exit\.
 :filter-out sshd\[\d+\]: pam_unix\(sshd:session\): session closed for user adam
+:filter-out Color temperature: \d+K
+:filter-out Period: Transition .*day
