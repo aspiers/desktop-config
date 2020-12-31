@@ -6,4 +6,4 @@ StandardOutput=journal
 StandardError=journal
 
 [Install]
-WantedBy=default.target
+# WantedBy=default.target
