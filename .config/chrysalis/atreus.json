@@ -236,7 +236,7 @@
       "keymap": [
         {"keyCode": 2078, "label": "!"},
         {"keyCode": 2079, "label": "@"},
-        {"keyCode": 2080, "label": "#"},
+        {"keyCode": 49, "label": "\\"},
         {"keyCode": 2081, "label": "$"},
         {"keyCode": 2082, "label": "%"},
         {"keyCode": 65535, "label": "", "verbose": "Transparent"},
@@ -248,7 +248,7 @@
         {"keyCode": 2087, "label": ")"},
         {"keyCode": 0, "label": "Blocked", "verbose": "Disabled"},
         {"keyCode": 0, "label": "Blocked", "verbose": "Disabled"},
-        {"keyCode": 2080, "label": "#"},
+        {"keyCode": 0, "label": "Blocked", "verbose": "Disabled"},
         {"keyCode": 0, "label": "Blocked", "verbose": "Disabled"},
         {"keyCode": 0, "label": "Blocked", "verbose": "Disabled"},
         {"keyCode": 65535, "label": "", "verbose": "Transparent"},
