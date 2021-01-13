@@ -1,3 +1,9 @@
 #!/bin/bash
 
-xset r rate 200 50
+if atreus-attached; then
+    # Speed copper keyswitches have extremely low activation energy :-/
+    xset r rate 300 50
+else
+    xset r rate 200 50
+fi
+
