@@ -1,0 +1,3 @@
+#!/bin/bash
+
+lsusb | grep -q 1209:2301
