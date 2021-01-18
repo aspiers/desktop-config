@@ -88,6 +88,7 @@ xkb_symbols "kinesis" {
     include "adam-common(kinesis-insert)"
     include "adam-common(us-backslash)"
     include "adam-common(us-3)"
+    key <AE11> { [ sterling, EuroSign ] };
 };
 
 xkb_symbols "hhkl" {
