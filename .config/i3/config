@@ -250,6 +250,7 @@ for_window [class="Transcribe"] floating enable
 for_window [class="MPlayer"] floating enable
 for_window [class="qjackctl"] floating enable
 for_window [class="Emacs" title="Ediff"] floating enable
+for_window [class="vokoscreenNG"] floating enable
 
 bindsym $mod+b exec "brave-browser"
 bindsym $mod+c exec "google-chrome-stable"
@@ -257,7 +258,7 @@ bindsym $mod+c exec "google-chrome-stable"
 bindsym $mod+g exec "~/software/telegram/Telegram"
 bindsym $mod+Shift+f exec "thunar"
 bindsym $mod+Control+s exec "spectacle"
-bindsym $mod+Control+Shift+s exec "spectacle"
+bindsym $mod+Control+Shift+s exec "vokoscreenNG"
 bindsym $mod+p exec "pavucontrol"
 bindkey $mod+Shift+i exec "top-term sudo nethogs `gw-dev`"
 bindkey $mod+Control+i exec "top-term sudo iotop"
