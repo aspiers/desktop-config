@@ -6,3 +6,4 @@
 :filter-out sshd\[\d+\]: pam_unix\(sshd:session\): session closed for user adam
 :filter-out Color temperature: \d+K
 :filter-out Period: Transition .*day
+:filter-out Period: (Night|Daytime)

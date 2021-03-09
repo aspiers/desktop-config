@@ -435,9 +435,14 @@
       </action>
     </keybind>
     <!-- W-C-r reserved for KDE run command -->
-    <keybind key="W-S-s">
+    <keybind key="W-C-s">
       <action name="Execute">
         <execute>spectacle</execute>
+      </action>
+    </keybind>
+    <keybind key="W-C-S-s">
+      <action name="Execute">
+        <execute>vokoscreenNG</execute>
       </action>
     </keybind>
     <keybind key="W-t">
