@@ -249,6 +249,7 @@ for_window [class="zoom"] floating enable
 for_window [class="Transcribe"] floating enable
 for_window [class="MPlayer"] floating enable
 for_window [class="qjackctl"] floating enable
+for_window [class="Emacs" title="Ediff"] floating enable
 
 bindsym $mod+b exec "brave-browser"
 bindsym $mod+c exec "google-chrome-stable"
