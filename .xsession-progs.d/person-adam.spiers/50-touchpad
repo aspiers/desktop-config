@@ -22,6 +22,7 @@ if grep -rq '^ *Driver.*synaptics' /etc/X11/xorg.conf*; then
         echo "Tweaking parameters via synclient..."
         synclient VertScrollDelta=50 LeftEdge=130 RightEdge=970
         synclient TapButton1=0 MinSpeed=1.5 MaxSpeed=3
+        synclient HorizTwoFingerScroll=1
     else
         echo "synclient not found; cannot tweak parameters." >&2
         exit 1
