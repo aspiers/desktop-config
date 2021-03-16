@@ -21,7 +21,7 @@ if grep -rq '^ *Driver.*synaptics' /etc/X11/xorg.conf*; then
     if which synclient >/dev/null 2>&1; then
         echo "Tweaking parameters via synclient..."
         # see synaptics(4) man page
-        synclient VertScrollDelta=50 LeftEdge=130 RightEdge=970
+        synclient VertScrollDelta=30 LeftEdge=130 RightEdge=970
         synclient TapButton1=0
         synclient MinSpeed=1.5 MaxSpeed=4 AccelFactor=0.3
         synclient HorizTwoFingerScroll=1
