@@ -8,7 +8,6 @@ setup-keyboard
 here=`dirname $0`
 . $here/00-systemd-user-env
 
-# Ensure we only start after systemd --user environment is already set up
-systemctl --user disable keyboard-watcher.service
-
+# N.B. we should only start after systemd --user environment is
+# already set up.  This means no WantedBy=default.target in the unit.
 systemctl --user start keyboard-watcher.service
