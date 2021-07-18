@@ -255,6 +255,7 @@ for_window [class="vokoscreenNG"] floating enable
 bindsym $mod+b exec "brave-browser"
 bindsym $mod+c exec "google-chrome-stable"
 #bindsym $mod+f exec "firefox"
+bindsym $mod+Shift+d exec "discord"
 bindsym $mod+g exec "~/software/telegram/Telegram"
 bindsym $mod+Shift+f exec "thunar"
 bindsym $mod+Control+s exec "spectacle"
