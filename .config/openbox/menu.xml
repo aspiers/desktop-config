@@ -32,6 +32,9 @@
 
   <menu id="comms-menu" label="Communications">
     <separator label="Communications" />
+    <item label="_discord">
+      <action name="Execute"><execute>discord</execute></action>
+    </item>
     <item label="_signal">
       <action name="Execute"><execute>signal-desktop</execute></action>
     </item>
