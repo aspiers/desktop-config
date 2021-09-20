@@ -437,7 +437,8 @@
     <!-- W-C-r reserved for KDE run command -->
     <keybind key="W-C-s">
       <action name="Execute">
-        <execute>spectacle</execute>
+        <!-- <execute>spectacle</execute> -->
+        <execute>flameshot gui</execute>
       </action>
     </keybind>
     <keybind key="W-C-S-s">

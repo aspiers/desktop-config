@@ -213,6 +213,9 @@
     <item label="k_calc">
       <action name="Execute"><execute>kcalc</execute></action>
     </item>
+    <item label="flameshot">
+      <action name="Execute"><execute>flameshot</execute></action>
+    </item>
     <item label="spectacle">
       <action name="Execute"><execute>spectacle</execute></action>
     </item>
