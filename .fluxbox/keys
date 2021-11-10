@@ -47,8 +47,9 @@ OnTitlebar Mouse2 :Lower
 OnTitlebar Mouse3 :WindowMenu
 
 # alt-tab
-Mod4 slash :NextWindow {groups} (workspace=[current]) (Head=[mouse]) (FocusHidden=no) (Class!=Gkrellm)
-Mod4 Shift slash :PrevWindow {groups} (workspace=[current])
+Mod4 slash :MacroCmd {NextWindow {groups} (workspace=[current]) (Head=[mouse]) (FocusHidden=no) (Class!=Gkrellm)} {Exec focus-active-window}
+
+Mod4 Shift slash :MacroCmd {PrevWindow {groups} (workspace=[current]) (Head=[mouse]) (FocusHidden=no) (Class!=Gkrellm)} {Exec focus-active-window}
 
 # cycle through tabs in the current window
 #Mod4 slash :NextTab
@@ -167,5 +168,8 @@ Mod1 Mod4 9 :TakeToWorkspace 9
 
 # Change to previous/next head.
 # Make sure synergys isn't running otherwise it will grab these keys!
-Shift Mod4 comma :NextWindow {groups} (workspace=[current]) (FocusHidden=no) (Class!=Gkrellm) (Head=1)
-Shift Mod4 period :NextWindow {groups} (workspace=[current]) (FocusHidden=no) (Class!=Gkrellm) (Head=2)
+Shift Mod4 comma :MacroCmd {NextWindow {groups} (workspace=[current]) (FocusHidden=no) (Class!=Gkrellm) (Head=1)} {Exec focus-active-window}
+# xdotool mousemove 1200 500
+
+Shift Mod4 period :MacroCmd {NextWindow {groups} (workspace=[current]) (FocusHidden=no) (Class!=Gkrellm) (Head=2)} {Exec focus-active-window}
+# xdotool mousemove 3200 400}

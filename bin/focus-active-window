@@ -1,0 +1,29 @@
+#!/bin/bash
+
+fatal () {
+    echo >&2 -e "$*"
+    exit 1
+}
+
+if ! id=$(xdotool getactivewindow) || [[ -z "$id" ]]; then
+    fatal "Failed to get id of active window; aborting."
+fi
+
+if ! info=$(xwininfo -id $id); then
+    fatal "xwininfo -id $id failed; aborting."
+fi
+
+if ! [[ "$info" =~ 'Width: '([0-9]+) ]]; then
+    fatal "Couldn't parse width for window $id:\n$info"
+fi
+width=${BASH_REMATCH[1]}
+
+if ! [[ "$info" =~ 'Height: '([0-9]+) ]]; then
+    fatal "Couldn't parse height for window $id:\n$info"
+fi
+height=${BASH_REMATCH[1]}
+
+x=$(( width / 2 ))
+y=$(( height / 2 ))
+
+xdotool mousemove --window $id $x $y
