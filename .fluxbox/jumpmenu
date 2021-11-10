@@ -2,6 +2,7 @@
 [encoding] {UTF-8}
       [exec] (emacs) {wmctrl -a emacs}
       [exec] (terminal) {wmctrl -a gnome-terminal}
+      [exec] (Telegram) {wmctrl -a telegram}
       [exec] (Discord) {wmctrl -a discord}
       [exec] (zoom) {wmctrl -a zoom}
 [endencoding]
