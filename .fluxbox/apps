@@ -1,0 +1,18 @@
+[app] (Name=fbrun)
+  [Position] (WINCENTER) {0 0}
+  [Layer] {2}
+[end]
+
+[app] (Name=gkrellm)
+  [Position] (TopRight) {0 0}
+  [Sticky] {yes}
+  [Hidden] {yes}
+  [Head] {1}
+[end]
+
+[app] (Title=lnav-system)
+  [Position] (Bottom) {0 0}
+  [Sticky] {yes}
+  [Hidden] {yes}
+  [Head] {2}
+[end]
