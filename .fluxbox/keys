@@ -55,10 +55,10 @@ Mod4 Shift slash :MacroCmd {PrevWindow {groups} (workspace=[current]) (Head=[mou
 #Mod4 slash :NextTab
 #Mod4 Shift slash :PrevTab
 
-Mod4 Left :FocusLeft (workspace=[current]) (Head=[mouse]) (FocusHidden=no) (Class!=Gkrellm)
-Mod4 Right :FocusRight (workspace=[current]) (Head=[mouse]) (FocusHidden=no) (Class!=Gkrellm)
-Mod4 Up :FocusUp (workspace=[current]) (Head=[mouse]) (FocusHidden=no) (Class!=Gkrellm)
-Mod4 Down :FocusDown (workspace=[current]) (Head=[mouse]) (FocusHidden=no) (Class!=Gkrellm)
+Mod4 Left :MacroCmd {FocusLeft (workspace=[current]) (Head=[mouse]) (FocusHidden=no) (Class!=Gkrellm)} {Exec focus-active-window}
+Mod4 Right :MacroCmd {FocusRight (workspace=[current]) (Head=[mouse]) (FocusHidden=no) (Class!=Gkrellm)} {Exec focus-active-window}
+Mod4 Up :MacroCmd {FocusUp (workspace=[current]) (Head=[mouse]) (FocusHidden=no) (Class!=Gkrellm)} {Exec focus-active-window}
+Mod4 Down :MacroCmd {FocusDown (workspace=[current]) (Head=[mouse]) (FocusHidden=no) (Class!=Gkrellm)} {Exec focus-active-window}
 
 Mod4 space :Raise
 Mod4 l :Lower
