@@ -158,6 +158,7 @@ Mod1 Mod4 9 :TakeToWorkspace 9
 #Control Mod4 F11 :TakeToWorkspace 11
 #Control Mod4 F12 :TakeToWorkspace 12
 
-# change to previous/next head
+# Change to previous/next head.
+# Make sure synergys isn't running otherwise it will grab these keys!
 Shift Mod4 comma :NextWindow {groups} (workspace=[current]) (FocusHidden=no) (Class!=Gkrellm) (Head=1)
 Shift Mod4 period :NextWindow {groups} (workspace=[current]) (FocusHidden=no) (Class!=Gkrellm) (Head=2)
