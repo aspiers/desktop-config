@@ -58,10 +58,11 @@ Mod4 Shift slash :MacroCmd {NextWindow {groups} (workspace=[current]) (FocusHidd
 #Mod4 slash :NextTab
 #Mod4 Shift slash :PrevTab
 
-Mod4 Left :MacroCmd {FocusLeft (workspace=[current]) (Head=[mouse]) (FocusHidden=no) (Class!=Gkrellm)} {Exec focus-active-window}
-Mod4 Right :MacroCmd {FocusRight (workspace=[current]) (Head=[mouse]) (FocusHidden=no) (Class!=Gkrellm)} {Exec focus-active-window}
-Mod4 Up :MacroCmd {FocusUp (workspace=[current]) (Head=[mouse]) (FocusHidden=no) (Class!=Gkrellm)} {Exec focus-active-window}
-Mod4 Down :MacroCmd {FocusDown (workspace=[current]) (Head=[mouse]) (FocusHidden=no) (Class!=Gkrellm)} {Exec focus-active-window}
+# FIXME: missing support for client patterns like the other commands
+Mod4 Left :MacroCmd {FocusLeft} {Exec focus-active-window}
+Mod4 Right :MacroCmd {FocusRight} {Exec focus-active-window}
+Mod4 Up :MacroCmd {FocusUp} {Exec focus-active-window}
+Mod4 Down :MacroCmd {FocusDown} {Exec focus-active-window}
 
 # current window commands
 Mod4 space :Raise
