@@ -218,6 +218,46 @@
     <keybind key="W-Down">
       <action name="DirectionalFocusSouth"/>
     </keybind>
+    <keybind key="W-h">
+      <action name="DirectionalFocusWest"/>
+    </keybind>
+    <keybind key="W-l">
+      <action name="DirectionalFocusEast"/>
+    </keybind>
+    <keybind key="W-k">
+      <action name="DirectionalFocusNorth"/>
+    </keybind>
+    <keybind key="W-j">
+      <action name="DirectionalFocusSouth"/>
+    </keybind>
+    <keybind key="C-W-h">
+      <action name="DirectionalFocusWest">
+        <finalactions>
+          <action name="Focus"/>
+        </finalactions>
+      </action>
+    </keybind>
+    <keybind key="C-W-l">
+      <action name="DirectionalFocusEast">
+        <finalactions>
+          <action name="Focus"/>
+        </finalactions>
+      </action>
+    </keybind>
+    <keybind key="C-W-k">
+      <action name="DirectionalFocusNorth">
+        <finalactions>
+          <action name="Focus"/>
+        </finalactions>
+      </action>
+    </keybind>
+    <keybind key="C-W-j">
+      <action name="DirectionalFocusSouth">
+        <finalactions>
+          <action name="Focus"/>
+        </finalactions>
+      </action>
+    </keybind>
     <keybind key="C-W-Left">
       <action name="DirectionalFocusWest">
         <finalactions>
@@ -258,6 +298,18 @@
     <keybind key="S-W-Down">
       <action name="MoveToEdgeSouth"/>
     </keybind>
+    <keybind key="S-W-h">
+      <action name="MoveToEdgeWest"/>
+    </keybind>
+    <keybind key="S-W-l">
+      <action name="MoveToEdgeEast"/>
+    </keybind>
+    <keybind key="S-W-k">
+      <action name="MoveToEdgeNorth"/>
+    </keybind>
+    <keybind key="S-W-j">
+      <action name="MoveToEdgeSouth"/>
+    </keybind>
     <keybind key="C-W-Left">
       <action name="GrowToEdgeWest"/>
     </keybind>
@@ -268,6 +320,18 @@
       <action name="GrowToEdgeNorth"/>
     </keybind>
     <keybind key="C-W-Down">
+      <action name="GrowToEdgeSouth"/>
+    </keybind>
+    <keybind key="C-W-h">
+      <action name="GrowToEdgeWest"/>
+    </keybind>
+    <keybind key="C-W-l">
+      <action name="GrowToEdgeEast"/>
+    </keybind>
+    <keybind key="C-W-k">
+      <action name="GrowToEdgeNorth"/>
+    </keybind>
+    <keybind key="C-W-j">
       <action name="GrowToEdgeSouth"/>
     </keybind>
     <keybind key="W-m">
@@ -321,16 +385,6 @@
     <keybind key="C-W-Return">
       <action name="ShowMenu">
         <menu>wm-menu</menu>
-      </action>
-    </keybind>
-    <keybind key="C-W-l">
-      <action name="Execute">
-        <execute>xscreensaver-command -activate</execute>
-      </action>
-    </keybind>
-    <keybind key="M-W-l">
-      <action name="Execute">
-        <execute>xscreensaver-command -activate</execute>
       </action>
     </keybind>
     <keybind key="C-M-W-l">
@@ -398,12 +452,6 @@
     <keybind key="W-j">
       <action name="ShowMenu">
         <menu>jump-to-app-menu</menu>
-      </action>
-    </keybind>
-    <keybind key="W-S-l">
-      <!-- logs -->
-      <action name="Execute">
-        <execute>watchlogs-suse-mail-window</execute>
       </action>
     </keybind>
     <keybind key="W-o">
