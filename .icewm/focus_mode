@@ -1,0 +1,4 @@
+#
+# Focus mode (0=custom, 1=click, 2=sloppy, 3=explicit, 4=strict, 5=quiet)
+#
+FocusMode=4
