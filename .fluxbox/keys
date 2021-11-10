@@ -62,6 +62,7 @@ Mod4 Down :MacroCmd {FocusDown (workspace=[current]) (Head=[mouse]) (FocusHidden
 
 Mod4 space :Raise
 Mod4 l :Lower
+Mod4 i :Minimize
 
 Shift Mod4 Left :MoveLeft 10
 Shift Mod4 Right :MoveRight 10
