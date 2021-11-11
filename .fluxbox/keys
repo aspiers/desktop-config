@@ -64,9 +64,15 @@ Mod4 Right :MacroCmd {FocusRight} {Exec focus-active-window}
 Mod4 Up :MacroCmd {FocusUp} {Exec focus-active-window}
 Mod4 Down :MacroCmd {FocusDown} {Exec focus-active-window}
 
+#Mod4 h :MacroCmd {FocusLeft} {Exec focus-active-window}
+#Mod4 l :MacroCmd {FocusRight} {Exec focus-active-window}
+#Mod4 k :MacroCmd {FocusUp} {Exec focus-active-window}
+#Mod4 j :MacroCmd {FocusDown} {Exec focus-active-window}
+
 # current window commands
 Mod4 space :Raise
 Mod4 l :Lower
+Mod1 Mod4 l :Lower
 Mod4 i :Minimize
 Mod4 m :Maximize
 Shift Mod4 m :MaximizeVertical
@@ -84,6 +90,16 @@ Shift Mod1 Mod4 Left :MoveLeft 50
 Shift Mod1 Mod4 Right :MoveRight 50
 Shift Mod1 Mod4 Up :MoveUp 50
 Shift Mod1 Mod4 Down :MoveDown 50
+
+Shift Mod4 h :MoveLeft 10
+Shift Mod4 l :MoveRight 10
+Shift Mod4 k :MoveUp 10
+Shift Mod4 j :MoveDown 10
+
+Shift Mod1 Mod4 h :MoveLeft 50
+Shift Mod1 Mod4 l :MoveRight 50
+Shift Mod1 Mod4 k :MoveUp 50
+Shift Mod1 Mod4 j :MoveDown 50
 
 # go to a specific tab in the current window
 # Mod4 1 :Tab 1
