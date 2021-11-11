@@ -23,9 +23,6 @@ for cmd in xwininfo xprop; do
 done
 
 match_int='[0-9][0-9]*'
-match_string='".*"'
-match_qstring='"[^"\\]*(\\.[^"\\]*)*"' # NOTE: Adds 1 backreference
-
 {
     # Run xwininfo, get window id
     window_id=`xwininfo -int | sed -nre "s/^xwininfo: Window id: ($match_int) .*$/\1/p"`
@@ -33,11 +30,5 @@ match_qstring='"[^"\\]*(\\.[^"\\]*)*"' # NOTE: Adds 1 backreference
 
     # Run xprop, transform its output into i3 criteria. Handle fallback to
     # WM_NAME when _NET_WM_NAME isn't set
-    xprop -id $window_id |
-        sed -nr \
-            -e "s/^WM_CLASS\(STRING\) = ($match_qstring), ($match_qstring)$/instance=\1\nclass=\3/p" \
-            -e "s/^WM_WINDOW_ROLE\(STRING\) = ($match_qstring)$/window_role=\1/p" \
-            -e "/^WM_NAME\(STRING\) = ($match_string)$/{s//title=\1/; h}" \
-            -e "/^_NET_WM_NAME\(UTF8_STRING\) = ($match_qstring)$/{s//title=\1/; h}" \
-            -e '${g; p}'
+    xwinprops "$window_id"
 } | sort | tr "\n" " " | sed -r 's/^(.*) $/[\1]\n/'
