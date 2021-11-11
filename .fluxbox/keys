@@ -4,6 +4,8 @@ Control Mod1 Mod4 r :Reconfigure
 OnDesktop Mouse1 :HideMenus
 OnDesktop Mouse2 :WorkspaceMenu
 OnDesktop Mouse3 :RootMenu
+Control Mod1 Mouse4 :LeftWorkspace
+Control Mod1 Mouse5 :RightWorkspace
 
 Mod4 Return :RootMenu
 Control Mod4 Return :CustomMenu ~/.fluxbox/fluxboxmenu
