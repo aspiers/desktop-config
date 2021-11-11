@@ -71,6 +71,7 @@ Mod4 i :Minimize
 Mod4 m :Maximize
 Shift Mod4 m :MaximizeVertical
 Control Mod4 m :MaximizeHorizontal
+Mod4 s :StickWindow
 Mod4 q :Close
 Control Mod4 q :Kill
 
