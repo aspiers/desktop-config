@@ -52,12 +52,12 @@ OnTitlebar Mouse2 :Lower
 OnTitlebar Mouse3 :WindowMenu
 
 # alt-tab
-Mod4 slash :MacroCmd {NextWindow {groups} (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {Exec focus-active-window}
+Mod4 slash :MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {Exec focus-active-window}
 
-Mod4 Shift slash :MacroCmd {NextWindow {groups} (workspace=[current]) (FocusHidden=no)} {Exec focus-active-window}
+Shift Mod4 slash :MacroCmd {NextWindow (workspace=[current]) (FocusHidden=no)} {Exec focus-active-window}
 
 # cycle through tabs in the current window
-#Mod4 slash :NextTab
+Control Mod4 slash :NextTab
 #Mod4 Shift slash :PrevTab
 
 # FIXME: missing support for client patterns like the other commands
@@ -118,6 +118,7 @@ Shift Mod1 Mod4 j :MoveDown 50
 Control Mod4 b :Exec brave-browser
 Mod4 g :Exec ~/software/telegram/Telegram
 Mod4 t :Exec xterm-window
+Mod4 p :Exec pavucontrol
 Shift Mod4 t :Exec top-term
 Control Mod4 s :Exec flameshot gui
 Control Mod1 Mod4 b :Exec blank-all-screens
@@ -129,13 +130,15 @@ Control Mod4 space :Exec fbrun
 Mod4 x :Exec wmctrl -s 0; xdotool search --onlyvisible --class gnome-terminal windowactivate
 
 #Mod4 b :Exec wmctrl -s 1; xdotool search --desktop 1 --class brave-browser windowactivate
-Mod4 b :MacroCmd {NextWindow {groups} (Name=brave-browser)} {Exec focus-active-window}
+Mod4 b :MacroCmd {NextWindow (Name=brave-browser)} {Exec focus-active-window}
+
+Mod4 c :MacroCmd {NextWindow (Name=brave-browser) (Head=2)} {Delay {Exec focus-active-window && sleep 0.005 && xdotool key ctrl+1} 5000}
 
 #Mod4 e :Exec wmctrl -a emacs
-Mod4 e :MacroCmd {NextWindow {groups} (Name=emacs)} {Exec focus-active-window}
+Mod4 e :MacroCmd {NextWindow (Name=emacs)} {Exec focus-active-window}
 
 #Mod4 d :Exec wmctrl -a discord
-Mod4 d :MacroCmd {NextWindow {groups} (Name=discord)} {Exec focus-active-window}
+Mod4 d :MacroCmd {NextWindow (Name=discord)} {Exec focus-active-window}
 
 # volume settings
 Mod4 bracketright :Exec amixer sset Master,0 1+
@@ -201,8 +204,8 @@ Mod1 Mod4 9 :TakeToWorkspace 9
 
 # Change to previous/next head.
 # Make sure synergys isn't running otherwise it will grab these keys!
-Shift Mod4 comma :MacroCmd {NextWindow {groups} (workspace=[current]) (FocusHidden=no) (Head=1)} {Exec focus-active-window}
+Shift Mod4 comma :MacroCmd {NextWindow (workspace=[current]) (FocusHidden=no) (Head=1)} {Exec focus-active-window}
 # xdotool mousemove 1200 500
 
-Shift Mod4 period :MacroCmd {NextWindow {groups} (workspace=[current]) (FocusHidden=no) (Head=2)} {Exec focus-active-window}
+Shift Mod4 period :MacroCmd {NextWindow (workspace=[current]) (FocusHidden=no) (Head=2)} {Exec focus-active-window}
 # xdotool mousemove 3200 400}
