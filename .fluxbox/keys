@@ -1,4 +1,5 @@
 Control Mod1 Mod4 r :Reconfigure
+Shift Control Mod1 Mod4 r :Restart
 
 # click on the desktop to get menus
 OnDesktop Mouse1 :HideMenus
