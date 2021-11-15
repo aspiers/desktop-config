@@ -117,10 +117,10 @@ Shift Mod1 Mod4 j :MoveDown 50
 
 # opening programs
 Control Mod4 b :Exec brave-browser
-Mod4 g :Exec ~/software/telegram/Telegram
+Control Mod4 g :Exec ~/software/telegram/Telegram
 Mod4 t :Exec xterm-window
 Mod4 p :Exec pavucontrol
-Shift Mod4 t :Exec top-term
+Shift Mod4 t :Exec top-term htop
 Control Mod4 s :Exec flameshot gui
 Control Mod1 Mod4 b :Exec blank-all-screens
 
@@ -140,6 +140,8 @@ Mod4 e :MacroCmd {NextWindow (Name=emacs)} {Exec focus-active-window}
 
 #Mod4 d :Exec wmctrl -a discord
 Mod4 d :MacroCmd {NextWindow (Name=discord)} {Exec focus-active-window}
+
+Mod4 g :MacroCmd {NextWindow (Title=Telegram.*)} {Exec focus-active-window}
 
 Mod4 w :MacroCmd {NextWindow (Title=.*WhatsApp.*)} {Exec focus-active-window}
 
