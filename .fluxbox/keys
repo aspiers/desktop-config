@@ -117,6 +117,7 @@ Shift Mod1 Mod4 j :MoveDown 50
 
 # opening programs
 Control Mod4 b :Exec brave-browser
+Control Mod4 d :Exec discord
 Control Mod4 g :Exec ~/software/telegram/Telegram
 Mod4 t :Exec xterm-window
 Mod4 p :Exec pavucontrol
