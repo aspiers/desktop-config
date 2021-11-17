@@ -16,3 +16,11 @@
   [Hidden] {yes}
   [Head] {2}
 [end]
+
+[app] (Title=Telegram) (Head=2)
+  [Sticky] {yes}
+[end]
+
+[app] (Name=Discord) (Head=2)
+  [Sticky] {yes}
+[end]
