@@ -1,26 +1,23 @@
-[app] (Name=fbrun)
-  [Position] (WINCENTER) {0 0}
-  [Layer] {2}
+[app] (name=fbrun)
+  [Position]	(CENTER)	{0 0}
+  [Layer]	{2}
 [end]
-
-[app] (Name=gkrellm)
-  [Position] (TopRight) {0 0}
-  [Sticky] {yes}
-  [Hidden] {yes}
-  [Head] {1}
+[app] (name=gkrellm)
+  [Head]	{1}
+  [Position]	(UPPERRIGHT)	{0 0}
+  [Hidden]	{yes}
+  [Sticky]	{yes}
 [end]
-
-[app] (Title=lnav-system)
-  [Position] (Bottom) {0 0}
-  [Sticky] {yes}
-  [Hidden] {yes}
-  [Head] {2}
+[app] (title=lnav-system)
+  [Head]	{2}
+  [Position]	(BOTTOM)	{0 0}
+  [Hidden]	{yes}
+  [Sticky]	{yes}
 [end]
-
-[app] (Title=Telegram) (Head=2)
-  [Sticky] {yes}
+[app] (title=Telegram) (head=2)
+  [Deco]	{0x5e0}
+  [Sticky]	{yes}
 [end]
-
-[app] (Name=Discord) (Head=2)
-  [Sticky] {yes}
+[app] (name=Discord) (head=2)
+  [Sticky]	{yes}
 [end]
