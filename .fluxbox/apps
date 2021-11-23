@@ -21,3 +21,6 @@
 [app] (name=Discord) (head=2)
   [Sticky]	{yes}
 [end]
+[app] (name=Zoom) (head=2)
+  [Sticky]	{yes}
+[end]
