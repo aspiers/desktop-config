@@ -1,0 +1,74 @@
+# - To prevent any other app from overwriting your menu
+#   you can change the menu name in ~/.fluxbox/init to:
+#     session.menuFile: ~/.fluxbox/my-menu
+
+[begin] (Fluxbox)
+[encoding] {UTF-8}
+      [exec]   (gnome-terminal) {gnome-terminal} 
+      [exec]   (Run) {fbrun} 
+[submenu] (Browsers)
+      [exec]   (google-chrome) {google-chrome} 
+      [exec]   (chromium) {chromium} 
+      [exec]   (firefox) {firefox} 
+[end]
+[submenu] (Comms)
+      [exec]   (Discord) {discord} 
+      [exec]   (Slack) {slack} 
+[end]
+[submenu] (Graphics)
+      [exec]   (gimp) {gimp} 
+      [exec]   (inkscape) {inkscape} 
+[end]
+[submenu] (Audio)
+      [exec]   (kmix) {kmix} 
+      [exec]   (audacity) {audacity} 
+      [exec]   (alsamixer) {urxvt -e alsamixer} 
+[end]
+[submenu] (Video)
+      [exec]   (vlc) {vlc} 
+[end]
+[submenu] (Utils)
+      [exec]   (xfontsel) {xfontsel} 
+      [exec] (gcalc) {gnome-calculator} 
+      [exec]   (kcalc) {kcalc} 
+      [exec]   (xclock) {xclock} 
+      [exec] (Window name) {xwinprops | xmessage -file - -center} 
+[end]
+[submenu] (Office)
+      [exec] (Open Office)      {ooffice} 
+      [exec]   (dia) {dia} 
+[end]
+[submenu] (System Monitoring)
+      [exec]   (top) {urxvt -e top} 
+      [exec]   (htop) {urxvt -e htop} 
+      [exec]   (iotop) {urxvt -e iotop} 
+      [exec]   (powertop) {urxvt -e powertop} 
+      [exec]   (gkrellm) {gkrellm} 
+[end]
+[submenu] (Fluxbox menu)
+      [config] (Configure) 
+[submenu] (System Styles) {Choose a style...}
+      [stylesdir] (/usr/share/fluxbox/styles) 
+      [exec] (Regen Menu) {fluxbox-generate_menu} 
+[end]
+[submenu] (User Styles) {Choose a style...}
+      [stylesdir] (~/.fluxbox/styles) 
+[end]
+      [workspaces] (Workspace List) 
+[submenu] (Window Managers)
+      [restart] (openbox) {openbox} 
+      [restart] (xfce4) {startxfce4} 
+      [restart] (gnome) {gnome-session} 
+[end]
+      [commanddialog] (Fluxbox Command) 
+      [reconfig] (Reload config) 
+      [restart] (Restart) 
+      [exec] (About) {(fluxbox -v; fluxbox -info | sed 1d) | xmessage -file - -center} 
+[end]
+      [exec] (Lock screen) {xscreensaver-command -lock} 
+      [exec]   (xscreensaver-demo) {xscreensaver-demo} 
+      [separator] 
+      [exit] (Exit) 
+[end]
+[endencoding]
+[end]
