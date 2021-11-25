@@ -18,7 +18,7 @@
   [Deco]	{0x5e0}
   [Sticky]	{yes}
 [end]
-[app] (name=Discord) (head=2)
+[app] (name=discord) (head=2)
   [Sticky]	{yes}
 [end]
 [app] (name=Zoom) (head=2)
