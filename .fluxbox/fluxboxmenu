@@ -10,8 +10,8 @@
       [workspaces] (Workspace List)
 [submenu] (Tools)
       [exec] (Window name) {xprop WM_CLASS|cut -d \" -f 2|xmessage -file - -center}
-      [exec] (Screenshot - JPG) {import screenshot.jpg && display -resize 50% screenshot.jpg}
-      [exec] (Screenshot - PNG) {import screenshot.png && display -resize 50% screenshot.png}
+      [exec] (ksnip) {ksnip}
+      [exec] (Flameshot) {flameshot gui}
       [exec] (Run) {fbrun}
       [exec] (Regen Menu) {fluxbox-generate_menu}
 [end]

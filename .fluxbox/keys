@@ -122,7 +122,15 @@ Control Mod4 g :Exec ~/software/telegram/Telegram
 Mod4 t :Exec xterm-window
 Mod4 p :Exec pavucontrol
 Shift Mod4 t :Exec top-term htop
-Control Mod4 s :Exec flameshot gui
+
+# Control Mod4 s :Exec flameshot gui
+# Control Shift Mod4 s :Exec flameshot launcher
+# Control Mod1 Mod4 s :Exec flameshot full
+Control Mod4 s :Exec ksnip -r
+Control Mod4 w :Exec ksnip -a
+Control Shift Mod4 s :Exec ksnip
+Control Mod1 Mod4 s :Exec ksnip -m
+
 Control Mod1 Mod4 b :Exec blank-all-screens
 
 # open a dialog to run programs
