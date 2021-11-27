@@ -74,7 +74,7 @@ Mod4 Down :MacroCmd {FocusDown} {Exec focus-active-window}
 
 # current window commands
 Mod4 space :Raise
-Mod4 l :Lower
+Mod4 l :MacroCmd {Lower} {Exec focus-active-window}
 Mod1 Mod4 l :Lower
 Mod4 i :Minimize
 Mod4 m :Maximize
