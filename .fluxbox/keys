@@ -52,14 +52,20 @@ OnTitlebar Mouse2 :Lower
 # right click on the titlebar for a menu of options
 OnTitlebar Mouse3 :WindowMenu
 
-# alt-tab
+# cycle windows on current display and workspace
 Mod4 slash :MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {Exec focus-active-window}
+# allow shift to "cancel" / undo:
+Shift Mod4 slash :MacroCmd {PrevWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {Exec focus-active-window}
 
-Shift Mod4 slash :MacroCmd {NextWindow (workspace=[current]) (FocusHidden=no)} {Exec focus-active-window}
+# cycle windows on any display, current workspace
+# probably not useful since makes more sense to switch workspace manually first
+# Shift Mod4 slash :MacroCmd {NextWindow (workspace=[current]) (FocusHidden=no)} {Exec focus-active-window}
+
+# FIXME: figure out how to cycle without raising focus
 
 # cycle through tabs in the current window
-Control Mod4 slash :NextTab
-#Mod4 Shift slash :PrevTab
+# Control Mod4 slash :NextTab
+# Control Shift Mod4 slash :PrevTab
 
 # FIXME: missing support for client patterns like the other commands
 Mod4 Left :MacroCmd {FocusLeft} {Exec focus-active-window}
