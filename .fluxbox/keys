@@ -141,6 +141,7 @@ Mod4 x :Exec wmctrl -s 0; xdotool search --onlyvisible --class gnome-terminal wi
 
 #Mod4 b :Exec wmctrl -s 1; xdotool search --desktop 1 --class brave-browser windowactivate
 Mod4 b :MacroCmd {NextWindow (Name=brave-browser) (Head=1)} {Exec focus-active-window}
+Shift Mod4 b :MacroCmd {NextWindow (Name=brave-browser) (Title!=.*WhatsApp.*) (Head=2)} {Exec focus-active-window}
 
 Mod4 c :MacroCmd {NextWindow (Name=brave-browser) (Title!=.*WhatsApp.*) (Head=2)} {Delay {Exec focus-active-window && sleep 0.1 && xdotool key ctrl+1} 100}
 
