@@ -24,6 +24,9 @@
 [app] (name=discord) (head=2)
   [Sticky]	{yes}
 [end]
+[app] (name=brave-browser) (head=2)
+  [Sticky]	{yes}
+[end]
 [app] (name=Discord Updater)
   [Head]	{2}
 [end]
