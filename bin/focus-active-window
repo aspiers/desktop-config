@@ -26,4 +26,4 @@ height=${BASH_REMATCH[1]}
 x=$(( width / 2 ))
 y=$(( height / 2 ))
 
-xdotool mousemove --window $id $x $y
+xdotool mousemove --window $id $x $y "$@"
