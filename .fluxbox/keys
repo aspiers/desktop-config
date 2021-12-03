@@ -8,6 +8,9 @@ OnDesktop Mouse3 :RootMenu
 Control Mod1 Mouse4 :LeftWorkspace
 Control Mod1 Mouse5 :RightWorkspace
 
+Control Shift Mod1 Mouse4 :TakeToPrevWorkspace
+Control Shift Mod1 Mouse5 :TakeToNextWorkspace
+
 Mod4 Return :RootMenu
 Control Mod4 Return :CustomMenu ~/.fluxbox/fluxboxmenu
 Shift Mod4 Return :WindowMenu
