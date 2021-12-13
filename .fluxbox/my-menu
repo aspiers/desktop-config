@@ -69,6 +69,5 @@
       [exec]   (xscreensaver-demo) {xscreensaver-demo} 
       [separator] 
       [exit] (Exit) 
-[end]
 [endencoding]
 [end]
