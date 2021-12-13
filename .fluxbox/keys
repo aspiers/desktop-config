@@ -168,6 +168,7 @@ Mod4 e :MacroCmd {NextWindow (Name=emacs)} {Exec focus-active-window}
 Mod4 d :MacroCmd {NextWindow (Name=discord)} {Exec focus-active-window}
 
 Mod4 g :MacroCmd {NextWindow (Title=Telegram.*)} {Exec focus-active-window}
+Shift Mod4 g :MacroCmd {NextWindow (Title=Meet .*)} {Exec focus-active-window}
 
 Mod4 w :MacroCmd {NextWindow (Title=.*WhatsApp.*)} {Exec focus-active-window}
 
