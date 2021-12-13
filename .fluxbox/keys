@@ -7,9 +7,11 @@ OnDesktop Mouse2 :WorkspaceMenu
 OnDesktop Mouse3 :RootMenu
 Control Mod1 Mouse4 :LeftWorkspace
 Control Mod1 Mouse5 :RightWorkspace
+Mod1 Mouse4 :LeftWorkspace
+Mod1 Mouse5 :RightWorkspace
 
-Control Shift Mod1 Mouse4 :TakeToPrevWorkspace
-Control Shift Mod1 Mouse5 :TakeToNextWorkspace
+Shift Mod1 Mouse4 :TakeToPrevWorkspace
+Shift Mod1 Mouse5 :TakeToNextWorkspace
 
 Mod4 Return :RootMenu
 Control Mod4 Return :CustomMenu ~/.fluxbox/fluxboxmenu
@@ -36,8 +38,8 @@ OnRightGrip Move1 :StartResizing bottomright
 # raise/lower with mouse
 OnTitlebar Mouse4 :Raise
 OnTitlebar Mouse5 :Lower
-OnWindow Mod1 Mouse4 :Raise
-OnWindow Mod1 Mouse5 :Lower
+OnWindow Control Mod1 Mouse4 :Raise
+OnWindow Control Mod1 Mouse5 :Lower
 
 # control-click a window's titlebar and drag to attach windows
 OnTitlebar Control Mouse1 :StartTabbing
