@@ -153,7 +153,9 @@ Control Mod1 Mod4 b :Exec blank-all-screens
 Control Mod4 space :Exec fbrun
 
 # quick jumping to commonly open windows
-Mod4 x :Exec wmctrl -s 0; xdotool search --onlyvisible --class gnome-terminal windowactivate; focus-active-window
+# xdotool can't filter by head on multi-head sessions
+# Mod4 x :Exec wmctrl -s 0; xdotool search --onlyvisible --desktop 0 --class gnome-terminal windowactivate; focus-active-window
+Mod4 x :MacroCmd {NextWindow (Name=gnome-terminal) (Head=1)} {Exec focus-active-window}
 
 #Mod4 b :Exec wmctrl -s 1; xdotool search --desktop 1 --class brave-browser windowactivate
 Mod4 b :MacroCmd {NextWindow (Name=brave-browser) (Head=1)} {Exec focus-active-window}
