@@ -2,14 +2,16 @@ Control Mod1 Mod4 r :Reconfigure
 Shift Control Mod1 Mod4 r :Restart
 
 # click on the desktop to get menus
-OnDesktop Mouse1 :HideMenus
-OnDesktop Mouse2 :WorkspaceMenu
-OnDesktop Mouse3 :RootMenu
-Control Mod1 Mouse4 :LeftWorkspace
-Control Mod1 Mouse5 :RightWorkspace
+# OnDesktop Click1 :CustomMenu ~/.fluxbox/fluxboxmenu
+OnDesktop Mouse1 :ClientMenu
+OnDesktop Click1 :ClientMenu
+#OnDesktop Click2 :WorkspaceMenu
+#OnDesktop Click3 :RootMenu
+Mod1 Mouse4 :LeftWorkspace
+Mod1 Mouse5 :RightWorkspace
 
-Control Shift Mod1 Mouse4 :TakeToPrevWorkspace
-Control Shift Mod1 Mouse5 :TakeToNextWorkspace
+Shift Mod1 Mouse4 :TakeToPrevWorkspace
+Shift Mod1 Mouse5 :TakeToNextWorkspace
 
 Mod4 Return :RootMenu
 Control Mod4 Return :CustomMenu ~/.fluxbox/fluxboxmenu
@@ -36,8 +38,8 @@ OnRightGrip Move1 :StartResizing bottomright
 # raise/lower with mouse
 OnTitlebar Mouse4 :Raise
 OnTitlebar Mouse5 :Lower
-OnWindow Mod1 Mouse4 :Raise
-OnWindow Mod1 Mouse5 :Lower
+OnWindow Control Mod1 Mouse4 :Raise
+OnWindow Control Mod1 Mouse5 :Lower
 
 # control-click a window's titlebar and drag to attach windows
 OnTitlebar Control Mouse1 :StartTabbing
@@ -154,7 +156,9 @@ Control Mod1 Mod4 b :Exec blank-all-screens
 Control Mod4 space :Exec fbrun
 
 # quick jumping to commonly open windows
-Mod4 x :Exec wmctrl -s 0; xdotool search --onlyvisible --class gnome-terminal windowactivate; focus-active-window
+# xdotool can't filter by head on multi-head sessions
+# Mod4 x :Exec wmctrl -s 0; xdotool search --onlyvisible --desktop 0 --class gnome-terminal windowactivate; focus-active-window
+Mod4 x :MacroCmd {NextWindow (Name=gnome-terminal) (Head=1)} {Exec focus-active-window}
 
 #Mod4 b :Exec wmctrl -s 1; xdotool search --desktop 1 --class brave-browser windowactivate
 Mod4 b :MacroCmd {NextWindow (Name=brave-browser) (Head=1)} {Exec focus-active-window}
@@ -169,6 +173,7 @@ Mod4 e :MacroCmd {NextWindow (Name=emacs)} {Exec focus-active-window}
 Mod4 d :MacroCmd {NextWindow (Name=discord)} {Exec focus-active-window}
 
 Mod4 g :MacroCmd {NextWindow (Title=Telegram.*)} {Exec focus-active-window}
+Shift Mod4 g :MacroCmd {NextWindow (Title=Meet .*)} {Exec focus-active-window}
 
 Mod4 w :MacroCmd {NextWindow (Title=.*WhatsApp.*)} {Exec focus-active-window}
 
