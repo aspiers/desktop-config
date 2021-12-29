@@ -15,13 +15,12 @@
   [Sticky]	{yes}
 [end]
 [app] (title=Telegram) (head=2)
+  [Head]	{2}
   [Deco]	{0x5e0}
   [Sticky]	{yes}
 [end]
 [app] (name=discord)
   [Head]	{2}
-[end]
-[app] (name=discord) (head=2)
   [Sticky]	{yes}
 [end]
 [app] (name=brave-browser) (head=2)
