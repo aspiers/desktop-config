@@ -9,10 +9,6 @@
 [end]
       [workspaces] (Workspace List)
 [submenu] (Tools)
-      [exec] (Window name) {xprop WM_CLASS|cut -d \" -f 2|xmessage -file - -center}
-      [exec] (ksnip) {ksnip}
-      [exec] (Flameshot) {flameshot gui}
-      [exec] (Run) {fbrun}
       [exec] (Regen Menu) {fluxbox-generate_menu}
 [end]
 [submenu] (Window Managers)

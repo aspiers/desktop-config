@@ -28,11 +28,14 @@
       [exec]   (vlc) {vlc} 
 [end]
 [submenu] (Utils)
-      [exec]   (xfontsel) {xfontsel} 
-      [exec] (gcalc) {gnome-calculator} 
-      [exec]   (kcalc) {kcalc} 
-      [exec]   (xclock) {xclock} 
+      [exec] (ksnip) {ksnip}
+      [exec] (Flameshot) {flameshot gui}
       [exec] (Window name) {xwinprops | xmessage -file - -center} 
+      [exec] (kcolorchooser) {kcolorchooser} 
+      [exec] (xfontsel) {xfontsel} 
+      [exec] (gcalc) {gnome-calculator} 
+      [exec] (kcalc) {kcalc} 
+      [exec] (xclock) {xclock} 
 [end]
 [submenu] (Office)
       [exec] (Open Office)      {ooffice} 
@@ -46,28 +49,10 @@
       [exec]   (gkrellm) {gkrellm} 
 [end]
 [submenu] (Fluxbox menu)
-      [config] (Configure) 
-[submenu] (System Styles) {Choose a style...}
-      [stylesdir] (/usr/share/fluxbox/styles) 
-      [exec] (Regen Menu) {fluxbox-generate_menu} 
+[include] (/home/adam/.fluxbox/fluxboxmenu)
 [end]
-[submenu] (User Styles) {Choose a style...}
-      [stylesdir] (~/.fluxbox/styles) 
-[end]
-      [workspaces] (Workspace List) 
-[submenu] (Window Managers)
-      [restart] (openbox) {openbox} 
-      [restart] (xfce4) {startxfce4} 
-      [restart] (gnome) {gnome-session} 
-[end]
-      [commanddialog] (Fluxbox Command) 
-      [reconfig] (Reload config) 
-      [restart] (Restart) 
-      [exec] (About) {(fluxbox -v; fluxbox -info | sed 1d) | xmessage -file - -center} 
-[end]
+[separator]
       [exec] (Lock screen) {xscreensaver-command -lock} 
       [exec]   (xscreensaver-demo) {xscreensaver-demo} 
-      [separator] 
-      [exit] (Exit) 
 [endencoding]
 [end]
