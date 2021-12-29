@@ -155,7 +155,8 @@ Control Mod4 space :Exec fbrun
 # quick jumping to commonly open windows
 # xdotool can't filter by head on multi-head sessions
 # Mod4 x :Exec wmctrl -s 0; xdotool search --onlyvisible --desktop 0 --class gnome-terminal windowactivate; focus-active-window
-Mod4 x :MacroCmd {NextWindow (Name=gnome-terminal) (Head=1)} {Exec focus-active-window}
+# Heads start from 1 but workspaces from 0?!
+Mod4 x :MacroCmd {NextWindow (Name=gnome-terminal-server) (Head=1) (workspace=0)} {Exec focus-active-window}
 
 #Mod4 b :Exec wmctrl -s 1; xdotool search --desktop 1 --class brave-browser windowactivate
 Mod4 b :MacroCmd {NextWindow (Name=brave-browser) (Head=1)} {Exec focus-active-window}
