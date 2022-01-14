@@ -1,12 +1,11 @@
 Control Mod1 Mod4 r :Reconfigure
 Shift Control Mod1 Mod4 r :Restart
 
-# click on the desktop to get menus
-# OnDesktop Click1 :CustomMenu ~/.fluxbox/fluxboxmenu
-OnDesktop Mouse1 :ClientMenu
-OnDesktop Click1 :ClientMenu
-#OnDesktop Click2 :WorkspaceMenu
-#OnDesktop Click3 :RootMenu
+# Click on the desktop to get menus.  Make sure xfdesktop isn't running
+# as it will intercept the mouse clicks.
+OnDesktop Mouse1 :If {Matches (Name!=)} {RootMenu} {HideMenus}
+OnDesktop Mouse2 :If {Matches (Name!=)} {WorkspaceMenu} {HideMenus}
+OnDesktop Mouse3 :If {Matches (Name!=)} {CustomMenu ~/.fluxbox/fluxboxmenu} {HideMenus}
 Mod1 Mouse4 :LeftWorkspace
 Mod1 Mouse5 :RightWorkspace
 
