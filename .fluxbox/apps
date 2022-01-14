@@ -8,6 +8,11 @@
   [Hidden]	{yes}
   [Sticky]	{yes}
 [end]
+[app] (name=gnome-terminal-server)
+  [Head]	{1}
+  [Position]	(TopLeft)q	{0 0}
+  [Dimensions]	{50% 97%}
+[end]
 [app] (title=lnav-system)
   [Head]	{2}
   [Position]	(BOTTOM)	{0 0}
