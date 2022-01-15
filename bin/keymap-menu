@@ -159,7 +159,7 @@ get_keymap_settings () {
             xkb='-symbols adam(keyboardio-model01)'
             ;;
         atreus)
-            xkb='-symbols adam(keyboardio-model01)'
+            xkb='-symbols adam(keyboardio-atreus)'
             ;;
         *)
             echo "Invalid keymap '$keymap'."

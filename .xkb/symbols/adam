@@ -46,6 +46,15 @@ xkb_symbols "keyboardio-model01" {
 //    include "adam-common(model01-right-ctrl-super-r)"
 };
 
+xkb_symbols "keyboardio-atreus" {
+    include "pc(pc105)"
+    include "us"
+    include "gb"
+    include "adam-common(volume-controls)"
+    key <AE03>  { [         3,   numbersign, sterling,   threesuperior ] };
+    key <AE04>  { [         4,   dollar,     EuroSign,   onequarter ] };
+};
+
 xkb_symbols "samsung-n150plus" {
     include "pc"
     include "us"

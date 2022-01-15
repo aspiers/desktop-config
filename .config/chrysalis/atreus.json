@@ -690,8 +690,12 @@
         }
       },
       {
-        "code": 49,
+        "code": 100,
         "label": {
+          "hint": {
+            "full": "Alternate",
+            "1u": "Alt."
+          },
           "base": "\\",
           "shifted": "|"
         }
@@ -767,16 +771,16 @@
         }
       },
       {
-        "code": 2101,
+        "code": 2097,
         "label": {
           "hint": null,
-          "base": "~"
+          "base": "|"
         },
         "categories": [
           "with-modifiers",
           "shift"
         ],
-        "baseCode": 53
+        "baseCode": 49
       },
       {
         "code": 73,
@@ -1716,16 +1720,16 @@
         }
       },
       {
-        "code": 2101,
+        "code": 2097,
         "label": {
           "hint": null,
-          "base": "~"
+          "base": "|"
         },
         "categories": [
           "with-modifiers",
           "shift"
         ],
-        "baseCode": 53
+        "baseCode": 49
       },
       {
         "code": 0,
@@ -1858,11 +1862,16 @@
         "baseCode": 31
       },
       {
-        "code": 49,
+        "code": 2080,
         "label": {
-          "base": "\\",
-          "shifted": "|"
-        }
+          "hint": null,
+          "base": "#"
+        },
+        "categories": [
+          "with-modifiers",
+          "shift"
+        ],
+        "baseCode": 32
       },
       {
         "code": 2081,
@@ -2063,28 +2072,34 @@
         ]
       },
       {
-        "code": 0,
+        "code": 1056,
         "label": {
-          "base": {
-            "full": "Blocked",
-            "1u": "Blkd"
-          }
+          "hint": {
+            "full": "AltGr+",
+            "1u": "AGr+"
+          },
+          "base": "3"
         },
         "categories": [
-          "blanks"
-        ]
+          "with-modifiers",
+          "altgr"
+        ],
+        "baseCode": 32
       },
       {
-        "code": 0,
+        "code": 1057,
         "label": {
-          "base": {
-            "full": "Blocked",
-            "1u": "Blkd"
-          }
+          "hint": {
+            "full": "AltGr+",
+            "1u": "AGr+"
+          },
+          "base": "4"
         },
         "categories": [
-          "blanks"
-        ]
+          "with-modifiers",
+          "altgr"
+        ],
+        "baseCode": 33
       },
       {
         "code": 2099,
@@ -2139,7 +2154,7 @@
         }
       },
       {
-        "code": 2097,
+        "code": 2148,
         "label": {
           "hint": null,
           "base": "|"
@@ -2148,7 +2163,7 @@
           "with-modifiers",
           "shift"
         ],
-        "baseCode": 49
+        "baseCode": 100
       },
       {
         "code": 74,
@@ -2229,16 +2244,16 @@
         "baseCode": 56
       },
       {
-        "code": 2101,
+        "code": 2097,
         "label": {
           "hint": null,
-          "base": "~"
+          "base": "|"
         },
         "categories": [
           "with-modifiers",
           "shift"
         ],
-        "baseCode": 53
+        "baseCode": 49
       },
       {
         "code": 73,
