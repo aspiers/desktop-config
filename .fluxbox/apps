@@ -8,32 +8,43 @@
   [Hidden]	{yes}
   [Sticky]	{yes}
 [end]
-[app] (name=gnome-terminal-server)
-  [Head]	{1}
-  [Position]	(TopLeft)q	{0 0}
-  [Dimensions]	{50% 97%}
-[end]
 [app] (title=lnav-system)
   [Head]	{2}
   [Position]	(BOTTOM)	{0 0}
   [Hidden]	{yes}
   [Sticky]	{yes}
 [end]
-[app] (title=Telegram) (head=2)
-  [Head]	{2}
-  [Deco]	{0x5e0}
+[app] (title=Workrave)
   [Sticky]	{yes}
 [end]
-[app] (name=discord)
-  [Head]	{2}
-  [Sticky]	{yes}
-[end]
+
 [app] (name=brave-browser) (head=2)
   [Sticky]	{yes}
 [end]
-[app] (name=Discord Updater)
-  [Head]	{2}
+[app] (name=gnome-terminal-server)
+  [Head]	{1}
+  [Position]	(TopLeft)	{0 0}
+  [Dimensions]	{50% 97%}
 [end]
+
+[app] (title=Telegram)
+  [Workspace]	{3}
+[end]
+[app] (title=Telegram) (head=2)
+  [Deco]	{0x5e0}
+[end]
+
+[app] (name=discord)
+  [Workspace]	{3}
+[end]
+[app] (name=Discord Updater)
+  [Workspace]	{3}
+[end]
+
+[app] (name=slack)
+  [Workspace]	{3}
+[end]
+
 [app] (name=Zoom) (head=2)
   [Sticky]	{yes}
 [end]
