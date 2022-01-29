@@ -27,17 +27,11 @@
   [Dimensions]	{50% 97%}
 [end]
 
-[app] (title=Telegram)
-  [Workspace]	{3}
-[end]
 [app] (title=Telegram) (head=2)
   [Deco]	{0x5e0}
 [end]
 
-[app] (name=discord)
-  [Workspace]	{3}
-[end]
-[app] (name=Discord Updater)
+[app] (title=Telegram|discord|Discord Updater)
   [Workspace]	{3}
 [end]
 
@@ -45,6 +39,6 @@
   [Workspace]	{3}
 [end]
 
-[app] (name=Zoom) (head=2)
+[app] (head=2)
   [Sticky]	{yes}
 [end]
