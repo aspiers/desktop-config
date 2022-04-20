@@ -10,6 +10,14 @@ case "$localhost_nickname" in
     pacific)
         xset m 2 5
         ;;
+    aegean)
+        xset m 2 4
+
+        # Don't really know what I'm doing here yet ...
+        # https://xorg.freedesktop.org/wiki/Development/Documentation/PointerAcceleration/
+        # xinput list-props 'pointer:Logitech USB Receiver'
+        xinput set-prop 'pointer:Logitech USB Receiver' 'libinput Accel Profiles Available' 1 2 3 4 5
+        xinput set-prop 'pointer:Logitech USB Receiver' 'libinput Accel Profile Enabled' 2, 0
     *)
         xset m 2 4
         ;;
