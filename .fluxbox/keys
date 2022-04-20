@@ -132,7 +132,8 @@ Shift Mod1 Mod4 j :MoveDown 50
 # Mod4 9 :Tab 9
 
 # opening programs
-Control Mod4 b :Exec brave-browser
+Control Mod4 b :Exec brave-browser --disable-features=SendMouseLeaveEvents
+Control Mod4 c :Exec google-chrome-stable --disable-features=SendMouseLeaveEvents
 Control Mod4 d :Exec discord
 Control Mod4 g :Exec ~/software/telegram/Telegram
 Mod4 t :Exec xterm-window
