@@ -245,7 +245,7 @@ Mod1 Mod4 9 :TakeToWorkspace 9
 # Change to previous/next head.
 # Make sure synergys isn't running otherwise it will grab these keys!
 Shift Mod4 comma :MacroCmd {NextWindow (workspace=[current]) (FocusHidden=no) (Head=1)} {Exec focus-active-window}
-# xdotool mousemove 1200 500
+# xdotool mousemove 1200 500}
 
 Shift Mod4 period :MacroCmd {NextWindow (workspace=[current]) (FocusHidden=no) (Head=2)} {Exec focus-active-window}
 # xdotool mousemove 3200 400}
