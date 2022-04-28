@@ -18,9 +18,6 @@
   [Sticky]	{yes}
 [end]
 
-[app] (name=brave-browser) (head=2)
-  [Sticky]	{yes}
-[end]
 [app] (name=gnome-terminal-server)
   [Head]	{1}
   [Position]	(TopLeft)	{0 0}
