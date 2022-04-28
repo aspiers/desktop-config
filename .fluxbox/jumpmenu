@@ -4,6 +4,7 @@
       [exec] (terminal) {wmctrl -a gnome-terminal}
       [exec] (Telegram) {wmctrl -a telegram}
       [exec] (Discord) {wmctrl -a discord}
+      [exec] (Slack) {wmctrl -a slack}
       [exec] (zoom) {wmctrl -a zoom}
 [endencoding]
 [end]
