@@ -148,7 +148,7 @@ Control Mod4 w :Exec ksnip -a
 Control Shift Mod4 s :Exec ksnip
 Control Mod1 Mod4 s :Exec ksnip -m
 
-#Control Mod1 Mod4 b :Exec blank-all-screens
+Control Mod1 Mod4 b :Exec blank-all-screens
 Control Mod1 Mod4 l :Exec xset dpms force standby
 Shift Control Mod1 Mod4 l :Exec xfce4-screensaver-command --lock
 
