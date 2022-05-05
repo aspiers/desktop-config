@@ -1,97 +1,18 @@
 #!/bin/sh
 
-. $ZDOTDIR/lib/libdpy.sh
+. $ZDOTDIR/lib/libhost.sh
 
-GCONFTOOL=gconftool-2
+read_localhost_nickname
 
-APP="/apps/gnome-terminal"
-
-set_profile_defaults () {
-  profile="$1"
-
-  $GCONFTOOL -s $profile/default_show_menubar -t bool false
-
-  $GCONFTOOL -s $profile/scrollback_lines -t int 2000
-  $GCONFTOOL -s $profile/scrollbar_position -t string 'hidden' 
-  # or 'left' or 'right'
-
-  $GCONFTOOL -s $profile/scroll_on_keystroke -t bool true
-  $GCONFTOOL -s $profile/scroll_on_output -t bool true
-
-  $GCONFTOOL -s $profile/word_chars -t string 'A-Za-z0-9_'
-}
-
-
-##############################################################################
-# global settings
-
-global="$APP/global"
-
-$GCONFTOOL -s $global/use_menu_accelerators -t bool false
-
-##############################################################################
-# keybindings (also global)
-
-for binding in next_tab prev_tab help; do
-  $GCONFTOOL \
-    -s $APP/keybindings/$binding \
-    -t string 'disabled'
-done
-
-##############################################################################
-# Default profile
-
-profiles=$APP/profiles
-profile=$profiles/Default
-
-set_profile_defaults $profile
-
-# This controls foreground and background only.
-# If true, uses colours from system theme which most likely will 
-# be black on white.  Therefore we set our custom scheme to be
-# the opposite to allow an easy toggle.
-$GCONFTOOL -s $profile/use_theme_colors -t bool true
-
-# White on black
-fg_colour='#FFFFFFFFFFFF'
-bg_colour='#000000000000'
-
-$GCONFTOOL -s $profile/foreground_color -t string $fg_colour
-$GCONFTOOL -s $profile/background_color -t string $bg_colour
-
-$GCONFTOOL -s $profile/background_darkness -t float 0.94
-
-#
-# Black on white colour scheme for very bright environments.
-#
-
-normal_colours='#FFFFFFFFFFFF:#EFEF29292929:#6F82DC280894:#E3E3D1D13D3D:#469E8929DEB7:#ADAD7F7FA8A8:#06C8AB4AAE14:#5F7861475DA9'
-  bold_colours='#FFFFFFFFFFFF:#CCCC00000000:#6BDCB0A328A4:#A3A385850000:#72729F9FCFCF:#757550507B7B:#19546E146E14:#4C8C29A928CB'
-
-# hues right on 60x degrees
-normal_colours='#FFFFFFFFFFFF:#BFFF00000000:#5EE6BFFF0000:#BFFFBFFF0000:#00000000BFFF:#BFFF0000BFFF:#0000BFFFBFFF:#800080008000'
-  bold_colours='#FFFFFFFFFFFF:#E66600000000:#7016E6660000:#E666E6660000:#00000000E666:#E6660000E666:#0000E666E666:#000000000000'
-
-# tweaked
-normal_colours='#FFFFFFFFFFFF:#FFFF00000000:#7999F3320000:#FFFFDDDD0000:#00000000FFFF:#D6D30000F332:#0000E666E666:#000000000000'
-  bold_colours='#FFFFFFFFFFFF:#BFFF00000000:#5EE6BFFF0000:#D999BC950000:#00000000BFFF:#AB310000BFFF:#0000BFFFBFFF:#800080008000'
-
-normal_colours='#FFFFFFFFFFFF:#FFFF00000000:#7999F3320000:#FFFFDDDD0000:#00000000FFFF:#D6D30000F332:#0000E666E666:#000000000000'
-  bold_colours='#FFFFFFFFFFFF:#BFFF00000000:#5EE6BFFF0000:#E666C6730000:#00000000BFFF:#AB310000BFFF:#0000BFFFBFFF:#B5ADB5ADB5AD'
-
-# $GCONFTOOL -g $profile/palette
-$GCONFTOOL -s $profile/palette -t string "$normal_colours:$bold_colours"
-
-# These don't work for some reason
-$GCONFTOOL -s $profile/use_system_font -t boolean 'false'
-
-# See also the fonts section of ~/.Xresources.d/terms.rdb
-if [ "$dpy_height" -gt 1000 ]; then
-    fs=12
-else
-    fs=10
-fi
-$GCONFTOOL -s $profile/font -t string "Monospace $fs"
+case "$localhost_nickname" in
+    aegean)
+        font_size=10
+        ;;
+    *)
+        # FIXME: add more cases here
+        font_size=10
+        ;;
+esac
 
 dconf load /org/gnome/terminal/ <<EOF
 [legacy]
@@ -115,7 +36,9 @@ cursor-blink-mode='on'
 cursor-colors-set=true
 cursor-foreground-color='rgb(67,167,167)'
 cursor-shape='block'
-font='Monospace 10'
+default-size-columns=120
+default-size-rows=40
+font='Monospace $font_size'
 foreground-color='rgb(255,255,255)'
 highlight-colors-set=false
 highlight-foreground-color='rgb(255,255,255)'
@@ -135,7 +58,9 @@ cursor-blink-mode='on'
 cursor-colors-set=true
 cursor-foreground-color='rgb(255,255,255)'
 cursor-shape='block'
-font='Monospace 10'
+default-size-columns=120
+default-size-rows=40
+font='Monospace $font_size'
 foreground-color='rgb(0,0,0)'
 highlight-colors-set=false
 highlight-foreground-color='rgb(255,255,255)'
