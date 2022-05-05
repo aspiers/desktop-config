@@ -26,7 +26,7 @@ if [ "$1" == '--top-left' ]; then
 fi
 
 if which gnome-terminal >/dev/null 2>&1; then
-    gnome-terminal --geometry=$geometry "$@"
+    gnome-terminal "$@"
 elif which urxvt-256color >/dev/null 2>&1; then
     urxvt-256color -fn $font -g $geometry "$@"
 elif which urxvt >/dev/null 2>&1; then
