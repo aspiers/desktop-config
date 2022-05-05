@@ -1,0 +1,13 @@
+#!/bin/bash
+
+if pgrep xfwm4; then
+    echo "Found xfwm4; trying to replace with fluxbox"
+    if pkill xfwm4; then
+        fluxbox -log ~/.log/fluxbox.log >>~/.log/xfwm-replacement.log 2>&1 &
+
+        # Stop xfdesktop grabbing mouse clicks away from fluxbox
+        xfdesktop -Q &
+    else
+        echo >&2 "Failed to kill xfwm4"
+    fi
+fi
