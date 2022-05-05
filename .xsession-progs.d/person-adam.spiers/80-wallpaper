@@ -2,6 +2,16 @@
 
 . $ZDOTDIR/lib/libproc.sh
 
+# Stop xfdesktop grabbing mouse clicks away from fluxbox
+xfdesktop -Q
+
+case "$WINDOWMANAGER" in
+    i3)
+        xsetroot -solid black
+        exit 0
+        ;;
+esac
+
 if executable_p Esetroot; then
   run_if_executable retrieve_background
 #  run_if_executable randomise_background
