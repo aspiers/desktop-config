@@ -1,5 +1,9 @@
 #!/bin/sh
 
+echo >&2 "FIXME: convert $0 to dconf"
+
+exit 1
+
 gconftool=gconftool-2
 
 if [ -z "$DISPLAY" ]; then
