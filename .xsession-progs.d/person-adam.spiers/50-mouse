@@ -18,6 +18,7 @@ case "$localhost_nickname" in
         # xinput list-props 'pointer:Logitech USB Receiver'
         xinput set-prop 'pointer:Logitech USB Receiver' 'libinput Accel Profiles Available' 1 2 3 4 5
         xinput set-prop 'pointer:Logitech USB Receiver' 'libinput Accel Profile Enabled' 2, 0
+        ;;
     *)
         xset m 2 4
         ;;
