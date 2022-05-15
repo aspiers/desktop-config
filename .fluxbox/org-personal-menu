@@ -2,6 +2,6 @@
 [encoding] {UTF-8}
     [exec] (TODO) {switch-feed-emacs &lt; ~/lib/xmacro/org-jump-personal-todo}
     [exec] (diary) {switch-feed-emacs &lt; ~/lib/xmacro/org-jump-personal-diary}
-    [exec] (gtd-timer) {urxvt -fn smoothansi -geometry 90x15-0-0 -e sh -c \"gtd-timer ~/mail/personal/offlineimap/INBOX; sleep 60\"}
+    [exec] (gtd-timer) {urxvt -fn smoothansi -geometry 90x15-0-0 -e sh -c "gtd-timer ~/mail/personal/offlineimap/INBOX; sleep 60"}
 [endencoding]
 [end]
