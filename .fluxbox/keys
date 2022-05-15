@@ -18,6 +18,7 @@ Control Mod4 Return :CustomMenu ~/.fluxbox/fluxboxmenu
 Shift Mod4 Return :WindowMenu
 Mod1 Mod4 Return :ClientMenu
 Mod4 j :CustomMenu ~/.fluxbox/jumpmenu
+Mod4 o :CustomMenu ~/.fluxbox/org-menu
 
 # scroll on the desktop to change workspaces
 OnDesktop Mouse4 :LeftWorkspace
