@@ -18,6 +18,7 @@ Control Mod4 Return :CustomMenu ~/.fluxbox/fluxboxmenu
 Shift Mod4 Return :WindowMenu
 Mod1 Mod4 Return :ClientMenu
 Mod4 j :CustomMenu ~/.fluxbox/jumpmenu
+Mod4 o :CustomMenu ~/.fluxbox/org-menu
 
 # scroll on the desktop to change workspaces
 OnDesktop Mouse4 :LeftWorkspace
@@ -162,7 +163,7 @@ Control Mod4 space :Exec fbrun
 Mod4 x :MacroCmd {NextWindow (Name=gnome-terminal-server) (Head=1) (workspace=0)} {Exec focus-active-window}
 
 #Mod4 b :Exec wmctrl -s 1; xdotool search --desktop 1 --class brave-browser windowactivate
-Mod4 b :MacroCmd {NextWindow (Name=brave-browser) (Head=1)} {Exec focus-active-window}
+Mod4 b :MacroCmd {NextWindow (Name=brave-browser|google-chrome|chromium) (Head=1)} {Exec focus-active-window}
 Shift Mod4 b :MacroCmd {NextWindow (Name=brave-browser) (Title!=.*WhatsApp.*) (Head=2)} {Exec focus-active-window}
 
 Mod4 c :MacroCmd {NextWindow (Name=brave-browser|google-chrome|chromium) (Title!=.*WhatsApp.*) (Head=2)} {Delay {Exec focus-active-window && sleep 0.1 && xdotool key ctrl+1} 100}

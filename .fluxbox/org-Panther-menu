@@ -1,0 +1,6 @@
+[begin] (Org Panther menu)
+[encoding] {UTF-8}
+    [exec] (TODO) {switch-feed-emacs < ~/lib/xmacro/org-jump-work-todo}
+    [exec] (diary) {switch-feed-emacs < ~/lib/xmacro/org-jump-work-diary}
+    [exec] (gtd-timer) {urxvt -fn smoothansi -geometry 90x15-0-0 -e sh -c "gtd-timer ~/mail/suse/offlineimap/INBOX; sleep 60"}
+  </menu>

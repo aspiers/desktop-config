@@ -1,0 +1,30 @@
+[begin] (Org diary menu)
+[encoding] {UTF-8}
+    [exec] (a: Agenda) {switch-feed-emacs < ~/lib/xmacro/org-agenda}
+    [exec] (r: Review) {switch-feed-emacs < ~/lib/xmacro/org-agenda-review}
+    [exec] (c: Google Calendar) {url-handler https://www.google.com/calendar}
+    [exec] (e: Add event(s) to Google Calendar) {urxvt -e sh -c 'while true; do rlwrap gca; div; done'}
+    [exec] (c: Capture) {switch-feed-emacs < ~/lib/xmacro/org-capture}
+    [exec] (j: Jump to clock) {switch-feed-emacs < ~/lib/xmacro/org-jump-to-clock}
+    [separator]
+
+#    [CustomMenu ~/.fluxbox/org-personal-menu] (p: Org personal menu)
+    [submenu] (p: Org personal menu) {Org personal menu}
+        [include] (~/.fluxbox/org-personal-menu)
+    [end]
+
+    [submenu] (w: Org work menu) {Org work menu}
+        [include] (~/.fluxbox/org-work-menu)
+    [end]
+
+    [separator]
+
+    [submenu] (t: Org TODO menu) {Org TODO menu}
+        [include] (~/.fluxbox/org-todo-menu)
+    [end]
+
+    [submenu] (d: Org diary menu) {Org diary menu}
+        [include] (~/.fluxbox/org-diary-menu)
+    [end]
+[endencoding]
+[end]
