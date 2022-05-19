@@ -7,8 +7,8 @@ Shift Control Mod1 Mod4 r :Restart
 OnDesktop Mouse1 :If {Matches (Name!=)} {RootMenu} {HideMenus}
 OnDesktop Mouse2 :If {Matches (Name!=)} {WorkspaceMenu} {HideMenus}
 OnDesktop Mouse3 :If {Matches (Name!=)} {CustomMenu ~/.fluxbox/fluxboxmenu} {HideMenus}
-Mod1 Mouse4 :LeftWorkspace
-Mod1 Mouse5 :RightWorkspace
+Control Mod1 Mouse4 :LeftWorkspace
+Control Mod1 Mouse5 :RightWorkspace
 
 Shift Mod1 Mouse4 :TakeToPrevWorkspace
 Shift Mod1 Mouse5 :TakeToNextWorkspace
@@ -39,8 +39,8 @@ OnRightGrip Move1 :StartResizing bottomright
 # raise/lower with mouse
 OnTitlebar Mouse4 :Raise
 OnTitlebar Mouse5 :Lower
-OnWindow Control Mod1 Mouse4 :Raise
-OnWindow Control Mod1 Mouse5 :Lower
+OnWindow Mod1 Mouse4 :Raise
+OnWindow Mod1 Mouse5 :Lower
 
 # control-click a window's titlebar and drag to attach windows
 OnTitlebar Control Mouse1 :StartTabbing
