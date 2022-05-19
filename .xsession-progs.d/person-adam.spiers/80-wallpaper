@@ -9,10 +9,8 @@ case "$WINDOWMANAGER" in
         xsetroot -solid black
         exit 0
         ;;
+    *)
+        echo "Use fbsetbg to set backgrounds"
+        ;;
 esac
-
-if executable_p Esetroot; then
-  run_if_executable retrieve_background
-#  run_if_executable randomise_background
-fi
 
