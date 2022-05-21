@@ -97,7 +97,7 @@ Mod4 i :Minimize
 Mod4 m :Maximize
 Shift Mod4 m :MaximizeVertical
 Control Mod4 m :MaximizeHorizontal
-Shift Mod4 s :StickWindow
+Mod4 s :StickWindow
 Mod4 q :Close
 Control Mod4 q :Kill
 
@@ -177,7 +177,7 @@ Mod4 d :MacroCmd {NextWindow (Name=discord)} {Exec focus-active-window}
 Mod4 g :MacroCmd {NextWindow (Title=Telegram.*)} {Exec focus-active-window}
 Shift Mod4 g :MacroCmd {NextWindow (Title=Meet .*)} {Exec focus-active-window}
 
-Mod4 s :MacroCmd {NextWindow (Name=slack)} {Exec focus-active-window}
+Shift Mod4 s :MacroCmd {NextWindow (Name=slack)} {Exec focus-active-window}
 Mod4 w :MacroCmd {NextWindow (Title=.*WhatsApp.*)} {Exec focus-active-window}
 Mod4 z :MacroCmd {NextWindow (Name=zoom)} {Exec focus-active-window}
 
