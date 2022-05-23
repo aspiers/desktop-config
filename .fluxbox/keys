@@ -198,8 +198,8 @@ Mod4 period :RightWorkspace
 # Mod1 Mod4 period :SendToRightWorkspace
 
 # send the current window and follow it to previous/next workspace
-Mod1 Mod4 comma :TakeToPrevWorkspace
-Mod1 Mod4 period :TakeToNextWorkspace
+Mod1 Mod4 comma :If {Matches (Stuck=no)} {TakeToPrevWorkspace} {MacroCmd {Stick} {TakeToPrevWorkspace}}
+Mod1 Mod4 period :If {Matches (Stuck=no)} {TakeToNextWorkspace} {MacroCmd {Stick} {TakeToNextWorkspace}}
 
 # change to a specific workspace
 Mod4 1 :Workspace 1
