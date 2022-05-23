@@ -229,19 +229,17 @@ Mod4 9 :Workspace 9
 #Mod4 F11 :SendToWorkspace 11
 #Mod4 F12 :SendToWorkspace 12
 
-# send the current window and change to a specific workspace
-Mod1 Mod4 1 :TakeToWorkspace 1
-Mod1 Mod4 2 :TakeToWorkspace 2
-Mod1 Mod4 3 :TakeToWorkspace 3
-Mod1 Mod4 4 :TakeToWorkspace 4
-Mod1 Mod4 5 :TakeToWorkspace 5
-Mod1 Mod4 6 :TakeToWorkspace 6
-Mod1 Mod4 7 :TakeToWorkspace 7
-Mod1 Mod4 8 :TakeToWorkspace 8
-Mod1 Mod4 9 :TakeToWorkspace 9
-#Control Mod4 F10 :TakeToWorkspace 10
-#Control Mod4 F11 :TakeToWorkspace 11
-#Control Mod4 F12 :TakeToWorkspace 12
+# Send the current window and change to a specific workspace.
+# If it's sticky, remove stickiness first.
+Mod1 Mod4 1 :If {Matches (Stuck=no)} {TakeToWorkspace 1} {MacroCmd {Stick} {TakeToWorkspace 1}}
+Mod1 Mod4 2 :If {Matches (Stuck=no)} {TakeToWorkspace 2} {MacroCmd {Stick} {TakeToWorkspace 2}}
+Mod1 Mod4 3 :If {Matches (Stuck=no)} {TakeToWorkspace 3} {MacroCmd {Stick} {TakeToWorkspace 3}}
+Mod1 Mod4 4 :If {Matches (Stuck=no)} {TakeToWorkspace 4} {MacroCmd {Stick} {TakeToWorkspace 4}}
+Mod1 Mod4 5 :If {Matches (Stuck=no)} {TakeToWorkspace 5} {MacroCmd {Stick} {TakeToWorkspace 5}}
+Mod1 Mod4 6 :If {Matches (Stuck=no)} {TakeToWorkspace 6} {MacroCmd {Stick} {TakeToWorkspace 6}}
+Mod1 Mod4 7 :If {Matches (Stuck=no)} {TakeToWorkspace 7} {MacroCmd {Stick} {TakeToWorkspace 7}}
+Mod1 Mod4 8 :If {Matches (Stuck=no)} {TakeToWorkspace 8} {MacroCmd {Stick} {TakeToWorkspace 8}}
+Mod1 Mod4 9 :If {Matches (Stuck=no)} {TakeToWorkspace 9} {MacroCmd {Stick} {TakeToWorkspace 9}}
 
 # Change to previous/next head.
 # Make sure synergys isn't running otherwise it will grab these keys!
