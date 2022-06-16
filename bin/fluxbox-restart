@@ -1,0 +1,40 @@
+#!/bin/zsh
+
+# Needed to fix corrupted xfce4-panel which happens after display
+# reconfiguration.  Solution is to switch back to xfwm4 for a second,
+# then back to fluxbox.
+
+# set -x
+: $0 pid is $$
+
+is_running () {
+    pgrep -x "$1" # >/dev/null
+}
+
+ensure_stopped () {
+    while is_running "$1"; do
+        : "$1 is running"
+        sleep 0.5
+    done
+}
+
+ensure_started () {
+    while ! is_running "$1"; do
+        : "$1 is not running"
+        sleep 0.5
+    done
+}
+
+if is_running fluxbox; then
+    pkill -x fluxbox
+    ensure_stopped fluxbox
+    ( xfwm4 & )
+    ensure_started xfwm4
+fi
+
+if is_running xfwm4; then
+    pkill xfwm4
+    ensure_stopped xfwm4
+fi
+
+fluxbox -log ~/.log/fluxbox.log &!
