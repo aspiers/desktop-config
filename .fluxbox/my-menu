@@ -25,7 +25,7 @@
 [submenu] (Audio)
       [exec]   (kmix) {kmix} 
       [exec]   (audacity) {audacity} 
-      [exec]   (alsamixer) {urxvt -e alsamixer} 
+      [exec]   (alsamixer) {top-term alsamixer} 
 [end]
 [submenu] (Video)
       [exec]   (vlc) {vlc} 
@@ -45,10 +45,12 @@
       [exec]   (dia) {dia} 
 [end]
 [submenu] (System Monitoring)
-      [exec]   (top) {urxvt -e top} 
-      [exec]   (htop) {urxvt -e htop} 
-      [exec]   (iotop) {urxvt -e iotop} 
-      [exec]   (powertop) {urxvt -e powertop} 
+      [exec]   (htop) {top-term htop} 
+      [exec]   (iotop) {top-term sudo iotop} 
+      [exec]   (nethogs) {top-term sudo nethogs `gw-dev`}
+      [exec]   (iftop) {top-term sudo iftop -i `gw-dev`}
+
+      [exec]   (powertop) {top-term sudo powertop} 
       [exec]   (gkrellm) {gkrellm} 
 [end]
 [submenu] (Fluxbox menu)
