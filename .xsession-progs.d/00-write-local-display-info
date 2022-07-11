@@ -7,5 +7,6 @@ host=${host%%.*}
 display_file=$HOME/.Xdisplay.$host
 
 env | sed -n '/^\(DISPLAY\|XAUTH\|DBUS\|SESSION\|XDG\)/{s/^/export /;p}' > "$display_file"
+env | sed -n '/^\(DISPLAY\|XAUTH\|DBUS\|SESSION\|XDG\)/{s/^\(.\+\)=\(.*\)/(setenv "\1" "\2")/;p}' > "$display_file.el"
 
 chmod go-rwx "$display_file"
