@@ -2,7 +2,7 @@
 [encoding] {UTF-8}
     [exec] (a: Agenda) {switch-feed-emacs < ~/lib/xmacro/org-agenda}
     [exec] (r: Review) {switch-feed-emacs < ~/lib/xmacro/org-agenda-review}
-    [exec] (c: Google Calendar) {url-handler https://www.google.com/calendar}
+    [exec] (g: Google Calendar) {url-handler https://www.google.com/calendar}
     [exec] (e: Add event(s) to Google Calendar) {urxvt -e sh -c 'while true; do rlwrap gca; div; done'}
     [exec] (c: Capture) {switch-feed-emacs < ~/lib/xmacro/org-capture}
     [exec] (j: Jump to clock) {switch-feed-emacs < ~/lib/xmacro/org-jump-to-clock}
