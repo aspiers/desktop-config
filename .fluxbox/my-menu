@@ -17,6 +17,7 @@
       [exec]   (Slack) {slack} 
       [exec]   (Telegram) {telegram} 
       [exec]   (Zoom) {zoom --disable-gpu-sandbox} 
+      [exec]   (u: Zulip) {zulip} 
 [end]
 [submenu] (Graphics)
       [exec]   (gimp) {gimp} 
