@@ -5,7 +5,7 @@
       [exec] (Telegram) {wmctrl -a telegram}
       [exec] (Discord) {wmctrl -a discord}
       [exec] (Slack) {wmctrl -a slack}
-      [exec] (Zulip) {wmctrl -a zulip}
+      [exec] (u: Zulip) {wmctrl -a zulip}
       [exec] (Zoom) {wmctrl -a zoom}
 [endencoding]
 [end]
