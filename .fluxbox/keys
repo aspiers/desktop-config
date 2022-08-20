@@ -142,14 +142,13 @@ Control Shift Mod4 i :Exec top-term sudo iftop -i `gw-dev`
 # opening programs
 Control Mod4 b :Exec brave-browser --disable-features=SendMouseLeaveEvents
 Control Mod4 c :Exec google-chrome-stable --disable-features=SendMouseLeaveEvents
-Control Mod4 d :Exec discord
-Control Mod4 g :Exec ~/software/telegram/Telegram
-Mod4 p :Exec pavucontrol
+Mod4 p :Exec fluxbox-focus-or-launch -c Pavucontrol pavucontrol
 # Control Mod4 s :Exec flameshot gui
 # Control Shift Mod4 s :Exec flameshot launcher
 # Control Mod1 Mod4 s :Exec flameshot full
 Control Mod4 s :Exec ksnip -r
 Control Mod4 w :Exec ksnip -a
+Control Mod4 u :Exec fluxbox-focus-or-launch -c Blueman-manager blueman-manager
 Control Shift Mod4 s :Exec ksnip
 Control Mod1 Mod4 s :Exec ksnip -m
 
@@ -175,15 +174,16 @@ Mod4 c :MacroCmd {NextWindow (Name=brave-browser|google-chrome|chromium) (Title!
 #Mod4 e :Exec wmctrl -a emacs
 Mod4 e :MacroCmd {NextWindow (Name=emacs)} {Exec focus-active-window}
 
-#Mod4 d :Exec wmctrl -a discord
-Mod4 d :MacroCmd {NextWindow (Name=discord)} {Exec focus-active-window}
+Mod4 d :Exec fluxbox-focus-or-launch Discord discord
 
-Mod4 g :MacroCmd {NextWindow (Title=Telegram.*)} {Exec focus-active-window}
+Mod4 g :Exec fluxbox-focus-or-launch Telegram ~/software/telegram/Telegram
 Shift Mod4 g :MacroCmd {NextWindow (Title=Meet .*)} {Exec focus-active-window}
 
-Shift Mod4 s :MacroCmd {NextWindow (Name=slack)} {Exec focus-active-window}
+Shift Mod4 s :Exec fluxbox-focus-or-launch Slack slack
 Mod4 w :MacroCmd {NextWindow (Title=.*WhatsApp.*)} {Exec focus-active-window}
-Mod4 z :MacroCmd {NextWindow (Name=zulip)} {Exec focus-active-window}
+Mod4 z :Exec fluxbox-focus-or-launch Zulip zulip
+
+#Shift Mod4 z :Exec fluxbox-focus-or-launch Zoom 'zoom --disable-gpu-sandbox'
 Shift Mod4 z :MacroCmd {NextWindow (Title=Zoom Meeting.*)} {Exec focus-active-window}
 
 # volume settings

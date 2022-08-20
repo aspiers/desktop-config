@@ -1,0 +1,101 @@
+#!/bin/bash
+
+me=$(basename $0)
+
+usage () {
+    # Call as: usage [EXITCODE] [USAGE MESSAGE]
+    exit_code=1
+    if [[ "$1" == [0-9] ]]; then
+        exit_code="$1"
+        shift
+    fi
+
+    me=$(basename $0)
+
+    cat <<EOF >&2
+Usage: $me [OPTIONS] WINDOW-PATTERN LAUNCH-CMD
+Options:
+  -h, --help     Show this help and exit
+  -c, --class    Match WINDOW-PATTERN against class rather than title
+
+WINDOW-PATTERN is a regexp matching the window name or title
+LAUNCH-CMD is a command for launching the program if it's not found
+EOF
+
+    if [ -n "$1" ]; then
+        echo >&2
+        echo >&2 "$*"
+    fi
+
+    exit "$exit_code"
+}
+
+main () {
+    if [ "$1" == '-h' ] || [ "$1" == '--help' ]; then
+        usage 0
+    fi
+
+    if [ "$1" = '-c' ] || [ "$1" = '--class' ]; then
+        class=y
+        shift
+    fi
+
+    if [ $# -ne 2 ]; then
+        usage 1
+    fi
+
+    window_pattern="$1"
+    launcher="$2"
+
+    focus_window
+
+    sleep 0.2
+    exit_if_window_focused
+
+    # Exec seems to have been disabled from fluxbox-remote, presumably
+    # for the security reasons mentioned in the fluxbox-remote(1) man
+    # page.  So we have to launch programs ourselves.
+    echo "Launching $launcher ..."
+    nohup $launcher </dev/null >&/dev/null &
+    wait_until_window_focused
+}
+
+focus_window () {
+    if [ -n "$class" ]; then
+        fluxbox_pattern="(Class=$window_pattern)"
+    else
+        fluxbox_pattern="(Title=.*$window_pattern.*)"
+    fi
+    echo "NextWindow $fluxbox_pattern"
+    fluxbox-remote "NextWindow $fluxbox_pattern"
+    sleep 0.1
+    focus-active-window
+    # {If {Matches $focus} {Exec focus-active-window}"
+}
+
+exit_if_window_focused () {
+    if [ -n "$class" ]; then
+        window_op=getwindowclassname
+    else
+        window_op=getwindowname
+    fi
+    window_name="$(xdotool getactivewindow $window_op)"
+    if [[ "$window_name" =~ "$window_pattern" ]]; then
+        echo "Focused window '$window_name' matches '$window_pattern'"
+        exit 0
+    fi
+    echo "Focused window '$window_name' doesn't match '$window_pattern'"
+}
+
+wait_until_window_focused () {
+    sleep=0.1
+    while (( $(echo "$sleep < 30" | bc) )); do
+        echo "Sleeping $sleep ..."
+        sleep $sleep
+        focus_window
+        exit_if_window_focused
+        sleep=$(echo "$sleep * 2" | bc)
+    done
+}
+
+main "$@"

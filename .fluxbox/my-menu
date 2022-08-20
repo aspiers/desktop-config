@@ -32,6 +32,7 @@
       [exec]   (vlc) {vlc} 
 [end]
 [submenu] (Utils)
+      [exec] (blueman-manager) {blueman-manager}
       [exec] (ksnip) {ksnip}
       [exec] (Flameshot) {flameshot gui}
       [exec] (Window name) {xwinprops | xmessage -file - -center} 
