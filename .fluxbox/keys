@@ -148,9 +148,10 @@ Mod4 p :Exec fluxbox-focus-or-launch -c Pavucontrol pavucontrol
 # Control Mod1 Mod4 s :Exec flameshot full
 Control Mod4 s :Exec ksnip -r
 Control Mod4 w :Exec ksnip -a
-Control Mod4 u :Exec fluxbox-focus-or-launch -c Blueman-manager blueman-manager
 Control Shift Mod4 s :Exec ksnip
 Control Mod1 Mod4 s :Exec ksnip -m
+
+Control Mod4 u :Exec fluxbox-focus-or-launch -c Blueman-manager blueman-manager
 
 Control Mod1 Mod4 b :Exec blank-all-screens
 Control Mod1 Mod4 l :Exec xset dpms force standby
