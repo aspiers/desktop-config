@@ -121,6 +121,41 @@ Shift Mod1 Mod4 l :MoveRight 50
 Shift Mod1 Mod4 k :MoveUp 50
 Shift Mod1 Mod4 j :MoveDown 50
 
+Mod4 r :MacroCmd {KeyMode reorg} {Exec notify-send -t 999999 -p 'fluxbox reorg' >~/tmp/.fluxbox-reorg-id}
+reorg: q :MacroCmd {KeyMode default} {Exec notify-send -t 3000 -r $(cat ~/tmp/.fluxbox-reorg-id) 'fluxbox reorg done'}
+
+reorg: slash :MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
+reorg: h :MacroCmd {FocusLeft} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
+reorg: l :MacroCmd {FocusRight} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
+reorg: k :MacroCmd {FocusUp} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
+reorg: j :MacroCmd {FocusDown} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
+
+reorg: Left :MoveLeft 10
+reorg: Right :MoveRight 10
+reorg: Up :MoveUp 10
+reorg: Down :MoveDown 10
+
+reorg: Shift Left :MoveLeft 50
+reorg: Shift Right :MoveRight 50
+reorg: Shift Up :MoveUp 50
+reorg: Shift Down :MoveDown 50
+
+reorg: Control Left :ResizeHorizontal -2
+reorg: Control Right :ResizeHorizontal 2
+reorg: Control Up :ResizeVertical -2
+reorg: Control Down :ResizeVertical 2
+
+reorg: Control Shift Left :ResizeHorizontal -10
+reorg: Control Shift Right :ResizeHorizontal 10
+reorg: Control Shift Up :ResizeVertical -10
+reorg: Control Shift Down :ResizeVertical 10
+
+reorg: 0 :MacroCmd {ResizeTo 96% 97%} {MoveTo 0 0 TopLeft}
+reorg: 1 :MacroCmd {ResizeTo 48% 97%} {MoveTo 0 0 TopLeft}
+reorg: 2 :MacroCmd {ResizeTo 48% 97%} {MoveTo 48% 0 TopLeft}
+reorg: Shift 2 :MacroCmd {ResizeTo 48% 97%} {MoveTo 0 0 TopLeft} {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {Delay {Exec focus-active-window --sync} 11000} {Delay {ResizeTo 48% 97%} 12000} {Delay {MoveTo 48% 0 TopLeft} 13000} {KeyMode default}
+reorg: Shift semicolon :MacroCmd {ResizeTo 48% 48%} {MoveTo * 0 TopLeft} {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {Delay {Exec focus-active-window --sync} 11000} {Delay {ResizeTo 48% 48%} 12000} {Delay {MoveTo * 48% TopLeft} 13000} {KeyMode default}
+
 # go to a specific tab in the current window
 # Mod4 1 :Tab 1
 # Mod4 2 :Tab 2
