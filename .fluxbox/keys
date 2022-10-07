@@ -1,5 +1,5 @@
-Control Mod1 Mod4 r :Reconfigure
-Shift Control Mod1 Mod4 r :Restart
+Control Mod1 Mod4 r :MacroCmd {Reconfigure} {Exec notify-send -t 3000 'Reloaded fluxbox config'}
+Shift Control Mod1 Mod4 r :MacroCmd {Restart} {Exec notify-send -t 3000 'Restarted fluxbox'}
 
 # Click on the desktop to get menus.  Make sure xfdesktop isn't running
 # as it will intercept the mouse clicks.
