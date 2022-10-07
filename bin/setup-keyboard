@@ -21,6 +21,9 @@ apply_keymap () {
 
 apply_local_keymap () {
     case "$localhost_nickname" in
+        celtic)
+            keymap-menu framework-hacked
+            ;;
         arabian)
             keymap-menu e7450-hacked
             ;;

@@ -52,6 +52,7 @@ Choose from one of the following keymaps:
   8) Gyration wireless keyboard hacked to suit Adam
   9) HHKL
  10) US QWERTY hacked to suit Adam
+ 11) Framework hacked to suit Adam
 
 EOF
 #  7) Microsoft Natural 105-key
@@ -75,6 +76,7 @@ EOF
         9) keymap=hhkl            ;;
         10) keymap=us-qwerty-hacked ;;
         #10) keymap=dvorak   ;;
+        11) keymap=framework      ;;
 
         *)
             echo "Invalid choice!"
@@ -95,6 +97,9 @@ get_keymap_settings () {
         gb)
             xkb='-symbols pc+us+gb'
             #xmodmap=Dell-D630-normal
+            ;;
+        framework-hacked)
+            xkb='-keycodes framework -symbols adam(framework) -geometry pc(pc105)'
             ;;
         thinkpad-x1-extreme-g2-hacked)
             xkb='-keycodes lenovo(thinkpad-x1-extreme-g2-uk) -symbols adam(thinkpad-x1-extreme-g2) -geometry pc(pc105)'
