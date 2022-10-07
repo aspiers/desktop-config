@@ -1,5 +1,6 @@
 ! https://wiki.archlinux.org/index.php/HiDPI#X_Resources
+Xft.dpi: DPI
+
 #if PRIMARY_WIDTH > 3000
-Xft.dpi: 192
 Xcursor*size: 48
 #endif
