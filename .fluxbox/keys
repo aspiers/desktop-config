@@ -59,7 +59,7 @@ OnTitlebar Mouse2 :Lower
 OnTitlebar Mouse3 :WindowMenu
 
 # cycle windows on current display and workspace
-Mod4 slash :MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {Exec focus-active-window}
+Mod4 slash :MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {Delay {Exec focus-active-window} 10000}
 # allow shift to "cancel" / undo:
 Shift Mod4 slash :MacroCmd {PrevWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {Exec focus-active-window}
 
