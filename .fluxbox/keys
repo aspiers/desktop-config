@@ -73,11 +73,11 @@ Shift Mod4 slash :MacroCmd {PrevWindow (workspace=[current]) (Head=[mouse]) (Foc
 # Control Mod4 slash :NextTab
 # Control Shift Mod4 slash :PrevTab
 
-# FIXME: missing support for client patterns like the other commands
-Mod4 Left :MacroCmd {FocusLeft} {Exec focus-active-window --sync} {Delay {Raise} 10000}
-Mod4 Right :MacroCmd {FocusRight} {Exec focus-active-window --sync} {Delay {Raise} 10000}
-Mod4 Up :MacroCmd {FocusUp} {Exec focus-active-window --sync} {Delay {Raise} 10000}
-Mod4 Down :MacroCmd {FocusDown} {Exec focus-active-window --sync} {Delay {Raise} 10000}
+# FIXME: Focus* are missing support for client patterns like the other commands
+Mod4 Left :MacroCmd {FocusLeft} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
+Mod4 Right :MacroCmd {FocusRight} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
+Mod4 Up :MacroCmd {FocusUp} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
+Mod4 Down :MacroCmd {FocusDown} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
 
 Control Mod4 Left :MacroCmd {FocusLeft}
 Control Mod4 Right :MacroCmd {FocusRight}
