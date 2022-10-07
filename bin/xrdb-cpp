@@ -8,7 +8,7 @@
 
 . $ZDOTDIR/lib/libdpy.sh
 
-#echo "display: ${dpy_width}x${dpy_height}" >&2
+#echo "display: ${dpy_width}x${dpy_height}; DPI: $dpi" >&2
 
 emacs_version=$( emacs --version | awk '{print $3; exit 0}' )
 emacs_major_version=${emacs_version%%.*}
@@ -62,6 +62,7 @@ cpp -I $ZDOTDIR/.Xresources.d \
     -DHOME=$HOME -DZDOTDIR=$ZDOTDIR \
     -DWIDTH=$dpy_width \
     -DHEIGHT=$dpy_height \
+    -DDPI="${dpi[1]}" \
     -DEMACS_GEOMETRY=$emacs_geometry \
     -DEMACS_VERSION=$emacs_version \
     -DEMACS_MAJOR_VERSION=$emacs_major_version \
