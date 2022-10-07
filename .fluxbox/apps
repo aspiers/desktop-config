@@ -15,6 +15,7 @@
   [Sticky]	{yes}
 [end]
 [app] (title=Workrave)
+  [Hidden]	{yes}
   [Sticky]	{yes}
 [end]
 
