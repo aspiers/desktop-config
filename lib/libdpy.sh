@@ -2,6 +2,13 @@
 
 get_dpy_geometry () {
     typeset -a dpy_geometry primary_geometry
+    dpi=(
+        $(
+            xdpyinfo | \
+                awk '/resolution: .* dots per inch/ { sub(/x/, " ", $2); print $2}'
+        )
+    )
+
     dpy_geometry=(
         $(
             xwininfo -root | \
