@@ -37,4 +37,14 @@ if is_running xfwm4; then
     ensure_stopped xfwm4
 fi
 
-fluxbox -log ~/.log/fluxbox.log &!
+fluxbox -log ~/.log/fluxbox.log >>& ~/.log/fluxbox.log &!
+
+# Kill annoying popup
+sleep 2
+xdotool search \
+        --onlyvisible \
+        --screen 0 \
+        --desktop 0 \
+        --classname 'Wrapper-2.0' \
+        getwindowpid |
+    xargs kill

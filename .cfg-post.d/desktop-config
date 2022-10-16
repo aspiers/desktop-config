@@ -6,7 +6,7 @@ touch ~/.Xresources.d/local.rdb
 
 mkdir -p ~/.log
 
-touch ~/.synergy-{client,server}-name
+touch ~/.synergy-{client,server,domain}-name
 
 here=$(dirname $0)
 mkdir -p ~/.fluxbox
