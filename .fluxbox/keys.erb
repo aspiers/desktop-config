@@ -1,5 +1,15 @@
-Control Mod1 Mod4 r :MacroCmd {Reconfigure} {Exec notify-send -t 3000 'Reloaded fluxbox config'}
-Shift Control Mod1 Mod4 r :MacroCmd {Restart} {Exec notify-send -t 3000 'Restarted fluxbox'}
+<%
+def notify(msg, timeout=3000)
+  %<Exec notify-send -t #{timeout} '#{msg}'>
+end
+
+def notify_persistent(msg)
+  notify(msg, 999999)
+end
+%>
+
+Control Mod1 Mod4 r :MacroCmd {Reconfigure} {<%= notify 'Reloaded fluxbox config' %>}
+Shift Control Mod1 Mod4 r :MacroCmd {Restart} {<%= notify 'Restarted fluxbox' %>}
 
 # Click on the desktop to get menus.  Make sure xfdesktop isn't running
 # as it will intercept the mouse clicks.
@@ -124,8 +134,18 @@ Shift Mod1 Mod4 l :MoveRight 50
 Shift Mod1 Mod4 k :MoveUp 50
 Shift Mod1 Mod4 j :MoveDown 50
 
-Mod4 r :MacroCmd {KeyMode reorg} {Exec notify-send -t 999999 -p 'fluxbox reorg' >~/tmp/.fluxbox-reorg-id}
-reorg: q :MacroCmd {KeyMode default} {Exec notify-send -t 3000 -r $(cat ~/tmp/.fluxbox-reorg-id) 'fluxbox reorg done'}
+<%
+def reorg_id_file
+  "~/tmp/.fluxbox-reorg-id"
+end
+
+def reorg_done
+  %<{KeyMode default} {Exec notify-send -t 3000 -r $(cat #{reorg_id_file}) 'fluxbox reorg done'}>
+end
+%>
+
+Mod4 r :MacroCmd {KeyMode reorg} {<%= notify_persistent 'fluxbox reorg' %>}
+reorg: q :MacroCmd <%= reorg_done %>
 
 reorg: slash :MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
 reorg: Mod4 slash :MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
@@ -154,11 +174,15 @@ reorg: Control Shift Right :ResizeHorizontal 10
 reorg: Control Shift Up :ResizeVertical -10
 reorg: Control Shift Down :ResizeVertical 10
 
-reorg: 0 :MacroCmd {ResizeTo 96% 97%} {MoveTo 0 0 TopLeft} {KeyMode default} {Exec notify-send -t 3000 -r $(cat ~/tmp/.fluxbox-reorg-id) 'fluxbox reorg done'}
-reorg: 1 :MacroCmd {ResizeTo 48% 97%} {MoveTo 0 0 TopLeft}
-reorg: 2 :MacroCmd {ResizeTo 48% 97%} {MoveTo 48% 0 TopLeft}
-reorg: Shift 2 :MacroCmd {ResizeTo 48% 97%} {MoveTo 0 0 TopLeft} {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {Delay {Exec focus-active-window --sync} 11000} {Delay {ResizeTo 48% 97%} 12000} {Delay {MoveTo 48% 0 TopLeft} 13000} {KeyMode default} {Exec notify-send -t 3000 -r $(cat ~/tmp/.fluxbox-reorg-id) 'fluxbox reorg done'}
-reorg: Shift semicolon :MacroCmd {ResizeTo 48% 48%} {MoveTo * 0 TopLeft} {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {Delay {Exec focus-active-window --sync} 11000} {Delay {ResizeTo 48% 48%} 12000} {Delay {MoveTo * 48% TopLeft} 13000} {KeyMode default} {Exec notify-send -t 3000 -r $(cat ~/tmp/.fluxbox-reorg-id) 'fluxbox reorg done'}
+<%
+
+%>
+
+reorg: 0 :MacroCmd {ResizeTo 96% 97%} {MoveTo 0 0 TopLeft} <%= reorg_done %>
+reorg: 1 :MacroCmd {ResizeTo 48% 97%} {MoveTo 0 0 TopLeft} <%= reorg_done %>
+reorg: 2 :MacroCmd {ResizeTo 48% 97%} {MoveTo 48% 0 TopLeft} <%= reorg_done %>
+reorg: Shift 2 :MacroCmd {ResizeTo 48% 97%} {MoveTo 0 0 TopLeft} {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {Delay {Exec focus-active-window --sync} 11000} {Delay {ResizeTo 48% 97%} 12000} {Delay {MoveTo 48% 0 TopLeft} 13000} <%= reorg_done %>
+reorg: Shift semicolon :MacroCmd {ResizeTo 48% 48%} {MoveTo * 0 TopLeft} {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {Delay {Exec focus-active-window --sync} 11000} {Delay {ResizeTo 48% 48%} 12000} {Delay {MoveTo * 48% TopLeft} 13000} <%= reorg_done %>
 
 # go to a specific tab in the current window
 # Mod4 1 :Tab 1
