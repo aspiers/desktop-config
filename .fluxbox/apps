@@ -35,7 +35,7 @@
   [Deco]	{0x5e0}
 [end]
 
-[app] (title=Telegram|discord|Discord Updater)
+[app] (title=Telegram|discord|Discord|Discord Updater)
   [Position]	(TopLeft)	{0 0}
   [Workspace]	{3}
 [end]
