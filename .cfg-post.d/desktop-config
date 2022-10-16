@@ -7,3 +7,9 @@ touch ~/.Xresources.d/local.rdb
 mkdir -p ~/.log
 
 touch ~/.synergy-{client,server}-name
+
+here=$(dirname $0)
+mkdir -p ~/.fluxbox
+keys=~/.fluxbox/keys
+erb $here/../.fluxbox/keys.erb > $keys
+echo "Generated $keys"

@@ -1,23 +1,24 @@
-Control Mod1 Mod4 r :Reconfigure
-Shift Control Mod1 Mod4 r :Restart
+Control Mod1 Mod4 r :MacroCmd {Reconfigure} {Exec notify-send -t 3000 'Reloaded fluxbox config'}
+Shift Control Mod1 Mod4 r :MacroCmd {Restart} {Exec notify-send -t 3000 'Restarted fluxbox'}
 
-# click on the desktop to get menus
-# OnDesktop Click1 :CustomMenu ~/.fluxbox/fluxboxmenu
-OnDesktop Mouse1 :ClientMenu
-OnDesktop Click1 :ClientMenu
-#OnDesktop Click2 :WorkspaceMenu
-#OnDesktop Click3 :RootMenu
-Mod1 Mouse4 :LeftWorkspace
-Mod1 Mouse5 :RightWorkspace
+# Click on the desktop to get menus.  Make sure xfdesktop isn't running
+# as it will intercept the mouse clicks.
+# https://unix.stackexchange.com/questions/233423/fluxbox-toggle-rootmenu-using-mouse1#234578
+OnDesktop Mouse1 :If {Matches (Name!=)} {RootMenu} {HideMenus}
+OnDesktop Mouse2 :If {Matches (Name!=)} {WorkspaceMenu} {HideMenus}
+OnDesktop Mouse3 :If {Matches (Name!=)} {CustomMenu ~/.fluxbox/fluxboxmenu} {HideMenus}
+Control Mod1 Mouse4 :LeftWorkspace
+Control Mod1 Mouse5 :RightWorkspace
 
-Shift Mod1 Mouse4 :TakeToPrevWorkspace
-Shift Mod1 Mouse5 :TakeToNextWorkspace
+Shift Mod1 Mouse4 :MacroCmd {Raise} {TakeToPrevWorkspace}
+Shift Mod1 Mouse5 :MacroCmd {Raise} {TakeToNextWorkspace}
 
 Mod4 Return :RootMenu
 Control Mod4 Return :CustomMenu ~/.fluxbox/fluxboxmenu
 Shift Mod4 Return :WindowMenu
 Mod1 Mod4 Return :ClientMenu
 Mod4 j :CustomMenu ~/.fluxbox/jumpmenu
+Mod4 o :CustomMenu ~/.fluxbox/org-menu
 
 # scroll on the desktop to change workspaces
 OnDesktop Mouse4 :LeftWorkspace
@@ -38,8 +39,8 @@ OnRightGrip Move1 :StartResizing bottomright
 # raise/lower with mouse
 OnTitlebar Mouse4 :Raise
 OnTitlebar Mouse5 :Lower
-OnWindow Control Mod1 Mouse4 :Raise
-OnWindow Control Mod1 Mouse5 :Lower
+OnWindow Mod1 Mouse4 :Raise
+OnWindow Mod1 Mouse5 :Lower
 
 # control-click a window's titlebar and drag to attach windows
 OnTitlebar Control Mouse1 :StartTabbing
@@ -58,7 +59,7 @@ OnTitlebar Mouse2 :Lower
 OnTitlebar Mouse3 :WindowMenu
 
 # cycle windows on current display and workspace
-Mod4 slash :MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {Exec focus-active-window}
+Mod4 slash :MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {Delay {Exec focus-active-window} 10000}
 # allow shift to "cancel" / undo:
 Shift Mod4 slash :MacroCmd {PrevWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {Exec focus-active-window}
 
@@ -72,11 +73,11 @@ Shift Mod4 slash :MacroCmd {PrevWindow (workspace=[current]) (Head=[mouse]) (Foc
 # Control Mod4 slash :NextTab
 # Control Shift Mod4 slash :PrevTab
 
-# FIXME: missing support for client patterns like the other commands
-Mod4 Left :MacroCmd {FocusLeft} {Exec focus-active-window --sync} {Delay {Raise} 10000}
-Mod4 Right :MacroCmd {FocusRight} {Exec focus-active-window --sync} {Delay {Raise} 10000}
-Mod4 Up :MacroCmd {FocusUp} {Exec focus-active-window --sync} {Delay {Raise} 10000}
-Mod4 Down :MacroCmd {FocusDown} {Exec focus-active-window --sync} {Delay {Raise} 10000}
+# FIXME: Focus* are missing support for client patterns like the other commands
+Mod4 Left :MacroCmd {FocusLeft} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
+Mod4 Right :MacroCmd {FocusRight} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
+Mod4 Up :MacroCmd {FocusUp} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
+Mod4 Down :MacroCmd {FocusDown} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
 
 Control Mod4 Left :MacroCmd {FocusLeft}
 Control Mod4 Right :MacroCmd {FocusRight}
@@ -123,6 +124,42 @@ Shift Mod1 Mod4 l :MoveRight 50
 Shift Mod1 Mod4 k :MoveUp 50
 Shift Mod1 Mod4 j :MoveDown 50
 
+Mod4 r :MacroCmd {KeyMode reorg} {Exec notify-send -t 999999 -p 'fluxbox reorg' >~/tmp/.fluxbox-reorg-id}
+reorg: q :MacroCmd {KeyMode default} {Exec notify-send -t 3000 -r $(cat ~/tmp/.fluxbox-reorg-id) 'fluxbox reorg done'}
+
+reorg: slash :MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
+reorg: Mod4 slash :MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
+reorg: h :MacroCmd {FocusLeft} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
+reorg: l :MacroCmd {FocusRight} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
+reorg: k :MacroCmd {FocusUp} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
+reorg: j :MacroCmd {FocusDown} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
+
+reorg: Left :MoveLeft 10
+reorg: Right :MoveRight 10
+reorg: Up :MoveUp 10
+reorg: Down :MoveDown 10
+
+reorg: Shift Left :MoveLeft 50
+reorg: Shift Right :MoveRight 50
+reorg: Shift Up :MoveUp 50
+reorg: Shift Down :MoveDown 50
+
+reorg: Control Left :ResizeHorizontal -2
+reorg: Control Right :ResizeHorizontal 2
+reorg: Control Up :ResizeVertical -2
+reorg: Control Down :ResizeVertical 2
+
+reorg: Control Shift Left :ResizeHorizontal -10
+reorg: Control Shift Right :ResizeHorizontal 10
+reorg: Control Shift Up :ResizeVertical -10
+reorg: Control Shift Down :ResizeVertical 10
+
+reorg: 0 :MacroCmd {ResizeTo 96% 97%} {MoveTo 0 0 TopLeft} {KeyMode default} {Exec notify-send -t 3000 -r $(cat ~/tmp/.fluxbox-reorg-id) 'fluxbox reorg done'}
+reorg: 1 :MacroCmd {ResizeTo 48% 97%} {MoveTo 0 0 TopLeft}
+reorg: 2 :MacroCmd {ResizeTo 48% 97%} {MoveTo 48% 0 TopLeft}
+reorg: Shift 2 :MacroCmd {ResizeTo 48% 97%} {MoveTo 0 0 TopLeft} {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {Delay {Exec focus-active-window --sync} 11000} {Delay {ResizeTo 48% 97%} 12000} {Delay {MoveTo 48% 0 TopLeft} 13000} {KeyMode default} {Exec notify-send -t 3000 -r $(cat ~/tmp/.fluxbox-reorg-id) 'fluxbox reorg done'}
+reorg: Shift semicolon :MacroCmd {ResizeTo 48% 48%} {MoveTo * 0 TopLeft} {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {Delay {Exec focus-active-window --sync} 11000} {Delay {ResizeTo 48% 48%} 12000} {Delay {MoveTo * 48% TopLeft} 13000} {KeyMode default} {Exec notify-send -t 3000 -r $(cat ~/tmp/.fluxbox-reorg-id) 'fluxbox reorg done'}
+
 # go to a specific tab in the current window
 # Mod4 1 :Tab 1
 # Mod4 2 :Tab 2
@@ -134,13 +171,18 @@ Shift Mod1 Mod4 j :MoveDown 50
 # Mod4 8 :Tab 8
 # Mod4 9 :Tab 9
 
-# opening programs
-Control Mod4 b :Exec brave-browser
-Control Mod4 d :Exec discord
-Control Mod4 g :Exec ~/software/telegram/Telegram
+# opening terminals
 Mod4 t :Exec xterm-window
-Mod4 p :Exec pavucontrol
 Shift Mod4 t :Exec top-term htop
+Shift Mod4 i :Exec top-term sudo nethogs `gw-dev`
+Control Mod4 i :Exec top-term sudo iotop
+Control Shift Mod4 i :Exec top-term sudo iftop -i `gw-dev`
+
+# opening programs
+Control Mod4 b :Exec brave-browser --disable-features=SendMouseLeaveEvents
+#Control Mod4 c :Exec google-chrome-stable --disable-features=SendMouseLeaveEvents
+Control Mod4 c :Exec fluxbox-focus-or-launch -c Google-chrome google-chrome-stable --disable-features=SendMouseLeaveEvents
+Mod4 p :Exec fluxbox-focus-or-launch -c Pavucontrol pavucontrol
 
 # Control Mod4 s :Exec flameshot gui
 # Control Shift Mod4 s :Exec flameshot launcher
@@ -150,7 +192,11 @@ Control Mod4 w :Exec ksnip -a
 Control Shift Mod4 s :Exec ksnip
 Control Mod1 Mod4 s :Exec ksnip -m
 
+Control Mod4 u :Exec fluxbox-focus-or-launch -c Blueman-manager blueman-manager
+
 Control Mod1 Mod4 b :Exec blank-all-screens
+Control Mod1 Mod4 l :Exec xset dpms force standby
+Shift Control Mod1 Mod4 l :Exec xfce4-screensaver-command --lock
 
 # open a dialog to run programs
 Control Mod4 space :Exec fbrun
@@ -158,30 +204,33 @@ Control Mod4 space :Exec fbrun
 # quick jumping to commonly open windows
 # xdotool can't filter by head on multi-head sessions
 # Mod4 x :Exec wmctrl -s 0; xdotool search --onlyvisible --desktop 0 --class gnome-terminal windowactivate; focus-active-window
-Mod4 x :MacroCmd {NextWindow (Name=gnome-terminal) (Head=1)} {Exec focus-active-window}
+# Heads start from 1 but workspaces from 0?!
+Mod4 x :MacroCmd {NextWindow (Name=gnome-terminal-server) (Head=1) (workspace=0)} {Exec focus-active-window}
 
 #Mod4 b :Exec wmctrl -s 1; xdotool search --desktop 1 --class brave-browser windowactivate
-Mod4 b :MacroCmd {NextWindow (Name=brave-browser) (Head=1)} {Exec focus-active-window}
-Shift Mod4 b :MacroCmd {NextWindow (Name=brave-browser) (Title!=.*WhatsApp.*) (Head=2)} {Exec focus-active-window}
+Mod4 b :MacroCmd {NextWindow (Name=brave-browser|google-chrome|chromium) (Head=1)} {Exec focus-active-window}
+Shift Mod4 b :MacroCmd {NextWindow (Name=brave-browser|google-chrome|chromium) (Title!=.*WhatsApp.*) (Head=2)} {Exec focus-active-window}
 
-Mod4 c :MacroCmd {NextWindow (Name=brave-browser) (Title!=.*WhatsApp.*) (Head=2)} {Delay {Exec focus-active-window && sleep 0.1 && xdotool key ctrl+1} 100}
+Mod4 c :MacroCmd {NextWindow (Name=brave-browser|google-chrome|chromium) (Title!=.*WhatsApp.*) (Head=2)} {Delay {Exec focus-active-window && sleep 0.1 && xdotool key ctrl+1} 100}
 
 #Mod4 e :Exec wmctrl -a emacs
 Mod4 e :MacroCmd {NextWindow (Name=emacs)} {Exec focus-active-window}
 
-#Mod4 d :Exec wmctrl -a discord
-Mod4 d :MacroCmd {NextWindow (Name=discord)} {Exec focus-active-window}
+Mod4 d :Exec fluxbox-focus-or-launch Discord discord
 
-Mod4 g :MacroCmd {NextWindow (Title=Telegram.*)} {Exec focus-active-window}
+Mod4 g :Exec fluxbox-focus-or-launch Telegram ~/software/telegram/Telegram
 Shift Mod4 g :MacroCmd {NextWindow (Title=Meet .*)} {Exec focus-active-window}
 
+Shift Mod4 s :Exec fluxbox-focus-or-launch Slack slack
 Mod4 w :MacroCmd {NextWindow (Title=.*WhatsApp.*)} {Exec focus-active-window}
+Mod4 z :Exec fluxbox-focus-or-launch Zulip zulip
 
-Mod4 z :MacroCmd {NextWindow (Name=zoom)} {Exec focus-active-window}
+#Shift Mod4 z :Exec fluxbox-focus-or-launch Zoom 'zoom --disable-gpu-sandbox'
+Shift Mod4 z :MacroCmd {NextWindow (Title=Zoom Meeting.*)} {Exec focus-active-window}
 
 # volume settings
-Mod4 bracketright :Exec amixer sset Master,0 1+
-Mod4 bracketleft :Exec amixer sset Master,0 1-
+Mod4 bracketright :Exec amixer sset Master,0 2%+
+Mod4 bracketleft :Exec amixer sset Master,0 2%-
 Mod4 0 :Exec amixer sset Master,0 toggle
 
 # exit fluxbox
@@ -196,8 +245,8 @@ Mod4 period :RightWorkspace
 # Mod1 Mod4 period :SendToRightWorkspace
 
 # send the current window and follow it to previous/next workspace
-Mod1 Mod4 comma :TakeToPrevWorkspace
-Mod1 Mod4 period :TakeToNextWorkspace
+Mod1 Mod4 comma :If {Matches (Stuck=no)} {MacroCmd {Raise} {TakeToPrevWorkspace}} {MacroCmd {Stick} {Raise} {TakeToPrevWorkspace}}
+Mod1 Mod4 period :If {Matches (Stuck=no)} {MacroCmd {Raise} {TakeToNextWorkspace}} {MacroCmd {Stick} {Raise} {TakeToNextWorkspace}}
 
 # change to a specific workspace
 Mod4 1 :Workspace 1
@@ -227,24 +276,22 @@ Mod4 9 :Workspace 9
 #Mod4 F11 :SendToWorkspace 11
 #Mod4 F12 :SendToWorkspace 12
 
-# send the current window and change to a specific workspace
-Mod1 Mod4 1 :TakeToWorkspace 1
-Mod1 Mod4 2 :TakeToWorkspace 2
-Mod1 Mod4 3 :TakeToWorkspace 3
-Mod1 Mod4 4 :TakeToWorkspace 4
-Mod1 Mod4 5 :TakeToWorkspace 5
-Mod1 Mod4 6 :TakeToWorkspace 6
-Mod1 Mod4 7 :TakeToWorkspace 7
-Mod1 Mod4 8 :TakeToWorkspace 8
-Mod1 Mod4 9 :TakeToWorkspace 9
-#Control Mod4 F10 :TakeToWorkspace 10
-#Control Mod4 F11 :TakeToWorkspace 11
-#Control Mod4 F12 :TakeToWorkspace 12
+# Send the current window and change to a specific workspace.
+# If it's sticky, remove stickiness first.
+Mod1 Mod4 1 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 1}
+Mod1 Mod4 2 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 2}
+Mod1 Mod4 3 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 3}
+Mod1 Mod4 4 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 4}
+Mod1 Mod4 5 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 5}
+Mod1 Mod4 6 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 6}
+Mod1 Mod4 7 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 7}
+Mod1 Mod4 8 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 8}
+Mod1 Mod4 9 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 9}
 
 # Change to previous/next head.
 # Make sure synergys isn't running otherwise it will grab these keys!
 Shift Mod4 comma :MacroCmd {NextWindow (workspace=[current]) (FocusHidden=no) (Head=1)} {Exec focus-active-window}
-# xdotool mousemove 1200 500
+# xdotool mousemove 1200 500}
 
 Shift Mod4 period :MacroCmd {NextWindow (workspace=[current]) (FocusHidden=no) (Head=2)} {Exec focus-active-window}
 # xdotool mousemove 3200 400}
