@@ -25,7 +25,7 @@
   [Dimensions]	{50% 97%}
 [end]
 
-[app] (name=emacs)
+[app] (name=emacs) (title!=Ediff)
   [Head]	{1}
   [Position]	(TopLeft)	{50% 0}
   [Dimensions]	{50% 97%}
