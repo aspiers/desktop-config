@@ -2,7 +2,11 @@
 
 . $ZDOTDIR/lib/libproc.sh
 
-# N.B. xfdesktop takes care of wallpaper in XFCE
+# N.B. xfdesktop takes care of wallpaper in XFCE but it steals clicks
+# on the root window from fluxbox.
+if pgrep xfdesktop >/dev/null; then
+    xfdesktop -Q
+fi
 
 case "$WINDOWMANAGER" in
     i3)
@@ -13,4 +17,3 @@ case "$WINDOWMANAGER" in
         echo "Use fbsetbg to set backgrounds"
         ;;
 esac
-
