@@ -117,7 +117,7 @@ Control Mod4 Right :MacroCmd {FocusRight}
 Control Mod4 Up :MacroCmd {FocusUp}
 Control Mod4 Down :MacroCmd {FocusDown}
 
-<% if %w(aegean).include? ENV['localhost_nickname'] %>
+<% if false && %w(aegean).include?(ENV['localhost_nickname']) %>
 # aegean only:
 Mod4 h :MacroCmd {FocusLeft} {Exec focus-active-window}
 Mod4 l :MacroCmd {FocusRight} {Exec focus-active-window}
