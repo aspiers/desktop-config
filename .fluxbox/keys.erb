@@ -77,11 +77,16 @@ Shift Mod4 slash :MacroCmd {PrevWindow (workspace=[current]) (Head=[mouse]) (Foc
 # probably not useful since makes more sense to switch workspace manually first
 # Shift Mod4 slash :MacroCmd {NextWindow (workspace=[current]) (FocusHidden=no)} {Exec focus-active-window}
 
-# FIXME: figure out how to cycle without raising focus
+# FIXME: figure out how to cycle without raising the focused window.
+# According to fluxbox-keys(5) man page, this should only raise windows
+# temporarily due to the binding using a modifier key, but it always
+# leaves the window raised.
+#Control Mod4 slash :NextWindow (workspace=[current])
+#Control Shift Mod4 slash :PrevWindow (workspace=[current])
 
-# cycle through tabs in the current window
-# Control Mod4 slash :NextTab
-# Control Shift Mod4 slash :PrevTab
+# So instead, use these bindings to cycle through tabs in the current window.
+Control Mod4 slash :NextWindow (workspace=[current])
+Control Shift Mod4 slash :PrevTab
 
 # FIXME: Focus* are missing support for client patterns like the other commands
 Mod4 Left :MacroCmd {FocusLeft} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
