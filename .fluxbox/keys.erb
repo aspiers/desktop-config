@@ -4,7 +4,7 @@ def notify(msg, timeout=3000)
 end
 
 def notify_persistent(msg)
-  notify(msg, 999999)
+  notify(msg, 999999) + ' -p'
 end
 %>
 
@@ -144,7 +144,7 @@ def reorg_done
 end
 %>
 
-Mod4 r :MacroCmd {KeyMode reorg} {<%= notify_persistent 'fluxbox reorg' %>}
+Mod4 r :MacroCmd {KeyMode reorg} {<%= notify_persistent 'fluxbox reorg' %> ><%= reorg_id_file %>}
 reorg: q :MacroCmd <%= reorg_done %>
 
 reorg: slash :MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
