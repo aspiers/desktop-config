@@ -11,5 +11,9 @@ touch ~/.synergy-{client,server,domain}-name
 here=$(dirname $0)
 mkdir -p ~/.fluxbox
 keys=~/.fluxbox/keys
-erb $here/../.fluxbox/keys.erb > $keys
-echo "Generated $keys"
+
+if erb $here/../.fluxbox/keys.erb > $keys; then
+    echo "Generated $keys"
+else
+    exit 1
+fi

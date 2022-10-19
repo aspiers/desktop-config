@@ -1,5 +1,5 @@
 #!/bin/bash
 
-~/.cfg-post.d/desktop-config
-
-fluxbox-remote Reconfigure
+if ~/.cfg-post.d/desktop-config; then
+    fluxbox-remote Reconfigure
+fi
