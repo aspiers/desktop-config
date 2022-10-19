@@ -1,10 +1,28 @@
 <%
-def notify(msg, timeout=3000)
-  %<Exec notify-send -t #{timeout} '#{msg}'>
+def id_file(mode)
+  "~/tmp/.fluxbox-#{mode}-id"
 end
 
-def notify_persistent(msg)
-  notify(msg, 999999) + ' -p'
+def notify(msg, timeout=3000, mode=nil)
+  s = %<Exec notify-send -t #{timeout} '#{msg}'>
+  s += " -p >#{id_file mode}" if mode
+  return s
+end
+
+def notify_transient(msg, mode)
+  notify(msg, 3000, mode)
+end
+
+def notify_persistent(msg, mode)
+  notify(msg, 999999, mode)
+end
+
+def notify_replace(msg, mode, timeout=3000)
+  %<{Exec notify-send -t #{timeout} -r $(cat #{id_file(mode)}) '#{msg}'}>
+end
+
+def notify_done(mode)
+  notify_replace "fluxbox #{mode} done", mode
 end
 %>
 
@@ -140,16 +158,12 @@ Shift Mod1 Mod4 k :MoveUp 50
 Shift Mod1 Mod4 j :MoveDown 50
 
 <%
-def reorg_id_file
-  "~/tmp/.fluxbox-reorg-id"
-end
-
 def reorg_done
-  %<{KeyMode default} {Exec notify-send -t 3000 -r $(cat #{reorg_id_file}) 'fluxbox reorg done'}>
+  '{KeyMode default} ' + notify_done('reorg')
 end
 %>
 
-Mod4 r :MacroCmd {KeyMode reorg} {<%= notify_persistent 'fluxbox reorg' %> ><%= reorg_id_file %>}
+Mod4 r :MacroCmd {KeyMode reorg} {<%= notify_persistent 'fluxbox reorg', 'reorg' %>}
 reorg: q :MacroCmd <%= reorg_done %>
 
 reorg: slash :MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
@@ -178,10 +192,6 @@ reorg: Control Shift Left :ResizeHorizontal -10%
 reorg: Control Shift Right :ResizeHorizontal 10%
 reorg: Control Shift Up :ResizeVertical -10%
 reorg: Control Shift Down :ResizeVertical 10%
-
-<%
-
-%>
 
 reorg: 0 :MacroCmd {ResizeTo 96% 97%} {MoveTo 0 0 TopLeft} <%= reorg_done %>
 reorg: 1 :MacroCmd {ResizeTo 48% 97%} {MoveTo 0 0 TopLeft} <%= reorg_done %>
