@@ -173,15 +173,15 @@ reorg: l :MacroCmd {FocusRight} {Delay {Exec focus-active-window --sync} 10000} 
 reorg: k :MacroCmd {FocusUp} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
 reorg: j :MacroCmd {FocusDown} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
 
-reorg: Left :MoveLeft 10
-reorg: Right :MoveRight 10
-reorg: Up :MoveUp 10
-reorg: Down :MoveDown 10
+reorg: Left :MacroCmd {MoveLeft 10} {Delay {Exec focus-active-window} 10000}
+reorg: Right :MacroCmd {MoveRight 10} {Delay {Exec focus-active-window} 10000}
+reorg: Up :MacroCmd {MoveUp 10} {Delay {Exec focus-active-window} 10000}
+reorg: Down :MacroCmd {MoveDown 10} {Delay {Exec focus-active-window} 10000}
 
-reorg: Shift Left :MoveLeft 50
-reorg: Shift Right :MoveRight 50
-reorg: Shift Up :MoveUp 50
-reorg: Shift Down :MoveDown 50
+reorg: Shift Left :MacroCmd {MoveLeft 50} {Delay {Exec focus-active-window} 10000}
+reorg: Shift Right :MacroCmd {MoveRight 50} {Delay {Exec focus-active-window} 10000}
+reorg: Shift Up :MacroCmd {MoveUp 50} {Delay {Exec focus-active-window} 10000}
+reorg: Shift Down :MacroCmd {MoveDown 50} {Delay {Exec focus-active-window} 10000}
 
 reorg: Control Left :ResizeHorizontal -2%
 reorg: Control Right :ResizeHorizontal 2%
