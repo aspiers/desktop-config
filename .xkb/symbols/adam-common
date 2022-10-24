@@ -250,7 +250,10 @@ xkb_symbols "kinesis-left-thumb-pad" {
     };
     modifier_map Mod1 { <DELE> };
 
-    key <LALT> { [ Delete ] };
+    key <LALT> {
+        type="PC_SUPER_LEVEL2",
+        symbols[Group1]= [ Delete, Home ]
+    };
 
     key <HOME> {
         [ Alt_L ],
@@ -258,7 +261,10 @@ xkb_symbols "kinesis-left-thumb-pad" {
     };
     modifier_map Mod2 { <HOME> };
 
-    key <END> { [ Escape ] };
+    key <END> {
+        type="PC_SUPER_LEVEL2",
+        symbols[Group1]= [ Escape, End ]
+    };
 };
 
 partial modifier_keys
