@@ -284,7 +284,7 @@ xkb_symbols "kinesis-right-thumb-pad" {
         // but is required otherwise Multi_key ends up being on the
         // 2nd level, which means that Super-< passes an unwanted
         // Multi_key event to the synergy client.  Also, the warning
-        // is a bug which got fixed in 13.1:
+        // is a bug which got fixed in openSUSE 13.1:
         //
         //   https://bugs.freedesktop.org/show_bug.cgi?id=57242
         type[Group1] = "ONE_LEVEL",
