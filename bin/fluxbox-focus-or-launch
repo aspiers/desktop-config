@@ -40,12 +40,12 @@ main () {
         shift
     fi
 
-    if [ $# -ne 2 ]; then
+    if [ $# -lt 2 ]; then
         usage 1
     fi
 
     window_pattern="$1"
-    launcher="$2"
+    shift
 
     focus_window
 
@@ -55,8 +55,8 @@ main () {
     # Exec seems to have been disabled from fluxbox-remote, presumably
     # for the security reasons mentioned in the fluxbox-remote(1) man
     # page.  So we have to launch programs ourselves.
-    echo "Launching $launcher ..."
-    nohup $launcher </dev/null >&/dev/null &
+    echo "Launching $* ..."
+    nohup "$@" </dev/null >&/dev/null &
     wait_until_window_focused
 }
 
