@@ -15,6 +15,7 @@
   [Sticky]	{yes}
 [end]
 [app] (title=Workrave)
+  [Layer]	{6}
   [Hidden]	{yes}
   [Sticky]	{yes}
 [end]
