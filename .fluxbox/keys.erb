@@ -330,6 +330,14 @@ Mod1 Mod4 7 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspac
 Mod1 Mod4 8 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 8}
 Mod1 Mod4 9 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 9}
 
+<%
+def monitors_connected
+  %x(xrandr | grep -c ' connected ').chomp
+end
+%>
+
+# Number of monitors connected: <%= monitors_connected %>
+<% if monitors_connected.to_i > 1 %>
 # Change to previous/next head.
 # Make sure synergys isn't running otherwise it will grab these keys!
 Shift Mod4 comma :MacroCmd {NextWindow (workspace=[current]) (FocusHidden=no) (Head=1)} {Exec focus-active-window}
@@ -337,3 +345,4 @@ Shift Mod4 comma :MacroCmd {NextWindow (workspace=[current]) (FocusHidden=no) (H
 
 Shift Mod4 period :MacroCmd {NextWindow (workspace=[current]) (FocusHidden=no) (Head=2)} {Exec focus-active-window}
 # xdotool mousemove 3200 400}
+<% end %>
