@@ -86,14 +86,22 @@ OnTitlebar Mouse2 :Lower
 # right click on the titlebar for a menu of options
 OnTitlebar Mouse3 :WindowMenu
 
+<%
+def focus_active(delay=10, sync=false)
+  "Delay {Exec focus-active-window%s} #{delay * 1000}" % [
+    sync ? ' --sync' : ''
+  ]
+end
+%>
+
 # cycle windows on current display and workspace
-Mod4 slash :MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {Delay {Exec focus-active-window} 10000}
+Mod4 slash :MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {<%= focus_active %>}
 # allow shift to "cancel" / undo:
-Shift Mod4 slash :MacroCmd {PrevWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {Exec focus-active-window}
+Shift Mod4 slash :MacroCmd {PrevWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {<%= focus_active %>}
 
 # cycle windows on any display, current workspace
 # probably not useful since makes more sense to switch workspace manually first
-# Shift Mod4 slash :MacroCmd {NextWindow (workspace=[current]) (FocusHidden=no)} {Exec focus-active-window}
+# Shift Mod4 slash :MacroCmd {NextWindow (workspace=[current]) (FocusHidden=no)} {<%= focus_active %>}
 
 # FIXME: figure out how to cycle without raising the focused window.
 # According to fluxbox-keys(5) man page, this should only raise windows
@@ -107,10 +115,10 @@ Control Mod4 slash :NextWindow (workspace=[current])
 Control Shift Mod4 slash :PrevTab
 
 # FIXME: Focus* are missing support for client patterns like the other commands
-Mod4 Left :MacroCmd {FocusLeft} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
-Mod4 Right :MacroCmd {FocusRight} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
-Mod4 Up :MacroCmd {FocusUp} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
-Mod4 Down :MacroCmd {FocusDown} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
+Mod4 Left :MacroCmd {FocusLeft} {<%= focus_active %>} {Delay {Raise} 10000}
+Mod4 Right :MacroCmd {FocusRight} {<%= focus_active %>} {Delay {Raise} 10000}
+Mod4 Up :MacroCmd {FocusUp} {<%= focus_active %>} {Delay {Raise} 10000}
+Mod4 Down :MacroCmd {FocusDown} {<%= focus_active %>} {Delay {Raise} 10000}
 
 Control Mod4 Left :MacroCmd {FocusLeft}
 Control Mod4 Right :MacroCmd {FocusRight}
@@ -119,15 +127,15 @@ Control Mod4 Down :MacroCmd {FocusDown}
 
 <% if false && %w(aegean).include?(ENV['localhost_nickname']) %>
 # aegean only:
-Mod4 h :MacroCmd {FocusLeft} {Exec focus-active-window}
-Mod4 l :MacroCmd {FocusRight} {Exec focus-active-window}
-Mod4 k :MacroCmd {FocusUp} {Exec focus-active-window}
-Mod4 j :MacroCmd {FocusDown} {Exec focus-active-window}
+Mod4 h :MacroCmd {FocusLeft} {<%= focus_active %>}
+Mod4 l :MacroCmd {FocusRight} {<%= focus_active %>}
+Mod4 k :MacroCmd {FocusUp} {<%= focus_active %>}
+Mod4 j :MacroCmd {FocusDown} {<%= focus_active %>}
 <% end %>
 
 # current window commands
 Mod4 space :Raise
-Mod4 l :MacroCmd {Lower} {Exec focus-active-window}
+Mod4 l :MacroCmd {Lower} {<%= focus_active %>}
 Mod1 Mod4 l :Lower
 Mod4 i :Minimize
 Mod4 m :Maximize
@@ -166,22 +174,22 @@ end
 Mod4 r :MacroCmd {KeyMode reorg} {<%= notify_persistent 'fluxbox reorg', 'reorg' %>}
 reorg: q :MacroCmd <%= reorg_done %>
 
-reorg: slash :MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
-reorg: Mod4 slash :MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
-reorg: h :MacroCmd {FocusLeft} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
-reorg: l :MacroCmd {FocusRight} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
-reorg: k :MacroCmd {FocusUp} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
-reorg: j :MacroCmd {FocusDown} {Delay {Exec focus-active-window --sync} 10000} {Delay {Raise} 10000}
+reorg: slash :MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {<%= focus_active %>} {Delay {Raise} 10000}
+reorg: Mod4 slash :MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {<%= focus_active %>} {Delay {Raise} 10000}
+reorg: h :MacroCmd {FocusLeft} {<%= focus_active %>} {Delay {Raise} 10000}
+reorg: l :MacroCmd {FocusRight} {<%= focus_active %>} {Delay {Raise} 10000}
+reorg: k :MacroCmd {FocusUp} {<%= focus_active %>} {Delay {Raise} 10000}
+reorg: j :MacroCmd {FocusDown} {<%= focus_active %>} {Delay {Raise} 10000}
 
-reorg: Left :MacroCmd {MoveLeft 10} {Delay {Exec focus-active-window} 10000}
-reorg: Right :MacroCmd {MoveRight 10} {Delay {Exec focus-active-window} 10000}
-reorg: Up :MacroCmd {MoveUp 10} {Delay {Exec focus-active-window} 10000}
-reorg: Down :MacroCmd {MoveDown 10} {Delay {Exec focus-active-window} 10000}
+reorg: Left :MacroCmd {MoveLeft 10} {<%= focus_active %>}
+reorg: Right :MacroCmd {MoveRight 10} {<%= focus_active %>}
+reorg: Up :MacroCmd {MoveUp 10} {<%= focus_active %>}
+reorg: Down :MacroCmd {MoveDown 10} {<%= focus_active %>}
 
-reorg: Shift Left :MacroCmd {MoveLeft 50} {Delay {Exec focus-active-window} 10000}
-reorg: Shift Right :MacroCmd {MoveRight 50} {Delay {Exec focus-active-window} 10000}
-reorg: Shift Up :MacroCmd {MoveUp 50} {Delay {Exec focus-active-window} 10000}
-reorg: Shift Down :MacroCmd {MoveDown 50} {Delay {Exec focus-active-window} 10000}
+reorg: Shift Left :MacroCmd {MoveLeft 50} {<%= focus_active %>}
+reorg: Shift Right :MacroCmd {MoveRight 50} {<%= focus_active %>}
+reorg: Shift Up :MacroCmd {MoveUp 50} {<%= focus_active %>}
+reorg: Shift Down :MacroCmd {MoveDown 50} {<%= focus_active %>}
 
 reorg: Control Left :ResizeHorizontal -2%
 reorg: Control Right :ResizeHorizontal 2%
@@ -247,28 +255,28 @@ Control Mod4 space :Exec fbrun
 # xdotool can't filter by head on multi-head sessions
 # Mod4 x :Exec wmctrl -s 0; xdotool search --onlyvisible --desktop 0 --class gnome-terminal windowactivate; focus-active-window
 # Heads start from 1 but workspaces from 0?!
-Mod4 x :MacroCmd {NextWindow (Name=gnome-terminal-server) (Head=1) (workspace=0)} {Exec focus-active-window}
+Mod4 x :MacroCmd {NextWindow (Name=gnome-terminal-server) (Head=1) (workspace=0)} {<%= focus_active %>}
 
 #Mod4 b :Exec wmctrl -s 1; xdotool search --desktop 1 --class brave-browser windowactivate
-Mod4 b :MacroCmd {NextWindow (Name=brave-browser|google-chrome|chromium) (Head=1)} {Exec focus-active-window}
-Shift Mod4 b :MacroCmd {NextWindow (Name=brave-browser|google-chrome|chromium) (Title!=.*WhatsApp.*) (Head=2)} {Exec focus-active-window}
+Mod4 b :MacroCmd {NextWindow (Name=brave-browser|google-chrome|chromium) (Head=1)} {<%= focus_active %>}
+Shift Mod4 b :MacroCmd {NextWindow (Name=brave-browser|google-chrome|chromium) (Title!=.*WhatsApp.*) (Head=2)} {<%= focus_active %>}
 
 Mod4 c :MacroCmd {NextWindow (Name=brave-browser|google-chrome|chromium) (Title!=.*WhatsApp.*) (Head=2)} {Delay {Exec focus-active-window && sleep 0.1 && xdotool key ctrl+1} 100}
 
 #Mod4 e :Exec wmctrl -a emacs
-Mod4 e :MacroCmd {NextWindow (Name=emacs)} {Exec focus-active-window}
+Mod4 e :MacroCmd {NextWindow (Name=emacs)} {<%= focus_active %>}
 
 Mod4 d :Exec fluxbox-focus-or-launch Discord discord
 
 Mod4 g :Exec fluxbox-focus-or-launch Telegram ~/software/telegram/Telegram
-Shift Mod4 g :MacroCmd {NextWindow (Title=Meet .*)} {Exec focus-active-window}
+Shift Mod4 g :MacroCmd {NextWindow (Title=Meet .*)} {<%= focus_active %>}
 
 Mod4 s :Exec fluxbox-focus-or-launch Slack slack
-Mod4 w :MacroCmd {NextWindow (Title=.*WhatsApp.*)} {Exec focus-active-window}
+Mod4 w :MacroCmd {NextWindow (Title=.*WhatsApp.*)} {<%= focus_active %>}
 Mod4 z :Exec fluxbox-focus-or-launch Zulip zulip
 
 #Shift Mod4 z :Exec fluxbox-focus-or-launch Zoom 'zoom --disable-gpu-sandbox'
-Shift Mod4 z :MacroCmd {NextWindow (Title=Zoom Meeting.*)} {Exec focus-active-window}
+Shift Mod4 z :MacroCmd {NextWindow (Title=Zoom Meeting.*)} {<%= focus_active %>}
 
 # volume settings
 Mod4 bracketright :MacroCmd {Exec amixer sset Master,0 2%+} {Delay {Exec amixer sset Master,0 unmute} 10000}
@@ -340,9 +348,9 @@ end
 <% if monitors_connected.to_i > 1 %>
 # Change to previous/next head.
 # Make sure synergys isn't running otherwise it will grab these keys!
-Shift Mod4 comma :MacroCmd {NextWindow (workspace=[current]) (FocusHidden=no) (Head=1)} {Exec focus-active-window}
+Shift Mod4 comma :MacroCmd {NextWindow (workspace=[current]) (FocusHidden=no) (Head=1)} {<%= focus_active %>}
 # xdotool mousemove 1200 500}
 
-Shift Mod4 period :MacroCmd {NextWindow (workspace=[current]) (FocusHidden=no) (Head=2)} {Exec focus-active-window}
+Shift Mod4 period :MacroCmd {NextWindow (workspace=[current]) (FocusHidden=no) (Head=2)} {<%= focus_active %>}
 # xdotool mousemove 3200 400}
 <% end %>
