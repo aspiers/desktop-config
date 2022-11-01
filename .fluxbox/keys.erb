@@ -201,11 +201,23 @@ reorg: Control Shift Right :ResizeHorizontal 10%
 reorg: Control Shift Up :ResizeVertical -10%
 reorg: Control Shift Down :ResizeVertical 10%
 
-reorg: 0 :MacroCmd {ResizeTo 96% 97%} {MoveTo 0 0 TopLeft} <%= reorg_done %>
-reorg: 1 :MacroCmd {ResizeTo 48% 97%} {MoveTo 0 0 TopLeft} <%= reorg_done %>
-reorg: 2 :MacroCmd {ResizeTo 48% 97%} {MoveTo 48% 0 TopLeft} <%= reorg_done %>
-reorg: Shift 2 :MacroCmd {ResizeTo 48% 97%} {MoveTo 0 0 TopLeft} {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {Delay {Exec focus-active-window --sync} 11000} {Delay {ResizeTo 48% 97%} 12000} {Delay {MoveTo 48% 0 TopLeft} 13000} <%= reorg_done %>
-reorg: Shift semicolon :MacroCmd {ResizeTo 48% 48%} {MoveTo * 0 TopLeft} {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {Delay {Exec focus-active-window --sync} 11000} {Delay {ResizeTo 48% 48%} 12000} {Delay {MoveTo * 48% TopLeft} 13000} <%= reorg_done %>
+<%
+def mousemove(x, y)
+  "Exec mousemove #{x} #{y}"
+end
+%>
+
+reorg: 0 :MacroCmd {ResizeTo 96% 97%} {MoveTo 0 0 TopLeft} {<%= mousemove(48, 49) %>}
+reorg: 1 :MacroCmd {ResizeTo 48% 97%} {MoveTo 0 0 TopLeft} {<%= mousemove(24, 49) %>}
+reorg: 2 :MacroCmd {ResizeTo 48% 97%} {MoveTo 48% 0 TopLeft} {<%= mousemove(72, 49) %>}
+reorg: 3 :MacroCmd {ResizeTo 96% 49%} {MoveTo 0 0 TopLeft} {<%= mousemove(48, 24) %>}
+reorg: 4 :MacroCmd {ResizeTo 96% 49%} {MoveTo 0 49% TopLeft} {<%= mousemove(48, 72) %>}
+reorg: 5 :MacroCmd {ResizeTo 48% 49%} {MoveTo 0 0 TopLeft} {<%= mousemove(24, 25) %>}
+reorg: 6 :MacroCmd {ResizeTo 48% 49%} {MoveTo 48% 0 TopLeft} {<%= mousemove(72, 25) %>}
+reorg: 7 :MacroCmd {ResizeTo 48% 49%} {MoveTo 0 49% TopLeft} {<%= mousemove(24, 75) %>}
+reorg: 8 :MacroCmd {ResizeTo 48% 49%} {MoveTo 48% 49% TopLeft} {<%= mousemove(72, 75) %>}
+reorg: Shift 2 :MacroCmd {ResizeTo 48% 97%} {MoveTo 0 0 TopLeft} {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {<%= focus_active(11) %>} {Delay {ResizeTo 48% 97%} 12000} {Delay {MoveTo 48% 0 TopLeft} 13000} <%= reorg_done %>
+reorg: Shift semicolon :MacroCmd {ResizeTo 48% 48%} {MoveTo * 0 TopLeft} {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {<%= focus_active(11) %>} {Delay {ResizeTo 48% 48%} 12000} {Delay {MoveTo * 48% TopLeft} 13000} <%= reorg_done %>
 
 reorg: space :Raise
 reorg: Mod4 l :If {Matches (Layer=Normal)} {MacroCmd {SetLayer Top} {<%= notify_transient 'set to top layer', 'layer' %>}} {MacroCmd {SetLayer Normal} {<%= notify_transient 'set to normal layer', 'layer'  %>}}
