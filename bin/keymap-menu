@@ -53,6 +53,7 @@ Choose from one of the following keymaps:
   9) HHKL
  10) US QWERTY hacked to suit Adam
  11) Framework hacked to suit Adam
+ 12) Kinesis Advantage 360
 
 EOF
 #  7) Microsoft Natural 105-key
@@ -76,7 +77,8 @@ EOF
         9) keymap=hhkl            ;;
         10) keymap=us-qwerty-hacked ;;
         #10) keymap=dvorak   ;;
-        11) keymap=framework      ;;
+        11) keymap=framework-hacked ;;
+        12) keymap=kinesis-360    ;;
 
         *)
             echo "Invalid choice!"
@@ -133,6 +135,9 @@ get_keymap_settings () {
             # kbdrate to work around https://bugs.freedesktop.org/show_bug.cgi?id=17500
             # but I can't remember the context and that bug (entitled
             # "Kernel autorepeat interrupts X softrepeat") is now resolved.
+            ;;
+        kinesis-360)
+            xkb='-keycodes evdev-aspiers(kinesis-360) -symbols pc+us+gb+adam(kinesis-360) -geometry kinesis'
             ;;
         d600)
             xmodmap=Dell-D600-untouched

@@ -1,4 +1,5 @@
-default xkb_keycodes "aspiers" {
+default
+xkb_keycodes "aspiers" {
     include "evdev(evdev)"
 
     // There will be warnings from xkbcomp because of multiple definitions.
@@ -6,4 +7,12 @@ default xkb_keycodes "aspiers" {
     <LCTL> = 64;
     <AB01> = 37;
     <LALT> = 133;
+};
+
+xkb_keycodes "kinesis-360" {
+    include "evdev(evdev)"
+
+    // There will be warnings from xkbcomp because of multiple definitions.
+
+    <RWIN> = 133;
 };

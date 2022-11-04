@@ -300,10 +300,48 @@ xkb_symbols "kinesis-right-thumb-pad" {
     };
 };
 
+partial modifier_keys
+xkb_symbols "kinesis-360-right-thumb-pad" {
+    virtual_modifiers Super;
+
+    key <RWIN> { [ Menu ]
+        //type[Group1] = "ONE_LEVEL",
+        //symbols[Group1] = [ Menu ]
+        //symbols[Group1] = [ Multi_key ]
+        //symbols[Group1] = [ Mode_switch ]
+
+        //type[Group1] = "ONE_LEVEL",
+        //symbols[Group1] = [ Alt_R ],
+        //virtualMods = LAlt
+    };
+
+    key <RCTL> {
+        // This causes a spurious warning:
+        //
+        //   'Type "ONE_LEVEL" has 1 levels, but <RCTL> has 2 symbols'
+        //
+        // but is required otherwise Multi_key ends up being on the
+        // 2nd level, which means that Super-< passes an unwanted
+        // Multi_key event to the synergy client.  Also, the warning
+        // is a bug which got fixed in openSUSE 13.1:
+        //
+        //   https://bugs.freedesktop.org/show_bug.cgi?id=57242
+        type[Group1] = "ONE_LEVEL",
+
+        symbols[Group1] = [ Super_R ],
+        virtualMods = Super
+    };
+};
+
 
 partial
 xkb_symbols "kinesis-caps-lock" {
     key <CAPS> { [ minus, underscore ] };
+};
+
+partial
+xkb_symbols "kinesis-360-escape" {
+    key <ESC> { [ minus, underscore ] };
 };
 
 partial
