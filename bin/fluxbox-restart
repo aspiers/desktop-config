@@ -43,7 +43,7 @@ fi
 fluxbox -log ~/.log/fluxbox.log >>& ~/.log/fluxbox.log &!
 
 # Kill annoying popup
-sleep 2
+sleep 1
 xdotool search \
         --onlyvisible \
         --screen 0 \
