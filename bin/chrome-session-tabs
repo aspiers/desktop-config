@@ -5,6 +5,7 @@ import os.path
 from pprint import pp
 from subprocess import CalledProcessError, run
 import sys
+import time
 from shutil import which
 
 DUMPER = 'chrome-session-dump'
@@ -88,6 +89,8 @@ def focus_tab(tab):
         run(['wmctrl', '-a', tab['window']['title']], check=True)
     except CalledProcessError:
         die("wmctrl -a failed")
+
+    time.sleep(0.1)
 
     i = tab['index']
     print("Selecting tab #%d" % i)
