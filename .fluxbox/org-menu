@@ -30,10 +30,11 @@
     [separator]
 
     [nop] (Panther PIM)
-    [exec] (Pc: Panther Google calendar) {chrome-session-tabs 'calendar.google.com/calendar/u/1'}
-    [exec] (Pt: Panther TODO) {switch-feed-emacs < ~/lib/xmacro/org-jump-Panther-todo}
-    [exec] (Pd: Panther diary) {switch-feed-emacs < ~/lib/xmacro/org-jump-Panther-diary}
-    [exec] (Pg: Panther gtd-timer) {urxvt -fn smoothansi -geometry 90x15-0-0 -e sh -c "gtd-timer ~/mail/Panther/offlineimap/INBOX; sleep 60"}
+    [exec] (pc: Panther Google calendar) {chrome-session-tabs 'calendar.google.com/calendar/u/1'}
+    [exec] (pm: Panther mail) {chrome-session-tabs 'mail.google.com/mail/u/1'}
+    [exec] (pt: Panther TODO) {switch-feed-emacs < ~/lib/xmacro/org-jump-Panther-todo}
+    [exec] (pd: Panther diary) {switch-feed-emacs < ~/lib/xmacro/org-jump-Panther-diary}
+    [exec] (pg: Panther gtd-timer) {urxvt -fn smoothansi -geometry 90x15-0-0 -e sh -c "gtd-timer ~/mail/Panther/offlineimap/INBOX; sleep 60"}
 
 [endencoding]
 [end]
