@@ -101,9 +101,9 @@ def focus_tab(tab):
         xdotool_key("ctrl+Next")
 
 def xdotool_key(key):
+    cmd = ['xdotool', 'key', key]
+    print(' '.join(cmd))
     try:
-        cmd = ['xdotool', 'key', key]
-        print(' '.join(cmd))
         run(cmd, check=True)
     except CalledProcessError:
         die("Failed to execute: %s" % cmd)
