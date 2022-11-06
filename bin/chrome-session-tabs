@@ -56,7 +56,7 @@ def get_tabs(windows):
 
 
 def show_windows(windows):
-    for window in windows:
+    for window in sorted(windows, key=lambda w: w['title']):
         if 'title' not in window:
             # Sometimes there's an empty window for some reason.
             continue
