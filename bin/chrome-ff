@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# Requires https://github.com/siadat/chrome-ff extension
+
+wmctrl -a Chrome
+xdotool key ctrl+l f f Tab
+xdotool type "$*"
+xdotool key Enter
