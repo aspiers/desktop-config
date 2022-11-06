@@ -3,7 +3,7 @@
 import json
 import os.path
 from pprint import pp
-from subprocess import run
+from subprocess import CalledProcessError, run
 import sys
 from shutil import which
 
@@ -41,6 +41,9 @@ def get_tabs(windows):
             if window['userTitle']:
                 window['title'] = window['userTitle']
             elif tab['active']:
+                # FIXME: this is not 100% reliable - if a new tab
+                # with URL chrome://newtab/ is focused, it doesn't
+                # seem to register as active.
                 window['title'] = tab_title
                 # print("Found window with title %s" % title)
             if tab['title']:
@@ -80,8 +83,27 @@ def report_tab_found(tab):
 
 
 def focus_tab(tab):
-    run(['wmctrl', '-a', tab['window']['title']], check=True)
-    run(['xdotool', 'key', 'ctrl+%d' % tab['index']], check=True)
+    print("Focusing window with title: %s" % tab['window']['title'])
+    try:
+        run(['wmctrl', '-a', tab['window']['title']], check=True)
+    except CalledProcessError:
+        die("wmctrl -a failed")
+
+    i = tab['index']
+    print("Selecting tab #%d" % i)
+    if i > 8:
+        i = 8
+    xdotool_key("ctrl+%d" % i)
+    for i in range(tab['index'] - 8):
+        xdotool_key("ctrl+Next")
+
+def xdotool_key(key):
+    try:
+        cmd = ['xdotool', 'key', key]
+        print(' '.join(cmd))
+        run(cmd, check=True)
+    except CalledProcessError:
+        die("Failed to execute: %s" % cmd)
 
 
 def main():
