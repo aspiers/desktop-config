@@ -1,0 +1,97 @@
+#!/usr/bin/env python3
+
+import json
+import os.path
+from pprint import pp
+from subprocess import run
+import sys
+from shutil import which
+
+DUMPER = 'chrome-session-dump'
+SESSION = os.path.expanduser('~/.config/google-chrome/Default/Sessions')
+
+
+def die(message):
+    sys.stderr.write(message + "\n")
+    sys.exit(1)
+
+
+def get_windows():
+    result = run([DUMPER, "-json", SESSION], capture_output=True, check=True)
+
+    j = json.loads(result.stdout)
+    if 'windows' not in j:
+        die("Didn't find 'windows' key in JSON output:\n\n%s" % result.stdout)
+
+    return j['windows']
+
+
+def get_tabs(windows):
+    tabs = {}
+    for window in windows:
+        for i, tab in enumerate(window['tabs']):
+            tab['index'] = i + 1
+            tab['window'] = window
+            tab_title = tab['title'] or tab['url']
+            if window['userTitle']:
+                window['title'] = window['userTitle']
+            elif tab['active']:
+                window['title'] = tab_title
+                # print("Found window with title %s" % title)
+            if tab['title']:
+                search_key = "%s | %s" % (tab['title'], tab['url'])
+            else:
+                search_key = tab['url']
+            tabs[search_key] = tab
+    return tabs
+
+
+def show_windows(windows):
+    for window in windows:
+        print(window['title'])
+        for tab in window['tabs']:
+            print("  %2d: %s" % (tab['index'], tab['title']))
+        print()
+
+
+def find_tab(substring, tabs):
+    for tab_search_key, tab in tabs.items():
+        if tab_search_key.lower().find(substring.lower()) != -1 \
+           and not tab['groupCollapsed']:
+            return tab
+
+
+def report_tab_found(tab):
+    win = tab['window']
+    win_title = win['title']
+    print("Found tab: %s" % tab['title'])
+    print("\t%s" % tab['url'])
+    print("\tTab %d in window: %s" % (tab['index'], win_title))
+    print()
+
+
+def focus_tab(tab):
+    run(['wmctrl', '-a', tab['window']['title']], check=True)
+    run(['xdotool', 'key', 'ctrl+%d' % tab['index']], check=True)
+
+
+def main():
+    if not which(DUMPER):
+        die("chrome-session-dump not installed; type mrco chrome-session-dump")
+
+    windows = get_windows()
+    tabs = get_tabs(windows)
+    if len(sys.argv) >= 2:
+        substring = ' '.join(sys.argv[1:])
+        print("Searching for visible tab containing [%s]" % substring)
+        tab = find_tab(substring, tabs)
+        if tab:
+            report_tab_found(tab)
+            focus_tab(tab)
+        else:
+            die("No visible tab found.")
+    else:
+        show_windows(windows)
+
+
+main()
