@@ -273,7 +273,7 @@ Mod4 x :MacroCmd {NextWindow (Name=gnome-terminal-server) (Head=1) (workspace=0)
 Mod4 b :MacroCmd {NextWindow (Name=brave-browser|google-chrome|chromium) (Head=1)} {<%= focus_active %>}
 Shift Mod4 b :MacroCmd {NextWindow (Name=brave-browser|google-chrome|chromium) (Title!=.*WhatsApp.*) (Head=2)} {<%= focus_active %>}
 
-Mod4 c :MacroCmd {NextWindow (Name=brave-browser|google-chrome|chromium) (Title!=.*WhatsApp.*) (Head=2)} {Delay {Exec focus-active-window && sleep 0.1 && xdotool key ctrl+1} 100}
+Mod4 c :Exec chrome-session-tabs 'Google Calendar'
 
 #Mod4 e :Exec wmctrl -a emacs
 Mod4 e :MacroCmd {NextWindow (Name=emacs)} {<%= focus_active %>}
@@ -284,7 +284,7 @@ Mod4 g :Exec fluxbox-focus-or-launch Telegram ~/software/telegram/Telegram
 Shift Mod4 g :MacroCmd {NextWindow (Title=Meet .*)} {<%= focus_active %>}
 
 Mod4 s :Exec fluxbox-focus-or-launch Slack slack
-Mod4 w :MacroCmd {NextWindow (Title=.*WhatsApp.*)} {<%= focus_active %>}
+Mod4 w :Exec chrome-session-tabs WhatsApp
 Mod4 z :Exec fluxbox-focus-or-launch Zulip zulip
 
 #Shift Mod4 z :Exec fluxbox-focus-or-launch Zoom 'zoom --disable-gpu-sandbox'

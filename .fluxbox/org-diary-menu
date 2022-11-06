@@ -1,6 +1,0 @@
-[begin] (Org diary menu)
-[encoding] {UTF-8}
-    [exec] (personal) {switch-feed-emacs < ~/lib/xmacro/org-jump-personal-todo}
-    [exec] (work) {switch-feed-emacs < ~/lib/xmacro/org-jump-work-todo}
-[endencoding]
-[end]
