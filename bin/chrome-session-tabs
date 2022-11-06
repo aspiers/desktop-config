@@ -100,6 +100,9 @@ def focus_tab(tab):
     for i in range(tab['index'] - 8):
         xdotool_key("ctrl+Next")
 
+    print("focus-active-window")
+    run(['focus-active-window'])
+
 def xdotool_key(key):
     cmd = ['xdotool', 'key', key]
     print(' '.join(cmd))
