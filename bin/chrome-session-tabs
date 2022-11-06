@@ -28,7 +28,12 @@ def get_windows():
 
 def get_tabs(windows):
     tabs = {}
+
     for window in windows:
+        if not window.get('tabs'):
+            # Sometimes there's an empty window for some reason.
+            continue
+
         for i, tab in enumerate(window['tabs']):
             tab['index'] = i + 1
             tab['window'] = window
@@ -48,6 +53,10 @@ def get_tabs(windows):
 
 def show_windows(windows):
     for window in windows:
+        if 'title' not in window:
+            # Sometimes there's an empty window for some reason.
+            continue
+
         print(window['title'])
         for tab in window['tabs']:
             print("  %2d: %s" % (tab['index'], tab['title']))
