@@ -35,10 +35,13 @@ def get_tabs(windows):
             # Sometimes there's an empty window for some reason.
             continue
 
-        window_tabs = [t for t in window['tabs'] if not t["deleted"]]
-        pp(window_tabs)
-        for i, tab in enumerate(window_tabs):
-            tab['index'] = i + 1
+        next_index = 1
+        for tab in window['tabs']:
+            if tab['deleted'] or tab['groupCollapsed']:
+                tab['index'] = 0
+            else:
+                tab['index'] = next_index
+                next_index += 1
             tab['window'] = window
             tab_title = tab['title'] or tab['url']
             if window['userTitle']:
@@ -65,15 +68,20 @@ def show_windows(windows):
 
         print(window['title'])
         for tab in window['tabs']:
-            if not tab['deleted']:
-                print("  %2d: %s" % (tab['index'], tab['title']))
+            if tab['deleted']:
+                print("  deleted: %s" % tab['title'])
+            elif tab['groupCollapsed']:
+                print("  hidden:  %s" % tab['title'])
+            else:
+                print("  %3d: %s" % (tab['index'], tab['title']))
         print()
 
 
 def find_tab(substring, tabs):
     for tab_search_key, tab in tabs.items():
         if tab_search_key.lower().find(substring.lower()) != -1 \
-           and not tab['groupCollapsed']:
+           and not tab['groupCollapsed'] \
+           and not tab['deleted']:
             return tab
 
 
