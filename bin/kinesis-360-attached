@@ -1,0 +1,3 @@
+#!/bin/bash
+
+xinput list | grep -q Adv360

@@ -5,7 +5,10 @@
 read_localhost_nickname
 
 apply_keymap () {
-    if kinesis-attached; then
+    if kinesis-360-attached; then
+        echo "Found Kinesis 360 keyboard attached; using kinesis-360 keymap ..."
+        keymap-menu kinesis-360
+    elif kinesis-attached; then
         echo "Found Kinesis keyboard attached; using kinesis keymap ..."
         keymap-menu kinesis
     elif model-01-attached; then
