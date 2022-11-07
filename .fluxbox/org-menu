@@ -2,29 +2,40 @@
 [encoding] {UTF-8}
     [exec] (a: Agenda) {switch-feed-emacs < ~/lib/xmacro/org-agenda}
     [exec] (r: Review) {switch-feed-emacs < ~/lib/xmacro/org-agenda-review}
-    [exec] (g: Google Calendar) {url-handler https://www.google.com/calendar}
+    # [exec] (g: Google Calendar) {url-handler https://www.google.com/calendar}
     [exec] (e: Add event(s) to Google Calendar) {urxvt -e sh -c 'while true; do rlwrap gca; div; done'}
     [exec] (c: Capture) {switch-feed-emacs < ~/lib/xmacro/org-capture}
     [exec] (j: Jump to clock) {switch-feed-emacs < ~/lib/xmacro/org-jump-to-clock}
-    [separator]
-
-#    [CustomMenu ~/.fluxbox/org-personal-menu] (p: Org personal menu)
-    [submenu] (p: Org personal menu) {Org personal menu}
-        [include] (~/.fluxbox/org-personal-menu)
-    [end]
-
-    [submenu] (w: Org work menu) {Org work menu}
-        [include] (~/.fluxbox/org-work-menu)
-    [end]
 
     [separator]
 
-    [submenu] (t: Org TODO menu) {Org TODO menu}
-        [include] (~/.fluxbox/org-todo-menu)
-    [end]
+#    [submenu] (p: personal PIM) {personal PIM}
+#        [include] (~/.fluxbox/personal-PIM-menu)
+#    [end]
 
-    [submenu] (d: Org diary menu) {Org diary menu}
-        [include] (~/.fluxbox/org-diary-menu)
-    [end]
+    [nop] (Personal PIM)
+    [exec] (m: personal mail) {chrome-session-tabs 'mail.google.com/mail/u/0'}
+    [exec] (2: personal TODO) {switch-feed-emacs &lt; ~/lib/xmacro/org-jump-personal-todo}
+    [exec] (d: personal diary) {switch-feed-emacs &lt; ~/lib/xmacro/org-jump-personal-diary}
+    [exec] (g: personal gtd-timer) {urxvt -fn smoothansi -geometry 90x15-0-0 -e sh -c "gtd-timer ~/mail/personal/offlineimap/INBOX; sleep 60"}
+
+    [separator]
+
+    [nop] (Toucan PIM)
+    [exec] (tc: Toucan Google calendar) {chrome-session-tabs 'calendar.google.com/calendar/u/2'}
+    [exec] (tm: Toucan mail) {chrome-session-tabs 'mail.google.com/mail/u/2'}
+    [exec] (tt: Toucan TODO) {switch-feed-emacs < ~/lib/xmacro/org-jump-Toucan-todo}
+    [exec] (td: Toucan diary) {switch-feed-emacs < ~/lib/xmacro/org-jump-Toucan-diary}
+    [exec] (tg: Toucan gtd-timer) {urxvt -fn smoothansi -geometry 90x15-0-0 -e sh -c "gtd-timer ~/mail/Toucan/offlineimap/INBOX; sleep 60"}
+
+    [separator]
+
+    [nop] (Panther PIM)
+    [exec] (pc: Panther Google calendar) {chrome-session-tabs 'calendar.google.com/calendar/u/1'}
+    [exec] (pm: Panther mail) {chrome-session-tabs 'mail.google.com/mail/u/1'}
+    [exec] (pt: Panther TODO) {switch-feed-emacs < ~/lib/xmacro/org-jump-Panther-todo}
+    [exec] (pd: Panther diary) {switch-feed-emacs < ~/lib/xmacro/org-jump-Panther-diary}
+    [exec] (pg: Panther gtd-timer) {urxvt -fn smoothansi -geometry 90x15-0-0 -e sh -c "gtd-timer ~/mail/Panther/offlineimap/INBOX; sleep 60"}
+
 [endencoding]
 [end]

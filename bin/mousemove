@@ -1,0 +1,45 @@
+#!/bin/bash
+
+. ~/lib/libdpy.sh
+
+usage () {
+    # Call as: usage [EXITCODE] [USAGE MESSAGE]
+    exit_code=1
+    if [[ "$1" == [0-9] ]]; then
+        exit_code="$1"
+        shift
+    fi
+
+    me=$(basename $0)
+
+    cat <<EOF >&2
+Usage: $me [options] X Y
+Options:
+  -h, --help     Show this help and exit
+  -v, --version  Output version information and exit
+EOF
+
+    if [ -n "$1" ]; then
+        echo >&2
+        echo >&2 "$*"
+    fi
+
+    exit "$exit_code"
+}
+
+main () {
+    if [ "$1" == '-h' ] || [ "$1" == '--help' ]; then
+        usage 0
+    fi
+    if [ "$#" -ne 2 ]; then
+        usage 1
+    fi
+
+    xp="$1" yp="$2"
+    x=$(( primary_width * xp / 100 ))
+    y=$(( primary_height * yp / 100 ))
+
+    xdotool mousemove $x $y
+}
+
+main "$@"

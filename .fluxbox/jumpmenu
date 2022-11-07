@@ -1,11 +1,7 @@
 [begin] (Quickjump menu)
 [encoding] {UTF-8}
-      [exec] (emacs) {wmctrl -a emacs}
-      [exec] (terminal) {wmctrl -a gnome-terminal}
-      [exec] (Telegram) {wmctrl -a telegram}
-      [exec] (Discord) {wmctrl -a discord}
-      [exec] (Slack) {wmctrl -a slack}
-      [exec] (u: Zulip) {wmctrl -a zulip}
-      [exec] (Zoom) {wmctrl -a zoom}
+      [exec] (SMS) {chrome-session-tabs 'messages.google.com/'}
+      [exec] (Facebook Messenger) {chrome-session-tabs 'messenger.com/'}
+      [exec] (p: personal calendar) {chrome-session-tabs 'calendar.google.com/calendar/u/0'}
 [endencoding]
 [end]

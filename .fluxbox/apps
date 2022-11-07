@@ -49,3 +49,7 @@
 [app] (head=2)
   [Sticky]	{yes}
 [end]
+
+[app] (name=eog)
+  [Deco] {NORMAL}
+[end]

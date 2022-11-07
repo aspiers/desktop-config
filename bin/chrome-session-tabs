@@ -1,0 +1,134 @@
+#!/usr/bin/env python3
+
+import json
+import os.path
+from pprint import pp
+from subprocess import CalledProcessError, run
+import sys
+import time
+from shutil import which
+
+DUMPER = 'chrome-session-dump'
+SESSION = os.path.expanduser('~/.config/google-chrome/Default/Sessions')
+
+
+def die(message):
+    sys.stderr.write(message + "\n")
+    sys.exit(1)
+
+
+def get_windows():
+    result = run([DUMPER, "-json", SESSION], capture_output=True, check=True)
+
+    j = json.loads(result.stdout)
+    if 'windows' not in j:
+        die("Didn't find 'windows' key in JSON output:\n\n%s" % result.stdout)
+
+    return j['windows']
+
+
+def get_tabs(windows):
+    tabs = {}
+
+    for window in windows:
+        if not window.get('tabs'):
+            # Sometimes there's an empty window for some reason.
+            continue
+
+        for i, tab in enumerate(window['tabs']):
+            tab['index'] = i + 1
+            tab['window'] = window
+            tab_title = tab['title'] or tab['url']
+            if window['userTitle']:
+                window['title'] = window['userTitle']
+            elif tab['active']:
+                # FIXME: this is not 100% reliable - if a new tab
+                # with URL chrome://newtab/ is focused, it doesn't
+                # seem to register as active.
+                window['title'] = tab_title
+                # print("Found window with title %s" % title)
+            if tab['title']:
+                search_key = "%s | %s" % (tab['title'], tab['url'])
+            else:
+                search_key = tab['url']
+            tabs[search_key] = tab
+    return tabs
+
+
+def show_windows(windows):
+    for window in sorted(windows, key=lambda w: w['title']):
+        if 'title' not in window:
+            # Sometimes there's an empty window for some reason.
+            continue
+
+        print(window['title'])
+        for tab in window['tabs']:
+            print("  %2d: %s" % (tab['index'], tab['title']))
+        print()
+
+
+def find_tab(substring, tabs):
+    for tab_search_key, tab in tabs.items():
+        if tab_search_key.lower().find(substring.lower()) != -1 \
+           and not tab['groupCollapsed']:
+            return tab
+
+
+def report_tab_found(tab):
+    win = tab['window']
+    win_title = win['title']
+    print("Found tab: %s" % tab['title'])
+    print("\t%s" % tab['url'])
+    print("\tTab %d in window: %s" % (tab['index'], win_title))
+    print()
+
+
+def focus_tab(tab):
+    print("Focusing window with title: %s" % tab['window']['title'])
+    try:
+        run(['wmctrl', '-a', tab['window']['title']], check=True)
+    except CalledProcessError:
+        die("wmctrl -a failed")
+
+    time.sleep(0.1)
+
+    i = tab['index']
+    print("Selecting tab #%d" % i)
+    if i > 8:
+        i = 8
+    xdotool_key("ctrl+%d" % i)
+    for i in range(tab['index'] - 8):
+        xdotool_key("ctrl+Next")
+
+    print("focus-active-window")
+    run(['focus-active-window'])
+
+def xdotool_key(key):
+    cmd = ['xdotool', 'key', key]
+    print(' '.join(cmd))
+    try:
+        run(cmd, check=True)
+    except CalledProcessError:
+        die("Failed to execute: %s" % cmd)
+
+
+def main():
+    if not which(DUMPER):
+        die("chrome-session-dump not installed; type mrco chrome-session-dump")
+
+    windows = get_windows()
+    tabs = get_tabs(windows)
+    if len(sys.argv) >= 2:
+        substring = ' '.join(sys.argv[1:])
+        print("Searching for visible tab containing [%s]" % substring)
+        tab = find_tab(substring, tabs)
+        if tab:
+            report_tab_found(tab)
+            focus_tab(tab)
+        else:
+            die("No visible tab found.")
+    else:
+        show_windows(windows)
+
+
+main()

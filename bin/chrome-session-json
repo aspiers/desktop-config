@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if ! which chrome-session-dump >&/dev/null; then
+    echo >&2 "chrome-session-dump not installed; type mrco chrome-session-dump"
+    exit 1
+fi
+
+chrome-session-dump -json ~/.config/google-chrome/Default/Sessions
