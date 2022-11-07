@@ -93,7 +93,7 @@ def focus_tab(tab):
     except CalledProcessError:
         die("wmctrl -a failed")
 
-    time.sleep(0.1)
+    time.sleep(0.2)
 
     target_tab_index = tab['index']
     print("Selecting tab #%d" % target_tab_index)
