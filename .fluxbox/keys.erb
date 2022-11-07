@@ -281,7 +281,7 @@ Mod4 e :MacroCmd {NextWindow (Name=emacs)} {<%= focus_active %>}
 Mod4 d :Exec fluxbox-focus-or-launch Discord discord
 
 Mod4 g :Exec fluxbox-focus-or-launch Telegram ~/software/telegram/Telegram
-Shift Mod4 g :MacroCmd {NextWindow (Title=Meet .*)} {<%= focus_active %>}
+Shift Mod4 g :Exec chrome-session-tabs meet.google.com
 
 Mod4 s :Exec fluxbox-focus-or-launch Slack slack
 Mod4 w :Exec chrome-session-tabs WhatsApp
