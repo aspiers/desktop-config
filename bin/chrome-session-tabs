@@ -92,12 +92,17 @@ def focus_tab(tab):
 
     time.sleep(0.1)
 
-    i = tab['index']
-    print("Selecting tab #%d" % i)
-    if i > 8:
-        i = 8
-    xdotool_key("ctrl+%d" % i)
-    for i in range(tab['index'] - 8):
+    target_tab_index = tab['index']
+    print("Selecting tab #%d" % target_tab_index)
+    start_tab_index = target_tab_index
+    if target_tab_index == 6:
+        # Ctrl+6 toggles between last two tabs
+        start_tab_index = 5
+    elif target_tab_index > 8:
+        # Ctrl+9 goes to the last tab
+        start_tab_index = 8
+    xdotool_key("ctrl+%d" % start_tab_index)
+    for i in range(target_tab_index - start_tab_index):
         xdotool_key("ctrl+Next")
 
     print("focus-active-window")
