@@ -340,6 +340,11 @@ xkb_symbols "kinesis-caps-lock" {
 };
 
 partial
+xkb_symbols "kinesis-360-caps-lock" {
+    key <CAPS> { [ minus, underscore ] };
+};
+
+partial
 xkb_symbols "kinesis-360-escape" {
     key <ESC> { [ minus, underscore ] };
 };
@@ -373,6 +378,11 @@ xkb_symbols "kinesis-insert" {
     // Go figure :-/
     key <LSGT>  { [ Insert, Insert ] };
     key <INS>   { [ Insert, Insert ] };
+};
+
+partial
+xkb_symbols "kinesis-360-insert" {
+    key <CAPS> { [ Insert, Insert ] };
 };
 
 partial
