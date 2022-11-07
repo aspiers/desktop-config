@@ -35,7 +35,9 @@ def get_tabs(windows):
             # Sometimes there's an empty window for some reason.
             continue
 
-        for i, tab in enumerate(window['tabs']):
+        window_tabs = [t for t in window['tabs'] if not t["deleted"]]
+        pp(window_tabs)
+        for i, tab in enumerate(window_tabs):
             tab['index'] = i + 1
             tab['window'] = window
             tab_title = tab['title'] or tab['url']
@@ -63,7 +65,8 @@ def show_windows(windows):
 
         print(window['title'])
         for tab in window['tabs']:
-            print("  %2d: %s" % (tab['index'], tab['title']))
+            if not tab['deleted']:
+                print("  %2d: %s" % (tab['index'], tab['title']))
         print()
 
 
