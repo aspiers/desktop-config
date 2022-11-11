@@ -73,7 +73,7 @@ def show_windows(windows):
             elif tab['groupCollapsed']:
                 print("  hidden:  %s" % tab['title'])
             else:
-                print("  %3d: %s" % (tab['index'], tab['title']))
+                print("  %3d: %s | %s" % (tab['index'], tab['title'], tab['url']))
         print()
 
 
