@@ -8,6 +8,9 @@ case "$localhost_nickname" in
     aegean)
         font_size=10
         ;;
+    celtic)
+        font_size=12
+        ;;
     *)
         # FIXME: add more cases here
         font_size=10
