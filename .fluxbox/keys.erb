@@ -26,6 +26,7 @@ def notify_done(mode)
 end
 %>
 
+Control Mod1 Mod4 y :MacroCmd {Exec ly && notify-send -t 3000 'Applied auto-layout'}
 Control Mod1 Mod4 r :MacroCmd {Exec fluxbox-reconfigure && notify-send -t 3000 'Reloaded fluxbox config'}
 Shift Control Mod1 Mod4 r :MacroCmd {Restart} {<%= notify 'Restarted fluxbox' %>}
 

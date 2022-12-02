@@ -1,0 +1,20 @@
+- - (Name=gkrellm)
+  - MacroCmd {MoveTo 0 0 TopRight} {Activate}
+  - If {Matches (Stuck=no)} {Stick}
+
+- - (Name=brave-browser|google-chrome|chromium)
+  - MacroCmd {SetHead 1} {MoveTo 0 0} {ResizeTo 97% 97%}
+
+- - (Name=gnome-terminal-server)
+  - MacroCmd {SetHead 1} {MoveTo 0 0} {ResizeTo 48% 97%}
+
+- - (name=emacs)
+  - MacroCmd {SetHead 1} {MoveTo 48% 0} {ResizeTo 47% 97%}
+
+- - (Name=slack|Telegram|discord|Discord*)
+  - MacroCmd {SetHead 1} {SendToWorkspace 4} {MoveTo 0 0} {ResizeTo 97% 97%}
+  - If {Matches (Stuck=yes)} {Stick}
+
+- - (Name=google-chrome) (Title=personal)
+  - If {Matches (Stuck=yes)} {Stick}
+  - MacroCmd {SetHead 2} {SendToWorkspace 5} {MoveTo 0 0 TopLeft} {ResizeTo 97% 97%}
