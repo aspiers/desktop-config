@@ -352,7 +352,7 @@ Mod1 Mod4 9 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspac
 
 <%
 def monitors_connected
-  %x(xrandr | grep -c ' connected ').chomp
+  %x('monitors-connected').chomp
 end
 %>
 
