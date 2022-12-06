@@ -17,4 +17,4 @@
 
 - - (Name=google-chrome) (Title=personal)
   - If {Matches (Stuck=yes)} {Stick}
-  - MacroCmd {SetHead 2} {SendToWorkspace 5} {MoveTo 0 0 TopLeft} {ResizeTo 97% 97%}
+  - MacroCmd {SetHead 1} {SendToWorkspace 5} {MoveTo 0 0 TopLeft} {ResizeTo 97% 97%}
