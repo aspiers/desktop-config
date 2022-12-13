@@ -23,8 +23,8 @@ emacs_font=$(
     cpp \
         -DEMACS_VERSION=$emacs_version \
         -DEMACS_MAJOR_VERSION=$emacs_major_version \
-        -DPRIMARY_WIDTH=$dpy_width \
-        -DPRIMARY_HEIGHT=$dpy_height \
+        -DPRIMARY_WIDTH=$primary_width \
+        -DPRIMARY_HEIGHT=$primary_height \
         -I $ZDOTDIR/.Xresources.d \
         $ZDOTDIR/.Xresources.d/all.rdb | \
     awk '/^ *emacs.font/ {print $2}'
