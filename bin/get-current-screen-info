@@ -1,0 +1,38 @@
+#!/bin/bash
+
+. ~/lib/libdpy.sh
+
+eval $(xdotool getmouselocation --shell)
+echo xdotool_screen=$SCREEN
+
+if [ "$primary_xoffset" -eq 0 ]; then
+    # primary is on LHS; secondary is on RHS
+    if [ "$X" -ge "$secondary_xoffset" ]; then
+        echo "current_screen_type=secondary"
+        echo "current_screen_pos=right"
+        echo "current_screen_xoffset=$secondary_xoffset"
+        echo "current_screen_width=$secondary_width"
+        echo "current_screen_height=$secondary_height"
+    else
+        echo "current_screen_type=primary"
+        echo "current_screen_pos=left"
+        echo "current_screen_xoffset=0"
+        echo "current_screen_width=$primary_width"
+        echo "current_screen_height=$primary_height"
+    fi
+else
+    # secondary is on LHS; primary is on RHS
+    if [ "$X" -ge "$primary_xoffset" ]; then
+        echo "current_screen_type=primary"
+        echo "current_screen_pos=right"
+        echo "current_screen_xoffset=$primary_xoffset"
+        echo "current_screen_width=$primary_width"
+        echo "current_screen_height=$primary_height"
+    else
+        echo "current_screen_type=secondary"
+        echo "current_screen_pos=left"
+        echo "current_screen_xoffset=0"
+        echo "current_screen_width=$secondary_width"
+        echo "current_screen_height=$secondary_height"
+    fi
+fi

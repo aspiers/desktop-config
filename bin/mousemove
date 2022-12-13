@@ -35,9 +35,11 @@ main () {
         usage 1
     fi
 
-    xp="$1" yp="$2"
-    x=$(( primary_width * xp / 100 ))
-    y=$(( primary_height * yp / 100 ))
+    xpercent="$1" ypercent="$2"
+
+    eval $( get-current-screen-info )
+    x=$(( current_screen_xoffset + current_screen_width * xpercent / 100 ))
+    y=$(( current_screen_height * ypercent / 100 ))
 
     xdotool mousemove $x $y
 }
