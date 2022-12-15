@@ -50,6 +50,10 @@
   [Sticky]	{yes}
 [end]
 
+[app] (name=ksnip)
+  [Sticky]	{yes}
+[end]
+
 [app] (name=eog)
   [Deco] {NORMAL}
 [end]
