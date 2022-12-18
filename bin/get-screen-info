@@ -1,6 +1,6 @@
 #!/bin/bash
 
-. ~/lib/libdpy.sh
+. $ZDOTDIR/lib/libdpy.sh
 
 eval $(xdotool getmouselocation --shell)
 echo xdotool_screen=$SCREEN

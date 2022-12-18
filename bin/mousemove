@@ -37,7 +37,7 @@ main () {
 
     xpercent="$1" ypercent="$2"
 
-    eval $( get-current-screen-info )
+    eval $( get-screen-info )
     x=$(( current_screen_xoffset + current_screen_width * xpercent / 100 ))
     y=$(( current_screen_height * ypercent / 100 ))
 
