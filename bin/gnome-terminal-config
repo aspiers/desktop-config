@@ -17,6 +17,8 @@ case "$localhost_nickname" in
         ;;
 esac
 
+# Get the below via: dconf dump /org/gnome/terminal/
+
 dconf load /org/gnome/terminal/ <<EOF
 [legacy]
 default-show-menubar=false
