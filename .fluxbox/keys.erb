@@ -356,15 +356,22 @@ Mod1 Mod4 9 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspac
 def monitors_connected
   %x('monitors-connected').chomp
 end
+
+left_head, right_head =
+  if %x('primary-screen-pos').chomp == '0'
+    [1, 2]
+  else
+    [2, 1]
+  end
 %>
 
 # Number of monitors connected: <%= monitors_connected %>
 <% if monitors_connected.to_i > 1 %>
 # Change to previous/next head.
 # Make sure synergys isn't running otherwise it will grab these keys!
-Shift Mod4 comma :MacroCmd {NextWindow (workspace=[current]) (FocusHidden=no) (Head=1)} {<%= focus_active %>}
+Shift Mod4 comma :MacroCmd {NextWindow (workspace=[current]) (FocusHidden=no) (Head=<%= left_head %>)} {<%= focus_active %>}
 # xdotool mousemove 1200 500}
 
-Shift Mod4 period :MacroCmd {NextWindow (workspace=[current]) (FocusHidden=no) (Head=2)} {<%= focus_active %>}
+Shift Mod4 period :MacroCmd {NextWindow (workspace=[current]) (FocusHidden=no) (Head=<%= right_head %>)} {<%= focus_active %>}
 # xdotool mousemove 3200 400}
 <% end %>
