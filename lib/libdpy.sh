@@ -2,7 +2,18 @@
 
 extract_xrandr_geometry () {
     xrandr | \
-        perl -lne "/$1/"' && / (\d+)x(\d+)\+(\d+)\+(\d+) / && print "width=$1\nheight=$2\nxoffset=$3\nyoffset=$4"' | \
+        perl -lne '
+          if (/'"$1"'/ && / (\d+)x(\d+)\+(\d+)\+(\d+) \(.+\) (\d+)mm x (\d+)mm/) {
+            print "width=$1";
+            print "height=$2";
+            print "xoffset=$3";
+            print "yoffset=$4";
+            print "x_mm=$5";
+            print "y_mm=$6";
+            printf "x_dpi=%.2f\n", ($1 / $5 * 25.4);
+            printf "y_dpi=%.2f\n", ($2 / $6 * 25.4);
+          }
+        ' | \
         sed "s/^/$2_/"
 }
 
