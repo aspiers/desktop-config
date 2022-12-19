@@ -21,4 +21,12 @@
   N.B. We define EMACS_GEOMETRY in our xrdb-cpp wrapper.
  */
 
-Emacs.geometry: EMACS_GEOMETRY
+#if PRIMARY_WIDTH < 1920
+    Emacs.default.attributeHeight: 120
+#else
+    Emacs.default.attributeHeight: 140
+#endif
+
+// See xrdb-cpp for how EMACS_GEOMETRY is defined.  However, leave the window
+// manager to define the size and position
+// Emacs.geometry: EMACS_GEOMETRY

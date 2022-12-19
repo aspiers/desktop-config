@@ -19,40 +19,43 @@ emacs_major_version=${emacs_version%%.*}
 # FIXME: what if set to Xft font in
 # $ZDOTDIR/lib/emacs/init/GNU_Emacs/as-custom-XX.Y.el ?
 
-emacs_font=$(
-    cpp \
-        -DEMACS_VERSION=$emacs_version \
-        -DEMACS_MAJOR_VERSION=$emacs_major_version \
-        -DPRIMARY_WIDTH=$primary_width \
-        -DPRIMARY_HEIGHT=$primary_height \
-        -I $ZDOTDIR/.Xresources.d \
-        $ZDOTDIR/.Xresources.d/all.rdb | \
-    awk '/^ *emacs.font/ {print $2}'
-)
-
-if [ -n "$emacs_font" ]; then
-    eval $( get-font-geometry "$emacs_font" )
-
-    #echo "emacs font: $emacs_font (${font_char_width}x$font_char_height)" >&2
-
-    # Note: emacs used to seem to increase the size by 6x2 on startup (on
-    # a 1024x768 display, anyhow).  So 78x42 actually ended up being
-    # 84x44.  This doesn't happen any more, at least not on SLED10.  We
-    # take 80% of height (watchlogs-system takes 20%) and then allow 50
-    # pixels to account for the window title and emacs toolbar.
-    # Whatever's left goes to the emacs frame.
-
-    emacs_height=$(( ((dpy_height * 4 / 5) - 50) / font_char_height ))
-    #emacs_width=$(( (dpy_width - right_margin) / font_char_width ))
-    emacs_width=83
-
-    emacs_geometry=${emacs_width}x${emacs_height}
-else
-    emacs_geometry=
-fi
+# Leave the window manager to take care of size/position instead, since
+# this is fiddly and awkward.
+#
+# emacs_font=$(
+#     cpp \
+#         -DEMACS_VERSION=$emacs_version \
+#         -DEMACS_MAJOR_VERSION=$emacs_major_version \
+#         -DPRIMARY_WIDTH=$primary_width \
+#         -DPRIMARY_HEIGHT=$primary_height \
+#         -I $ZDOTDIR/.Xresources.d \
+#         $ZDOTDIR/.Xresources.d/all.rdb | \
+#     awk '/^ *emacs.font/ {print $2}'
+# )
+#
+# if [ -n "$emacs_font" ]; then
+#     eval $( get-font-geometry "$emacs_font" )
+#
+#     #echo "emacs font: $emacs_font (${font_char_width}x$font_char_height)" >&2
+#
+#     # Note: emacs used to seem to increase the size by 6x2 on startup (on
+#     # a 1024x768 display, anyhow).  So 78x42 actually ended up being
+#     # 84x44.  This doesn't happen any more, at least not on SLED10.  We
+#     # take 80% of height (watchlogs-system takes 20%) and then allow 50
+#     # pixels to account for the window title and emacs toolbar.
+#     # Whatever's left goes to the emacs frame.
+#
+#     emacs_height=$(( ((dpy_height * 4 / 5) - 50) / font_char_height ))
+#     #emacs_width=$(( (dpy_width - right_margin) / font_char_width ))
+#     emacs_width=83
+#
+#     emacs_geometry=${emacs_width}x${emacs_height}
+# else
+#     emacs_geometry=
+# fi
 
 # just to left of gkrellm
-emacs_position=-80+0
+emacs_position=-93+0
 
 emacs_geometry=${emacs_geometry}${emacs_position}
 
@@ -60,8 +63,14 @@ emacs_geometry=${emacs_geometry}${emacs_position}
 # applications which depend on them are run on a different host via ssh.
 cpp -I $ZDOTDIR/.Xresources.d \
     -DHOME=$HOME -DZDOTDIR=$ZDOTDIR \
-    -DWIDTH=$dpy_width \
-    -DHEIGHT=$dpy_height \
+    -DDPY_WIDTH=$dpy_width \
+    -DDPY_HEIGHT=$dpy_height \
+    -DPRIMARY_WIDTH=$primary_width \
+    -DPRIMARY_HEIGHT=$primary_height \
+    -DPRIMARY_X_DPI=$primary_x_dpi \
+    -DSECONDARY_WIDTH=$secondary_width \
+    -DSECONDARY_HEIGHT=$secondary_height \
+    -DSECONDARY_X_DPI=$secondary_x_dpi \
     -DDPI="${dpi[1]}" \
     -DEMACS_GEOMETRY=$emacs_geometry \
     -DEMACS_VERSION=$emacs_version \

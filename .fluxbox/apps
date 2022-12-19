@@ -23,13 +23,13 @@
 [app] (name=gnome-terminal-server)
   [Head]	{1}
   [Position]	(TopLeft)	{0 0}
-  [Dimensions]	{50% 97%}
+  [Dimensions]	{47% 97%}
 [end]
 
 [app] (name=emacs) (title!=Ediff)
   [Head]	{1}
   [Position]	(TopLeft)	{50% 0}
-  [Dimensions]	{50% 97%}
+  [Dimensions]	{47% 97%}
 [end]
 
 [app] (title=Telegram) (head=2)

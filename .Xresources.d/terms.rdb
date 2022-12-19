@@ -228,9 +228,9 @@ nxterm*VT100*font##fontNum:          fontName@@\
 nxterm*fontMenu*font##fontNum*Label: label (fontName)
 
 ! set default font
-#if WIDTH >= 1400
+#if PRIMARY_WIDTH >= 1400
 ! bigger than 1400
-#if WIDTH >= 2200
+#if PRIMARY_WIDTH >= 2200
 ! bigger than 2200
 *SimpleMenu*font: *helvetica*r*normal*12*
 
@@ -346,7 +346,7 @@ nxterm*Cursor: xterm
 ! {{{ geometry
 
 /*
-  Could ifdef on WIDTH here
+  Could ifdef on PRIMARY_WIDTH here
   This is really weird: if I use this:
     xterm.vt100.geometry: 92x40
   I can't override on the CLI via xterm -geometry
