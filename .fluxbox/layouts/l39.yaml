@@ -22,10 +22,10 @@
   - If {Matches (Stuck=yes)} {Stick}
   - MacroCmd {SetHead 1} {SendToWorkspace 3} {MoveTo 0 0 TopLeft} {ResizeTo 97% 97%}
 
-- - (Class=Blueman-manager)
-  - If {Matches (Stuck=no)} {Stick}
-  - MacroCmd {SetHead 2} {MoveTo 3% 3% TopLeft} {ResizeTo 35% 35%}
-
 - - (Class=Pavucontrol)
   - If {Matches (Stuck=no)} {Stick}
-  - MacroCmd {SetHead 2} {MoveTo 3% 40% TopLeft} {ResizeTo 45% 45%}
+  - MacroCmd {SetHead 2} {MoveTo 2% 2% TopLeft} {ResizeTo 40% 35%}
+
+- - (Class=Blueman-manager)
+  - If {Matches (Stuck=no)} {Stick}
+  - MacroCmd {SetHead 2} {MoveTo 2% 5% BottomLeft} {ResizeTo 35% 35%}
