@@ -24,8 +24,8 @@
 
 - - (Class=Blueman-manager)
   - If {Matches (Stuck=no)} {Stick}
-  - MacroCmd {SetHead 2} {MoveTo 5% 30% TopLeft} {ResizeTo 35% 45%}
+  - MacroCmd {SetHead 2} {MoveTo 3% 3% TopLeft} {ResizeTo 35% 35%}
 
 - - (Class=Pavucontrol)
   - If {Matches (Stuck=no)} {Stick}
-  - MacroCmd {SetHead 2} {MoveTo 5% 30% TopRight} {ResizeTo 45% 45%}
+  - MacroCmd {SetHead 2} {MoveTo 3% 40% TopLeft} {ResizeTo 45% 45%}
