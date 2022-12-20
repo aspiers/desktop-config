@@ -24,11 +24,19 @@ end
 def notify_done(mode)
   notify_replace "fluxbox #{mode} done", mode
 end
+
+def reconfigure
+  %<Exec fluxbox-reconfigure && notify-send -t 3000 'Reloaded fluxbox config'>
+end
+
+def layout
+  %<Exec ly && notify-send -t 3000 'Applied auto-layout'>
+end
 %>
 
-Control Mod1 Mod4 y :MacroCmd {Exec ly && notify-send -t 3000 'Applied auto-layout'}
-Control Mod1 Mod4 r :MacroCmd {Exec fluxbox-reconfigure && notify-send -t 3000 'Reloaded fluxbox config'}
+Control Mod1 Mod4 r :MacroCmd {<%= reconfigure %>}
 Shift Control Mod4 r :MacroCmd {Restart} {<%= notify 'Restarted fluxbox' %>}
+Control Mod1 Mod4 y :MacroCmd {<%= layout %>} {Restart} {<%= notify 'Restarted fluxbox' %>}
 
 # Click on the desktop to get menus.  Make sure xfdesktop isn't running
 # as it will intercept the mouse clicks.
