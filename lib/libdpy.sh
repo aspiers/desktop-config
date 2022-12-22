@@ -33,8 +33,21 @@ get_dpy_geometry () {
         )
     )
 
-    eval $( extract_xrandr_geometry ' connected primary ' primary )
-    eval $( extract_xrandr_geometry ' connected \d' secondary )
+    monitors_connected=$( monitors-connected )
+    case "$monitors_connected" in
+        1)
+            eval $( extract_xrandr_geometry ' connected ' primary )
+            ;;
+        2)
+            eval $( extract_xrandr_geometry ' connected primary ' primary )
+            eval $( extract_xrandr_geometry ' connected \d' secondary )
+            ;;
+        *)
+            echo >&2 "monitors-connected returned '$monitors_connected'; aborting!"
+            exit 1
+            ;;
+    esac
+
     # this doesn't work under nomachine's NX client
     #dpy_geometry=($( xprop -root -notype 32i ' $0 $1\n' _NET_DESKTOP_GEOMETRY ))
 

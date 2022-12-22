@@ -4,12 +4,13 @@
 
 eval $(xdotool getmouselocation --shell)
 echo xdotool_screen=$SCREEN
+echo monitors_connected=$monitors_connected
 
 if [ "$primary_xoffset" -eq 0 ]; then
     # primary is on LHS; secondary is on RHS
     echo "primary_screen_pos=left"
 
-    if [ "$X" -ge "$secondary_xoffset" ]; then
+    if [ "$X" -ge "${secondary_xoffset:-999999}" ]; then
         echo "current_screen_type=secondary"
         echo "current_screen_pos=right"
         echo "current_screen_xoffset=$secondary_xoffset"
