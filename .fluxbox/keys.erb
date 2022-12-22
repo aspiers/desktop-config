@@ -32,11 +32,17 @@ end
 def layout
   %<Exec ly && notify-send -t 3000 'Applied auto-layout'>
 end
+
+def delay(cmd, ms)
+  %<Delay {#{cmd}} #{ms * 1000}>
+end
 %>
 
 Control Mod1 Mod4 r :MacroCmd {<%= reconfigure %>}
 Shift Control Mod4 r :MacroCmd {Restart} {<%= notify 'Restarted fluxbox' %>}
-Control Mod1 Mod4 y :MacroCmd {<%= layout %>} {Restart} {<%= notify 'Restarted fluxbox' %>}
+Control Mod1 Mod4 6 :MacroCmd {Restart} {<%= notify 'Restarted fluxbox' %>}
+Control Mod1 Mod4 y :MacroCmd {<%= reconfigure %>} {<%= delay(layout, 200) %>}
+# {<%= delay('Restart', 500) %>} {<%= delay(notify('Restarted fluxbox'), 500) %>}
 
 # Click on the desktop to get menus.  Make sure xfdesktop isn't running
 # as it will intercept the mouse clicks.
