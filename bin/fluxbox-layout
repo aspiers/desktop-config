@@ -4,6 +4,7 @@ import argparse
 from pprint import pp
 import subprocess
 import os
+import time
 import yaml
 
 
@@ -15,6 +16,7 @@ def exec(window_cmds):
             print("   %s" % map_cmd)
             subprocess.check_call(['fluxbox-remote', map_cmd])
         print()
+        time.sleep(0.01)
 
 
 def parse_args():
