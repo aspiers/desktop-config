@@ -1,11 +1,26 @@
 #!/bin/bash
 
-if [ `monitors-connected` == 2 ] && inxi -Gxx | grep -q 'LG (GoldStar)'; then
-    echo "Detected LG as second monitor; using l39 layout"
-    fluxbox-layout l39
-elif [ `monitors-connected` == 1 ]; then
-    fluxbox-layout laptop
-else
-    echo >&2 "ERROR: Couldn't figure out which layout to apply!"
-    exit 1
-fi
+. $ZDOTDIR/lib/libhost.sh
+read_localhost_nickname
+
+case "$localhost_nickname" in
+    celtic)
+        if [ `monitors-connected` == 2 ] && inxi -Gxx | grep -q 'LG (GoldStar)'; then
+            echo "Detected LG as second monitor; using l39 layout"
+            fluxbox-layout l39
+            exit $?
+        elif [ `monitors-connected` == 1 ]; then
+            fluxbox-layout laptop
+            exit $?
+        fi
+        ;;
+    ionian)
+        if [ `monitors-connected` == 2 ]; then
+            fluxbox-layout ionian
+            exit $?
+        fi
+        ;;
+esac
+
+echo >&2 "ERROR: Couldn't figure out which layout to apply for $localhost_nickname!"
+exit 1
