@@ -11,7 +11,7 @@
 : $0 pid is $$
 
 is_running () {
-    pgrep -x "$1" # >/dev/null
+    pgrep -lx "$1" # >/dev/null
 }
 
 ensure_stopped () {
