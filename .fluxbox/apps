@@ -9,10 +9,12 @@
   [Sticky]	{yes}
 [end]
 [app] (title=lnav-system)
-  [Head]	{2}
-  [Position]	(BOTTOM)	{0 0}
-  [Hidden]	{yes}
+  [Head]	{1}
+  [Dimensions]	{97% 12%}
+  [Position]	(BottomLeft)	{0 0}
   [Sticky]	{yes}
+  [Hidden]	{yes}
+  [Alpha]	{50}
 [end]
 [app] (title=Workrave)
   [Layer]	{6}
@@ -23,13 +25,13 @@
 [app] (name=gnome-terminal-server)
   [Head]	{1}
   [Position]	(TopLeft)	{0 0}
-  [Dimensions]	{47% 97%}
+  [Dimensions]	{47% 90%}
 [end]
 
 [app] (name=emacs) (title!=Ediff)
   [Head]	{1}
   [Position]	(TopLeft)	{50% 0}
-  [Dimensions]	{47% 97%}
+  [Dimensions]	{47% 90%}
 [end]
 
 [app] (title=Telegram) (head=2)

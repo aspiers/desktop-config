@@ -52,9 +52,9 @@
       [exec]   (iotop) {top-term sudo iotop} 
       [exec]   (nethogs) {top-term sudo nethogs `gw-dev`}
       [exec]   (iftop) {top-term sudo iftop -i `gw-dev`}
-
       [exec]   (powertop) {top-term sudo powertop} 
       [exec]   (gkrellm) {gkrellm} 
+      [exec]   (watchlogs-system-window) {watchlogs-system-window} 
 [end]
 [submenu] (Fluxbox menu)
 [include] (/home/adam/.fluxbox/fluxboxmenu)
