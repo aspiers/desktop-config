@@ -52,7 +52,7 @@
   [Sticky]	{yes}
 [end]
 
-[app] (name=ksnip)
+[app] (name=ksnip|xfce4-display-settings)
   [Sticky]	{yes}
 [end]
 
