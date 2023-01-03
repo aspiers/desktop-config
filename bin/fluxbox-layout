@@ -16,7 +16,7 @@ def exec(window_cmds):
             print("   %s" % map_cmd)
             subprocess.check_call(['fluxbox-remote', map_cmd])
         print()
-        time.sleep(0.01)
+        time.sleep(0.1)
 
 
 def parse_args():
