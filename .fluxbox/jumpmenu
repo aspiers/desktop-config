@@ -1,5 +1,6 @@
 [begin] (Quickjump menu)
 [encoding] {UTF-8}
+      [exec] (gitk) {wmctrl -a gitk}
       [exec] (SMS) {chrome-session-tabs 'messages.google.com/'}
       [exec] (Facebook Messenger) {chrome-session-tabs 'messenger.com/'}
       [exec] (p: personal calendar) {chrome-session-tabs 'calendar.google.com/calendar/u/0'}
