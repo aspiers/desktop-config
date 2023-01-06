@@ -47,7 +47,7 @@ sleep 1
 xdotool search \
         --onlyvisible \
         --screen 0 \
-        --class 'Wrapper-2.0' \
+        --class \
         --classname 'Wrapper-2.0' \
         getwindowpid |
     xargs kill
