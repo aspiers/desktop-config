@@ -23,7 +23,8 @@
 
     [nop] (Toucan PIM)
     [exec] (tc: Toucan Google calendar) {chrome-session-tabs 'calendar.google.com/calendar/u/2'}
-    [exec] (tm: Toucan mail) {chrome-session-tabs 'mail.google.com/mail/u/2'}
+    [exec] (tm: Toucan mail) {chrome-session-tabs 'superhuman.com'}
+#    [exec] (tm: Toucan mail) {chrome-session-tabs 'mail.google.com/mail/u/2'}
     [exec] (tt: Toucan TODO) {switch-feed-emacs < ~/lib/xmacro/org-jump-Toucan-todo}
     [exec] (tl: Toucan Linear) {chrome-session-tabs 'linear.app'}
     [exec] (td: Toucan diary) {switch-feed-emacs < ~/lib/xmacro/org-jump-Toucan-diary}
