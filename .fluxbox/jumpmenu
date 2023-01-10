@@ -1,5 +1,6 @@
 [begin] (Quickjump menu)
 [encoding] {UTF-8}
+      [exec] (Spotify) {chrome-session-tabs Spotify}
       [exec] (gitk) {wmctrl -a gitk}
       [exec] (SMS) {chrome-session-tabs 'messages.google.com/'}
       [exec] (Facebook Messenger) {chrome-session-tabs 'messenger.com/'}
