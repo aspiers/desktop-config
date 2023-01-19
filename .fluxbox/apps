@@ -38,6 +38,11 @@
   [Deco]	{0x5e0}
 [end]
 
+[app] (name=notion-app-enhanced)
+  [Position]	(TopLeft)	{0 0}
+  [Workspace]	{2}
+[end]
+
 [app] (title=Telegram|discord|Discord|Discord Updater)
   [Position]	(TopLeft)	{0 0}
   [Workspace]	{3}
