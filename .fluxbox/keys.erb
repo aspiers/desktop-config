@@ -293,6 +293,7 @@ Mod4 c :Exec chrome-session-tabs 'Google Calendar'
 
 #Mod4 e :Exec wmctrl -a emacs
 Mod4 e :MacroCmd {NextWindow (Name=emacs)} {<%= focus_active %>}
+Shift Mod4 e :Exec chrome-session-fzf 'https://linear.app/ '
 
 Mod4 d :Exec fluxbox-focus-or-launch Discord discord
 
@@ -300,6 +301,7 @@ Mod4 g :Exec fluxbox-focus-or-launch Telegram ~/software/telegram/Telegram
 Shift Mod4 g :Exec chrome-session-tabs meet.google.com
 
 Mod4 n :Exec fluxbox-focus-or-launch -c notion-app-enhanced ~/software/web/Notion-Enhanced.AppImage
+Shift Mod4 n :Exec chrome-session-fzf 'https://www.notion.so/ '
 Mod4 s :Exec fluxbox-focus-or-launch Slack slack
 Mod4 w :Exec chrome-session-tabs WhatsApp
 Mod4 z :Exec fluxbox-focus-or-launch Zulip zulip

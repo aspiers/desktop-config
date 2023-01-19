@@ -105,10 +105,13 @@ def find_tab(substring, tabs):
             return tab
 
 
-def run_fzf(windows):
+def run_fzf(windows, initial):
     input = get_fzf_input(windows)
     fzf = FzfPrompt()
-    choice = fzf.prompt(input, "--exact --no-sort --layout=reverse")[0]
+    options = "--exact --no-sort --layout=reverse"
+    if initial:
+        options += " --query='%s'" % initial
+    choice = fzf.prompt(input, options)[0]
 
     m = re.match(r'(?P<window>.+) -~-\s+(?P<tabnum>\d+) -~- (?P<tabtitle>.+)', choice)
     if not m:
@@ -182,8 +185,8 @@ def main():
         show_windows(windows)
         return
 
-    if len(sys.argv) == 2 and sys.argv[1] == '--fzf':
-        run_fzf(windows)
+    if sys.argv[1] == '--fzf':
+        run_fzf(windows, ' '.join(sys.argv[2:]))
         return
 
     substring = ' '.join(sys.argv[1:])
