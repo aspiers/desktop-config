@@ -10,7 +10,7 @@ case "$localhost_nickname" in
             fluxbox-layout l39
             exit $?
         elif [ `monitors-connected` == 1 ]; then
-            fluxbox-layout laptop
+            fluxbox-layout celtic
             exit $?
         fi
         ;;

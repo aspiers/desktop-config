@@ -1,0 +1,40 @@
+- - (Name=gkrellm)
+  - MacroCmd {SetHead 1} {MoveTo 0 0 TopRight} {Activate}
+  - <stick>
+
+- - (Title=lnav-system)
+  - <stick>
+  - MacroCmd {SetHead 2} {ResizeTo 97% 12%} {MoveTo 0% 14 BottomLeft} {SetAlpha 50}
+
+- - (Name=gnome-terminal-server)
+  - MacroCmd {SetHead 1} {MoveTo 0 0} {ResizeTo 48% 97%}
+
+- - (name=emacs) (title!=Ediff)
+  - MacroCmd {SetHead 1} {MoveTo 48% 0} {ResizeTo 48% 97%}
+
+- - (Name=brave-browser|google-chrome|chromium)
+  - MacroCmd {SetHead 1} {MoveTo 0 0} {ResizeTo 96% 97%}
+  - <unstick>
+
+- - (Name=notion-app-enhanced)
+  - MacroCmd {SetHead 1} {SendToWorkspace 3} {MoveTo 0 0 TopLeft} {ResizeTo 96% 97%}
+  - <unstick>
+
+- - (Class=Gitk)
+  - <unstick>
+  - MacroCmd {SetHead 1} {SendToWorkspace 3} {MoveTo 0 0 TopLeft} {ResizeTo 96% 97%}
+
+- - (Name=slack|Telegram|discord|Discord*)
+  - MacroCmd {SetHead 1} {SendToWorkspace 4} {MoveTo 0 0} {ResizeTo 96% 97%}
+  - <unstick>
+
+- - (Name=google-chrome) (Title=.*personal$|.*Panther)
+  - MacroCmd {SetHead 1} {SendToWorkspace 5} {MoveTo 0 0 TopLeft} {ResizeTo 96% 97%}
+
+- - (Class=Pavucontrol)
+  - <unstick>
+  - MacroCmd {SetHead 1} {SendToWorkspace 6} {MoveTo 5% 30% TopRight} {ResizeTo 45% 45%}
+
+- - (Class=Blueman-manager)
+  - <unstick>
+  - MacroCmd {SetHead 1} {SendToWorkspace 6} {MoveTo 5% 30% TopLeft} {ResizeTo 35% 45%}

@@ -8,10 +8,18 @@ import time
 import yaml
 
 
+MAGIC_CMDS = {
+    '<stick>': 'If {Matches (Stuck=no)} {Stick}',
+    '<unstick>': 'If {Matches (Stuck=yes)} {Stick}',
+}
+
+
 def exec(window_cmds):
     for matcher, *cmds in window_cmds:
         print(matcher)
         for cmd in cmds:
+            if cmd in MAGIC_CMDS:
+                cmd = MAGIC_CMDS[cmd]
             map_cmd = "Map {%s} {Matches %s}" % (cmd, matcher)
             print("   %s" % map_cmd)
             subprocess.check_call(['fluxbox-remote', map_cmd])
