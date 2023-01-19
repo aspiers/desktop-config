@@ -34,7 +34,7 @@
   [Dimensions]	{47% 90%}
 [end]
 
-[app] (title=Telegram) (head=2)
+[app] (title=Telegram)
   [Deco]	{0x5e0}
 [end]
 
