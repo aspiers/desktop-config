@@ -3,10 +3,15 @@
 import json
 import os.path
 from pprint import pp
+import re
 from subprocess import CalledProcessError, run
 import sys
 import time
 from shutil import which
+
+# pip install --user pyfzf
+from pyfzf.pyfzf import FzfPrompt
+
 
 DUMPER = 'chrome-session-dump'
 SESSION = os.path.expanduser('~/.config/google-chrome/Default/Sessions')
@@ -77,12 +82,41 @@ def show_windows(windows):
         print()
 
 
+def get_fzf_input(windows):
+    input = []
+    for window in sorted(windows, key=lambda w: w['title']):
+        if 'title' not in window:
+            # Sometimes there's an empty window for some reason.
+            continue
+
+        for tab in window['tabs']:
+            if tab['deleted'] or tab['groupCollapsed']:
+                continue
+            input.append("%s -~- %3d -~- %s | %s" % (window['title'], tab['index'], tab['title'], tab['url']))
+
+    return input
+
+
 def find_tab(substring, tabs):
     for tab_search_key, tab in tabs.items():
         if tab_search_key.lower().find(substring.lower()) != -1 \
            and not tab['groupCollapsed'] \
            and not tab['deleted']:
             return tab
+
+
+def run_fzf(windows):
+    input = get_fzf_input(windows)
+    fzf = FzfPrompt()
+    choice = fzf.prompt(input, "--exact --no-sort --layout=reverse")[0]
+
+    m = re.match(r'(?P<window>.+) -~-\s+(?P<tabnum>\d+) -~- (?P<tabtitle>.+)', choice)
+    if not m:
+        die("fzf failed")
+
+    groups = m.groupdict()
+    print(repr(groups))
+    focus_window_and_tab(groups['window'], int(groups['tabnum']))
 
 
 def report_tab_found(tab):
@@ -94,16 +128,23 @@ def report_tab_found(tab):
     print()
 
 
-def focus_tab(tab):
-    print("Focusing window with title: %s" % tab['window']['title'])
+def focus_window(title):
+    print("Focusing window with title: %s" % title)
     try:
-        run(['wmctrl', '-a', tab['window']['title']], check=True)
+        run(['wmctrl', '-a', title], check=True)
     except CalledProcessError:
         die("wmctrl -a failed")
 
-    time.sleep(0.2)
 
-    target_tab_index = tab['index']
+def focus_window_and_tab(window_title, tab_index):
+    focus_window(window_title)
+    time.sleep(0.2)
+    focus_tab_number(tab_index)
+    print("focus-active-window")
+    run(['focus-active-window'])
+
+
+def focus_tab_number(target_tab_index):
     print("Selecting tab #%d" % target_tab_index)
     start_tab_index = target_tab_index
     if target_tab_index == 6:
@@ -116,8 +157,10 @@ def focus_tab(tab):
     for i in range(target_tab_index - start_tab_index):
         xdotool_key("ctrl+Next")
 
-    print("focus-active-window")
-    run(['focus-active-window'])
+
+def focus_by_tab(tab):
+    focus_window_and_tab(tab['window']['title'], tab['index'])
+
 
 def xdotool_key(key):
     cmd = ['xdotool', 'key', key]
@@ -134,17 +177,23 @@ def main():
 
     windows = get_windows()
     tabs = get_tabs(windows)
-    if len(sys.argv) >= 2:
-        substring = ' '.join(sys.argv[1:])
-        print("Searching for visible tab containing [%s]" % substring)
-        tab = find_tab(substring, tabs)
-        if tab:
-            report_tab_found(tab)
-            focus_tab(tab)
-        else:
-            die("No visible tab found.")
-    else:
+
+    if len(sys.argv) < 2:
         show_windows(windows)
+        return
+
+    if len(sys.argv) == 2 and sys.argv[1] == '--fzf':
+        run_fzf(windows)
+        return
+
+    substring = ' '.join(sys.argv[1:])
+    print("Searching for visible tab containing [%s]" % substring)
+    tab = find_tab(substring, tabs)
+    if tab:
+        report_tab_found(tab)
+        focus_by_tab(tab)
+    else:
+        die("No visible tab found.")
 
 
 main()
