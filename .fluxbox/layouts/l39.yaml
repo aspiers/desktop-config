@@ -10,7 +10,7 @@
   - MacroCmd {SetHead 1} {MoveTo 0 0} {ResizeTo 47% 90%}
 
 - - (name=emacs) (title!=Ediff)
-  - MacroCmd {SetHead 1} {MoveTo 50% 0} {ResizeTo 47% 90%}
+  - MacroCmd {SetHead 1} {MoveTo 48% 0} {ResizeTo 46% 90%}
 
 - - (Name=brave-browser|google-chrome|chromium)
   - MacroCmd {SetHead 1} {MoveTo 0 0} {ResizeTo 97% 97%}
