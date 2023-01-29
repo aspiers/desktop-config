@@ -14,6 +14,7 @@
 #    [end]
 
     [nop] (Personal PIM)
+    [exec] (sync personal mail) {top-term sync-personal-mail}
     [exec] (m: personal mail) {chrome-session-tabs 'mail.google.com/mail/u/0'}
     [exec] (2: personal TODO) {switch-feed-emacs &lt; ~/lib/xmacro/org-jump-personal-todo}
     [exec] (d: personal diary) {switch-feed-emacs &lt; ~/lib/xmacro/org-jump-personal-diary}
@@ -24,6 +25,7 @@
     [nop] (Toucan PIM)
     [exec] (tc: Toucan Google calendar) {chrome-session-tabs 'calendar.google.com/calendar/u/2'}
     [exec] (tm: Toucan mail) {chrome-session-tabs 'superhuman.com'}
+    [exec] (ts: sync Toucan mail) {top-term sync-Toucan-mail}
 #    [exec] (tm: Toucan mail) {chrome-session-tabs 'mail.google.com/mail/u/2'}
     [exec] (tt: Toucan TODO) {switch-feed-emacs < ~/lib/xmacro/org-jump-Toucan-todo}
     [exec] (tl: Toucan Linear) {chrome-session-tabs 'linear.app'}
@@ -35,6 +37,7 @@
     [nop] (Panther PIM)
     [exec] (pc: Panther Google calendar) {chrome-session-tabs 'calendar.google.com/calendar/u/1'}
     [exec] (pm: Panther mail) {chrome-session-tabs 'mail.google.com/mail/u/1'}
+    [exec] (ps: sync Panther mail) {top-term sync-Panther-mail}
     [exec] (pt: Panther TODO) {switch-feed-emacs < ~/lib/xmacro/org-jump-Panther-todo}
     [exec] (pd: Panther diary) {switch-feed-emacs < ~/lib/xmacro/org-jump-Panther-diary}
     [exec] (pg: Panther gtd-timer) {urxvt -fn smoothansi -geometry 90x15-0-0 -e sh -c "gtd-timer ~/mail/Panther/offlineimap/INBOX; sleep 60"}
