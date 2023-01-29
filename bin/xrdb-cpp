@@ -7,8 +7,25 @@
 # or google for `cpp-sed-nl'.
 
 . $ZDOTDIR/lib/libdpy.sh
+. $ZDOTDIR/lib/libhost.sh
 
 #echo "display: ${dpy_width}x${dpy_height}; DPI: $dpi" >&2
+
+read_localhost_nickname
+case "$localhost_nickname" in
+    ionian)
+        xrdb_dpi=96
+        ;;
+    aegean)
+        xrdb_dpi=192
+        ;;
+    celtic)
+        xrdb_dpi=192
+        ;;
+    *)
+        xrdb_dpi=${dpi[1]}
+        ;;
+esac
 
 emacs_version=$( emacs --version | awk '{print $3; exit 0}' )
 emacs_major_version=${emacs_version%%.*}
@@ -67,11 +84,11 @@ cpp -I $ZDOTDIR/.Xresources.d \
     -DDPY_HEIGHT=$dpy_height \
     -DPRIMARY_WIDTH=$primary_width \
     -DPRIMARY_HEIGHT=$primary_height \
-    -DPRIMARY_X_DPI=$primary_x_dpi \
+    -DPRIMARY_X_DPI=$primary_xrdb_dpi \
     -DSECONDARY_WIDTH=$secondary_width \
     -DSECONDARY_HEIGHT=$secondary_height \
-    -DSECONDARY_X_DPI=$secondary_x_dpi \
-    -DDPI="${dpi[1]}" \
+    -DSECONDARY_X_DPI=$secondary_xrdb_dpi \
+    -DDPI=$xrdb_dpi \
     -DEMACS_GEOMETRY=$emacs_geometry \
     -DEMACS_VERSION=$emacs_version \
     -DEMACS_MAJOR_VERSION=$emacs_major_version \
