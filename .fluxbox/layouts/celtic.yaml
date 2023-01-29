@@ -24,7 +24,7 @@
   - <unstick>
   - MacroCmd {SetHead 1} {SendToWorkspace 3} {MoveTo 0 0 TopLeft} {ResizeTo 96% 97%}
 
-- - (Name=slack|Telegram|discord|Discord*)
+- - (Name=slack|Telegram|discord|Discord*|zulip)
   - MacroCmd {SetHead 1} {SendToWorkspace 4} {MoveTo 0 0} {ResizeTo 96% 97%}
   - <unstick>
 

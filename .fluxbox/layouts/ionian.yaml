@@ -3,29 +3,29 @@
 
 - - (Title=lnav-system)
   - If {Matches (Stuck=no)} {Stick}
-  - MacroCmd {SetHead 1} {ResizeTo 97% 12%} {MoveTo 0% 14 BottomLeft} {SetAlpha 50}
+  - MacroCmd {SetHead 1} {ResizeTo 96% 12%} {MoveTo 0% 14 BottomLeft} {SetAlpha 50}
 
 - - (Name=gnome-terminal-server)
-  - MacroCmd {SetHead 1} {ResizeTo 47% 90%} {MoveTo 0 0}
+  - MacroCmd {SetHead 1} {ResizeTo 47% 89%} {MoveTo 0 0}
 
 - - (name=emacs)
-  - MacroCmd {SetHead 1} {ResizeTo 47% 90%} {MoveTo 50% 0}
+  - MacroCmd {SetHead 1} {ResizeTo 47% 89%} {MoveTo 49% 0}
 
-- - (Name=slack|Telegram|discord|Discord*)
-  - MacroCmd {SetHead 1} {SendToWorkspace 4} {MoveTo 0 0} {ResizeTo 97% 97%}
+- - (Name=slack|Telegram|discord|Discord*|zulip)
+  - MacroCmd {SetHead 1} {SendToWorkspace 4} {MoveTo 0 0} {ResizeTo 96% 89%}
   - If {Matches (Stuck=yes)} {Stick}
 
 - - (Name=google-chrome) (Title=.*personal$|.*Panther)
   - If {Matches (Stuck=yes)} {Stick}
-  - MacroCmd {SetHead 1} {SendToWorkspace 5} {MoveTo 0 0 TopLeft} {ResizeTo 97% 97%}
+  - MacroCmd {SetHead 1} {SendToWorkspace 5} {MoveTo 0 0 TopLeft} {ResizeTo 96% 89%}
 
 - - (Name=google-chrome) (Title=.*personal2)
-  - MacroCmd {SetHead 2} {SendToWorkspace 1} {MoveTo 0 0 TopLeft} {ResizeTo 97% 97%}
+  - MacroCmd {SetHead 2} {SendToWorkspace 1} {MoveTo 0 0 TopLeft} {ResizeTo 96% 97%}
   - If {Matches (Stuck=no)} {Stick}
 
 - - (Class=Gitk)
   - If {Matches (Stuck=yes)} {Stick}
-  - MacroCmd {SetHead 1} {SendToWorkspace 3} {MoveTo 0 0 TopLeft} {ResizeTo 97% 97%}
+  - MacroCmd {SetHead 1} {SendToWorkspace 3} {MoveTo 0 0 TopLeft} {ResizeTo 96% 89%}
 
 - - (Class=Pavucontrol)
   - If {Matches (Stuck=no)} {Stick}
