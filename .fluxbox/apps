@@ -38,6 +38,7 @@
   [Deco]	{0x5e0}
   [Position]	(TopLeft)	{0 0}
   [Workspace]	{3}
+  [Dimensions]	{96% 89%}
 [end]
 
 [app] (name=notion-app-enhanced)
@@ -54,6 +55,7 @@
 [app] (name=slack)
   [Position]	(TopLeft)	{0 0}
   [Workspace]	{3}
+  [Dimensions]	{96% 89%}
 [end]
 
 [app] (head=2)
