@@ -36,6 +36,8 @@
 
 [app] (title=Telegram)
   [Deco]	{0x5e0}
+  [Position]	(TopLeft)	{0 0}
+  [Workspace]	{3}
 [end]
 
 [app] (name=notion-app-enhanced)
@@ -43,7 +45,7 @@
   [Workspace]	{2}
 [end]
 
-[app] (title=Telegram|discord|Discord|Discord Updater|Zulip*)
+[app] (title=discord|Discord|Discord Updater|Zulip*)
   [Position]	(TopLeft)	{0 0}
   [Workspace]	{3}
   [Dimensions]	{96% 89%}
