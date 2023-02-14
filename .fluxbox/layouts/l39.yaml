@@ -4,7 +4,7 @@
 
 - - (Title=lnav-system)
   - <stick>
-  - MacroCmd {SetHead 2} {ResizeTo 97% 12%} {MoveTo 0% 14 BottomLeft} {SetAlpha 50}
+  - MacroCmd {SetHead 2} {ResizeTo 100% 20%} {MoveTo 0% 14 BottomLeft} {SetAlpha 50}
 
 - - (Name=gnome-terminal-server)
   - MacroCmd {SetHead 1} {MoveTo 0 0} {ResizeTo 47% 90%}
@@ -40,4 +40,4 @@
 
 - - (Class=Blueman-manager)
   - <stick>
-  - MacroCmd {SetHead 2} {ResizeTo 35% 40%} {MoveTo 2% 5% BottomLeft}
+  - MacroCmd {SetHead 2} {ResizeTo 35% 40%} {MoveTo 2% 22% BottomLeft}
