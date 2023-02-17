@@ -10,13 +10,19 @@ case "$localhost_nickname" in
             fluxbox-layout l39
             exit $?
         elif [ `monitors-connected` == 1 ]; then
-            fluxbox-layout celtic
+            fluxbox-layout "$localhost_nickname"
             exit $?
         fi
         ;;
     ionian)
         if [ `monitors-connected` == 2 ]; then
-            fluxbox-layout ionian
+            fluxbox-layout "$localhost_nickname"
+            exit $?
+        fi
+        ;;
+    aegean)
+        if [ `monitors-connected` == 1 ]; then
+            fluxbox-layout "$localhost_nickname"
             exit $?
         fi
         ;;
