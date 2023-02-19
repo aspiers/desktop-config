@@ -36,8 +36,8 @@
 
 - - (Class=Pavucontrol)
   - <unstick>
-  - MacroCmd {SetHead 1} {SendToWorkspace 6} {MoveTo 5% 30% TopRight} {ResizeTo 45% 45%}
+  - MacroCmd {SetHead 1} {SendToWorkspace 6} {MoveTo 42% 1% TopLeft} {ResizeTo 32% 35%}
 
 - - (Class=Blueman-manager)
   - <unstick>
-  - MacroCmd {SetHead 1} {SendToWorkspace 6} {MoveTo 5% 30% TopLeft} {ResizeTo 35% 45%}
+  - MacroCmd {SetHead 1} {SendToWorkspace 6} {MoveTo 0% 0% TopLeft} {ResizeTo 20% 52%}
