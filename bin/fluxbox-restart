@@ -28,6 +28,13 @@ ensure_started () {
     done
 }
 
+if [ -n "$SSH_CONNECTION" ]; then
+    # This can break stuff launched from the fluxbox menus which
+    # relies on get-connection-type, e.g. switch-feed-emacs
+    echo >&2 "\$SSH_CONNECTION is set to $SSH_CONNECTION; cowardly aborting."
+    exit 1
+fi
+
 if is_running fluxbox; then
     pkill -x fluxbox
     ensure_stopped fluxbox
