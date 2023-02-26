@@ -3,13 +3,13 @@
 
 - - (Title=lnav-system)
   - <stick>
-  - MacroCmd {SetHead 1} {ResizeTo 96% 12%} {MoveTo 0% 14 BottomLeft} {SetAlpha 50}
+  - MacroCmd {SetHead 1} {ResizeTo 96% 15%} {MoveTo 0% 14 BottomLeft} {SetAlpha 50}
 
 - - (Name=gnome-terminal-server)
-  - MacroCmd {SetHead 1} {ResizeTo 47% 89%} {MoveTo 0 0}
+  - MacroCmd {SetHead 1} {ResizeTo 47% 84%} {MoveTo 0 0}
 
 - - (name=emacs)
-  - MacroCmd {SetHead 1} {ResizeTo 47% 89%} {MoveTo 49% 0}
+  - MacroCmd {SetHead 1} {ResizeTo 47% 84%} {MoveTo 49% 0}
 
 - - (Name=slack|Telegram|discord|Discord*|zulip)
   - MacroCmd {SetHead 1} {SendToWorkspace 4} {MoveTo 0 0} {ResizeTo 96% 89%}
