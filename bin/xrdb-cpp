@@ -20,7 +20,11 @@ case "$localhost_nickname" in
         xrdb_dpi=192
         ;;
     celtic)
-        xrdb_dpi=192
+        if l39-monitor-connected; then
+            xrdb_dpi=192
+        else
+            xrdb_dpi=96
+        fi
         ;;
     *)
         xrdb_dpi=${dpi[1]}
