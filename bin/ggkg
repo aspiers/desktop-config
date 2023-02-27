@@ -45,4 +45,6 @@ if [ -n "$xrdb_dpi" ]; then
     echo "Setting git gui font size to $git_font_size for $xrdb_dpi"
     git config --global gui.fontui "-family Roboto -size $git_font_size -weight normal -slant roman -underline 0 -overstrike 0"
     git config --global gui.fontdiff "-family \"Source Code Pro\"  -size $git_font_size -weight normal -slant roman -underline 0 -overstrike 0"
+
+    perl -pi -e '/^set (main|text|ui)font / && s/\d+/'$git_font_size'/' ~/.config/git/gitk
 fi
