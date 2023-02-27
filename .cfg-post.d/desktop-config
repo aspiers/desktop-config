@@ -17,3 +17,5 @@ if erb $here/../.fluxbox/keys.erb > $keys; then
 else
     exit 1
 fi
+
+ggkg
