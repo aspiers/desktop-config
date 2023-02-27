@@ -28,13 +28,13 @@ git config --global gui.usettk 0
 xrdb_dpi="$( xrdb -get Xft.dpi )"
 case "$xrdb_dpi" in
     96)
-        git_font_size=11
+        git_font_size=12
         ;;
     128)
-        git_font_size=10
+        git_font_size=11
         ;;
     192)
-        git_font_size=9
+        git_font_size=10
         ;;
     *)
         echo >&2 "Don't know what git gui font size to set for dpi $xrdb_dpi"
