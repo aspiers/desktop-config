@@ -4,13 +4,13 @@
 
 - - (Title=lnav-system)
   - <stick>
-  - MacroCmd {SetHead 1} {ResizeTo 97% 12%} {MoveTo 0% 14 BottomLeft} {SetAlpha 50}
+  - MacroCmd {SetHead 1} {ResizeTo 96% 14%} {MoveTo 0% 14 BottomLeft} {SetAlpha 50}
 
 - - (Name=gnome-terminal-server)
-  - MacroCmd {SetHead 1} {MoveTo 0 0} {ResizeTo 48% 97%}
+  - MacroCmd {SetHead 1} {MoveTo 0 0} {ResizeTo 48% 85%}
 
 - - (name=emacs) (title!=Ediff)
-  - MacroCmd {SetHead 1} {MoveTo 48% 0} {ResizeTo 48% 97%}
+  - MacroCmd {SetHead 1} {MoveTo 48% 0} {ResizeTo 48% 85%}
 
 - - (Name=brave-browser|google-chrome|chromium)
   - MacroCmd {SetHead 1} {MoveTo 0 0} {ResizeTo 96% 97%}
