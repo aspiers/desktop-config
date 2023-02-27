@@ -1,0 +1,4 @@
+#!/bin/bash
+
+[ `monitors-connected` == 2 ] && \
+    inxi -Gxx | grep -q 'LG (GoldStar)'

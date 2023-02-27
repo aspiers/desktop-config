@@ -5,7 +5,7 @@ read_localhost_nickname
 
 case "$localhost_nickname" in
     celtic)
-        if [ `monitors-connected` == 2 ] && inxi -Gxx | grep -q 'LG (GoldStar)'; then
+        if l39-monitor-connected; then
             echo "Detected LG as second monitor; using l39 layout"
             fluxbox-layout l39
             exit $?
