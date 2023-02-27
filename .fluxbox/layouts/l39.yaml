@@ -28,7 +28,7 @@
   - MacroCmd {SetHead 1} {SendToWorkspace 3} {MoveTo 0 0 TopLeft} {ResizeTo 97% 97%}
 
 - - (Name=slack|Telegram|discord|Discord*|zulip)
-  - MacroCmd {SetHead 1} {SendToWorkspace 4} {MoveTo 0 0} {ResizeTo 97% 97%}
+  - MacroCmd {SetHead 1} {SendToWorkspace 4} {MoveTo 0 0} {ResizeTo 97% 88%}
   - <unstick>
 
 - - (Name=google-chrome) (Title=.*personal$|.*Panther)
