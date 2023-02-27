@@ -13,7 +13,7 @@
   - MacroCmd {SetHead 1} {MoveTo 48% 0} {ResizeTo 48% 85%}
 
 - - (Name=brave-browser|google-chrome|chromium)
-  - MacroCmd {SetHead 1} {MoveTo 0 0} {ResizeTo 96% 97%}
+  - MacroCmd {SetHead 1} {MoveTo 0 0} {ResizeTo 96% 90%}
   - <unstick>
 
 - - (Name=notion-app-enhanced)
@@ -28,8 +28,11 @@
   - MacroCmd {SetHead 1} {SendToWorkspace 4} {MoveTo 0 0} {ResizeTo 96% 97%}
   - <unstick>
 
+- - (Name=google-chrome) (Title=.*Toucan)
+  - SendToWorkspace 2
+
 - - (Name=google-chrome) (Title=.*personal$|.*Panther)
-  - MacroCmd {SetHead 1} {SendToWorkspace 5} {MoveTo 0 0 TopLeft} {ResizeTo 96% 97%}
+  - SendToWorkspace 5
 
 - - (Class=Pavucontrol)
   - <unstick>
