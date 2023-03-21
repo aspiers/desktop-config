@@ -54,6 +54,8 @@ Choose from one of the following keymaps:
  10) US QWERTY hacked to suit Adam
  11) Framework hacked to suit Adam
  12) Kinesis Advantage 360
+ 13) ThinkPad X1 Extreme G2 hacked
+ 14) Keyboardio Atreus
 
 EOF
 #  7) Microsoft Natural 105-key
@@ -79,6 +81,8 @@ EOF
         #10) keymap=dvorak   ;;
         11) keymap=framework-hacked ;;
         12) keymap=kinesis-360    ;;
+        13) keymap=thinkpad-x1-extreme-g2-hacked ;;
+        14) keymap=atreus ;;
 
         *)
             echo "Invalid choice!"
