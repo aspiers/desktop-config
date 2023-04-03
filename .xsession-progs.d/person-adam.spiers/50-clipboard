@@ -1,4 +1,9 @@
 #!/bin/bash
 
-parcellite >& ~/.log/parcellite.log &
-
+if which clipit >&/dev/null; then
+    clipit >& ~/.log/clipit.log &
+elif which parcellite >&/dev/null; then
+    parcellite >& ~/.log/parcellite.log &
+else
+    echo >&2 "Couldn't find clipboard manager to launch"
+fi
