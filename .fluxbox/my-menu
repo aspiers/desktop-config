@@ -32,6 +32,7 @@
       [exec]   (vlc) {vlc} 
 [end]
 [submenu] (Utils)
+      [exec] (xfce4-display-settings) {xfce4-display-settings}
       [exec] (gkrellm) {gkrellm}
       [exec] (blueman-manager) {blueman-manager}
       [exec] (ksnip) {ksnip}
