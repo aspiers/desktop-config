@@ -15,6 +15,7 @@ from pyfzf.pyfzf import FzfPrompt
 
 DUMPER = 'chrome-session-dump'
 SESSION = os.path.expanduser('~/.config/google-chrome/Default/Sessions')
+UNNAMED_WIN_PREFIX = 'Window #'
 
 
 def die(message):
@@ -82,9 +83,10 @@ def show_windows(windows):
         print()
 
 
-def get_fzf_input(windows):
-    input = []
-    for window in sorted(windows, key=lambda w: w['title']):
+def get_tab_info_for_fzf(windows):
+    tabs = []
+    for win_index, window in enumerate(windows):
+        # print("window %d title=[%s] userTitle=[%s]" % (win_index, window['title'], window['userTitle']))
         if 'title' not in window:
             # Sometimes there's an empty window for some reason.
             continue
@@ -92,7 +94,27 @@ def get_fzf_input(windows):
         for tab in window['tabs']:
             if tab['deleted'] or tab['groupCollapsed']:
                 continue
-            input.append("%s -~- %3d -~- %s | %s" % (window['title'], tab['index'], tab['title'], tab['url']))
+            tabs.append({
+                'window_userTitle': window['userTitle'],
+                'window_index': win_index,
+                'index': tab['index'],
+                'tab_title': tab['title'],
+                'url': tab['url']
+            })
+    return tabs
+
+
+def get_fzf_input(windows):
+    tabs = get_tab_info_for_fzf(windows)
+    input = []
+    for tab in tabs:
+        win_title = tab['window_userTitle']
+        if not win_title:
+            win_title = UNNAMED_WIN_PREFIX + str(tab['window_index'])
+        input.append(
+            "%s -~- %3d -~- %s | %s" %
+            (win_title, tab['index'], tab['tab_title'], tab['url'])
+        )
 
     return input
 
@@ -106,7 +128,8 @@ def find_tab(substring, tabs):
 
 
 def run_fzf(windows, initial):
-    input = get_fzf_input(windows)
+    sorted_windows = sorted(windows, key=lambda w: w['title'])
+    input = get_fzf_input(sorted_windows)
     fzf = FzfPrompt()
     options = "--exact --no-sort --layout=reverse"
     if initial:
@@ -118,8 +141,11 @@ def run_fzf(windows, initial):
         die("fzf failed")
 
     groups = m.groupdict()
-    print(repr(groups))
-    focus_window_and_tab(groups['window'], int(groups['tabnum']))
+    win_title = groups['window']
+    if win_title.startswith(UNNAMED_WIN_PREFIX):
+        win_index = int(win_title[len(UNNAMED_WIN_PREFIX):])
+        win_title = sorted_windows[win_index]['title']
+    focus_window_and_tab(win_title, int(groups['tabnum']))
 
 
 def report_tab_found(tab):
