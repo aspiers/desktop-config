@@ -285,6 +285,7 @@ Control Mod4 space :Exec fbrun
 # Heads start from 1 but workspaces from 0?!
 Mod4 x :MacroCmd {NextWindow (Name=gnome-terminal-server) (Head=1) (workspace=0)} {<%= focus_active %>}
 
+Mod4 a :Exec chrome-session-tabs 'open.spotify.com'
 #Mod4 b :Exec wmctrl -s 1; xdotool search --desktop 1 --class brave-browser windowactivate
 Mod4 b :MacroCmd {NextWindow (Name=brave-browser|google-chrome|chromium) (Head=1)} {<%= focus_active %>}
 Shift Mod4 b :MacroCmd {NextWindow (Name=brave-browser|google-chrome|chromium) (Title!=.*WhatsApp.*) (Head=2)} {<%= focus_active %>}
