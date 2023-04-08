@@ -7,32 +7,32 @@
   - MacroCmd {SetHead 2} {ResizeTo 100% 20%} {MoveTo 0% 14 BottomLeft} {SetAlpha 50}
 
 - - (Name=gnome-terminal-server)
-  - MacroCmd {SetHead 1} {MoveTo 0 0} {ResizeTo 47% 90%}
+  - MacroCmd {SetHead 1} {MoveTo 0 0} {ResizeTo 47% 85%}
 
 - - (name=emacs) (title!=Ediff)
-  - MacroCmd {SetHead 1} {MoveTo 48% 0} {ResizeTo 46% 90%}
+  - MacroCmd {SetHead 1} {MoveTo 48% 0} {ResizeTo 46% 85%}
 
 - - (Name=brave-browser|google-chrome|chromium)
-  - MacroCmd {SetHead 1} {MoveTo 0 0} {ResizeTo 97% 97%}
+  - MacroCmd {SetHead 1} {MoveTo 0 0} {ResizeTo 97% 90%}
   - <unstick>
 
 - - (Name=google-chrome) (Title=.*Toucan)
-  - MacroCmd {SetHead 1} {SendToWorkspace 2} {MoveTo 0 0 TopLeft} {ResizeTo 97% 97%}
+  - MacroCmd {SetHead 1} {SendToWorkspace 2} {MoveTo 0 0 TopLeft} {ResizeTo 97% 90%}
 
 - - (Name=notion-app-enhanced)
-  - MacroCmd {SetHead 1} {SendToWorkspace 3} {MoveTo 10% 0 TopLeft} {ResizeTo 80% 97%}
+  - MacroCmd {SetHead 1} {SendToWorkspace 3} {MoveTo 10% 0 TopLeft} {ResizeTo 80% 90%}
   - <unstick>
 
 - - (Class=Gitk)
   - <unstick>
-  - MacroCmd {SetHead 1} {SendToWorkspace 3} {MoveTo 0 0 TopLeft} {ResizeTo 97% 97%}
+  - MacroCmd {SetHead 1} {SendToWorkspace 3} {MoveTo 0 0 TopLeft} {ResizeTo 97% 90%}
 
 - - (Name=slack|Telegram|discord|Discord*|zulip)
   - MacroCmd {SetHead 1} {SendToWorkspace 4} {MoveTo 0 0} {ResizeTo 97% 88%}
   - <unstick>
 
 - - (Name=google-chrome) (Title=.*personal$|.*Panther)
-  - MacroCmd {SetHead 1} {SendToWorkspace 5} {MoveTo 0 0 TopLeft} {ResizeTo 97% 97%}
+  - MacroCmd {SetHead 1} {SendToWorkspace 5} {MoveTo 0 0 TopLeft} {ResizeTo 97% 90%}
 
 - - (Class=Pavucontrol)
   - <stick>
