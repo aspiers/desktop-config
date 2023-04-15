@@ -1,6 +1,7 @@
 [begin] (Org diary menu)
 [encoding] {UTF-8}
     [exec] (a: Agenda) {switch-feed-emacs < ~/lib/xmacro/org-agenda}
+    [exec] (d: Daily review) {switch-feed-emacs < ~/lib/xmacro/org-agenda-daily-review}
     [exec] (r: Review) {switch-feed-emacs < ~/lib/xmacro/org-agenda-review}
     # [exec] (g: Google Calendar) {url-handler https://www.google.com/calendar}
     [exec] (e: Add event(s) to Google Calendar) {urxvt -e sh -c 'while true; do rlwrap gca; div; done'}
