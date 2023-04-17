@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Needed for proper urxvt alpha channel compositing
 
@@ -44,7 +44,7 @@ detect_wm () {
 
 detect_wm
 
-if [[ "$wm" == *openbox* ]]; then
+if [[ "$wm" =~ openbox|Fluxbox ]]; then
     if executable_p xcompmgr; then
         # shadows are buggy
         #xcompmgr -c -t-5 -l-5 -r4.2 -o.55 &
