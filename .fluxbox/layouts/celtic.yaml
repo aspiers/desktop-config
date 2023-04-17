@@ -16,6 +16,9 @@
   - MacroCmd {SetHead 1} {MoveTo 0 0} {ResizeTo 96% 90%}
   - <unstick>
 
+- - (Class=firefox)
+  - MacroCmd {SetHead 1} {SendToWorkspace 3} {MoveTo 0 0 TopLeft} {ResizeTo 96% 90%}
+
 - - (Name=notion-app-enhanced)
   - MacroCmd {SetHead 1} {SendToWorkspace 3} {MoveTo 0 0 TopLeft} {ResizeTo 96% 97%}
   - <unstick>
