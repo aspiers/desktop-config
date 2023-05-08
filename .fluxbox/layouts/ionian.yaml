@@ -1,5 +1,6 @@
 - - (Name=gkrellm)
   - MacroCmd {SetHead 1} {MoveTo 0 0 TopRight} {Activate}
+  - <stick>
 
 - - (Title=lnav-system)
   - <stick>
@@ -10,6 +11,10 @@
 
 - - (name=emacs)
   - MacroCmd {SetHead 1} {ResizeTo 47% 84%} {MoveTo 49% 0}
+
+- - (Class=Gitk)
+  - <unstick>
+  - MacroCmd {SetHead 1} {SendToWorkspace 3} {MoveTo 0 0 TopLeft} {ResizeTo 96% 89%}
 
 - - (Name=slack|Telegram|discord|Discord*|zulip)
   - MacroCmd {SetHead 1} {SendToWorkspace 4} {MoveTo 0 0} {ResizeTo 96% 89%}
@@ -23,9 +28,8 @@
   - MacroCmd {SetHead 2} {SendToWorkspace 1} {MoveTo 0 0 TopLeft} {ResizeTo 96% 97%}
   - <stick>
 
-- - (Class=Gitk)
-  - <unstick>
-  - MacroCmd {SetHead 1} {SendToWorkspace 3} {MoveTo 0 0 TopLeft} {ResizeTo 96% 89%}
+- - (Name=google-chrome) (Title=.*Toucan)
+  - MacroCmd {SetHead 1} {SendToWorkspace 2} {MoveTo 0 0 TopLeft} {ResizeTo 97% 90%}
 
 - - (Class=Pavucontrol)
   - <unstick>

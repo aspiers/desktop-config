@@ -31,11 +31,11 @@
   - MacroCmd {SetHead 1} {SendToWorkspace 4} {MoveTo 0 0} {ResizeTo 96% 97%}
   - <unstick>
 
-- - (Name=google-chrome) (Title=.*Toucan)
-  - SendToWorkspace 2
-
 - - (Name=google-chrome) (Title=.*personal$|.*Panther)
-  - SendToWorkspace 5
+  - MacroCmd {SetHead 1} {SendToWorkspace 5} {MoveTo 0 0 TopLeft} {ResizeTo 96% 90%}
+
+- - (Name=google-chrome) (Title=.*Toucan)
+  - MacroCmd {SetHead 1} {SendToWorkspace 2} {MoveTo 0 0 TopLeft} {ResizeTo 96% 90%}
 
 - - (Class=Pavucontrol)
   - <unstick>
