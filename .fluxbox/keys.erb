@@ -186,6 +186,9 @@ def reorg_done
 end
 %>
 
+Control Mod4 p :MacroCmd {KeyMode passthru} {<%= notify_persistent 'fluxbox passthru', 'passthru' %>}
+passthru: q :MacroCmd {KeyMode default} <%= notify_done('passthru') %>
+
 Mod4 r :MacroCmd {KeyMode reorg} {<%= notify_persistent 'fluxbox reorg', 'reorg' %>}
 reorg: q :MacroCmd <%= reorg_done %>
 
