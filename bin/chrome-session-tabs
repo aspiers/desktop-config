@@ -128,7 +128,7 @@ def find_tab(substring, tabs):
 
 
 def run_fzf(windows, initial):
-    sorted_windows = sorted(windows, key=lambda w: w['title'])
+    sorted_windows = sorted(windows, key=lambda w: w.get('title') or 'Untitled window')
     input = get_fzf_input(sorted_windows)
     fzf = FzfPrompt()
     options = "--exact --no-sort --layout=reverse"
