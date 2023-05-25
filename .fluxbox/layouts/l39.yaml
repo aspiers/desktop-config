@@ -35,7 +35,7 @@
   - <unstick>
   - MacroCmd {SetHead 1} {SendToWorkspace 5} {MoveTo 0 0 TopLeft} {ResizeTo 97% 90%}
 
-- - (Name=google-chrome) (Title=.*personal2)
+- - (Name=google-chrome) (Title=.*personal2|.*gather.town)
   - MacroCmd {SetHead 2} {SendToWorkspace 1} {MoveTo 0 0 TopLeft} {ResizeTo 96% 97%}
   - <stick>
 
