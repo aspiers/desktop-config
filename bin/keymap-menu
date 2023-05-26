@@ -205,7 +205,7 @@ apply_keymap_settings () {
             echo "Applying setxkbmap $xkb to $DISPLAY ..."
             setxkbmap $xkb -print | \
                 xkbcomp -I$ZDOTDIR/.xkb - $DISPLAY 2>&1 | \
-                egrep -v 'Warning: +No symbols defined for'
+                egrep -v 'No symbols defined for'
         fi
     else
         echo "\$DISPLAY not set."
