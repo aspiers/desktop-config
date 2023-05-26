@@ -4,6 +4,8 @@
 
 read_localhost_nickname
 
+. "$ZDOTDIR/.Xdisplay.$localhost_nickname"
+
 apply_keymap () {
     if kinesis-360-attached; then
         echo "Found Kinesis 360 keyboard attached; using kinesis-360 keymap ..."
