@@ -169,7 +169,7 @@ while true; do
     #     reason_not_to_run="waited for AC power to come back online"
     elif [ -z "$IP" ]; then
         reason_not_to_run="couldn't determine IP of $servername"
-    elif [ "$connection_type" != 'lan' ]; then
+    elif ! [[ "$connection_type" =~ lan|near|wifi ]]; then
         reason_not_to_run="connection to $IP ($servername) is $connection_type, not direct wire"
     elif ! grep -q $domainname /etc/resolv.conf; then
         # dnsdomainname doesn't get changed by DHCP for some reason
