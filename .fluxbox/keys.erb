@@ -276,7 +276,10 @@ Control Mod1 Mod4 s :Exec ksnip -m
 Mod4 u :Exec fluxbox-focus-or-launch -c Blueman-manager blueman-manager
 
 Control Mod1 Mod4 b :Exec blank-all-screens
-Control Mod1 Mod4 l :Exec xset dpms force standby
+Control Mod1 Mod4 d :Exec xfce4-display-settings
+#Control Mod1 Mod4 l :Exec xset dpms force standby
+Control Mod1 Mod4 l :Exec xscreensaver-command -activate
+# This calls xscreensaver-command -lock if xscreensaver is XFCE4's chosen locker
 Shift Control Mod1 Mod4 l :Exec xflock4
 
 # open a dialog to run programs
