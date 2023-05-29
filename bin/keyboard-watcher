@@ -17,14 +17,22 @@ if ! which $SETUP >&/dev/null; then
     exit 1
 fi
 
+log=~/.log/udev-hid.log
+udevadm monitor -u -s hid > $log &
+
+# N.B. We can't use entr(1) because that relies on the file
+# being closed after update, which udevadm monitor won't do:
+# https://github.com/eradman/entr/issues/114
+
 while true; do
-    inotifywait -q /dev/input/by-path
-    echo "Input device event detected for DISPLAY=$DISPLAY"
+    # inotifywait -q /dev/input/by-path
+    # echo "Input device event detected for DISPLAY=$DISPLAY"
+
+    inotifywait -q "$log"
     logger sleeping 1
     sleep 1
 
-    $SETUP
-
     # ~/.XSP/person-adam.spiers/60-keyboard-repeat is run via
     # ~/.keymaps/post-change.d/keyboard-repeat
+    $SETUP
 done
