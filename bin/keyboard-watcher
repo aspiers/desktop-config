@@ -18,7 +18,11 @@ if ! which $SETUP >&/dev/null; then
 fi
 
 log=~/.log/udev-hid.log
-udevadm monitor -u -s hid > $log &
+# hid subsystem is enough to spot keyboards, but when bluetooth
+# headphones are connected, it can reset the keyboard repeat for
+# some weird reason, so we need to re-run keyboard setup in those
+# cases too.
+udevadm monitor -u -s hid -s input > $log &
 
 # N.B. We can't use entr(1) because that relies on the file
 # being closed after update, which udevadm monitor won't do:
