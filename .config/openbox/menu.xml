@@ -384,9 +384,9 @@
         <execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-agenda"</execute>
       </action>
     </item>
-    <item label="_review">
+    <item label="_b: daily review">
       <action name="Execute">
-        <execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-agenda-review"</execute>
+        <execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-agenda-daily-review"</execute>
       </action>
     </item>
     <item label="Google Ca_lendar">
