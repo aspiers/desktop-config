@@ -49,3 +49,7 @@
 - - (Class=Blueman-manager)
   - <stick>
   - MacroCmd {SetHead 2} {ResizeTo 35% 40%} {MoveTo 2% 22% BottomLeft}
+
+- - (Class=Chrysalis)
+  - <stick>
+  - MacroCmd {SetHead 2} {ResizeTo 90% 90%} {MoveTo 5% 5%}

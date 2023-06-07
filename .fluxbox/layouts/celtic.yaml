@@ -44,3 +44,7 @@
 - - (Class=Blueman-manager)
   - <unstick>
   - MacroCmd {SetHead 1} {SendToWorkspace 6} {MoveTo 5% 30% TopLeft} {ResizeTo 35% 45%}
+
+- - (Class=Chrysalis)
+  - <unstick>
+  - MacroCmd {SetHead 1} {SendToWorkspace 6 } {MoveTo 5% 5%} {ResizeTo 90% 90%}
