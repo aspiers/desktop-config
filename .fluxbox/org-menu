@@ -25,8 +25,8 @@
     [nop] (Toucan PIM)
     [exec] (tc: Toucan Google calendar) {chrome-session-tabs 'calendar.google.com/calendar/u/2'}
     [exec] (tm: Toucan mail) {chrome-session-tabs 'superhuman.com'}
-    [exec] (ts: sync Toucan mail) {top-term sync-Toucan-mail}
 #    [exec] (tm: Toucan mail) {chrome-session-tabs 'mail.google.com/mail/u/2'}
+    [exec] (ts: sync Toucan mail) {top-term sync-Toucan-mail}
     [exec] (tt: Toucan TODO) {switch-feed-emacs < ~/lib/xmacro/org-jump-Toucan-todo}
     [exec] (tk: Toucan capture) {switch-feed-emacs < ~/lib/xmacro/org-capture-Toucan}
     [exec] (tl: Toucan Linear) {chrome-session-tabs 'linear.app'}
