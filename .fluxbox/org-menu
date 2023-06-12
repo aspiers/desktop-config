@@ -28,6 +28,7 @@
     [exec] (ts: sync Toucan mail) {top-term sync-Toucan-mail}
 #    [exec] (tm: Toucan mail) {chrome-session-tabs 'mail.google.com/mail/u/2'}
     [exec] (tt: Toucan TODO) {switch-feed-emacs < ~/lib/xmacro/org-jump-Toucan-todo}
+    [exec] (tk: Toucan capture) {switch-feed-emacs < ~/lib/xmacro/org-capture-Toucan}
     [exec] (tl: Toucan Linear) {chrome-session-tabs 'linear.app'}
     [exec] (td: Toucan diary) {switch-feed-emacs < ~/lib/xmacro/org-jump-Toucan-diary}
     [exec] (tg: Toucan gtd-timer) {urxvt -fn smoothansi -geometry 90x15-0-0 -e sh -c "gtd-timer ~/mail/Toucan/offlineimap/INBOX; sleep 60"}
@@ -39,6 +40,7 @@
     [exec] (pm: Panther mail) {chrome-session-tabs 'mail.google.com/mail/u/1'}
     [exec] (ps: sync Panther mail) {top-term sync-Panther-mail}
     [exec] (pt: Panther TODO) {switch-feed-emacs < ~/lib/xmacro/org-jump-Panther-todo}
+    [exec] (pk: Panther capture) {switch-feed-emacs < ~/lib/xmacro/org-capture-Panther}
     [exec] (pd: Panther diary) {switch-feed-emacs < ~/lib/xmacro/org-jump-Panther-diary}
     [exec] (pg: Panther gtd-timer) {urxvt -fn smoothansi -geometry 90x15-0-0 -e sh -c "gtd-timer ~/mail/Panther/offlineimap/INBOX; sleep 60"}
 
