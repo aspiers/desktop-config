@@ -166,6 +166,7 @@ def focus_window(title):
 
 
 def focus_window_and_tab(window_title, tab_index):
+    release_modifiers()
     focus_window(window_title)
     time.sleep(0.2)
     focus_tab_number(tab_index)
@@ -191,8 +192,23 @@ def focus_by_tab(tab):
     focus_window_and_tab(tab['window']['title'], tab['index'])
 
 
+def release_modifiers():
+    modifiers = (
+        'Shift_L', 'Shift_R',
+        'Control_L',
+        'Meta_L',
+        'Super_R')
+    args = []
+    for mod in modifiers:
+        args.extend(['keyup', mod])
+    exec('xdotool', *args)
+
+
 def xdotool_key(key):
-    cmd = ['xdotool', 'key', key]
+    exec('xdotool', 'key', key)
+
+
+def exec(*cmd):
     print(' '.join(cmd))
     try:
         run(cmd, check=True)
