@@ -1,9 +1,8 @@
 #!/bin/bash
 
-host=${HOST:-${HOSTNAME:-`hostname`}}
-host=${host%%.*}
-
 setup-keyboard
+
+# See also 01-window-manager
 
 here=`dirname $0`
 . $here/00-systemd-user-env

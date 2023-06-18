@@ -1,11 +1,12 @@
 #!/bin/bash
 
+# See .xsession-progs.d/person-adam.spiers/01-window-manager and
+# .config/systemd/user/monitor-watcher.service for how this gets run.
+# (Nothing relevant in .cfg-post.d/desktop-config.)
+#
+# See also keyboard-watcher and dock-watcher.
+
 SETUP=$HOME/bin/setup-monitor
-
-# See .config/systemd/user/keyboard-watcher.service for how this gets
-# run.  (Nothing relevant in .cfg-post.d/desktop-config.)
-
-# See also 
 
 if ! which inotifywait >&/dev/null; then
     echo "ERROR: Couldn't find inotifywait; aborting." >&2
@@ -19,10 +20,6 @@ if ! which $SETUP >&/dev/null; then
 fi
 
 log=~/.log/udev-drm.log
-# hid subsystem is enough to spot keyboards, but when bluetooth
-# headphones are connected, it can reset the keyboard repeat for
-# some weird reason, so we need to re-run keyboard setup in those
-# cases too.
 udevadm monitor -u -s drm > $log &
 
 # N.B. We can't use entr(1) because that relies on the file

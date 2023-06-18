@@ -1,7 +1,10 @@
 #!/bin/bash
 
-# See .cfg-post.d/desktop-config and
+# See .xsession-progs.d/person-adam.spiers/50-dock and
 # .config/systemd/user/dock-watcher.service for how this gets run.
+# (Nothing relevant in .cfg-post.d/desktop-config.)
+
+# See also keyboard-watcher and monitor-watcher.
 
 handlers=$HOME/.config/dock-event-handlers.d
 

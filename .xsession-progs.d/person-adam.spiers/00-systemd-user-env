@@ -1,5 +1,8 @@
 #!/bin/bash
 
+host=${HOST:-${HOSTNAME:-`hostname`}}
+host=${host%%.*}
+
 systemctl --user set-environment \
     PATH=/home/adam/bin:/usr/local/bin:/usr/X11R6/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin \
     ZDOTDIR=$ZDOTDIR \
