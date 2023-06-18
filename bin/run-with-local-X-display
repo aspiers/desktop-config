@@ -23,7 +23,7 @@ exit_no_X () {
 
 host=${HOST:-${HOSTNAME:-`hostname`}}
 host=${host%%.*}
-display_file=$ZDOTDIR/.Xdisplay.$host
+display_file=${ZDOTDIR:-$HOME}/.Xdisplay.$host
 if [ -e $display_file ]; then
     . "$display_file"
     re="/[X](org(\.bin)?)? (.+ )?(${DISPLAY%.*}|vt[7-9])"
