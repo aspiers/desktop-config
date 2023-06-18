@@ -1,0 +1,41 @@
+#!/bin/bash
+
+SETUP=$HOME/bin/setup-monitor
+
+# See .config/systemd/user/keyboard-watcher.service for how this gets
+# run.  (Nothing relevant in .cfg-post.d/desktop-config.)
+
+# See also 
+
+if ! which inotifywait >&/dev/null; then
+    echo "ERROR: Couldn't find inotifywait; aborting." >&2
+    echo "Try: sudo zypper in inotify-tools" >&2
+    exit 1
+fi
+
+if ! which $SETUP >&/dev/null; then
+    echo "ERROR: Couldn't find $SETUP; aborting." >&2
+    exit 1
+fi
+
+log=~/.log/udev-drm.log
+# hid subsystem is enough to spot keyboards, but when bluetooth
+# headphones are connected, it can reset the keyboard repeat for
+# some weird reason, so we need to re-run keyboard setup in those
+# cases too.
+udevadm monitor -u -s drm > $log &
+
+# N.B. We can't use entr(1) because that relies on the file
+# being closed after update, which udevadm monitor won't do:
+# https://github.com/eradman/entr/issues/114
+
+while true; do
+    # inotifywait -q /dev/input/by-path
+    # echo "Input device event detected for DISPLAY=$DISPLAY"
+
+    inotifywait -q "$log"
+    logger sleeping 1
+    sleep 1
+
+    $SETUP
+done
