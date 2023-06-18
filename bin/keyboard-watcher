@@ -2,8 +2,8 @@
 
 SETUP=$HOME/bin/setup-keyboard
 
-# See .cfg-post.d/desktop-config and
-# .config/systemd/user/keyboard-watcher.service for how this gets run.
+# See .config/systemd/user/keyboard-watcher.service for how this gets
+# run.  (Nothing relevant in .cfg-post.d/desktop-config.)
 
 #
 if ! which inotifywait >&/dev/null; then
