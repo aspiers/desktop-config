@@ -1,4 +1,7 @@
-#!/bin/sh
+#!/bin/bash
+
+#exec >&~/.log/run-with-local-X-display.log
+#set -x
 
 if [ "$1" = "-q" ]; then
     require_X=    # don't fail if X not running
