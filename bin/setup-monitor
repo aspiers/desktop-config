@@ -3,4 +3,6 @@
 exec >& ~/.log/setup-monitor.log
 
 sleep 3
-fr &
+fr
+sleep 1
+ly
