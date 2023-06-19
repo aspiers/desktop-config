@@ -1,4 +1,4 @@
 #!/bin/bash
 
 sleep 3
-nohup setsid fr </dev/null >& ~/.log/setup-monitor.log &
+fr >& ~/.log/setup-monitor.log &
