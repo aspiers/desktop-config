@@ -1,4 +1,6 @@
 #!/bin/bash
 
+exec >& ~/.log/setup-monitor.log
+
 sleep 3
-fr >& ~/.log/setup-monitor.log &
+fr &
