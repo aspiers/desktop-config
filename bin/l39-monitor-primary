@@ -1,0 +1,3 @@
+#!/bin/bash
+
+xrandr | grep -q 'primary 3840x2160'

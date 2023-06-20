@@ -6,7 +6,19 @@ read_localhost_nickname
 case "$localhost_nickname" in
     celtic)
         if l39-monitor-connected; then
-            echo "Detected LG as second monitor; using l39 layout"
+            echo "Detected LG as second monitor"
+            if ! l39-monitor-primary; then
+                # Sometimes xfce4-display-settings doesn't manage to
+                # set LG to primary for some reason, so set it
+                # manually.
+                monitor=$(
+                    xrandr |
+                        awk '/connected .*3840x2160/ {print $1}'
+                )
+                xrandr --output "$monitor" --primary
+                echo "LG is $monitor; made primary"
+            fi
+            echo "Using l39 layout"
             fluxbox-layout l39
             exit $?
         elif [ `monitors-connected` == 1 ]; then
