@@ -399,7 +399,7 @@
     </keybind>
     <keybind key="W-a">
       <action name="Execute">
-        <execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-agenda-daily-review"</execute>
+        <execute>sh -c "switch-emacs-eval ~/lib/emacs/shortcuts/org-agenda-daily-review.el"</execute>
       </action>
     </keybind>
     <keybind key="W-S-A">
@@ -479,7 +479,7 @@
     </keybind>
     <keybind key="W-S-R">
       <action name="Execute">
-        <execute>sh -c "switch-feed-emacs &lt; ~/lib/xmacro/org-remember"</execute>
+        <execute>sh -c "switch-emacs-eval ~/lib/emacs/shortcuts/org-remember.el"</execute>
       </action>
     </keybind>
     <!-- W-C-r reserved for KDE run command -->
