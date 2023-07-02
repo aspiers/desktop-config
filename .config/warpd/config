@@ -1,0 +1,4 @@
+exit: space
+hint_exit: space
+grid_size: 2
+hint_border_radius: 1

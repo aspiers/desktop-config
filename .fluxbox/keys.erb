@@ -286,6 +286,9 @@ Shift Control Mod1 Mod4 l :Exec xflock4
 # open a dialog to run programs
 Control Mod4 space :Exec fbrun
 
+Mod4 minus :Exec warpd --grid
+Mod4 semicolon :Exec warpd --hint
+
 # quick jumping to commonly open windows
 # xdotool can't filter by head on multi-head sessions
 # Mod4 x :Exec wmctrl -s 0; xdotool search --onlyvisible --desktop 0 --class gnome-terminal windowactivate; focus-active-window
