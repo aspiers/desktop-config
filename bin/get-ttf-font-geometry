@@ -1,0 +1,109 @@
+#!/usr/bin/python3
+
+import re
+import subprocess
+import sys
+
+
+def die(msg=str):
+    sys.stderr.write(msg + "\n")
+    sys.exit(1)
+
+
+def parse_font_spec(spec=str) -> int:
+    if not spec.startswith('xft:'):
+        die("Font spec %s didn't start with xft:" % spec)
+    xft = spec[4:]
+    print("font_xft_name='%s'" % xft)
+
+    m = re.search(r':pixelsize=(\d+)', xft)
+    if not m:
+        die("Couldn't find pixelsize in font %s" % xft)
+
+    pixelsize = int(m.group(1))
+    print("font_pixelsize=%d" % pixelsize)
+    return xft, pixelsize
+
+def find_font_file(font_spec=str) -> str:
+    out = subprocess.check_output([
+        'fc-match',
+        '-f', '%{file}\n',
+        font_spec
+    ])
+    if not out:
+        die("fc-match failed to get a match for font %s" % font_spec)
+
+    lines = out.decode('utf-8').split('\n')
+    print("font_file=%s" % lines[0])
+    return lines[0]
+
+
+# ttf2afm converts to Adobe Font Metrics format:
+#
+# https://adobe-type-tools.github.io/font-tech-notes/pdfs/5004.AFM_Spec.pdf
+#
+# which uses units of 1/1000 of the scale factor (point size) of
+# the font.  So for a 36pt font, 1000 means 36pt, and with Adobe,
+# 72pt == 1 inch, so this *should* be 0.5 inches.  So to convert to
+# pixels, in theory it should work to multiply by (point size)/(72 * 1000)
+# to obtain the size in inches, and then multiply by DPI to obtain
+# pixels.  But of course it doesn't.
+#
+# Instead, rely on the fact that pixelsize is the font height in pixels.
+def get_afm(font_file: str) -> str:
+    return subprocess.check_output(['ttf2afm', font_file]).decode('utf-8')
+
+
+def get_afm_char(afm: str, char: str) -> object:
+    uni = format(ord(char), '04X')
+
+    # WX is character width
+    # Other 4 numbers are the bounding box dimensions:
+    # left / bottom / right / top
+    pattern = (
+        ('.* WX (?P<WX>\d+) ; N uni%s ; ' % uni) +
+        'B (?P<bb_left>\d+) (?P<bb_bottom>-?\d+) ' +
+        '(?P<bb_right>\d+) (?P<bb_top>-?\d+) .*')
+    m = re.search(pattern, afm)
+    if not m:
+        die("Couldn't find uni%s in AFM output" % uni)
+
+    print("font_AFM_char_%s='%s'" % (char, m.group(0)))
+    d = dict([(k, int(v)) for k, v in m.groupdict().items()])
+
+    # Bounding box height and width
+    d['bb_height'] = d['bb_top'] - d['bb_bottom']
+    d['bb_width'] = d['bb_right'] - d['bb_left']
+    print("font_AFM_char_%s_bbox_width=%s" % (char, d['bb_width']))
+    print("font_AFM_char_%s_bbox_height=%s" % (char, d['bb_height']))
+
+    return d
+
+
+def main():
+    font_spec = sys.argv[1]
+    xft, pixelsize = parse_font_spec(font_spec)
+    font_file = find_font_file(xft)
+    afm = get_afm(font_file)
+    # # FIXME: get these unicode values programmatically
+    char_j = get_afm_char(afm, 'j')
+    char_W = get_afm_char(afm, 'W')
+    char__ = get_afm_char(afm, '_')
+    #aspect_ratio = max(char_W['bb_width'], char__['bb_width']) / char_j['bb_height']
+    aspect_ratio = char_W['bb_width'] / char_j['bb_height']
+
+    print("font_AFM_aspect_ratio=%s" % aspect_ratio)
+
+    pixel_height = pixelsize
+    # Guess the width
+    pixel_width = int(pixelsize * aspect_ratio)
+    print("font_char_height=%s" % pixel_height)
+    print("font_char_width=%s" % pixel_width)
+
+    pixel_ascent = int(char_j['bb_top'] * pixel_height / char_j['bb_height'])
+    pixel_descent = int(char_j['bb_bottom'] * pixel_height / char_j['bb_height'])
+    print("font_char_ascent=%s" % pixel_ascent)
+    print("font_char_descent=%s" % pixel_descent)
+
+
+main()

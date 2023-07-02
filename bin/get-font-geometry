@@ -20,79 +20,8 @@ font="$1"
 # FIXME: handle truetype via ttf2afm:
 # https://unix.stackexchange.com/questions/167452/extract-bounding-box-dimensions-for-truetype-font
 if [[ "$font" == xft:* ]]; then
-    xft="${font#xft:}"
-    if ! [[ "$xft" =~ :pixelsize=([0-9]+) ]]; then
-        echo >&2 -e "Couldn't find pixelsize in font $xft"
-        exit 1
-    fi
-    echo "font_xft_name='$xft'"
-
-    pixelsize="${BASH_REMATCH[1]}"
-    echo "font_pixelsize=$pixelsize"
-
-    file="$(fc-match -f "%{file}\n" "$xft" | head -n 1)"
-    if ! [ -e "$file" ]; then
-        echo >&2 -e "fc-match failed to get a match for font $xft\n$file"
-        exit 1
-    fi
-
-    # ttf2afm converts to Adobe Font Metrics format:
-    #
-    # https://adobe-type-tools.github.io/font-tech-notes/pdfs/5004.AFM_Spec.pdf
-    #
-    # which uses units of 1/1000 of the scale factor (point size) of
-    # the font.  So for a 36pt font, 1000 means 36pt, and with Adobe
-    # 72pt == 1 inch, so this would be 0.5 inches.  So to convert to
-    # pixels, it's necessary to multiply by (point size)/(72 * 1000)
-    # to obtain the size in inches, and then multiply by DPI to obtain
-    # pixels.
-
-    # This is only approximate, based on the letter A (Unicode 0041)
-    ttf2afm "$file" | \
-        perl -lne '
-            next unless / WX (\d+) .* N uni0041 ; B (\d+) (\d+) (\d+) (\d+) /;
-            print qq!font_AFM_char_A="$_"!;
-            my $pixelsize = '$pixelsize';
-
-            my $char_width = $1;
-            print "font_AFM_char_A_WX=$char_width";
-            my ($bbox_l, $bbox_b, $bbox_r, $bbox_t) = ($2, $3, $4, $5);
-            print "font_AFM_char_A_bbox_l=$bbox_l";
-            print "font_AFM_char_A_bbox_r=$bbox_r";
-            print "font_AFM_char_A_bbox_t=$bbox_t";
-            print "font_AFM_char_A_bbox_b=$bbox_b";
-
-            my $bbox_width = $bbox_r - $bbox_l;
-            my $bbox_height = $bbox_t - $bbox_b;
-            print "font_AFM_char_A_bbox_width=$bbox_width";
-            print "font_AFM_char_A_bbox_height=$bbox_height";
-
-            print "font_char_width=$pixelsize";
-            my $aspect = $bbox_width / $bbox_height;
-            print "font_AFM_char_A_aspect=$aspect";
-
-            print "font_char_height=",  int($pixelsize / $aspect);
-
-            # Scale AFM units into pixels
-            my $x_scale = $pixelsize / $bbox_width;
-            my $y_scale = $x_scale / $aspect;
-
-            print "font_AFM_char_x_scale=$x_scale";
-            print "font_AFM_char_y_scale=$y_scale";
-            print "font_char_ascent=",  int($bbox_t * $y_scale);
-            print "font_char_descent=", int($bbox_b / $y_scale);
-
-            # Scale AFM units into pixels the wrong way
-            $x_scale = $pixelsize / 1000;
-            $y_scale = $pixelsize / 1000;
-            # print "font_char_width=",   int($bbox_width * $x_scale);
-            # print "font_char_height=",  int($bbox_height * $y_scale);
-            # print "font_char_ascent=",  int($bbox_t * $y_scale);
-            # print "font_char_descent=", int($bbox_b * $y_scale);
-
-            break;
-        '
-    exit
+    get-ttf-font-geometry "$font"
+    exit $?
 fi
 
 xlsfonts -ll -fn "$font" | \
