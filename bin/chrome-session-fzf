@@ -1,3 +1,5 @@
 #!/bin/bash
 
-urxvt-256color -title 'Chrome fzf' -e chrome-session-tabs --fzf "$@"
+. $ZDOTDIR/lib/libfonts.sh
+
+urxvt-256color -fn $large_font -title 'Chrome fzf' -e chrome-session-tabs --fzf "$@"

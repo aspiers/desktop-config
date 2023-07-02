@@ -1,11 +1,25 @@
 #!/bin/bash
 
+# Sets the following variables:
+#
+#   tiny_font: for watchlogs-window and similar
+#   small_font: for top-term and similar
+#   medium_font: for terminals (and maybe emacs)
+#   large_font: for modal dialogs like chrome-session-fzf
+
 . $ZDOTDIR/lib/libdpy.sh
 
-if [[ $dpy_width -gt 2000 ]]; then
-    #small_font=10x20
-    #small_font=12x24
+if [[ $primary_width -gt 2000 ]]; then
+    tiny_font='10x20'
+    #small_font='10x20'
+    #small_font='12x24'
+    #small_font='-misc-hack-medium-r-normal--0-0-0-0-m-0-iso8859-15'
     small_font='xft:Hack:pixelsize=24'
+    medium_font='xft:Hack:pixelsize=30'
+    large_font='xft:Hack:pixelsize=36'
 else
-    small_font=smoothansi
+    tiny_font='smoothansi'
+    small_font='10x20'
+    medium_font='xft:Hack:pixelsize=24'
+    large_font='xft:Hack:pixelsize=30'
 fi
