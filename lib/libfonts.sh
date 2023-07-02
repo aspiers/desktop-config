@@ -9,10 +9,14 @@
 
 . $ZDOTDIR/lib/libdpy.sh
 
+# Unreadably small:
+#   nexus artsie outcast
+#   Most of the stuff from xlsfonts Gv -- -
+
 if [[ $primary_width -gt 2000 ]]; then
     tiny_font='10x20'
-    #small_font='10x20'
-    #small_font='12x24'
+    #tiny_font='12x24'
+    tiny_font='xft:Hack:pixelsize=18'
     #small_font='-misc-hack-medium-r-normal--0-0-0-0-m-0-iso8859-15'
     small_font='xft:Hack:pixelsize=24'
     medium_font='xft:Hack:pixelsize=30'

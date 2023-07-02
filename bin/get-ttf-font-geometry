@@ -74,8 +74,10 @@ def get_afm_char(afm: str, char: str) -> object:
     # Bounding box height and width
     d['bb_height'] = d['bb_top'] - d['bb_bottom']
     d['bb_width'] = d['bb_right'] - d['bb_left']
+    d['bb_aspect_ratio'] = d['bb_width'] / d['bb_height']
     print("font_AFM_char_%s_bbox_width=%s" % (char, d['bb_width']))
     print("font_AFM_char_%s_bbox_height=%s" % (char, d['bb_height']))
+    print("font_AFM_char_%s_bbox_aspect_ratio=%s" % (char, d['bb_aspect_ratio']))
 
     return d
 
@@ -89,12 +91,13 @@ def main():
     char_j = get_afm_char(afm, 'j')
     char_W = get_afm_char(afm, 'W')
     char__ = get_afm_char(afm, '_')
+    char_O = get_afm_char(afm, '0')
     #aspect_ratio = max(char_W['bb_width'], char__['bb_width']) / char_j['bb_height']
-    aspect_ratio = char_W['bb_width'] / char_j['bb_height']
+    aspect_ratio = char_O['bb_aspect_ratio']
 
     print("font_AFM_aspect_ratio=%s" % aspect_ratio)
 
-    pixel_height = pixelsize
+    pixel_height = pixelsize + 4
     # Guess the width
     pixel_width = int(pixelsize * aspect_ratio)
     print("font_char_height=%s" % pixel_height)
