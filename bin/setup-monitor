@@ -2,7 +2,7 @@
 
 exec >& ~/.log/setup-monitor.log
 
-sleep 3
+sleep 5
 fr
 sleep 1
 ly
