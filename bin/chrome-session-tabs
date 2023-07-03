@@ -168,7 +168,7 @@ def focus_window(title):
 def focus_window_and_tab(window_title, tab_index):
     release_modifiers()
     focus_window(window_title)
-    time.sleep(0.2)
+    time.sleep(0.3)
     focus_tab_number(tab_index)
     print("focus-active-window")
     run(['focus-active-window'])
