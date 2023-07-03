@@ -23,7 +23,7 @@ def die(message):
     sys.exit(1)
 
 
-def get_windows():
+def get_raw_windows():
     result = run([DUMPER, "-json", SESSION], capture_output=True, check=True)
 
     j = json.loads(result.stdout)
@@ -67,7 +67,7 @@ def get_tabs(windows):
 
 
 def show_windows(windows):
-    for window in sorted(windows, key=lambda w: w['title']):
+    for window in windows:
         if 'title' not in window:
             # Sometimes there's an empty window for some reason.
             continue
@@ -83,6 +83,14 @@ def show_windows(windows):
         print()
 
 
+def find_tab(substring, tabs):
+    for tab_search_key, tab in tabs.items():
+        if tab_search_key.lower().find(substring.lower()) != -1 \
+           and not tab['groupCollapsed'] \
+           and not tab['deleted']:
+            return tab
+
+
 def get_tab_info_for_fzf(windows):
     tabs = []
     for win_index, window in enumerate(windows):
@@ -96,56 +104,88 @@ def get_tab_info_for_fzf(windows):
                 continue
             tabs.append({
                 'window_userTitle': window['userTitle'],
+                'window_title': window['title'],
                 'window_index': win_index,
                 'index': tab['index'],
                 'tab_title': tab['title'],
                 'url': tab['url']
             })
+
+    # print(json.dumps(tabs, indent=4))
     return tabs
 
 
-def get_fzf_input(windows):
+def get_tab_choices(windows):
     tabs = get_tab_info_for_fzf(windows)
-    input = []
+    choices = []
     for tab in tabs:
         win_title = tab['window_userTitle']
         if not win_title:
             win_title = UNNAMED_WIN_PREFIX + str(tab['window_index'])
-        input.append(
-            "%s -~- %3d -~- %s | %s" %
-            (win_title, tab['index'], tab['tab_title'], tab['url'])
-        )
+        data = (win_title, tab['index'], tab['tab_title'], tab['url'])
+        choices.append((*data, "%s -~- %3d -~- %s | %s" % data))
 
-    return input
-
-
-def find_tab(substring, tabs):
-    for tab_search_key, tab in tabs.items():
-        if tab_search_key.lower().find(substring.lower()) != -1 \
-           and not tab['groupCollapsed'] \
-           and not tab['deleted']:
-            return tab
+    # print(json.dumps(choices, indent=4))
+    return choices
 
 
-def run_fzf(windows, initial):
-    sorted_windows = sorted(windows, key=lambda w: w.get('title') or 'Untitled window')
-    input = get_fzf_input(sorted_windows)
+def get_fzf_choice_strings(choices):
+    return [ data[4] for data in choices ]
+
+
+def fzf_prompt_tab(choices, initial):
+    input = get_fzf_choice_strings(choices)
     fzf = FzfPrompt()
     options = "--exact --no-sort --layout=reverse"
     if initial:
         options += " --query='%s'" % initial
-    choice = fzf.prompt(input, options)[0]
+    choice = fzf.prompt(input, options)
+    if not choice:
+        sys.exit(1)
 
-    m = re.match(r'(?P<window>.+) -~-\s+(?P<tabnum>\d+) -~- (?P<tabtitle>.+)', choice)
+    m = re.match(r'(?P<window>.+) -~-\s+(?P<tabnum>\d+) -~- (?P<tabtitle>.+)', choice[0])
     if not m:
         die("fzf failed")
+    d = m.groupdict()
+    return d['window'], int(d['tabnum'])
 
-    groups = m.groupdict()
-    win_title = groups['window']
+
+def tab_choices_matching(choices, initial):
+    matches = []
+    for i, choice in enumerate(choices):
+        matched = True
+        for substring in initial.split(' '):
+            if substring:
+                if choice[4].find(substring) == -1:
+                    # print("Didn't find %s in %s" % (substring, choice[4]))
+                    matched = False
+                    break
+                # else:
+                #     print("Found %s in %s" % (substring, choice[4]))
+        if matched:
+            matches.append(i)
+
+    return matches
+
+
+def choose_tab_maybe_through_fzf(windows, initial):
+    tab_choices = get_tab_choices(windows)
+
+    matches = tab_choices_matching(tab_choices, initial)
+    if len(matches) == 1:
+        print("Found only one tab; skipping prompt via fzf")
+        tab = tab_choices[matches[0]]
+        return (tab[0], tab[1])
+
+    return fzf_prompt_tab(tab_choices, initial)
+
+
+def maybe_run_fzf(windows, initial):
+    win_title, tabnum = choose_tab_maybe_through_fzf(windows, initial)
     if win_title.startswith(UNNAMED_WIN_PREFIX):
         win_index = int(win_title[len(UNNAMED_WIN_PREFIX):])
-        win_title = sorted_windows[win_index]['title']
-    focus_window_and_tab(win_title, int(groups['tabnum']))
+        win_title = windows[win_index]['title']
+    focus_window_and_tab(win_title, tabnum)
 
 
 def report_tab_found(tab):
@@ -220,15 +260,18 @@ def main():
     if not which(DUMPER):
         die("chrome-session-dump not installed; type mrco chrome-session-dump")
 
-    windows = get_windows()
-    tabs = get_tabs(windows)
+    raw_windows = get_raw_windows()
+    tabs = get_tabs(raw_windows)
+    # get_tabs() has the side-effect of setting the title property on windows,
+    # which we can then use to sort them by title:
+    windows = sorted(raw_windows, key=lambda w: w.get('title') or 'Untitled window')
 
     if len(sys.argv) < 2:
         show_windows(windows)
         return
 
     if sys.argv[1] == '--fzf':
-        run_fzf(windows, ' '.join(sys.argv[2:]))
+        maybe_run_fzf(windows, ' '.join(sys.argv[2:]))
         return
 
     substring = ' '.join(sys.argv[1:])
