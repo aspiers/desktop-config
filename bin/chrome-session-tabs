@@ -4,7 +4,7 @@ import json
 import os.path
 from pprint import pp
 import re
-from subprocess import CalledProcessError, run
+from subprocess import CalledProcessError, run, check_output
 import sys
 import time
 from shutil import which
@@ -199,10 +199,19 @@ def report_tab_found(tab):
 
 def focus_window(title):
     print("Focusing window with title: %s" % title)
+    window_list = check_output(['wmctrl', '-l', title]).decode('utf')
+    regexp = '^(0x[0-9a-f]+)\s+(-?\d+)\s+\w+\s+%s$' % re.escape(title)
+    print(regexp)
+    m = re.search(regexp, window_list, re.MULTILINE)
+    if not m:
+        die("Couldn't find [%s] in output of wmctrl -l" % title)
+
+    window_id = m.group(1)
+
     try:
-        run(['wmctrl', '-a', title], check=True)
+        run(['wmctrl', '-i', '-a', window_id], check=True)
     except CalledProcessError:
-        die("wmctrl -a failed")
+        die("wmctrl -i -a %s failed" % window_id)
 
 
 def focus_window_and_tab(window_title, tab_index):
