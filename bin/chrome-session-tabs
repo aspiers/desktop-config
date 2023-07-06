@@ -136,10 +136,12 @@ def get_fzf_choice_strings(choices):
     return [ data[4] for data in choices ]
 
 
-def fzf_prompt_tab(choices, initial):
+def choose_tab_through_fzf(windows, initial):
+    choices = get_tab_choices(windows)
     input = get_fzf_choice_strings(choices)
+
     fzf = FzfPrompt()
-    options = "--exact --no-sort --layout=reverse"
+    options = "--select-1 --exact --no-sort --layout=reverse"
     if initial:
         options += " --query='%s'" % initial
     choice = fzf.prompt(input, options)
@@ -153,38 +155,8 @@ def fzf_prompt_tab(choices, initial):
     return d['window'], int(d['tabnum'])
 
 
-def tab_choices_matching(choices, initial):
-    matches = []
-    for i, choice in enumerate(choices):
-        matched = True
-        for substring in initial.split(' '):
-            if substring:
-                if not re.search(substring, choice[4], re.IGNORECASE):
-                    # print("Didn't find %s in %s" % (substring, choice[4]))
-                    matched = False
-                    break
-                # else:
-                #     print("Found %s in %s" % (substring, choice[4]))
-        if matched:
-            matches.append(i)
-
-    return matches
-
-
-def choose_tab_maybe_through_fzf(windows, initial):
-    tab_choices = get_tab_choices(windows)
-
-    matches = tab_choices_matching(tab_choices, initial)
-    if len(matches) == 1:
-        print("Found only one tab; skipping prompt via fzf")
-        tab = tab_choices[matches[0]]
-        return (tab[0], tab[1])
-
-    return fzf_prompt_tab(tab_choices, initial)
-
-
-def maybe_run_fzf(windows, initial):
-    win_title, tabnum = choose_tab_maybe_through_fzf(windows, initial)
+def run_fzf(windows, initial):
+    win_title, tabnum = choose_tab_through_fzf(windows, initial)
 
     if win_title.startswith(UNNAMED_WIN_PREFIX):
         win_index = int(win_title[len(UNNAMED_WIN_PREFIX):])
@@ -292,7 +264,7 @@ def main():
         return
 
     if sys.argv[1] == '--fzf':
-        maybe_run_fzf(windows, ' '.join(sys.argv[2:]))
+        run_fzf(windows, ' '.join(sys.argv[2:]))
         return
 
     substring = ' '.join(sys.argv[1:])
