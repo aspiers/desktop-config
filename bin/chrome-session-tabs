@@ -185,10 +185,17 @@ def choose_tab_maybe_through_fzf(windows, initial):
 
 def maybe_run_fzf(windows, initial):
     win_title, tabnum = choose_tab_maybe_through_fzf(windows, initial)
+
     if win_title.startswith(UNNAMED_WIN_PREFIX):
         win_index = int(win_title[len(UNNAMED_WIN_PREFIX):])
-        win_title = windows[win_index]['title']
-    focus_window_and_tab(win_title, tabnum)
+        win = windows[win_index]
+    else:
+        matches = [w for w in windows if w['title'] == win_title]
+        if len(matches) != 1:
+            die("Couldn't find chosen window title [%s]" % win_title)
+        win = matches[0]
+
+    focus_window_and_tab(win, tabnum)
 
 
 def report_tab_found(tab):
@@ -200,11 +207,13 @@ def report_tab_found(tab):
     print()
 
 
-def focus_window(title):
-    print("Focusing window with title: %s" % title)
-    window_list = check_output(['wmctrl', '-l', title]).decode('utf')
-    regexp = '^(0x[0-9a-f]+)\s+(-?\d+)\s+\w[\w.]+\s+%s$' % re.escape(title)
-    print(regexp)
+def focus_window(win):
+    print("Focusing window with title: %s (userTitle=[%s])" %
+          (win['title'], win['userTitle']))
+    window_list = check_output(['wmctrl', '-l']).decode('utf')
+    matcher = (re.escape(win['userTitle']) if win['userTitle']
+               else (re.escape(win['title']) + '( - (Google Chrome|Chromium))?'))
+    regexp = '^(0x[0-9a-f]+)\s+(-?\d+)\s+\w[\w.]+\s+%s$' % matcher
     m = re.search(regexp, window_list, re.MULTILINE)
     if not m:
         die("Couldn't find [%s] in output of wmctrl -l" % title)
@@ -217,9 +226,9 @@ def focus_window(title):
         die("wmctrl -i -a %s failed" % window_id)
 
 
-def focus_window_and_tab(window_title, tab_index):
+def focus_window_and_tab(win, tab_index):
     release_modifiers()
-    focus_window(window_title)
+    focus_window(win)
     time.sleep(0.3)
     focus_tab_number(tab_index)
     print("focus-active-window")
@@ -241,7 +250,7 @@ def focus_tab_number(target_tab_index):
 
 
 def focus_by_tab(tab):
-    focus_window_and_tab(tab['window']['title'], tab['index'])
+    focus_window_and_tab(tab['window'], tab['index'])
 
 
 def release_modifiers():
