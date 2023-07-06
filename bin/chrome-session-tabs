@@ -85,9 +85,12 @@ def show_windows(windows):
 
 def find_tab(substring, tabs):
     for tab_search_key, tab in tabs.items():
-        if tab_search_key.lower().find(substring.lower()) != -1 \
-           and not tab['groupCollapsed'] \
-           and not tab['deleted']:
+        m = re.search(substring, tab_search_key, re.IGNORECASE)
+        # print("%s =~ /%s/ ? %s\n   collapsed=%s deleted=%s" %
+        #       (tab_search_key, substring,
+        #        'yes' if m else 'no',
+        #        tab['groupCollapsed'], tab['deleted']))
+        if m and not tab['groupCollapsed'] and not tab['deleted']:
             return tab
 
 
@@ -156,7 +159,7 @@ def tab_choices_matching(choices, initial):
         matched = True
         for substring in initial.split(' '):
             if substring:
-                if choice[4].find(substring) == -1:
+                if not re.search(substring, choice[4], re.IGNORECASE):
                     # print("Didn't find %s in %s" % (substring, choice[4]))
                     matched = False
                     break
