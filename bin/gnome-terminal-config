@@ -1,21 +1,6 @@
 #!/bin/sh
 
-. $ZDOTDIR/lib/libhost.sh
-
-read_localhost_nickname
-
-case "$localhost_nickname" in
-    aegean)
-        font_size=10
-        ;;
-    celtic)
-        font_size=12
-        ;;
-    *)
-        # FIXME: add more cases here
-        font_size=10
-        ;;
-esac
+. $ZDOTDIR/lib/libfonts.sh
 
 # Get the below via: dconf dump /org/gnome/terminal/
 
@@ -43,7 +28,7 @@ cursor-foreground-color='rgb(67,167,167)'
 cursor-shape='block'
 default-size-columns=120
 default-size-rows=40
-font='Monospace $font_size'
+font='$medium_font_gnome'
 foreground-color='rgb(255,255,255)'
 highlight-colors-set=false
 highlight-foreground-color='rgb(255,255,255)'
