@@ -2,7 +2,7 @@
 ! WARNING!  This file should be used with my custom xrdb-cpp preprocessor,
 ! via:
 !        xrdb -cpp xrdb-cpp
-! 
+!
 ! It should also be included via "all.rdb", which first loads
 ! "defines.rdb".
 !
@@ -216,6 +216,14 @@ Rxvt*color15: COLOR15
 
 ! }}}
 ! {{{ fonts
+
+! Xft settings from https://askubuntu.com/a/45774
+! which I hoped would fix the width issues with fonts like Hack, but don't.
+!
+! Xft.antialias:  true
+! Xft.rgba:       rgb
+! Xft.hinting:    true
+! Xft.hintstyle:  hintslight
 
 ! xrdb-cpp needs to be in the $PATH, then
 !        xrdb -cpp xrdb-cpp
@@ -639,4 +647,3 @@ XTerm.VT100.ReverseWrap:        true
 ! *inputLang:         C
 
 ! }}}
-

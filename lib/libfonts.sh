@@ -20,9 +20,9 @@ case "$localhost_nickname" in
     ionian)
         # 2560x1440 (92dpi) + 1920x1080 (93dpi)
         tiny_font='smoothansi'
-        small_font='xft:Hack:pixelsize=9'
-        medium_font='xft:Hack:pixelsize=10'
-        large_font='xft:Hack:pixelsize=22'
+        small_font='xft:Monospace:size=8'
+        medium_font='xft:Monospace:size=10'
+        large_font='xft:Hack:size=16'
         ;;
     aegean|celtic)
         # aegean: 3840x2160 (383dpi)
@@ -49,4 +49,4 @@ case "$localhost_nickname" in
 esac
 
 medium_font_gnome="${medium_font#xft:}"
-medium_font_gnome="${medium_font_gnome/:pixelsize=/ }"
+medium_font_gnome="${medium_font_gnome/:size=/ }"

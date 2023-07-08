@@ -41,7 +41,8 @@ emacs_major_version=${emacs_version%%.*}
 # $ZDOTDIR/lib/emacs/init/GNU_Emacs/as-custom-XX.Y.el ?
 
 # Leave the window manager to take care of size/position instead, since
-# this is fiddly and awkward.
+# this is fiddly and awkward, and doesn't work reliably with proportional
+# or TrueType fonts.
 #
 # emacs_font=$(
 #     cpp \
