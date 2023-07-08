@@ -27,13 +27,14 @@ case "$localhost_nickname" in
     aegean|celtic)
         # aegean: 3840x2160 (383dpi)
         # celtic: 2256x1504 (201dpi)
-        tiny_font='10x20'
+        #tiny_font='smoothansi'
         #tiny_font='12x24'
-        tiny_font='xft:Hack:pixelsize=18'
+        tiny_font='xft:Monospace:size=8'
         #small_font='-misc-hack-medium-r-normal--0-0-0-0-m-0-iso8859-15'
-        small_font='xft:Hack:pixelsize=24'
-        medium_font='xft:Hack:pixelsize=30'
-        large_font='xft:Hack:pixelsize=36'
+        #small_font='10x20'
+        small_font='xft:Hack:size=10'
+        medium_font='xft:Monospace:size=12'
+        large_font='xft:Hack:size=16'
         ;;
     *)
         echo >&2 "libfonts: unsupported host $localhost_nickname"
