@@ -10,7 +10,7 @@
 [end]
 [app] (title=lnav-system)
   [Head]	{1}
-  [Dimensions]	{97% 12%}
+  [Dimensions]	{96% 17%}
   [Position]	(BottomLeft)	{0 0}
   [Sticky]	{yes}
   [Hidden]	{yes}
