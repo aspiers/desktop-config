@@ -4,8 +4,13 @@ import argparse
 from pprint import pp
 import subprocess
 import os
+import sys
 import time
 import yaml
+
+sys.path.append(os.getenv('HOME') + '/lib')
+
+import libdpy
 
 
 MAGIC_CMDS = {
@@ -14,13 +19,19 @@ MAGIC_CMDS = {
 }
 
 
+def expand_magic(cmd):
+    for magic, expansion in MAGIC_CMDS.items():
+        cmd = cmd.replace(magic, expansion)
+        #print("cmd %s after expanding %s to %s" % (cmd, magic, expansion))
+    return cmd
+
+
 def exec(window_cmds):
     for matcher, *cmds in window_cmds:
         print(matcher)
         for cmd in cmds:
-            if cmd in MAGIC_CMDS:
-                cmd = MAGIC_CMDS[cmd]
-            map_cmd = "Map {%s} {Matches %s}" % (cmd, matcher)
+            expanded = expand_magic(cmd)
+            map_cmd = "Map {%s} {Matches %s}" % (expanded, matcher)
             print("   %s" % map_cmd)
             subprocess.check_call(['fluxbox-remote', map_cmd])
             time.sleep(0.1)
@@ -43,8 +54,49 @@ def parse_args():
     return parser.parse_args()
 
 
-def layout_file(args):
+def get_layout_file(args):
     return "%s/%s.yaml" % (args.dir, args.layout)
+
+
+def percent(x, y):
+    return round(x / y * 100)
+
+
+def init_magic_cmds(layout_file, layout):
+    screens = libdpy.extract_xrandr_geometries()
+    if len(screens) != len(layout['screens']):
+        sys.stderr.write(
+            "xrandr got %d screens but %s had %d screens" %
+            (len(screens), len(layout['screens']))
+        )
+        sys.exit(1)
+
+    for i, screen in enumerate(screens):
+        print("Screen %d:" % i)
+        screen_layout = layout['screens'][i]
+        s = screen.copy()
+        s.update(screen_layout)
+
+        s['active_width'] = s['width'] - s['right_margin']
+        s['active_width_pc'] = percent(s['active_width'], s['width'])
+        s['2col_width'] = int(s['active_width'] / 2)
+        s['2col_width_pc'] = percent(s['2col_width'], s['width'])
+
+        s['logs_height'] = int(s['logs_height_pc'] * s['height'] / 100)
+
+        s['active_height'] = s['height'] - s['panel_height'] - s['logs_height']
+        s['active_height_pc'] = percent(s['active_height'], s['height'])
+        s['2row_height'] = int(s['active_height'] / 2)
+        s['2row_height_pc'] = percent(s['2row_height'], s['height'])
+
+        prefix = 's%d_' % (i + 1)
+        for k, v in s.items():
+            k2 = prefix + k
+            v2 = str(v) + ("%" if k.endswith('_pc') else '')
+            MAGIC_CMDS['<%s>' % k2] = v2
+            print("  %s: %s" % (k2, v2))
+
+    print()
 
 
 def main():
@@ -52,8 +104,11 @@ def main():
 
     active_win_id = subprocess.check_output(['xdotool', 'getactivewindow']).rstrip()
 
-    with open(layout_file(args)) as f:
-        window_cmds = yaml.safe_load(f)
+    layout_file = get_layout_file(args)
+    with open(layout_file) as f:
+        layout = yaml.safe_load(f)
+        window_cmds = layout['windows']
+        init_magic_cmds(layout_file, layout)
         # pp(window_cmds)
         exec(window_cmds)
 

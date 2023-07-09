@@ -1,55 +1,68 @@
-- - (Name=gkrellm)
-  - MacroCmd {SetHead 1} {MoveTo 0 0 TopRight} {Activate}
-  - <stick>
+screens:
+  -
+    gkrellm_width: &GKRELLM_WIDTH 92
+    panel_height: 35
+    logs_height_pc: 14
+    right_margin: *GKRELLM_WIDTH
+  -
+    right_margin: 0
+    panel_height: 35
+    logs_height_pc: 0
 
-- - (Title=lnav-system)
-  - <stick>
-  - MacroCmd {SetHead 2} {ResizeTo 100% 20%} {MoveTo 0% 14 BottomLeft} {SetAlpha 50}
+windows:
+  - - (Name=gkrellm)
+    - MacroCmd {SetHead 1} {MoveTo 0 0 TopRight} {Activate}
+    - <stick>
 
-- - (Name=gnome-terminal-server)
-  - MacroCmd {SetHead 1} {MoveTo 0 0} {ResizeTo 47% 85%}
+  - - (Title=lnav-system)
+    - <stick>
+    - MacroCmd {SetHead 2} {ResizeTo <s2_active_width_pc> <s2_logs_height_pc>} {MoveTo 0 <s2_panel_height> BottomLeft} {SetAlpha 50}
 
-- - (name=emacs) (title!=Ediff)
-  - MacroCmd {SetHead 1} {MoveTo 48% 0} {ResizeTo 46% 85%}
+  - - (Name=gnome-terminal-server)
+    - MacroCmd {SetHead 1} {MoveTo 0 0} {ResizeTo <s1_2col_width> <s1_active_height>}
 
-- - (Name=brave-browser|google-chrome|chromium)
-  - MacroCmd {SetHead 1} {MoveTo 0 0} {ResizeTo 97% 90%}
-  - <unstick>
+  - - (name=emacs) (title!=Ediff)
+    - MacroCmd {SetHead 1} {MoveTo <s1_2col_width> 0} {ResizeTo <s1_2col_width> <s1_active_height>}
 
-- - (Class=firefox)
-  - MacroCmd {SetHead 1} {SendToWorkspace 3} {MoveTo 10% 0 TopLeft} {ResizeTo 80% 80%}
+  - - (Name=brave-browser|google-chrome|chromium) (Title=.*Toucan)
+    - MacroCmd {SetHead 1} {SendToWorkspace 2}
 
-- - (Name=notion-app-enhanced)
-  - MacroCmd {SetHead 1} {SendToWorkspace 3} {MoveTo 10% 0 TopLeft} {ResizeTo 80% 90%}
-  - <unstick>
+  - - (Name=brave-browser|google-chrome|chromium) (Title=.*personal$|.*Panther)
+    - MacroCmd {SetHead 1} {SendToWorkspace 5}
 
-- - (Class=Gitk)
-  - <unstick>
-  - MacroCmd {SetHead 1} {SendToWorkspace 3} {MoveTo 0 0 TopLeft} {ResizeTo 97% 90%}
+  - - (Name=brave-browser|google-chrome|chromium) (Title=.*personal2|.*gather.town)
+    - MacroCmd {SetHead 2}
+    - <stick>
 
-- - (Name=slack|Telegram|discord|Discord*|zulip)
-  - MacroCmd {SetHead 1} {SendToWorkspace 4} {MoveTo 0 0} {ResizeTo 97% 88%}
-  - <unstick>
+  - - (Name=brave-browser|google-chrome|chromium) (Head=1)
+    - MacroCmd {MoveTo 0 0} {ResizeTo <s1_active_width> <s1_active_height>}
 
-- - (Name=google-chrome) (Title=.*personal$|.*Panther)
-  - <unstick>
-  - MacroCmd {SetHead 1} {SendToWorkspace 5} {MoveTo 0 0 TopLeft} {ResizeTo 97% 90%}
+  - - (Name=brave-browser|google-chrome|chromium) (Head=2)
+    - MacroCmd {MoveTo 0 0} {ResizeTo <s2_active_width> <s2_active_height>}
 
-- - (Name=google-chrome) (Title=.*personal2|.*gather.town)
-  - MacroCmd {SetHead 2} {SendToWorkspace 1} {MoveTo 0 0 TopLeft} {ResizeTo 96% 97%}
-  - <stick>
+  - - (Class=firefox)
+    - MacroCmd {SetHead 1} {SendToWorkspace 3} {MoveTo 0 0 TopLeft} {ResizeTo <s1_active_width> <s1_active_height>}
 
-- - (Name=google-chrome) (Title=.*Toucan)
-  - MacroCmd {SetHead 1} {SendToWorkspace 2} {MoveTo 0 0 TopLeft} {ResizeTo 97% 90%}
+  - - (Name=notion-app-enhanced)
+    - MacroCmd {SetHead 1} {SendToWorkspace 3} {MoveTo 0 0 TopLeft} {ResizeTo <s1_active_width> <s1_active_height>}
+    - <unstick>
 
-- - (Class=Pavucontrol)
-  - <stick>
-  - MacroCmd {SetHead 2} {MoveTo 2% 2% TopLeft} {ResizeTo 40% 35%}
+  - - (Class=Gitk)
+    - <unstick>
+    - MacroCmd {SetHead 1} {SendToWorkspace 3} {MoveTo 0 0 TopLeft} {ResizeTo <s1_active_width> <s1_active_height>}
 
-- - (Class=Blueman-manager)
-  - <stick>
-  - MacroCmd {SetHead 2} {ResizeTo 35% 40%} {MoveTo 2% 22% BottomLeft}
+  - - (Name=slack|Telegram|discord|Discord*|zulip)
+    - MacroCmd {SetHead 1} {SendToWorkspace 4} {MoveTo 0 0} {ResizeTo <s1_active_width> <s1_active_height>}
+    - <unstick>
 
-- - (Class=Chrysalis)
-  - <stick>
-  - MacroCmd {SetHead 2} {ResizeTo 90% 90%} {MoveTo 5% 5%}
+  - - (Class=Pavucontrol)
+    - <stick>
+    - MacroCmd {SetHead 2} {MoveTo 2% 2% TopLeft} {ResizeTo 40% 35%}
+
+  - - (Class=Blueman-manager)
+    - <stick>
+    - MacroCmd {SetHead 2} {ResizeTo 35% 40%} {MoveTo 2% 22% BottomLeft}
+
+  - - (Class=Chrysalis)
+    - <stick>
+    - MacroCmd {SetHead 2} {ResizeTo 90% 90%} {MoveTo 5% 5%}
