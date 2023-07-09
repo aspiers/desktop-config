@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# FIXME: eliminate in favour of libdpy.py
+
 extract_xrandr_geometry () {
     xrandr | \
         perl -lne '
