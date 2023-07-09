@@ -1,45 +1,22 @@
-#!/bin/bash
+#!/usr/bin/python3
 
-eval $( $ZDOTDIR/lib/libdpy.py )
+import os
+import re
+import subprocess
+import sys
 
-eval $(xdotool getmouselocation --shell)
-echo xdotool_screen=$SCREEN
-echo monitors_connected=$monitors_connected
+sys.path.append(os.getenv('HOME') + '/lib')
 
-# FIXME: make this work for more than 2 screens
+import libdpy
 
-if [ "$screen_primary_xoffset" -eq 0 ]; then
-    # primary is on LHS; secondary is on RHS
-    echo "screen_primary_screen_pos=left"
 
-    if [ "$X" -ge "${screen_secondary_xoffset:-999999}" ]; then
-        echo "screen_current_type=secondary"
-        echo "screen_current_pos=right"
-        echo "screen_current_xoffset=$screen_secondary_xoffset"
-        echo "screen_current_width=$screen_secondary_width"
-        echo "screen_current_height=$screen_secondary_height"
-    else
-        echo "screen_current_type=primary"
-        echo "screen_current_pos=left"
-        echo "screen_current_xoffset=0"
-        echo "screen_current_width=$screen_primary_width"
-        echo "screen_current_height=$screen_primary_height"
-    fi
-else
-    # secondary is on LHS; primary is on RHS
-    echo "screen_primary_pos=right"
+info = libdpy.get_mouse_location_info()
+print("xdotool_screen=%s" % info['SCREEN'])
 
-    if [ "$X" -ge "$screen_primary_xoffset" ]; then
-        echo "screen_current_type=primary"
-        echo "screen_current_pos=right"
-        echo "screen_current_xoffset=$screen_primary_xoffset"
-        echo "screen_current_width=$screen_primary_width"
-        echo "screen_current_height=$screen_primary_height"
-    else
-        echo "screen_current_type=secondary"
-        echo "screen_current_pos=left"
-        echo "screen_current_xoffset=0"
-        echo "screen_current_width=$screen_secondary_width"
-        echo "screen_current_height=$screen_secondary_height"
-    fi
-fi
+screens = libdpy.extract_xrandr_geometries()
+print("monitors_connected=%d" % len(screens))
+
+screen = libdpy.get_current_screen()
+
+for k, v in screen.items():
+    print("screen_current_%s=%s" % (k, v))
