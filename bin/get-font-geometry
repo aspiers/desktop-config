@@ -13,12 +13,8 @@ if [ "$1" == '-h' ] || [ "$1" == '--help' ] || [ $# != 1 ]; then
     usage
 fi
 
-. $ZDOTDIR/lib/libdpy.sh
-
 font="$1"
 
-# FIXME: handle truetype via ttf2afm:
-# https://unix.stackexchange.com/questions/167452/extract-bounding-box-dimensions-for-truetype-font
 if [[ "$font" == xft:* ]]; then
     get-ttf-font-geometry "$font"
     exit $?
