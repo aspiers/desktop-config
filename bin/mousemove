@@ -1,47 +1,25 @@
-#!/bin/bash
+#!/usr/bin/python3
 
-. ~/lib/libdpy.sh
+import os
+import subprocess
+import sys
 
-usage () {
-    # Call as: usage [EXITCODE] [USAGE MESSAGE]
-    exit_code=1
-    if [[ "$1" == [0-9] ]]; then
-        exit_code="$1"
-        shift
-    fi
+sys.path.append(os.getenv('HOME') + '/lib')
 
-    me=$(basename $0)
+import libdpy
 
-    cat <<EOF >&2
-Usage: $me [options] X Y
-Options:
-  -h, --help     Show this help and exit
-  -v, --version  Output version information and exit
-EOF
 
-    if [ -n "$1" ]; then
-        echo >&2
-        echo >&2 "$*"
-    fi
+if len(sys.argv) != 3:
+   sys.stderr.write("""Usage: mousemove X Y
 
-    exit "$exit_code"
-}
+X and Y are percentages of the screen size""")
+   sys.exit(1)
 
-main () {
-    if [ "$1" == '-h' ] || [ "$1" == '--help' ]; then
-        usage 0
-    fi
-    if [ "$#" -ne 2 ]; then
-        usage 1
-    fi
+x_percent = int(sys.argv[1])
+y_percent = int(sys.argv[2])
 
-    xpercent="$1" ypercent="$2"
+current_screen = libdpy.get_current_screen()
+x = current_screen['x_offset'] + current_screen['width'] * x_percent / 100
+y = current_screen['height'] * y_percent / 100
 
-    eval $( get-screen-info )
-    x=$(( current_screen_xoffset + current_screen_width * xpercent / 100 ))
-    y=$(( current_screen_height * ypercent / 100 ))
-
-    xdotool mousemove $x $y
-}
-
-main "$@"
+subprocess.check_call(['xdotool', 'mousemove', str(x), str(y)])
