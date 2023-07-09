@@ -4,10 +4,14 @@ screens:
     panel_height: 35
     logs_height_pc: 14
     right_margin: *GKRELLM_WIDTH
+    col1_width_pc_of_active: 55
+    col2_width_pc_of_active: 45
   -
     right_margin: 0
     panel_height: 35
     logs_height_pc: 0
+    col1_width_pc_of_active: 55
+    col2_width_pc_of_active: 45
 
 windows:
   - - (Name=gkrellm)
@@ -19,10 +23,10 @@ windows:
     - MacroCmd {SetHead 1} {ResizeTo <s1_active_width_pc> <s1_logs_height_pc>} {MoveTo 0 <s1_panel_height> BottomLeft} {SetAlpha 50}
 
   - - (Name=gnome-terminal-server)
-    - MacroCmd {SetHead 1} {MoveTo 0 0} {ResizeTo <s1_2col_width> <s1_active_height>}
+    - MacroCmd {SetHead 1} {MoveTo 0 0} {ResizeTo <s1_col1_width> <s1_active_height>}
 
   - - (name=emacs) (title!=Ediff)
-    - MacroCmd {SetHead 1} {MoveTo <s1_2col_width> 0} {ResizeTo <s1_2col_width> <s1_active_height>}
+    - MacroCmd {SetHead 1} {MoveTo <s1_col1_width> 0} {ResizeTo <s1_col2_width> <s1_active_height>}
 
   - - (Name=brave-browser|google-chrome|chromium) (Title=.*Toucan)
     - MacroCmd {SetHead 1} {SendToWorkspace 2}
