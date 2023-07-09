@@ -1,43 +1,45 @@
 #!/bin/bash
 
-. $ZDOTDIR/lib/libdpy.sh
+eval $( $ZDOTDIR/lib/libdpy.py )
 
 eval $(xdotool getmouselocation --shell)
 echo xdotool_screen=$SCREEN
 echo monitors_connected=$monitors_connected
 
-if [ "$primary_xoffset" -eq 0 ]; then
-    # primary is on LHS; secondary is on RHS
-    echo "primary_screen_pos=left"
+# FIXME: make this work for more than 2 screens
 
-    if [ "$X" -ge "${secondary_xoffset:-999999}" ]; then
-        echo "current_screen_type=secondary"
-        echo "current_screen_pos=right"
-        echo "current_screen_xoffset=$secondary_xoffset"
-        echo "current_screen_width=$secondary_width"
-        echo "current_screen_height=$secondary_height"
+if [ "$screen_primary_xoffset" -eq 0 ]; then
+    # primary is on LHS; secondary is on RHS
+    echo "screen_primary_screen_pos=left"
+
+    if [ "$X" -ge "${screen_secondary_xoffset:-999999}" ]; then
+        echo "screen_current_type=secondary"
+        echo "screen_current_pos=right"
+        echo "screen_current_xoffset=$screen_secondary_xoffset"
+        echo "screen_current_width=$screen_secondary_width"
+        echo "screen_current_height=$screen_secondary_height"
     else
-        echo "current_screen_type=primary"
-        echo "current_screen_pos=left"
-        echo "current_screen_xoffset=0"
-        echo "current_screen_width=$primary_width"
-        echo "current_screen_height=$primary_height"
+        echo "screen_current_type=primary"
+        echo "screen_current_pos=left"
+        echo "screen_current_xoffset=0"
+        echo "screen_current_width=$screen_primary_width"
+        echo "screen_current_height=$screen_primary_height"
     fi
 else
     # secondary is on LHS; primary is on RHS
-    echo "primary_screen_pos=right"
+    echo "screen_primary_pos=right"
 
-    if [ "$X" -ge "$primary_xoffset" ]; then
-        echo "current_screen_type=primary"
-        echo "current_screen_pos=right"
-        echo "current_screen_xoffset=$primary_xoffset"
-        echo "current_screen_width=$primary_width"
-        echo "current_screen_height=$primary_height"
+    if [ "$X" -ge "$screen_primary_xoffset" ]; then
+        echo "screen_current_type=primary"
+        echo "screen_current_pos=right"
+        echo "screen_current_xoffset=$screen_primary_xoffset"
+        echo "screen_current_width=$screen_primary_width"
+        echo "screen_current_height=$screen_primary_height"
     else
-        echo "current_screen_type=secondary"
-        echo "current_screen_pos=left"
-        echo "current_screen_xoffset=0"
-        echo "current_screen_width=$secondary_width"
-        echo "current_screen_height=$secondary_height"
+        echo "screen_current_type=secondary"
+        echo "screen_current_pos=left"
+        echo "screen_current_xoffset=0"
+        echo "screen_current_width=$screen_secondary_width"
+        echo "screen_current_height=$screen_secondary_height"
     fi
 fi
