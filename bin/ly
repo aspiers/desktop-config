@@ -3,42 +3,8 @@
 . $ZDOTDIR/lib/libhost.sh
 read_localhost_nickname
 
-case "$localhost_nickname" in
-    celtic)
-        if l39-monitor-connected; then
-            echo "Detected LG as second monitor"
-            if ! l39-monitor-primary; then
-                # Sometimes xfce4-display-settings doesn't manage to
-                # set LG to primary for some reason, so set it
-                # manually.
-                monitor=$(
-                    xrandr |
-                        awk '/connected .*3840x2160/ {print $1}'
-                )
-                xrandr --output "$monitor" --primary
-                echo "LG is $monitor; made primary"
-            fi
-            echo "Using l39 layout"
-            fluxbox-layout l39
-            exit $?
-        elif [ `monitors-connected` == 1 ]; then
-            fluxbox-layout "$localhost_nickname"
-            exit $?
-        fi
-        ;;
-    ionian)
-        if [ `monitors-connected` == 2 ]; then
-            fluxbox-layout "$localhost_nickname"
-            exit $?
-        fi
-        ;;
-    aegean)
-        if [ `monitors-connected` == 1 ]; then
-            fluxbox-layout "$localhost_nickname"
-            exit $?
-        fi
-        ;;
-esac
-
-echo >&2 "ERROR: Couldn't figure out which layout to apply for $localhost_nickname!"
-exit 1
+if layout="$( get-layout )"; then
+    fluxbox-layout "$layout"
+else
+    exit 1
+fi

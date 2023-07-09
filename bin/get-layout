@@ -1,0 +1,44 @@
+#!/bin/bash
+
+. $ZDOTDIR/lib/libhost.sh
+read_localhost_nickname
+
+case "$localhost_nickname" in
+    celtic)
+        if l39-monitor-connected; then
+            echo >&2 "Detected LG as second monitor"
+            if ! l39-monitor-primary; then
+                # Sometimes xfce4-display-settings doesn't manage to
+                # set LG to primary for some reason, so set it
+                # manually.
+                monitor=$(
+                    xrandr |
+                        awk '/connected .*3840x2160/ {print $1}'
+                )
+                xrandr --output "$monitor" --primary
+                echo >&2 "LG is $monitor; made primary"
+            fi
+            echo >&2 "Using l39 layout"
+            echo l39
+            exit
+        elif [ `monitors-connected` == 1 ]; then
+            echo "$localhost_nickname"
+            exit
+        fi
+        ;;
+    ionian)
+        if [ `monitors-connected` == 2 ]; then
+            echo "$localhost_nickname"
+            exit
+        fi
+        ;;
+    aegean)
+        if [ `monitors-connected` == 1 ]; then
+            echo "$localhost_nickname"
+            exit
+        fi
+        ;;
+esac
+
+echo >&2 "ERROR: Couldn't figure out which layout to apply for $localhost_nickname!"
+exit 1
