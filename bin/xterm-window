@@ -1,6 +1,5 @@
 #!/bin/bash
 
-. $ZDOTDIR/lib/libdpy.sh
 . $ZDOTDIR/lib/libfonts.sh
 
 # Let window manager determine geometry; this is a lot easier to
