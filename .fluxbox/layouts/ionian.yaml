@@ -1,7 +1,7 @@
 screens:
   -
     gkrellm_width: &GKRELLM_WIDTH 92
-    panel_height: 35
+    panel_height: 30
     logs_height_pc: 14
     right_margin: *GKRELLM_WIDTH
     col1_width_pc_of_active: 55
