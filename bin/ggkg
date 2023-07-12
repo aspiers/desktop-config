@@ -25,7 +25,7 @@ git config --local --unset gui.geometry
 # https://github.com/prati0100/git-gui/issues/29#issuecomment-1204650745
 git config --global gui.usettk 0
 
-xrdb_dpi="$( xrdb -get Xft.dpi )"
+xrdb_dpi="$( run-with-local-X-display xrdb -get Xft.dpi )"
 case "$xrdb_dpi" in
     96)
         git_font_size=12
