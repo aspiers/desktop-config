@@ -24,11 +24,17 @@ case "$localhost_nickname" in
         medium_font='xft:Monospace:size=10'
         large_font='xft:Hack:size=16'
         ;;
-    aegean|celtic)
-        # aegean: 3840x2160 (383dpi)
-        # celtic: 2256x1504 (201dpi)
-        #tiny_font='smoothansi'
-        #tiny_font='12x24'
+    celtic)
+        # 2256x1504 (201dpi)
+        tiny_font='smoothansi'
+        #tiny_font='xft:Monospace:size=8'
+        #small_font='xft:Hack:size=10'
+        small_font='10x20'
+        #medium_font='xft:Monospace:size=12'
+        large_font='xft:Hack:size=16'
+        ;;
+    aegean)
+        # 3840x2160 (383dpi)
         tiny_font='xft:Monospace:size=8'
         #small_font='-misc-hack-medium-r-normal--0-0-0-0-m-0-iso8859-15'
         #small_font='10x20'
