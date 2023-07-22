@@ -153,9 +153,9 @@ Mod4 space :Raise
 Mod4 l :MacroCmd {Lower} {<%= focus_active %>}
 Mod1 Mod4 l :Lower
 Mod4 i :Minimize
-Mod4 m :Maximize
 Shift Mod4 m :MaximizeVertical
 Control Mod4 m :MaximizeHorizontal
+Shift Control Mod4 m :Maximize
 Shift Mod4 s :StickWindow
 Mod4 q :Close
 Control Mod4 q :Kill
@@ -322,6 +322,7 @@ Control Mod4 k :Exec slack-capture-todo
 Mod4 n :Exec switch-emacs-eval ~/lib/emacs/shortcuts/org-jump-personal-note.el
 Mod4 v :Exec switch-emacs-eval ~/lib/emacs/shortcuts/org-agenda-daily-review.el
 Mod1 Mod4 n :Exec fluxbox-focus-or-launch -c notion-app-enhanced ~/software/web/Notion-Enhanced.AppImage
+Mod4 m :Exec chrome-session-tabs 'mail.google.com/mail/u/0'
 Shift Mod4 n :Exec chrome-session-fzf 'https://www.notion.so/ '
 Mod4 s :Exec fluxbox-focus-or-launch Slack slack
 Mod4 w :Exec chrome-session-tabs WhatsApp
