@@ -5,4 +5,4 @@
 sleep 5
 fr
 sleep 1
-ly
+run-with-local-X-display ly
