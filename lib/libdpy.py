@@ -2,10 +2,50 @@
 
 import re
 import subprocess
+import sys
+
+
+def xrandr_status():
+    return subprocess.check_output('xrandr').decode()
 
 
 def extract_xrandr_geometries():
-    xrandr = subprocess.check_output('xrandr').decode('utf8')
+    xrandr = xrandr_status()
+    dpy = extract_display_geometry(xrandr)
+    screens = extract_xrandr_screen_geometries(xrandr)
+    return (dpy, screens)
+
+
+def extract_display_geometry(xrandr=None):
+    dpy = subprocess.check_output('xdpyinfo').decode()
+    m = re.search(
+        r'^\s*dimensions:\s+(?P<dpy_width>\d+)x(?P<dpy_height>\d+) pixels\s+' +
+        r'\((?P<dpy_x_mm>\d+)x(?P<dpy_y_mm>\d+) millimeters\)',
+        dpy,
+        re.MULTILINE
+    )
+    if not m:
+        sys.stderr.write("Couldn't extract display size from xrandr\n")
+        sys.exit(1)
+
+    d = {}
+    for k, v in m.groupdict().items():
+        d[k] = int(v)
+
+    d['dpy_x_dpi'] = round(d['dpy_width'] / d['dpy_x_mm'] * 25.4)
+    d['dpy_y_dpi'] = round(d['dpy_height'] / d['dpy_y_mm'] * 25.4)
+
+    return d
+
+
+def display_xrandr_display_geometry(dpy):
+    for k, v in dpy.items():
+        print("%s=%d" % (k, v))
+
+
+def extract_xrandr_screen_geometries(xrandr=None):
+    if not xrandr:
+        xrandr = xrandr_status()
 
     iterator = re.finditer(
         r'^(?P<name>\S+) connected ((?P<primary>primary) )?(?P<width>\d+)x(?P<height>\d+)\+(?P<x_offset>\d+)\+(?P<y_offset>\d+) \(.+\) (?P<x_mm>\d+)mm x (?P<y_mm>\d+)mm',
@@ -13,6 +53,9 @@ def extract_xrandr_geometries():
         re.MULTILINE
     )
     screens = [m.groupdict() for m in iterator]
+    if not screens:
+        sys.stderr.write("Couldn't extract screens info from xrandr\n")
+        sys.exit(1)
 
     for i, screen in enumerate(screens):
         for k, v in screen.items():
@@ -35,10 +78,10 @@ def extract_xrandr_geometries():
     return screens
 
 
-def display_xrandr_geometries(screens):
+def display_xrandr_screen_geometries(screens):
     for i, screen in enumerate(screens):
-        screen['x_dpi'] = int(screen['width']) / int(screen['x_mm']) * 25.4
-        screen['y_dpi'] = int(screen['height']) / int(screen['y_mm']) * 25.4
+        screen['x_dpi'] = round(int(screen['width']) / int(screen['x_mm']) * 25.4, 2)
+        screen['y_dpi'] = round(int(screen['height']) / int(screen['y_mm']) * 25.4, 2)
         for label in (str(i), screen['label']):
             for k, v in screen.items():
                 if k in ('primary', 'label'):
@@ -64,7 +107,7 @@ def get_mouse_location_info():
 
 
 def get_screen(x):
-    screens = extract_xrandr_geometries()
+    screens = extract_xrandr_screen_geometries()
     for i, screen in enumerate(screens):
         if (x >= screen['x_offset'] and
             x <= screen['right']):
@@ -79,8 +122,9 @@ def get_current_screen():
 
 
 def main():
-    screens = extract_xrandr_geometries()
-    display_xrandr_geometries(screens)
+    (dpy, screens) = extract_xrandr_geometries()
+    display_xrandr_display_geometry(dpy)
+    display_xrandr_screen_geometries(screens)
 
 
 if __name__ == "__main__":

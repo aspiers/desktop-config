@@ -6,10 +6,11 @@
 #
 # or google for `cpp-sed-nl'.
 
-. $ZDOTDIR/lib/libdpy.sh
+eval $($ZDOTDIR/lib/libdpy.py)
+
 . $ZDOTDIR/lib/libhost.sh
 
-#echo "display: ${dpy_width}x${dpy_height}; DPI: $dpi" >&2
+#echo >&2 "display: ${dpy_width}x${dpy_height}; DPI: $dpi"
 
 read_localhost_nickname
 case "$localhost_nickname" in
@@ -48,8 +49,8 @@ emacs_major_version=${emacs_version%%.*}
 #     cpp \
 #         -DEMACS_VERSION=$emacs_version \
 #         -DEMACS_MAJOR_VERSION=$emacs_major_version \
-#         -DPRIMARY_WIDTH=$primary_width \
-#         -DPRIMARY_HEIGHT=$primary_height \
+#         -DPRIMARY_WIDTH=$screen_primary_width \
+#         -DPRIMARY_HEIGHT=$screen_primary_height \
 #         -I $ZDOTDIR/.Xresources.d \
 #         $ZDOTDIR/.Xresources.d/all.rdb | \
 #     awk '/^ *emacs.font/ {print $2}'
@@ -87,13 +88,13 @@ cpp -I $ZDOTDIR/.Xresources.d \
     -DHOME=$HOME -DZDOTDIR=$ZDOTDIR \
     -DDPY_WIDTH=$dpy_width \
     -DDPY_HEIGHT=$dpy_height \
-    -DPRIMARY_WIDTH=$primary_width \
-    -DPRIMARY_HEIGHT=$primary_height \
-    -DPRIMARY_X_DPI=$primary_xrdb_dpi \
-    -DSECONDARY_WIDTH=$secondary_width \
-    -DSECONDARY_HEIGHT=$secondary_height \
-    -DSECONDARY_X_DPI=$secondary_xrdb_dpi \
-    -DDPI=$xrdb_dpi \
+    -DPRIMARY_WIDTH=$screen_primary_width \
+    -DPRIMARY_HEIGHT=$screen_primary_height \
+    -DPRIMARY_X_DPI=$screen_primary_x_dpi \
+    -DSECONDARY_WIDTH=$screen_secondary_width \
+    -DSECONDARY_HEIGHT=$screen_secondary_height \
+    -DSECONDARY_X_DPI=$screen_secondary_x_dpi \
+    -DDPI=$dpy_x_dpi \
     -DEMACS_GEOMETRY=$emacs_geometry \
     -DEMACS_VERSION=$emacs_version \
     -DEMACS_MAJOR_VERSION=$emacs_major_version \

@@ -63,7 +63,7 @@ def percent(x, y):
 
 
 def init_magic_cmds(layout_file, layout):
-    screens = libdpy.extract_xrandr_geometries()
+    screens = libdpy.extract_xrandr_screen_geometries()
     if len(screens) != len(layout['screens']):
         sys.stderr.write(
             "xrandr got %d screens but %s had %d screens" %
