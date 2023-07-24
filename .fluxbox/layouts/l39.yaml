@@ -1,17 +1,19 @@
 screens:
   -
-    gkrellm_width: &GKRELLM_WIDTH 92
-    panel_height: 35
-    logs_height_pc: 14
-    right_margin: *GKRELLM_WIDTH
-    col1_width_pc_of_active: 55
-    col2_width_pc_of_active: 45
-  -
+    name: laptop
     right_margin: 0
     panel_height: 35
     logs_height_pc: 0
     col1_width_pc_of_active: 55
     col2_width_pc_of_active: 45
+  -
+    name: LG
+    gkrellm_width: &GKRELLM_WIDTH 92
+    right_margin: *GKRELLM_WIDTH
+    panel_height: 35
+    logs_height_pc: 14
+    col1_width_pc_of_active: 50
+    col2_width_pc_of_active: 40
 
 windows:
   - - (Name=gkrellm)
@@ -20,13 +22,13 @@ windows:
 
   - - (Title=lnav-system)
     - <stick>
-    - MacroCmd {SetHead 2} {ResizeTo <s2_active_width_pc> <s2_logs_height_pc>} {MoveTo 0 <s2_panel_height> BottomLeft} {SetAlpha 50}
+    - MacroCmd {SetHead 1} {ResizeTo <s2_active_width_pc> <s2_logs_height_pc>} {MoveTo 0 <s2_panel_height> BottomLeft} {SetAlpha 50}
 
   - - (Name=gnome-terminal-server)
-    - MacroCmd {SetHead 1} {MoveTo 0 0} {ResizeTo <s1_col1_width> <s1_active_height>}
+    - MacroCmd {SetHead 1} {MoveTo 0 0} {ResizeTo <s2_col1_width> <s2_active_height>}
 
   - - (name=emacs) (title!=Ediff)
-    - MacroCmd {SetHead 1} {MoveTo <s1_col1_width> 0} {ResizeTo <s1_col2_width> <s1_active_height>}
+    - MacroCmd {SetHead 1} {MoveTo <s2_col1_width> 0} {ResizeTo <s2_col2_width> <s2_active_height>}
 
   - - (Name=brave-browser|google-chrome|chromium) (Title=.*Toucan)
     - MacroCmd {SetHead 1} {SendToWorkspace 2}
@@ -39,24 +41,24 @@ windows:
     - <stick>
 
   - - (Name=brave-browser|google-chrome|chromium) (Head=1)
-    - MacroCmd {MoveTo 0 0} {ResizeTo <s1_active_width> <s1_active_height>}
-
-  - - (Name=brave-browser|google-chrome|chromium) (Head=2)
     - MacroCmd {MoveTo 0 0} {ResizeTo <s2_active_width> <s2_active_height>}
 
+  - - (Name=brave-browser|google-chrome|chromium) (Head=2)
+    - MacroCmd {MoveTo 0 0} {ResizeTo <s1_active_width> <s1_active_height>}
+
   - - (Class=firefox)
-    - MacroCmd {SetHead 1} {SendToWorkspace 3} {MoveTo 0 0 TopLeft} {ResizeTo <s1_active_width> <s1_active_height>}
+    - MacroCmd {SetHead 1} {SendToWorkspace 3} {MoveTo 0 0 TopLeft} {ResizeTo <s2_active_width> <s2_active_height>}
 
   - - (Name=notion-app-enhanced)
-    - MacroCmd {SetHead 1} {SendToWorkspace 3} {MoveTo 0 0 TopLeft} {ResizeTo <s1_active_width> <s1_active_height>}
+    - MacroCmd {SetHead 1} {SendToWorkspace 3} {MoveTo 0 0 TopLeft} {ResizeTo <s2_active_width> <s2_active_height>}
     - <unstick>
 
   - - (Class=Gitk)
     - <unstick>
-    - MacroCmd {SetHead 1} {SendToWorkspace 3} {MoveTo 0 0 TopLeft} {ResizeTo <s1_active_width> <s1_active_height>}
+    - MacroCmd {SetHead 1} {SendToWorkspace 3} {MoveTo 0 0 TopLeft} {ResizeTo <s2_active_width> <s2_active_height>}
 
   - - (Name=slack|Telegram|discord|Discord*|zulip)
-    - MacroCmd {SetHead 1} {SendToWorkspace 4} {MoveTo 0 0} {ResizeTo <s1_active_width> <s1_active_height>}
+    - MacroCmd {SetHead 1} {SendToWorkspace 4} {MoveTo 0 0} {ResizeTo <s2_active_width> <s2_active_height>}
     - <unstick>
 
   - - (Class=Pavucontrol)
