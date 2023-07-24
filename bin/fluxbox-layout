@@ -87,6 +87,7 @@ def init_magic_cmds(layout_file, layout):
         s['active_height'] = s['height'] - s['panel_height'] - s['logs_height']
         s['active_height_pc'] = percent(s['active_height'], s['height'])
         s['2row_height'] = int(s['active_height'] / 2)
+        s['SetHead'] = 'SetHead %d' % s['head']
 
         prefix = 's%d_' % (i + 1)
         for k, v in s.items():
