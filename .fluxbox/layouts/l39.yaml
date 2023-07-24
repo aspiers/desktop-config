@@ -12,10 +12,12 @@ screens:
   -
     name: LG
     head: 1  # see above
+    left_margin: 200
     gkrellm_width: &GKRELLM_WIDTH 92
     right_margin: *GKRELLM_WIDTH
     panel_height: 35
     logs_height_pc: 14
+    cols_1_2_margin: 50
     col1_width_pc_of_active: 50
     col2_width_pc_of_active: 40
 
@@ -26,13 +28,13 @@ windows:
 
   - - (Title=lnav-system)
     - <stick>
-    - MacroCmd {<s2_SetHead>} {ResizeTo <s2_active_width_pc> <s2_logs_height_pc>} {MoveTo 0 <s2_panel_height> BottomLeft} {SetAlpha 50}
+    - MacroCmd {<s2_SetHead>} {ResizeTo 100% <s2_logs_height_pc>} {MoveTo 0 <s2_panel_height> BottomLeft} {SetAlpha 50}
 
   - - (Name=gnome-terminal-server)
-    - MacroCmd {<s2_SetHead>} {MoveTo 0 0} {ResizeTo <s2_col1_width> <s2_active_height>}
+    - MacroCmd {<s2_SetHead>} {MoveTo <s2_col1_left> 0} {ResizeTo <s2_col1_width> <s2_active_height>}
 
   - - (name=emacs) (title!=Ediff)
-    - MacroCmd {<s2_SetHead>} {MoveTo <s2_col1_width> 0} {ResizeTo <s2_col2_width> <s2_active_height>}
+    - MacroCmd {<s2_SetHead>} {MoveTo <s2_col2_left> 0} {ResizeTo <s2_col2_width> <s2_active_height>}
 
   - - (Name=brave-browser|google-chrome|chromium) (Title=.*Toucan)
     - MacroCmd {<s2_SetHead>} {SendToWorkspace 2}
