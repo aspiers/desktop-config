@@ -1,5 +1,7 @@
 screens:
   -
+    name: laptop
+    head: 1
     gkrellm_width: &GKRELLM_WIDTH 92
     panel_height: 35
     logs_height_pc: 14
@@ -9,52 +11,52 @@ screens:
 
 windows:
   - - (Name=gkrellm)
-    - MacroCmd {SetHead 1} {MoveTo 0 0 TopRight} {Activate}
+    - MacroCmd {<s1_SetHead>} {MoveTo 0 0 TopRight} {Activate}
     - <stick>
 
   - - (Title=lnav-system)
     - <stick>
-    - MacroCmd {SetHead 1} {ResizeTo <s1_active_width_pc> <s1_logs_height_pc>} {MoveTo 0 <s1_panel_height> BottomLeft} {SetAlpha 50}
+    - MacroCmd {<s1_SetHead>} {ResizeTo <s1_active_width_pc> <s1_logs_height_pc>} {MoveTo 0 <s1_panel_height> BottomLeft} {SetAlpha 50}
 
   - - (Name=gnome-terminal-server)
-    - MacroCmd {SetHead 1} {MoveTo 0 0} {ResizeTo <s1_col1_width> <s1_active_height>}
+    - MacroCmd {<s1_SetHead>} {MoveTo 0 0} {ResizeTo <s1_col1_width> <s1_active_height>}
 
   - - (name=emacs) (title!=Ediff)
-    - MacroCmd {SetHead 1} {MoveTo <s1_col1_width> 0} {ResizeTo <s1_col2_width> <s1_active_height>}
+    - MacroCmd {<s1_SetHead>} {MoveTo <s1_col1_width> 0} {ResizeTo <s1_col2_width> <s1_active_height>}
 
   - - (Name=brave-browser|google-chrome|chromium) (Title=.*Toucan)
-    - MacroCmd {SetHead 1} {SendToWorkspace 2}
+    - MacroCmd {<s1_SetHead>} {SendToWorkspace 2}
 
   - - (Name=brave-browser|google-chrome|chromium) (Title=.*personal$|.*Panther)
-    - MacroCmd {SetHead 1} {SendToWorkspace 5}
+    - MacroCmd {<s1_SetHead>} {SendToWorkspace 5}
 
   - - (Name=brave-browser|google-chrome|chromium)
-    - MacroCmd {SetHead 1} {MoveTo 0 0} {ResizeTo <s1_active_width> <s1_active_height>}
+    - MacroCmd {<s1_SetHead>} {MoveTo 0 0} {ResizeTo <s1_active_width> <s1_active_height>}
     - <unstick>
 
   - - (Class=firefox)
-    - MacroCmd {SetHead 1} {SendToWorkspace 3} {MoveTo 0 0 TopLeft} {ResizeTo <s1_active_width> <s1_active_height>}
+    - MacroCmd {<s1_SetHead>} {SendToWorkspace 3} {MoveTo 0 0 TopLeft} {ResizeTo <s1_active_width> <s1_active_height>}
 
   - - (Name=notion-app-enhanced)
-    - MacroCmd {SetHead 1} {SendToWorkspace 3} {MoveTo 0 0 TopLeft} {ResizeTo <s1_active_width> <s1_active_height>}
+    - MacroCmd {<s1_SetHead>} {SendToWorkspace 3} {MoveTo 0 0 TopLeft} {ResizeTo <s1_active_width> <s1_active_height>}
     - <unstick>
 
   - - (Class=Gitk)
     - <unstick>
-    - MacroCmd {SetHead 1} {SendToWorkspace 3} {MoveTo 0 0 TopLeft} {ResizeTo <s1_active_width> <s1_active_height>}
+    - MacroCmd {<s1_SetHead>} {SendToWorkspace 3} {MoveTo 0 0 TopLeft} {ResizeTo <s1_active_width> <s1_active_height>}
 
   - - (Name=slack|Telegram|discord|Discord*|zulip)
-    - MacroCmd {SetHead 1} {SendToWorkspace 4} {MoveTo 0 0} {ResizeTo <s1_active_width> <s1_active_height>}
+    - MacroCmd {<s1_SetHead>} {SendToWorkspace 4} {MoveTo 0 0} {ResizeTo <s1_active_width> <s1_active_height>}
     - <unstick>
 
   - - (Class=Pavucontrol)
     - <unstick>
-    - MacroCmd {SetHead 1} {SendToWorkspace 6} {MoveTo 42% 1% TopLeft} {ResizeTo 32% 35%}
+    - MacroCmd {<s1_SetHead>} {SendToWorkspace 6} {MoveTo 42% 1% TopLeft} {ResizeTo 32% 35%}
 
   - - (Class=Blueman-manager)
     - <unstick>
-    - MacroCmd {SetHead 1} {SendToWorkspace 6} {MoveTo 0% 0% TopLeft} {ResizeTo 20% 52%}
+    - MacroCmd {<s1_SetHead>} {SendToWorkspace 6} {MoveTo 0% 0% TopLeft} {ResizeTo 20% 52%}
 
   - - (Class=Chrysalis)
     - <unstick>
-    - MacroCmd {SetHead 1} {SendToWorkspace 6 } {MoveTo 5% 5%} {ResizeTo <s1_active_width> <s1_active_height>}
+    - MacroCmd {<s1_SetHead>} {SendToWorkspace 6 } {MoveTo 5% 5%} {ResizeTo <s1_active_width> <s1_active_height>}

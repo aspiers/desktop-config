@@ -8,7 +8,7 @@ def extract_xrandr_geometries():
     xrandr = subprocess.check_output('xrandr').decode('utf8')
 
     iterator = re.finditer(
-        r'^(?P<name>\S+) connected (?P<primary>primary )?(?P<width>\d+)x(?P<height>\d+)\+(?P<x_offset>\d+)\+(?P<y_offset>\d+) \(.+\) (?P<x_mm>\d+)mm x (?P<y_mm>\d+)mm',
+        r'^(?P<name>\S+) connected ((?P<primary>primary) )?(?P<width>\d+)x(?P<height>\d+)\+(?P<x_offset>\d+)\+(?P<y_offset>\d+) \(.+\) (?P<x_mm>\d+)mm x (?P<y_mm>\d+)mm',
         xrandr,
         re.MULTILINE
     )
@@ -39,8 +39,8 @@ def display_xrandr_geometries(screens):
     for i, screen in enumerate(screens):
         screen['x_dpi'] = int(screen['width']) / int(screen['x_mm']) * 25.4
         screen['y_dpi'] = int(screen['height']) / int(screen['y_mm']) * 25.4
-        for k, v in screen.items():
-            for label in (str(i), screen['label']):
+        for label in (str(i), screen['label']):
+            for k, v in screen.items():
                 if k in ('primary', 'label'):
                     continue
                 print("screen_%s_%s=%s" % (label, k, v))
