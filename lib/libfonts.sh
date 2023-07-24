@@ -8,7 +8,7 @@
 #   large_font: for modal dialogs like chrome-session-fzf
 
 . $ZDOTDIR/lib/libhost.sh
-# . $ZDOTDIR/lib/libdpy.sh
+# eval $( $ZDOTDIR/lib/libdpy.py )
 
 # Unreadably small:
 #   nexus artsie outcast
