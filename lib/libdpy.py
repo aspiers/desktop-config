@@ -39,8 +39,8 @@ def display_xrandr_geometries(screens):
     for i, screen in enumerate(screens):
         screen['x_dpi'] = int(screen['width']) / int(screen['x_mm']) * 25.4
         screen['y_dpi'] = int(screen['height']) / int(screen['y_mm']) * 25.4
-        for k, v in screen.items():
-            for label in (str(i), screen['label']):
+        for label in (str(i), screen['label']):
+            for k, v in screen.items():
                 if k in ('primary', 'label'):
                     continue
                 print("screen_%s_%s=%s" % (label, k, v))
