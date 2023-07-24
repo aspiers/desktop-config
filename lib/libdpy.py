@@ -8,7 +8,7 @@ def extract_xrandr_geometries():
     xrandr = subprocess.check_output('xrandr').decode('utf8')
 
     iterator = re.finditer(
-        r'^(?P<name>\S+) connected (?P<primary>primary )?(?P<width>\d+)x(?P<height>\d+)\+(?P<x_offset>\d+)\+(?P<y_offset>\d+) \(.+\) (?P<x_mm>\d+)mm x (?P<y_mm>\d+)mm',
+        r'^(?P<name>\S+) connected ((?P<primary>primary) )?(?P<width>\d+)x(?P<height>\d+)\+(?P<x_offset>\d+)\+(?P<y_offset>\d+) \(.+\) (?P<x_mm>\d+)mm x (?P<y_mm>\d+)mm',
         xrandr,
         re.MULTILINE
     )
