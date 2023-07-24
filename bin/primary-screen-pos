@@ -1,15 +1,5 @@
 #!/bin/bash
 
-eval $(get-screen-info)
+eval $(~/lib/libdpy.py)
 
-case "$primary_screen_pos" in
-    left)
-        echo 0
-        ;;
-    right)
-        echo 1
-        ;;
-    *)
-        echo >&2 "ERROR: Unrecognised value '$primary_screen_pos' for primary_screen_pos"
-        exit 1
-esac
+echo "$screen_primary_num"
