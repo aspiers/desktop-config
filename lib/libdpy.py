@@ -30,7 +30,7 @@ def extract_xrandr_geometries():
         screens[0]['label'] = 'primary'
     else:
         for i, screen in enumerate(screens):
-            screen['label'] = screen.get('primary', 'secondary')
+            screen['label'] = screen.get('primary') or 'secondary'
 
     return screens
 
