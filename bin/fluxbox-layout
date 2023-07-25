@@ -28,6 +28,7 @@ def expand_magic(cmd):
 
 def exec(window_cmds):
     for matcher, *cmds in window_cmds:
+        matcher = expand_magic(matcher)
         print(matcher)
         for cmd in cmds:
             expanded = expand_magic(cmd)
@@ -96,14 +97,16 @@ def init_magic_cmds(layout_file, layout):
         s['active_height'] = s['height'] - s['top_margin'] - s['panel_height'] - s['logs_height']
         s['active_height_pc'] = percent(s['active_height'], s['height'])
         s['2row_height'] = int(s['active_height'] / 2)
+
+        s['head'] = s['head']
         s['SetHead'] = 'SetHead %d' % s['head']
 
-        prefix = 's%d_' % (i + 1)
-        for k, v in s.items():
-            k2 = prefix + k
-            v2 = str(v) + ("%" if k.endswith('_pc') else '')
-            MAGIC_CMDS['<%s>' % k2] = v2
-            print("  %s: %s" % (k2, v2))
+        for prefix in ('s%d_' % (i + 1), 's_%s_' % s['label']):
+            for k, v in s.items():
+                k2 = prefix + k
+                v2 = str(v) + ("%" if k.endswith('_pc') else '')
+                MAGIC_CMDS['<%s>' % k2] = v2
+                print("  %s: %s" % (k2, v2))
 
     print()
 

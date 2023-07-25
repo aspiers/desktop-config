@@ -19,58 +19,64 @@ screens:
 
 windows:
   - - (Name=gkrellm)
-    - MacroCmd {<s1_SetHead>} {MoveTo 0 0 TopRight} {Activate}
+    - MacroCmd {<s_primary_SetHead>} {MoveTo 0 0 TopRight} {Activate}
     - <stick>
 
   - - (Title=lnav-system)
     - <stick>
-    - MacroCmd {<s1_SetHead>} {ResizeTo <s1_active_width_pc> <s1_logs_height_pc>} {MoveTo 0 <s1_panel_height> BottomLeft} {SetAlpha 50}
+    - MacroCmd {<s_primary_SetHead>} {ResizeTo <s_primary_active_width_pc> <s_primary_logs_height_pc>} {MoveTo 0 <s_primary_panel_height> BottomLeft} {SetAlpha 50}
 
   - - (Name=gnome-terminal-server)
-    - MacroCmd {<s1_SetHead>} {MoveTo 0 0} {ResizeTo <s1_col1_width> <s1_active_height>}
+    - MacroCmd {<s_primary_SetHead>} {MoveTo <s_primary_col1_left> 0} {ResizeTo <s_primary_col1_width> <s_primary_active_height>}
 
   - - (name=emacs) (title!=Ediff)
-    - MacroCmd {<s1_SetHead>} {MoveTo <s1_col1_width> 0} {ResizeTo <s1_col2_width> <s1_active_height>}
+    - MacroCmd {<s_primary_SetHead>} {MoveTo <s_primary_col2_left> 0} {ResizeTo <s_primary_col2_width> <s_primary_active_height>}
 
   - - (Name=brave-browser|google-chrome|chromium) (Title=.*Toucan)
-    - MacroCmd {<s1_SetHead>} {SendToWorkspace 2}
+    - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 2}
 
   - - (Name=brave-browser|google-chrome|chromium) (Title=.*personal$|.*Panther)
-    - MacroCmd {<s1_SetHead>} {SendToWorkspace 5}
+    - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 5}
 
   - - (Name=brave-browser|google-chrome|chromium) (Title=.*personal2|.*gather.town)
-    - MacroCmd {<s2_SetHead>}
+    - MacroCmd {<s_secondary_SetHead>}
     - <stick>
 
   - - (Name=brave-browser|google-chrome|chromium) (Head=1)
-    - MacroCmd {MoveTo 0 0} {ResizeTo <s1_active_width> <s1_active_height>}
+    - MacroCmd {MoveTo 0 0} {ResizeTo <s_primary_active_width> <s_primary_active_height>}
 
   - - (Name=brave-browser|google-chrome|chromium) (Head=2)
-    - MacroCmd {MoveTo 0 0} {ResizeTo <s2_active_width> <s2_active_height>}
+    - MacroCmd {MoveTo 0 0} {ResizeTo <s_secondary_active_width> <s_secondary_active_height>}
+
+  - - (Name=brave-browser|google-chrome|chromium) (Head=<s_primary_head>)
+    - <unstick>
+
+  - - (Name=brave-browser|google-chrome|chromium) (Head=<s_secondary_head>)
+    - <stick>
 
   - - (Class=firefox)
-    - MacroCmd {<s1_SetHead>} {SendToWorkspace 3} {MoveTo 0 0 TopLeft} {ResizeTo <s1_active_width> <s1_active_height>}
+    - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 3} {MoveTo 0 0 TopLeft} {ResizeTo <s_primary_active_width> <s_primary_active_height>}
 
   - - (Name=notion-app-enhanced)
-    - MacroCmd {<s1_SetHead>} {SendToWorkspace 3} {MoveTo 0 0 TopLeft} {ResizeTo <s1_active_width> <s1_active_height>}
+    - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 3} {MoveTo 0 0 TopLeft} {ResizeTo <s_primary_active_width> <s_primary_active_height>}
     - <unstick>
 
   - - (Class=Gitk)
     - <unstick>
-    - MacroCmd {<s1_SetHead>} {SendToWorkspace 3} {MoveTo 0 0 TopLeft} {ResizeTo <s1_active_width> <s1_active_height>}
+    - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 3} {MoveTo 0 0 TopLeft} {ResizeTo <s_primary_active_width> <s_primary_active_height>}
 
   - - (Name=slack|Telegram|discord|Discord*|zulip)
-    - MacroCmd {<s1_SetHead>} {SendToWorkspace 4} {MoveTo 0 0} {ResizeTo <s1_active_width> <s1_active_height>}
+    - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 4} {MoveTo 0 0} {ResizeTo <s_primary_active_width> <s_primary_active_height>}
     - <unstick>
 
   - - (Class=Pavucontrol)
     - <unstick>
-    - MacroCmd {<s1_SetHead>} {SendToWorkspace 6} {MoveTo 2% 2% TopLeft} {ResizeTo 40% 35%}
+    - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 6} {MoveTo 2% 2% TopLeft} {ResizeTo 40% 35%}
 
   - - (Class=Blueman-manager)
     - <unstick>
-    - MacroCmd {<s1_SetHead>} {SendToWorkspace 6} {MoveTo 2% 5% BottomLeft} {ResizeTo 35% 38%}
+    - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 6} {MoveTo 2% 5% BottomLeft} {ResizeTo 35% 38%}
 
   - - (Class=Chrysalis)
     - <unstick>
-    - MacroCmd {<s1_SetHead>} {SendToWorkspace 6 } {MoveTo 5% 5%} {ResizeTo <s1_active_width> <s1_active_height>}
+    - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 6 } {MoveTo 5% 5%} {ResizeTo <s_primary_active_width> <s_primary_active_height>}
