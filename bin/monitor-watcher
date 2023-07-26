@@ -4,7 +4,7 @@
 # .config/systemd/user/monitor-watcher.service for how this gets run.
 # (Nothing relevant in .cfg-post.d/desktop-config.)
 #
-# See also keyboard-watcher and dock-watcher.
+# See also the other *-watcher services.
 
 SETUP=$HOME/bin/setup-monitor
 

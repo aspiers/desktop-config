@@ -4,7 +4,7 @@
 # .config/systemd/user/dock-watcher.service for how this gets run.
 # (Nothing relevant in .cfg-post.d/desktop-config.)
 
-# See also keyboard-watcher and monitor-watcher.
+# See also the other *-watcher services.
 
 handlers=$HOME/.config/dock-event-handlers.d
 

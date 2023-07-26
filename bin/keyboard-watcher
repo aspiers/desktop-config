@@ -4,7 +4,7 @@
 # .config/systemd/user/keyboard-watcher.service for how this gets run.
 # (Nothing relevant in .cfg-post.d/desktop-config.)
 #
-# See also dock-watcher and monitor-watcher.
+# See also the other *-watcher services.
 
 SETUP=$HOME/bin/setup-keyboard
 

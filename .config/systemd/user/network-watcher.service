@@ -1,0 +1,9 @@
+[Service]
+ExecStart=/bin/sh -c ${HOME}/bin/network-watcher
+Restart=always
+NoNewPrivileges=true
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+# WantedBy=default.target

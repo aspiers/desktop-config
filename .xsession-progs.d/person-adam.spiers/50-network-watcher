@@ -1,0 +1,8 @@
+#!/bin/bash
+
+here=`dirname $0`
+. $here/00-systemd-user-env
+
+# N.B. we should only start after systemd --user environment is
+# already set up.  This means no WantedBy=default.target in the unit.
+systemctl --user start network-watcher.service

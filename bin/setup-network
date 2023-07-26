@@ -1,0 +1,22 @@
+#!/bin/bash
+
+HOOK_DIR=".network-handler.d"
+
+me=$(basename $0)
+
+die () {
+    echo >&2 "$*"
+    exit 1
+}
+
+if [ -z "$1" ]; then
+    die "Usage: $me NETWORK-NAME"
+fi
+network="$1"
+
+source $ZDOTDIR/.shared_env
+
+source $ZDOT_FIND_HOOKS "$HOOK_DIR" | while read hook; do
+    echo "Running $hook $network ..."
+    "$hook" "$network"
+done

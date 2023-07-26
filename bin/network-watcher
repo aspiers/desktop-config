@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# See .xsession-progs.d/person-adam.spiers/50-network-watcher and
+# .config/systemd/user/monitor-watcher.service for how this gets run.
+# (Nothing relevant in .cfg-post.d/desktop-config.)
+#
+# See also the other *-watcher services.
+
+SETUP=$HOME/bin/setup-network
+
+if ! which $SETUP >&/dev/null; then
+    echo "ERROR: Couldn't find $SETUP; aborting." >&2
+    exit 1
+fi
+
+echo "Monitoring network via nmcli monitor ..."
+nmcli monitor | while read line; do
+    # echo "got $line"
+    if [[ "$line" =~ \'(.+)\'" is now the primary connection" ]]; then
+        network="${BASH_REMATCH[1]}"
+        echo "primary connection is now $network"
+        $SETUP "$network"
+    fi
+done
