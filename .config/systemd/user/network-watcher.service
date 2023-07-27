@@ -1,4 +1,5 @@
 [Service]
+SyslogIdentifier=network-watcher
 ExecStart=/bin/sh -c ${HOME}/bin/network-watcher
 Restart=always
 NoNewPrivileges=true

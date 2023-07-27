@@ -1,4 +1,5 @@
 [Service]
+SyslogIdentifier=monitor-watcher
 ExecStart=/bin/sh -c ${HOME}/bin/monitor-watcher
 Restart=always
 NoNewPrivileges=true

@@ -1,4 +1,5 @@
 [Service]
+SyslogIdentifier=keyboard-watcher
 ExecStart=/bin/sh -c ${HOME}/bin/keyboard-watcher
 Restart=always
 NoNewPrivileges=true
