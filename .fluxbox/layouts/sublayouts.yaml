@@ -26,7 +26,12 @@ bottom-right:
   - MacroCmd {MoveTo <sX_col2_left> <sX_row2_top>} {ResizeTo <sX_col2_width> <sX_row2_height>}
   - Exec mousemove(<sX_col2_middle>, <sX_row2_middle>)
 2cols:
-  - MacroCmd {MoveTo 0 0} {ResizeTo <sX_col1_width> <sX_active_height>}
+  - MacroCmd {MoveTo <sX_col1_left> <sX_row1_top>} {ResizeTo <sX_col1_width> <sX_active_height>}
   - MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)}
   - Exec focus-active-window
-  - MacroCmd {ResizeTo <sX_col2_width> <sX_active_height>} {MoveTo <sX_col2_left> 0}
+  - MacroCmd {MoveTo <sX_col2_left> <sX_row1_top>} {ResizeTo <sX_col2_width> <sX_active_height>}
+2rows:
+  - MacroCmd {MoveTo <sX_col1_left> <sX_row1_top>} {ResizeTo <sX_active_width> <sX_row1_height>}
+  - MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)}
+  - Exec focus-active-window
+  - MacroCmd {MoveTo <sX_col1_left> <sX_row2_top>} {ResizeTo <sX_active_width> <sX_row2_height>}
