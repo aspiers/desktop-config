@@ -18,7 +18,7 @@ X and Y are percentages of the screen size""")
 x_percent = int(sys.argv[1])
 y_percent = int(sys.argv[2])
 
-current_screen = libdpy.get_current_screen()
+current_screen = libdpy.get_current_screen_info()
 x = current_screen['x_offset'] + current_screen['width'] * x_percent / 100
 y = current_screen['height'] * y_percent / 100
 

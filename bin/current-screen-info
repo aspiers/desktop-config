@@ -16,7 +16,7 @@ print("xdotool_screen=%s" % info['SCREEN'])
 screens = libdpy.extract_xrandr_geometries()
 print("monitors_connected=%d" % len(screens))
 
-screen = libdpy.get_current_screen()
+screen = libdpy.get_current_screen_info()
 
 for k, v in screen.items():
     print("screen_current_%s=%s" % (k, v))

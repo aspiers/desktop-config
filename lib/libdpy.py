@@ -116,7 +116,7 @@ def get_screen(x):
     raise RuntimeError("Failed to find screen for x=%d" % x)
 
 
-def get_current_screen():
+def get_current_screen_info():
     info = get_mouse_location_info()
     return get_screen(info['X'])
 
