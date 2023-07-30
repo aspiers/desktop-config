@@ -4,6 +4,7 @@ import argparse
 from pprint import pp
 import subprocess
 import os
+import os.path
 import sys
 import time
 import yaml
@@ -56,7 +57,9 @@ def parse_args():
 
 
 def get_layout_file(args):
-    return "%s/%s.yaml" % (args.dir, args.layout)
+    if os.path.isabs(args.layout):
+        return args.layout
+    return os.path.join(args.dir, args.layout) + '.yaml'
 
 
 def percent(x, y):
