@@ -3,6 +3,12 @@
 . $ZDOTDIR/lib/libhost.sh
 read_localhost_nickname
 
+layout_file () {
+    echo >&2 "Using $1 layout in ~/.fluxbox/layouts"
+    echo ~/.fluxbox/layouts/$1.yaml
+    exit
+}
+
 case "$localhost_nickname" in
     celtic)
         if l39-monitor-connected; then
@@ -18,23 +24,22 @@ case "$localhost_nickname" in
                 xrandr --output "$monitor" --primary
                 echo >&2 "LG is $monitor; made primary"
             fi
-            echo >&2 "Using l39 layout"
-            echo l39
+            layout_file l39
             exit
         elif [ `monitors-connected` == 1 ]; then
-            echo "$localhost_nickname"
+            layout_file "$localhost_nickname"
             exit
         fi
         ;;
     ionian)
         if [ `monitors-connected` == 2 ]; then
-            echo "$localhost_nickname"
+            layout_file "$localhost_nickname"
             exit
         fi
         ;;
     aegean)
         if [ `monitors-connected` == 1 ]; then
-            echo "$localhost_nickname"
+            layout_file "$localhost_nickname"
             exit
         fi
         ;;
