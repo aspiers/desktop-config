@@ -7,7 +7,6 @@ screens:
     logs_height_pc: 14
     right_margin: *GKRELLM_WIDTH
     col1_width_pc_of_active: 55
-    col2_width_pc_of_active: 45
   -
     name: Dell
     head: 2
@@ -15,7 +14,6 @@ screens:
     panel_height: 35
     logs_height_pc: 0
     col1_width_pc_of_active: 55
-    col2_width_pc_of_active: 45
 
 windows:
   - - (Name=gkrellm)
@@ -82,6 +80,33 @@ windows:
     - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 6 } {MoveTo 5% 5%} {ResizeTo <s_primary_active_width> <s_primary_active_height>}
 
 sublayouts:
+  full:
+    - MacroCmd {MoveTo <sX_col1_left> <sX_row1_top>} {ResizeTo <sX_active_width> <sX_active_height>}
+    - Exec mousemove(<sX_active_middle_x>, <sX_active_middle_y>)
+  left:
+    - MacroCmd {MoveTo <sX_col1_left> <sX_row1_top>} {ResizeTo <sX_col1_width> <sX_active_height>}
+    - Exec mousemove(<sX_col1_middle>, <sX_active_middle_y>)
+  right:
+    - MacroCmd {MoveTo <sX_col2_left> <sX_row1_top>} {ResizeTo <sX_col2_width> <sX_active_height>}
+    - Exec mousemove(<sX_col2_middle>, <sX_active_middle_y>)
+  top:
+    - MacroCmd {MoveTo <sX_col1_left> <sX_row1_top>} {ResizeTo <sX_active_width> <sX_row1_height>}
+    - Exec mousemove(<sX_active_middle_x>, <sX_row1_middle>)
+  bottom:
+    - MacroCmd {MoveTo <sX_col1_left> <sX_row2_top>} {ResizeTo <sX_active_width> <sX_row2_height>}
+    - Exec mousemove(<sX_active_middle_x>, <sX_row2_middle>)
+  top-left:
+    - MacroCmd {MoveTo <sX_col1_left> <sX_row1_top>} {ResizeTo <sX_col1_width> <sX_row1_height>}
+    - Exec mousemove(<sX_col1_middle>, <sX_row1_middle>)
+  top-right:
+    - MacroCmd {MoveTo <sX_col2_left> <sX_row1_top>} {ResizeTo <sX_col2_width> <sX_row1_height>}
+    - Exec mousemove(<sX_col2_middle>, <sX_row1_middle>)
+  bottom-left:
+    - MacroCmd {MoveTo <sX_col1_left> <sX_row2_top>} {ResizeTo <sX_col1_width> <sX_row2_height>}
+    - Exec mousemove(<sX_col1_middle>, <sX_row2_middle>)
+  bottom-right:
+    - MacroCmd {MoveTo <sX_col2_left> <sX_row2_top>} {ResizeTo <sX_col2_width> <sX_row2_height>}
+    - Exec mousemove(<sX_col2_middle>, <sX_row2_middle>)
   2cols:
     - MacroCmd {MoveTo 0 0} {ResizeTo <sX_col1_width> <sX_active_height>}
     - MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)}

@@ -29,24 +29,48 @@ def get_layout_params(layout_file, layout):
         s.update(screen_layout)
 
         s.setdefault('left_margin', 0)
-        s.setdefault('cols_1_2_margin', 0)
         s.setdefault('right_margin', 0)
         s.setdefault('top_margin', 0)
         s.setdefault('bottom_margin', 0)
-        s['active_width'] = s['width'] - s['left_margin'] - s['right_margin']
-        s['active_width_pc'] = percent(s['active_width'], s['width'])
-        s['col1_width'] = int(s['col1_width_pc_of_active'] * s['active_width'] / 100)
-        s['col1_left'] = s['left_margin']
-        s['col1_right'] = s['col1_left'] + s['col1_width']
-        s['col2_left'] = s['col1_right'] + s['cols_1_2_margin']
-        s['col2_width'] = int(s['col2_width_pc_of_active'] * s['active_width'] / 100)
-        s['col2_right'] = s['col2_left'] + s['col2_width']
+
+        s.setdefault('cols_1_2_margin', 0)
+        s.setdefault('rows_1_2_margin', 0)
 
         s['logs_height'] = int(s['logs_height_pc'] * s['height'] / 100)
 
+        s['active_width'] = s['width'] - s['left_margin'] - s['right_margin']
         s['active_height'] = s['height'] - s['top_margin'] - s['panel_height'] - s['logs_height']
+        s['active_width_pc'] = percent(s['active_width'], s['width'])
         s['active_height_pc'] = percent(s['active_height'], s['height'])
-        s['2row_height'] = int(s['active_height'] / 2)
+        s['active_middle_x'] = s['left_margin'] + int(s['active_width'] / 2)
+        s['active_middle_y'] = s['top_margin'] + int(s['active_height'] / 2)
+
+        s['cols_1_2_margin_pc_of_active'] = percent(s['cols_1_2_margin'], s['active_width'])
+        s['rows_1_2_margin_pc_of_active'] = percent(s['rows_1_2_margin'], s['active_height'])
+
+        s.setdefault('col1_width_pc_of_active', 50)
+        s.setdefault('row1_height_pc_of_active', 50)
+        s.setdefault('col2_width_pc_of_active', 100 - s['col1_width_pc_of_active'] - s['cols_1_2_margin_pc_of_active'])
+        s.setdefault('row2_height_pc_of_active', 100 - s['row1_height_pc_of_active'] - s['rows_1_2_margin_pc_of_active'])
+
+        s['col1_width'] = int(s['col1_width_pc_of_active'] * s['active_width'] / 100)
+        s['col2_width'] = int(s['col2_width_pc_of_active'] * s['active_width'] / 100)
+        s['col1_left'] = s['left_margin']
+        s['col1_right'] = s['col1_left'] + s['col1_width']
+        s['col2_left'] = s['col1_right'] + s['cols_1_2_margin']
+        s['col2_right'] = s['col2_left'] + s['col2_width']
+        s['col1_middle'] = s['col1_left'] + int(s['col1_width'] / 2)
+        s['col2_middle'] = s['col2_left'] + int(s['col2_width'] / 2)
+
+        s['row1_height'] = int(s['row1_height_pc_of_active'] * s['active_height'] / 100)
+        s['row2_height'] = int(s['row1_height_pc_of_active'] * s['active_height'] / 100)
+        s['row1_top'] = s['top_margin']
+        s['row1_bottom'] = s['row1_top'] + s['row1_height']
+        s['row2_top'] = s['row1_bottom'] + s['rows_1_2_margin']
+        s['row2_bottom'] = s['row2_top'] + s['row2_height']
+        s['row1_middle'] = s['row1_top'] + int(s['row1_height'] / 2)
+        s['row2_middle'] = s['row2_top'] + int(s['row2_height'] / 2)
+
         s['SetHead'] = 'SetHead %d' % s['head']
 
     return screens
