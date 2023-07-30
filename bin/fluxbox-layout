@@ -93,7 +93,7 @@ def apply_sublayout(layout_file, sublayouts, name):
     if not name in sublayouts:
         sys.stderr.write(
             "Didn't find sublayout '%s' in %s\n" %
-            (name, layout_file)
+            (name, sublayout_file)
         )
         sys.exit(1)
 
@@ -109,14 +109,20 @@ def main():
     layout_file = liblayout.get_layout_file(args.layout, args.dir)
     with open(layout_file) as f:
         layout = yaml.safe_load(f)
-        window_cmds = layout['windows']
-        layout_params = liblayout.get_layout_params(layout_file, layout)
-        init_magic_cmds(layout_params)
-        if args.sublayout:
-            apply_sublayout(layout_file, layout['sublayouts'], args.sublayout)
-        else:
-            # pp(window_cmds)
-            exec_window_cmds(window_cmds)
+
+    window_cmds = layout['windows']
+    layout_params = liblayout.get_layout_params(layout_file, layout)
+
+    init_magic_cmds(layout_params)
+
+    if args.sublayout:
+        sublayout_file = liblayout.get_sublayout_file()
+        with open(sublayout_file) as sf:
+            sublayouts = yaml.safe_load(sf)
+            apply_sublayout(sublayout_file, sublayouts, args.sublayout)
+    else:
+        # pp(window_cmds)
+        exec_window_cmds(window_cmds)
 
     subprocess.call(['wmctrl', '-ia', active_win_id])
 

@@ -11,6 +11,10 @@ def get_layout_file(layout_name_or_path, dir=None):
     return os.path.join(dir, layout_name_or_path) + '.yaml'
 
 
+def get_sublayout_file():
+    return os.path.expanduser('~/.fluxbox/layouts/sublayouts.yaml')
+
+
 def percent(x, y):
     return round(x / y * 100)
 
