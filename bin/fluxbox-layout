@@ -57,12 +57,6 @@ def parse_args():
     return parser.parse_args()
 
 
-def get_layout_file(args):
-    if os.path.isabs(args.layout):
-        return args.layout
-    return os.path.join(args.dir, args.layout) + '.yaml'
-
-
 def init_magic_cmds(layout_params):
     for i, s in enumerate(layout_params):
         print("Screen %d:" % i)
@@ -82,7 +76,7 @@ def main():
 
     active_win_id = subprocess.check_output(['xdotool', 'getactivewindow']).rstrip()
 
-    layout_file = get_layout_file(args)
+    layout_file = liblayout.get_layout_file(args.layout, args.dir)
     with open(layout_file) as f:
         layout = yaml.safe_load(f)
         window_cmds = layout['windows']

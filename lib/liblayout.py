@@ -5,6 +5,12 @@ import os
 import libdpy
 
 
+def get_layout_file(layout_name_or_path, dir=None):
+    if os.path.isabs(layout_name_or_path):
+        return layout_name_or_path
+    return os.path.join(dir, layout_name_or_path) + '.yaml'
+
+
 def percent(x, y):
     return round(x / y * 100)
 
