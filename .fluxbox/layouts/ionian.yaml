@@ -80,3 +80,10 @@ windows:
   - - (Class=Chrysalis)
     - <unstick>
     - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 6 } {MoveTo 5% 5%} {ResizeTo <s_primary_active_width> <s_primary_active_height>}
+
+sublayouts:
+  2cols:
+    - MacroCmd {MoveTo 0 0} {ResizeTo <sX_col1_width> <sX_active_height>}
+    - MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)}
+    - Exec focus-active-window
+    - MacroCmd {ResizeTo <sX_col2_width> <sX_active_height>} {MoveTo <sX_col2_left> 0}

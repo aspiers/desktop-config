@@ -28,7 +28,7 @@ def expand_magic(cmd):
     return cmd
 
 
-def exec(window_cmds):
+def exec_window_cmds(window_cmds):
     for matcher, *cmds in window_cmds:
         matcher = expand_magic(matcher)
         print(matcher)
@@ -41,6 +41,16 @@ def exec(window_cmds):
         print()
 
 
+def exec_cmds(cmds):
+    for cmd in cmds:
+        expanded = expand_magic(cmd)
+        print("   %s" % expanded)
+        subprocess.check_call(['fluxbox-remote', expanded])
+        time.sleep(0.1)
+
+    print()
+
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description='Activate a fluxbox layout')
@@ -50,6 +60,11 @@ def parse_args():
         default=os.path.expanduser('~/.fluxbox/layouts'),
         help='Directory containing YAML layout files')
     parser.add_argument(
+        '-s',
+        '--sublayout',
+        type=str,
+        help='Name of a sublayout to apply instead of full layout')
+    parser.add_argument(
         'layout',
         type=str,
         help='Name of a layout pointing to a YAML file with '
@@ -58,6 +73,7 @@ def parse_args():
 
 
 def init_magic_cmds(layout_params):
+    current_screen = libdpy.get_current_screen_info()
     for i, s in enumerate(layout_params):
         print("Screen %d:" % i)
 
@@ -66,9 +82,23 @@ def init_magic_cmds(layout_params):
                 k2 = prefix + k
                 v2 = str(v) + ("%" if k.endswith('_pc') else '')
                 MAGIC_CMDS['<%s>' % k2] = v2
+                if i == current_screen['num']:
+                    MAGIC_CMDS['<sX_%s>' % k] = v2
                 print("  %s: %s" % (k2, v2))
 
     print()
+
+
+def apply_sublayout(layout_file, sublayouts, name):
+    if not name in sublayouts:
+        sys.stderr.write(
+            "Didn't find sublayout '%s' in %s\n" %
+            (name, layout_file)
+        )
+        sys.exit(1)
+
+    sublayout = sublayouts[name]
+    exec_cmds(sublayout)
 
 
 def main():
@@ -82,8 +112,11 @@ def main():
         window_cmds = layout['windows']
         layout_params = liblayout.get_layout_params(layout_file, layout)
         init_magic_cmds(layout_params)
-        # pp(window_cmds)
-        exec(window_cmds)
+        if args.sublayout:
+            apply_sublayout(layout_file, layout['sublayouts'], args.sublayout)
+        else:
+            # pp(window_cmds)
+            exec_window_cmds(window_cmds)
 
     subprocess.call(['wmctrl', '-ia', active_win_id])
 
