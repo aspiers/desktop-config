@@ -341,57 +341,63 @@ Mod4 0 :Exec wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle
 # exit fluxbox
 Control Mod1 Mod4 Shift e :Exit
 
+<% ['', 'reorg: '].each do |prefix| %>
+###################################################################
+# Workspace switching<%= prefix.empty? ? '' : " for KeyMode #{prefix}" %>
+
 # change to previous/next workspace
-Mod4 comma :LeftWorkspace
-Mod4 period :RightWorkspace
+<%= prefix %>Mod4 comma :LeftWorkspace
+<%= prefix %>Mod4 period :RightWorkspace
 
 # send the current window to previous/next workspace
 # Mod1 Mod4 comma :SendToLeftWorkspace
 # Mod1 Mod4 period :SendToRightWorkspace
 
 # send the current window and follow it to previous/next workspace
-Mod1 Mod4 comma :If {Matches (Stuck=no)} {MacroCmd {Raise} {TakeToPrevWorkspace}} {MacroCmd {Stick} {Raise} {TakeToPrevWorkspace}}
-Mod1 Mod4 period :If {Matches (Stuck=no)} {MacroCmd {Raise} {TakeToNextWorkspace}} {MacroCmd {Stick} {Raise} {TakeToNextWorkspace}}
+<%= prefix %>Mod1 Mod4 comma :If {Matches (Stuck=no)} {MacroCmd {Raise} {TakeToPrevWorkspace}} {MacroCmd {Stick} {Raise} {TakeToPrevWorkspace}}
+<%= prefix %>Mod1 Mod4 period :If {Matches (Stuck=no)} {MacroCmd {Raise} {TakeToNextWorkspace}} {MacroCmd {Stick} {Raise} {TakeToNextWorkspace}}
 
 # change to a specific workspace
-Mod4 1 :Workspace 1
-Mod4 2 :Workspace 2
-Mod4 3 :Workspace 3
-Mod4 4 :Workspace 4
-Mod4 5 :Workspace 5
-Mod4 6 :Workspace 6
-Mod4 7 :Workspace 7
-Mod4 8 :Workspace 8
-Mod4 9 :Workspace 9
-#Mod4 10 :Workspace 10
-#Mod4 11 :Workspace 11
-#Mod4 12 :Workspace 12
+<%= prefix %>Mod4 1 :Workspace 1
+<%= prefix %>Mod4 2 :Workspace 2
+<%= prefix %>Mod4 3 :Workspace 3
+<%= prefix %>Mod4 4 :Workspace 4
+<%= prefix %>Mod4 5 :Workspace 5
+<%= prefix %>Mod4 6 :Workspace 6
+<%= prefix %>Mod4 7 :Workspace 7
+<%= prefix %>Mod4 8 :Workspace 8
+<%= prefix %>Mod4 9 :Workspace 9
+#<%= prefix %>Mod4 10 :Workspace 10
+#<%= prefix %>Mod4 11 :Workspace 11
+#<%= prefix %>Mod4 12 :Workspace 12
 
 # send the current window to a specific workspace
-#Mod4 F1 :SendToWorkspace 1
-#Mod4 F2 :SendToWorkspace 2
-#Mod4 F3 :SendToWorkspace 3
-#Mod4 F4 :SendToWorkspace 4
-#Mod4 F5 :SendToWorkspace 5
-#Mod4 F6 :SendToWorkspace 6
-#Mod4 F7 :SendToWorkspace 7
-#Mod4 F8 :SendToWorkspace 8
-#Mod4 F9 :SendToWorkspace 9
-#Mod4 F10 :SendToWorkspace 10
-#Mod4 F11 :SendToWorkspace 11
-#Mod4 F12 :SendToWorkspace 12
+#<%= prefix %>Mod4 F1 :SendToWorkspace 1
+#<%= prefix %>Mod4 F2 :SendToWorkspace 2
+#<%= prefix %>Mod4 F3 :SendToWorkspace 3
+#<%= prefix %>Mod4 F4 :SendToWorkspace 4
+#<%= prefix %>Mod4 F5 :SendToWorkspace 5
+#<%= prefix %>Mod4 F6 :SendToWorkspace 6
+#<%= prefix %>Mod4 F7 :SendToWorkspace 7
+#<%= prefix %>Mod4 F8 :SendToWorkspace 8
+#<%= prefix %>Mod4 F9 :SendToWorkspace 9
+#<%= prefix %>Mod4 F10 :SendToWorkspace 10
+#<%= prefix %>Mod4 F11 :SendToWorkspace 11
+#<%= prefix %>Mod4 F12 :SendToWorkspace 12
 
 # Send the current window and change to a specific workspace.
 # If it's sticky, remove stickiness first.
-Mod1 Mod4 1 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 1}
-Mod1 Mod4 2 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 2}
-Mod1 Mod4 3 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 3}
-Mod1 Mod4 4 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 4}
-Mod1 Mod4 5 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 5}
-Mod1 Mod4 6 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 6}
-Mod1 Mod4 7 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 7}
-Mod1 Mod4 8 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 8}
-Mod1 Mod4 9 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 9}
+<%= prefix %>Mod1 Mod4 1 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 1}
+<%= prefix %>Mod1 Mod4 2 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 2}
+<%= prefix %>Mod1 Mod4 3 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 3}
+<%= prefix %>Mod1 Mod4 4 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 4}
+<%= prefix %>Mod1 Mod4 5 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 5}
+<%= prefix %>Mod1 Mod4 6 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 6}
+<%= prefix %>Mod1 Mod4 7 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 7}
+<%= prefix %>Mod1 Mod4 8 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 8}
+<%= prefix %>Mod1 Mod4 9 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 9}
+
+<% end %>
 
 <%
 def monitors_connected
