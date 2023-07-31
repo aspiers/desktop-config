@@ -49,6 +49,15 @@ def get_layout_params(layout_file, layout):
         s['active_middle_x'] = s['left_margin'] + int(s['active_width'] / 2)
         s['active_middle_y'] = s['top_margin'] + int(s['active_height'] / 2)
 
+        s.setdefault('single_width_pc_of_active', 100)
+        s.setdefault('single_height_pc_of_active', 100)
+        s['single_width'] = int(s['single_width_pc_of_active'] * s['active_width'] / 100)
+        s['single_height'] = int(s['single_height_pc_of_active'] * s['active_height'] / 100)
+        s['single_left'] = s['left_margin'] + int((s['active_width'] - s['single_width']) / 2)
+        s['single_top'] = s['top_margin'] + int((s['active_height'] - s['single_height']) / 2)
+        s['single_middle_x'] = s['active_middle_x']
+        s['single_middle_y'] = s['active_middle_y']
+
         s['cols_1_2_margin_pc_of_active'] = percent(s['cols_1_2_margin'], s['active_width'])
         s['rows_1_2_margin_pc_of_active'] = percent(s['rows_1_2_margin'], s['active_height'])
 

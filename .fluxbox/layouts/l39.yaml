@@ -20,6 +20,7 @@ screens:
     cols_1_2_margin: 50
     col1_width_pc_of_active: 50
     col2_width_pc_of_active: 40
+    single_width_pc_of_active: 80
 
 windows:
   - - (Name=gkrellm)
