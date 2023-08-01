@@ -43,7 +43,7 @@ windows:
   - - (Name=brave-browser|google-chrome|chromium) (Title=.*personal$|.*Panther)
     - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 5}
 
-  - - (Name=brave-browser|google-chrome|chromium) (Title=.*personal2|.*gather.town)
+  - - (Name=brave-browser|google-chrome|chromium) (Title=.*secondary|.*gather.town)
     - MacroCmd {<s_secondary_SetHead>}
     - <stick>
 
