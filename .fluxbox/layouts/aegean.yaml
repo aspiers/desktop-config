@@ -7,7 +7,6 @@ screens:
     logs_height_pc: 14
     right_margin: *GKRELLM_WIDTH
     col1_width_pc_of_active: 55
-    col2_width_pc_of_active: 45
 
 windows:
   - - (Name=gkrellm)
