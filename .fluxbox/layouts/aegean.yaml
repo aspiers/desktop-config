@@ -2,7 +2,7 @@ screens:
   -
     name: laptop
     head: 1
-    gkrellm_width: &GKRELLM_WIDTH 92
+    gkrellm_width: &GKRELLM_WIDTH 146
     panel_height: 35
     logs_height_pc: 14
     right_margin: *GKRELLM_WIDTH
