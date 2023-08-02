@@ -30,7 +30,7 @@ windows:
     - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 5}
 
   - - (Name=brave-browser|google-chrome|chromium)
-    - MacroCmd {<s_primary_SetHead>} {MoveTo <s_primary_col1_left> <s_primary_row1_top>} {ResizeTo <s_primary_active_width> <s_primary_active_height>}
+    - MacroCmd {<s_primary_SetHead>} {MoveTo <s_primary_single_left> <s_primary_single_top>} {ResizeTo <s_primary_single_width> <s_primary_single_height>}
     - <unstick>
 
   - - (Class=firefox)
