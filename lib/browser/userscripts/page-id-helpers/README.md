@@ -28,8 +28,12 @@ There are currently backends for:
 -   [GitHub](https://github.com)
 -   [Trello](https://trello.com)
 -   [Open Build Service](http://openbuildservice.org/)
--   [FATE](https://fate.suse.com)
+-   [Storyboard](https://storyboard.openstack.org/)
+-   [SUSE FATE](https://fate.suse.com)
 -   [SUSE Jira](https://suse-jira.dyndns.org)
+-   [Notion](https://notion.so)
+-   [Linear](https://linear.app)
+-   [Asana](https://asana.com)
 
 Contributions to extend this further are of course welcome!
 
