@@ -9,6 +9,7 @@ declare -A GEOMETRIES=(
 )
 
 . $ZDOTDIR/lib/libhost.sh
+. $ZDOTDIR/lib/libfonts.sh
 read_localhost_nickname
 
 geometry="${GEOMETRIES[$localhost_nickname]}"
@@ -50,5 +51,12 @@ if [ -n "$git_font_size" ]; then
     git config --global gui.fontui "-family Roboto -size $git_font_size -weight normal -slant roman -underline 0 -overstrike 0"
     git config --global gui.fontdiff "-family \"Source Code Pro\"  -size $git_font_size -weight normal -slant roman -underline 0 -overstrike 0"
 
-    perl -pi -e '/^set (main|text|ui)font / && s/\d+/'$git_font_size'/' ~/.config/git/gitk
+    perl -pi -e '
+      s/^(set mainfont) .*/$1 {'"$medium_font_tk"'}/;
+      s/^(set textfont) .*/$1 {'"$medium_font_tk_mono"'}/;
+      s/^(set uifont) .*/$1 {'"$medium_font_tk"' bold}/;
+
+      # More effort than its worth - single line not sufficient.
+      # s/^(set geometry\(main\)) .*/$1 '"${geometry%% *}"'/;
+    ' ~/.config/git/gitk
 fi

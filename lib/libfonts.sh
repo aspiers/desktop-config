@@ -22,6 +22,8 @@ case "$localhost_nickname" in
         tiny_font='smoothansi'
         small_font='xft:Monospace:size=8'
         medium_font='xft:Monospace:size=10'
+        medium_font_tk='Roboto 10'
+        medium_font_tk_mono='{Source Code Pro} 10'
         large_font='xft:Hack:size=16'
         ;;
     celtic)
@@ -31,6 +33,8 @@ case "$localhost_nickname" in
         #small_font='xft:Hack:size=10'
         small_font='10x20'
         medium_font='xft:Monospace:size=12'
+        medium_font_tk='Roboto 13'
+        medium_font_tk_mono='{Source Code Pro} 13'
         large_font='xft:Hack:size=16'
         ;;
     aegean)
@@ -40,6 +44,8 @@ case "$localhost_nickname" in
         #small_font='10x20'
         small_font='xft:Hack:size=10'
         medium_font='xft:Monospace:size=12'
+        medium_font_tk='Roboto 12'
+        medium_font_tk_mono='{Source Code Pro} 12'
         large_font='xft:Hack:size=16'
         ;;
     *)
