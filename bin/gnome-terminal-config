@@ -1,6 +1,11 @@
-#!/bin/sh
+#!/bin/bash
 
 . $ZDOTDIR/lib/libfonts.sh
+
+if [ -z "$medium_font_gnome" ]; then
+    echo >&2 "Couldn't figure out font for gnome-terminal"
+    exit 1
+fi
 
 # Get the below via: dconf dump /org/gnome/terminal/
 
