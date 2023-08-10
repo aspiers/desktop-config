@@ -11,13 +11,15 @@ declare -A GEOMETRIES=(
 . $ZDOTDIR/lib/libhost.sh
 read_localhost_nickname
 
-if [ -z "${GEOMETRIES[$localhost_nickname]}" ]; then
+geometry="${GEOMETRIES[$localhost_nickname]}"
+
+if [ -z "$geometry" ]; then
     echo >&2 "No gitk geometry found for $localhost_nickname; aborting."
     exit 1
 fi
 
-echo git config --global gui.geometry "${GEOMETRIES[$localhost_nickname]}"
-git config --global gui.geometry "${GEOMETRIES[$localhost_nickname]}"
+echo git config --global gui.geometry "$geometry"
+git config --global gui.geometry "$geometry"
 
 if git rev-parse --is-inside-work-tree >&/dev/null; then
     echo git config --local --unset gui.geometry
