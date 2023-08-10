@@ -9,10 +9,10 @@ die () {
     exit 1
 }
 
-if [ -z "$1" ]; then
-    die "Usage: $me NETWORK-NAME"
+if [ $# -gt 1 ]; then
+    die "Usage: $me [NETWORK-NAME]"
 fi
-network="$1"
+network="${1:-`nm-current-connection`}"
 
 source $ZDOTDIR/.shared_env
 
