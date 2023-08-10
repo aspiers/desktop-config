@@ -35,7 +35,7 @@ case "$xrdb_dpi" in
     128)
         git_font_size=11
         ;;
-    192)
+    192|193)
         git_font_size=10
         ;;
     *)
