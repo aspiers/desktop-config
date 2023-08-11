@@ -298,8 +298,8 @@ Mod4 x :MacroCmd {NextWindow (Name=gnome-terminal-server) (Head=1) (workspace=0)
 
 Mod4 a :Exec chrome-session-tabs 'open.spotify.com'
 #Mod4 b :Exec wmctrl -s 1; xdotool search --desktop 1 --class brave-browser windowactivate
-Mod4 b :MacroCmd {NextWindow (Name=brave-browser|google-chrome|chromium) (Head=1)} {<%= focus_active %>}
-Shift Mod4 b :MacroCmd {NextWindow (Name=brave-browser|google-chrome|chromium) (Title!=.*WhatsApp.*) (Head=2)} {<%= focus_active %>}
+Mod4 b :MacroCmd {NextWindow (Name=brave-browser|google-chrome|chromium) (Head=1) (Minimized=no)} {<%= focus_active %>}
+Shift Mod4 b :MacroCmd {NextWindow (Name=brave-browser|google-chrome|chromium) (Title!=.*WhatsApp.*) (Head=2) (Minimized=no)} {<%= focus_active %>}
 
 Mod4 Tab :Exec chrome-session-fzf
 Mod4 c :Exec chrome-session-tabs 'calendar.google.com/calendar/u/0'
