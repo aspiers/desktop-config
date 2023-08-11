@@ -30,8 +30,8 @@ case "$localhost_nickname" in
         # 2256x1504 (201dpi)
         tiny_font='smoothansi'
         #tiny_font='xft:Monospace:size=8'
-        #small_font='xft:Hack:size=10'
-        small_font='10x20'
+        small_font='xft:Hack:size=11'
+        #small_font='10x20'
         medium_font='xft:Monospace:size=12'
         medium_font_tk='Roboto 13'
         medium_font_tk_mono='{Source Code Pro} 13'
