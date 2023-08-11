@@ -4,6 +4,7 @@ import argparse
 import re
 import subprocess
 import sys
+import typing
 from typing import Dict, List
 
 
@@ -24,12 +25,12 @@ def get_profiles() -> Dict[str, str]:
         'dconf dump /org/gnome/terminal/legacy/profiles:/'.split()
     ).decode()
 
-    profiles = {}
-    profile_id = None
+    profiles: Dict[str, str] = {}
+    profile_id = ''
     for line in out.splitlines():
         m = re.match(r'^\[:([0-9a-f][0-9a-f-]+[0-9a-f])\]$', line)
         if m:
-            profile_id = m.group(1)
+            profile_id = typing.cast(str, m.group(1))
 
         m = re.match(r"^visible-name='(.+)'", line)
         if m:
