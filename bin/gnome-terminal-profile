@@ -1,0 +1,93 @@
+#!/usr/bin/python3
+
+import argparse
+import re
+import subprocess
+import sys
+from typing import Dict, List
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Set gnome-terminal's active profile")
+    parser.add_argument(
+        'profile', nargs='?', type=str,
+        help='The new profile to activate')
+    parser.add_argument(
+        '-l', '--list', action='store_true',
+        help='List available profiles')
+    return parser, parser.parse_args()
+
+
+def get_profiles() -> Dict[str, str]:
+    out = subprocess.check_output(
+        'dconf dump /org/gnome/terminal/legacy/profiles:/'.split()
+    ).decode()
+
+    profiles = {}
+    profile_id = None
+    for line in out.splitlines():
+        m = re.match(r'^\[:([0-9a-f][0-9a-f-]+[0-9a-f])\]$', line)
+        if m:
+            profile_id = m.group(1)
+
+        m = re.match(r"^visible-name='(.+)'", line)
+        if m:
+            profile_name = m.group(1)
+            profiles[profile_name] = profile_id
+
+    return profiles
+
+
+def list_profiles(profiles: Dict[str, str]) -> None:
+    for pname, pid in profiles.items():
+        print(pname)
+
+
+def get_terminal_windows() -> List[int]:
+    out = subprocess.check_output(
+        'busctl --user tree --list org.gnome.Terminal'.split()
+    ).decode()
+
+    window_nums = []
+    for line in out.splitlines():
+        m = re.match(r'^/org/gnome/Terminal/window/(\d+)$', line)
+        if m:
+            window_num = int(m.group(1))
+            window_nums.append(window_num)
+
+    return window_nums
+
+
+def set_window_profile(window_num: int, profile_id: str) -> None:
+    cmd = (
+        'busctl --user --auto-start=false -j '
+        'call org.gnome.Terminal /org/gnome/Terminal/window/%d '
+        'org.gtk.Actions Activate sava{sv} profile 1 s %s 0' %
+        (window_num, profile_id)
+    ).split()
+    subprocess.check_call(cmd)
+
+
+def main():
+    parser, args = parse_args()
+    profiles = get_profiles()
+    if args.list:
+        list_profiles(profiles)
+        sys.exit(0)
+
+    if not args.profile:
+        parser.error("You must specify a profile or --list.")
+    if args.profile not in profiles:
+        parser.error(
+            "'%s' is not one of the valid profiles:\n" % args.profile +
+            ''.join(["  %s\n" % name for name in profiles.keys()])
+        )
+
+    window_nums = get_terminal_windows()
+
+    set_window_profile(window_nums[0], profiles[args.profile])
+
+
+if __name__ == '__main__':
+    main()
