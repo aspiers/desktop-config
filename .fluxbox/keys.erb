@@ -36,6 +36,17 @@ end
 def delay(cmd, ms)
   %<Delay {#{cmd}} #{ms * 1000}>
 end
+
+def monitors_connected
+  %x('monitors-connected').chomp
+end
+
+left_head, right_head =
+  if %x('primary-screen-pos').chomp == '0'
+    [1, 2]
+  else
+    [2, 1]
+  end
 %>
 
 Control Mod1 Mod4 r :MacroCmd {<%= reconfigure %>}
@@ -299,8 +310,10 @@ Mod4 x :MacroCmd {NextWindow (Name=gnome-terminal-server) (Head=1) (workspace=0)
 Mod4 a :Exec chrome-session-tabs 'open.spotify.com'
 #Mod4 b :Exec wmctrl -s 1; xdotool search --desktop 1 --class brave-browser windowactivate
 Mod4 b :MacroCmd {NextWindow (Name=brave-browser|google-chrome|chromium) (Head=1) (Minimized=no)} {<%= focus_active %>}
+<% if monitors_connected.to_i > 1 %>
 Shift Mod4 b :MacroCmd {NextWindow (Name=brave-browser|google-chrome|chromium) (Title!=.*WhatsApp.*) (Head=2) (Minimized=no)} {<%= focus_active %>}
 
+<% end %>
 Mod4 Tab :Exec chrome-session-fzf
 Mod4 c :Exec chrome-session-tabs 'calendar.google.com/calendar/u/0'
 Shift Mod4 c :Exec chrome-session-tabs 'app.reclaim.ai'
@@ -398,19 +411,6 @@ Control Mod1 Mod4 Shift e :Exit
 <%= prefix %>Mod1 Mod4 9 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 9}
 
 <% end %>
-
-<%
-def monitors_connected
-  %x('monitors-connected').chomp
-end
-
-left_head, right_head =
-  if %x('primary-screen-pos').chomp == '0'
-    [1, 2]
-  else
-    [2, 1]
-  end
-%>
 
 # Number of monitors connected: <%= monitors_connected %>
 <% if monitors_connected.to_i > 1 %>
