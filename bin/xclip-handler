@@ -1,14 +1,13 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import logging
 import logging.handlers
-import os
 import re
 import subprocess
 import sys
-import urllib
+from urllib.parse import unquote
 
-logger = logging.getLogger('foo')
+logger = logging.getLogger('xclip-handler')
 #logger.setLevel(logging.DEBUG)
 
 slh = logging.handlers.SysLogHandler(address='/dev/log')
@@ -24,21 +23,19 @@ if not url.startswith('xclip://'):
     sys.exit(1)
 
 text = url[8:]
+# logger.debug("initial text: %s" % text)
 
 if re.search(r'%25[0-9A-F]{2}[^0-9A-F]', text):
     # Uh-oh, double-encoded URIs!  Some versions of Chrome
     # encode the value you set location.href too.
-    text = urllib.unquote(text)
+    text = unquote(text)
     logger.debug("double-encoded URI! text after 1 decoding: %s" % text)
 
-text = urllib.unquote(text)
+text = unquote(text)
 logger.debug("final text for clipboard: %s" % text)
 
 xclip = subprocess.Popen(['xclip', '-i', '-selection', 'clipboard'],
                          stdin=subprocess.PIPE)
-xclip.stdin.write(text)
-xclip.stdin.close()
-xclip.wait()
+xclip.communicate(text.encode())
 
 sys.exit(xclip.returncode)
-
