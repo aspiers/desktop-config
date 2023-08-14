@@ -1,5 +1,4 @@
 #!/bin/sh
-
 . $ZDOTDIR/lib/libfonts.sh
 
 #Eterm -t top
@@ -12,4 +11,10 @@ case "$cmd" in
     htop) geometry=150x50 ;;
 esac
 
-urxvt-256color -fn $small_font -geometry $geometry -e "$cmd" "$@"
+#urxvt-256color -fn $small_font -geometry $geometry -e "$cmd" "$@"
+theme=$(<~/.config/gnome-terminal-profile)
+gnome-terminal \
+    --profile=top-term-${theme:-Dark} \
+    --geometry $geometry \
+    -- \
+    "$cmd" "$@"

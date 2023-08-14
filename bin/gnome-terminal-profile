@@ -1,11 +1,24 @@
 #!/usr/bin/python3
 
 import argparse
+import logging
+import logging.handlers
 import re
 import subprocess
 import sys
 import typing
-from typing import Dict, List
+from typing import Dict, List, Tuple
+
+from dbus import SessionBus
+from dbus.proxies import ProxyObject
+
+
+ME = 'gnome-terminal-profile'
+
+ProfileName = str
+ProfileUuid = str
+ProfilesByName = Dict[ProfileName, ProfileUuid]
+ProfilesByUuid = Dict[ProfileUuid, ProfileName]
 
 
 def parse_args():
@@ -15,40 +28,61 @@ def parse_args():
         'profile', nargs='?', type=str,
         help='The new profile to activate')
     parser.add_argument(
+        '-d', '--debug', action='store_true',
+        help='Enable debugging')
+    parser.add_argument(
         '-l', '--list', action='store_true',
         help='List available profiles')
     return parser, parser.parse_args()
 
 
-def get_profiles() -> Dict[str, str]:
-    out = subprocess.check_output(
-        'dconf dump /org/gnome/terminal/legacy/profiles:/'.split()
-    ).decode()
+def get_logger():
+    logger = logging.getLogger(ME)
 
-    profiles: Dict[str, str] = {}
-    profile_id = ''
+    slh = logging.handlers.SysLogHandler(address='/dev/log')
+    slf = logging.Formatter(ME + ': %(message)s')
+    slh.setFormatter(slf)
+    logger.addHandler(slh)
+    logger.addHandler(logging.StreamHandler())
+    return logger
+
+
+def abort(msg):
+    sys.stderr.write(msg + "\n")
+    sys.exit(1)
+
+
+def get_profiles() -> Tuple[ProfilesByName, ProfilesByUuid]:
+    cmd = 'dconf dump /org/gnome/terminal/legacy/profiles:/'
+    out = subprocess.check_output(cmd.split()).decode()
+    logger.debug('Called: %s' % cmd)
+
+    profiles_by_name: ProfilesByName = {}
+    profiles_by_uuid: ProfilesByUuid = {}
+    profile_uuid = ''
     for line in out.splitlines():
         m = re.match(r'^\[:([0-9a-f][0-9a-f-]+[0-9a-f])\]$', line)
         if m:
-            profile_id = typing.cast(str, m.group(1))
+            profile_uuid = typing.cast(str, m.group(1))
 
         m = re.match(r"^visible-name='(.+)'", line)
         if m:
             profile_name = m.group(1)
-            profiles[profile_name] = profile_id
+            profiles_by_name[profile_name] = profile_uuid
+            profiles_by_uuid[profile_uuid] = profile_name
 
-    return profiles
+    return (profiles_by_name, profiles_by_uuid)
 
 
-def list_profiles(profiles: Dict[str, str]) -> None:
+def list_profiles(profiles: ProfilesByName) -> None:
     for pname, pid in profiles.items():
         print(pname)
 
 
 def get_terminal_windows() -> List[int]:
-    out = subprocess.check_output(
-        'busctl --user tree --list org.gnome.Terminal'.split()
-    ).decode()
+    cmd = 'busctl --user tree --list org.gnome.Terminal'
+    out = subprocess.check_output(cmd.split()).decode()
+    logger.debug('Called: %s' % cmd)
 
     window_nums = []
     for line in out.splitlines():
@@ -57,37 +91,81 @@ def get_terminal_windows() -> List[int]:
             window_num = int(m.group(1))
             window_nums.append(window_num)
 
+    logger.debug('   Got window numbers: %s' %
+                 (', '.join([str(i) for i in window_nums])))
     return window_nums
 
 
-def set_window_profile(window_num: int, profile_id: str) -> None:
-    cmd = (
-        'busctl --user --auto-start=false -j '
-        'call org.gnome.Terminal /org/gnome/Terminal/window/%d '
-        'org.gtk.Actions Activate sava{sv} profile 1 s %s 0' %
-        (window_num, profile_id)
-    ).split()
-    subprocess.check_call(cmd)
+def get_window_proxy(bus: SessionBus, window_num: int) \
+        -> Tuple[str, ProxyObject]:
+    window_obj = '/org/gnome/Terminal/window/%d' % window_num
+    proxy = bus.get_object('org.gnome.Terminal', window_obj)
+    return (window_obj, proxy)
+
+
+def set_window_profile(bus: SessionBus,
+                       window_num: int, new_profile_name: ProfileName,
+                       profiles_by_name: ProfilesByName,
+                       profiles_by_uuid: ProfilesByUuid) -> None:
+    window_obj, window_proxy = get_window_proxy(bus, window_num)
+    current_profile_uuid = get_window_profile(bus, window_num)
+    current_profile_name = profiles_by_uuid[current_profile_uuid]
+    if current_profile_name.startswith('top-term-'):
+        new_profile_name = 'top-term-' + new_profile_name
+    new_profile_uuid = profiles_by_name[new_profile_name]
+    logger.debug("Setting %s to new profile %s (%s)" %
+                 (window_obj, new_profile_name, new_profile_uuid))
+
+    # https://wiki.gnome.org/Projects/GLib/GApplication/DBusAPI#org.gtk.Actions
+    window_proxy.Activate('profile', [new_profile_uuid], [],
+                          dbus_interface='org.gtk.Actions')
+    # Equivalent via busctl (each array starts with the length):
+    # cmd = (
+    #     'busctl --user --auto-start=false -j '
+    #     'call org.gnome.Terminal /org/gnome/Terminal/window/%d '
+    #     'org.gtk.Actions Activate sava{sv} profile 1 s %s 0' %
+    #     (window_num, profile_uuid)
+    # )
+    # logger.debug('Called: %s' % cmd)
+    # subprocess.check_call(cmd.split())
+
+
+def get_window_profile(bus: SessionBus, window_num: int) -> ProfileUuid:
+    window_obj, window_proxy = get_window_proxy(bus, window_num)
+    struct = window_proxy.Describe('profile',
+                                   dbus_interface='org.gtk.Actions')
+    current_profile_uuid = struct[2][0]
+    logger.debug('Current profile for %s: %s' %
+                 (window_obj, current_profile_uuid))
+    return current_profile_uuid
 
 
 def main():
+    global logger
+    logger = get_logger()
     parser, args = parse_args()
-    profiles = get_profiles()
+    if args.debug:
+        logger.setLevel(logging.DEBUG)
+
+    profiles_by_name, profiles_by_uuid = get_profiles()
     if args.list:
-        list_profiles(profiles)
+        list_profiles(profiles_by_name)
         sys.exit(0)
 
     if not args.profile:
         parser.error("You must specify a profile or --list.")
-    if args.profile not in profiles:
+    if args.profile not in profiles_by_name:
         parser.error(
             "'%s' is not one of the valid profiles:\n" % args.profile +
-            ''.join(["  %s\n" % name for name in profiles.keys()])
+            ''.join(["  %s\n" % name for name in profiles_by_name.keys()])
         )
 
     window_nums = get_terminal_windows()
 
-    set_window_profile(window_nums[0], profiles[args.profile])
+    bus = SessionBus()
+    for i in window_nums:
+        set_window_profile(bus, i, args.profile,
+                           profiles_by_name, profiles_by_uuid)
 
 
 if __name__ == '__main__':

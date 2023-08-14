@@ -61,5 +61,7 @@ case "$localhost_nickname" in
         ;;
 esac
 
+small_font_gnome="${small_font#xft:}"
+small_font_gnome="${small_font_gnome/:size=/ }"
 medium_font_gnome="${medium_font#xft:}"
 medium_font_gnome="${medium_font_gnome/:size=/ }"
