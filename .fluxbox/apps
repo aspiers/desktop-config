@@ -22,7 +22,7 @@
   [Sticky]	{yes}
 [end]
 
-[app] (name=gnome-terminal-server)
+[app] (name=gnome-terminal-server) (role=gnome-terminal-window-*)
   [Head]	{1}
   [Position]	(TopLeft)	{0 0}
   [Dimensions]	{47% 90%}

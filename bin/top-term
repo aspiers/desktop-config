@@ -16,5 +16,7 @@ theme=$(<~/.config/gnome-terminal-profile)
 gnome-terminal \
     --profile=top-term-${theme:-Dark} \
     --geometry $geometry \
+    --role "$cmd $*" \
+    --title "$cmd $*" \
     -- \
     "$cmd" "$@"
