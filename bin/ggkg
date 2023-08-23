@@ -51,6 +51,11 @@ if [ -n "$git_font_size" ]; then
     git config --global gui.fontui "-family Roboto -size $git_font_size -weight normal -slant roman -underline 0 -overstrike 0"
     git config --global gui.fontdiff "-family \"Source Code Pro\"  -size $git_font_size -weight normal -slant roman -underline 0 -overstrike 0"
 
+    cat <<EOF
+Setting gitk mainfont to $medium_font_tk
+Setting gitk textfont to $medium_font_tk_mono
+Setting gitk   uifont to $medium_font_tk
+EOF
     perl -pi -e '
       s/^(set mainfont) .*/$1 {'"$medium_font_tk"'}/;
       s/^(set textfont) .*/$1 {'"$medium_font_tk_mono"'}/;
