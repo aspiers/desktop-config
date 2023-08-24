@@ -34,7 +34,7 @@ case "$localhost_nickname" in
         #small_font='10x20'
         medium_font='xft:Monospace:size=12'
         medium_font_tk='Roboto 8'
-        medium_font_tk_mono='{Source Code Pro} 9'
+        medium_font_tk_mono='{Source Code Pro} 8'
         large_font='xft:Hack:size=16'
         ;;
     aegean)
