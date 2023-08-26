@@ -27,15 +27,26 @@ case "$localhost_nickname" in
         large_font='xft:Hack:size=16'
         ;;
     celtic)
-        # 2256x1504 (201dpi)
-        tiny_font='smoothansi'
-        #tiny_font='xft:Monospace:size=8'
-        small_font='xft:Hack:size=11'
-        #small_font='10x20'
-        medium_font='xft:Monospace:size=12'
-        medium_font_tk='Roboto 8'
-        medium_font_tk_mono='{Source Code Pro} 8'
-        large_font='xft:Hack:size=16'
+        # 2256x1504 (193x167 dpi)
+        if l39-monitor-connected; then
+            tiny_font='smoothansi'
+            #tiny_font='xft:Monospace:size=8'
+            small_font='xft:Hack:size=12'
+            #small_font='10x20'
+            medium_font='xft:Monospace:size=14'
+            medium_font_tk='Roboto 10'
+            medium_font_tk_mono='{Source Code Pro} 10'
+            large_font='xft:Hack:size=16'
+        else
+            tiny_font='smoothansi'
+            #tiny_font='xft:Monospace:size=8'
+            small_font='xft:Hack:size=11'
+            #small_font='10x20'
+            medium_font='xft:Monospace:size=12'
+            medium_font_tk='Roboto 8'
+            medium_font_tk_mono='{Source Code Pro} 8'
+            large_font='xft:Hack:size=10'
+        fi
         ;;
     aegean)
         # 3840x2160 (383dpi)
