@@ -17,7 +17,7 @@
   [Alpha]	{50}
 [end]
 [app] (title=Workrave)
-  [Layer]	{6}
+  [Layer]	{2}
   [Hidden]	{yes}
   [Sticky]	{yes}
 [end]
