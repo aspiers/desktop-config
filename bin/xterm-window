@@ -31,8 +31,12 @@
 # fi
 
 if which gnome-terminal >/dev/null 2>&1; then
+    theme=$(<~/.config/gnome-terminal-profile)
+    profile=${theme:-Dark}
     # gnome-terminal-config sets font
-    gnome-terminal "$@"
+    gnome-terminal \
+        --profile=$profile \
+        "$@"
 elif which urxvt-256color >/dev/null 2>&1; then
     urxvt-256color -fn $medium_font $geometry "$@"
 elif which urxvt >/dev/null 2>&1; then
