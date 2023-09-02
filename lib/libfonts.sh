@@ -45,7 +45,7 @@ case "$localhost_nickname" in
             medium_font='xft:Monospace:size=12'
             medium_font_tk='Roboto 8'
             medium_font_tk_mono='{Source Code Pro} 8'
-            large_font='xft:Hack:size=10'
+            large_font='xft:Hack:size=18'
         fi
         ;;
     aegean)
@@ -76,3 +76,5 @@ small_font_gnome="${small_font#xft:}"
 small_font_gnome="${small_font_gnome/:size=/ }"
 medium_font_gnome="${medium_font#xft:}"
 medium_font_gnome="${medium_font_gnome/:size=/ }"
+large_font_gnome="${large_font#xft:}"
+large_font_gnome="${large_font_gnome/:size=/ }"
