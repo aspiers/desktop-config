@@ -22,7 +22,7 @@
   [Sticky]	{yes}
 [end]
 
-[app] (name=gnome-terminal-server) (role=gnome-terminal-window-*)
+[app] (name=gnome-terminal-server) (role=gnome-terminal-window-.*)
   [Head]	{1}
   [Position]	(TopLeft)	{0 0}
   [Dimensions]	{47% 90%}
@@ -46,7 +46,7 @@
   [Workspace]	{2}
 [end]
 
-[app] (title=discord|Discord|Discord Updater|Zulip*)
+[app] (title=discord|Discord|Discord Updater|Zulip.*)
   [Position]	(TopLeft)	{0 0}
   [Workspace]	{3}
   [Dimensions]	{96% 89%}
