@@ -2,4 +2,12 @@
 
 . $ZDOTDIR/lib/libfonts.sh
 
-urxvt-256color -fn $large_font -title 'Chrome fzf' -e chrome-session-tabs --fzf "$@"
+#urxvt-256color -fn $large_font -title 'Chrome fzf' -e chrome-session-tabs --fzf "$@"
+theme=$(<~/.config/gnome-terminal-profile)
+profile=large-${theme:-Dark}
+gnome-terminal \
+    --profile=$profile \
+    --role 'Chrome fzf' \
+    --title 'Chrome fzf' \
+    -- \
+    chrome-session-tabs --fzf "$@"
