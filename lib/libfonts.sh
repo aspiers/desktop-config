@@ -34,8 +34,8 @@ case "$localhost_nickname" in
             small_font='xft:Hack:size=12'
             #small_font='10x20'
             medium_font='xft:Monospace:size=14'
-            medium_font_tk='Roboto 10'
-            medium_font_tk_mono='{Source Code Pro} 10'
+            medium_font_tk='Roboto 9'
+            medium_font_tk_mono='{Source Code Pro} 9'
             large_font='xft:Hack:size=16'
         else
             tiny_font='smoothansi'
