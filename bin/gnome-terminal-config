@@ -19,7 +19,7 @@ next-tab='<Primary><Shift><Alt>Page_Down'
 prev-tab='<Primary><Shift><Alt>Page_Up'
 
 [legacy/profiles:]
-list=['b1dcc9dd-5262-4d8d-a863-c897e6d979b9', 'bc1dfcac-1690-4dec-9176-20bd65652b75', 'f1958a04-d3a1-4e01-b0b7-21e46a15f2fc', '95dcb130-bf09-448c-85f5-60fc8f65cae7']
+list=['b1dcc9dd-5262-4d8d-a863-c897e6d979b9', 'bc1dfcac-1690-4dec-9176-20bd65652b75', 'f1958a04-d3a1-4e01-b0b7-21e46a15f2fc', '95dcb130-bf09-448c-85f5-60fc8f65cae7', 'a7487e33-bafc-4ee7-80b3-059fa6f3874e', '2032b70d-0cce-4e21-a870-f565d6195abc']
 
 [legacy/profiles:/:b1dcc9dd-5262-4d8d-a863-c897e6d979b9]
 visible-name='Dark'
@@ -100,6 +100,49 @@ cursor-shape='block'
 default-size-columns=120
 default-size-rows=40
 font='$small_font_gnome'
+foreground-color='rgb(0,0,0)'
+highlight-colors-set=false
+highlight-foreground-color='rgb(255,255,255)'
+palette=['rgb(255,255,255)', 'rgb(229,83,81)', 'rgb(170,196,0)', 'rgb(197,149,0)', 'rgb(38,139,210)', 'rgb(211,54,130)', 'rgb(86,196,196)', 'rgb(148,148,148)', 'rgb(0,0,0)', 'rgb(237,0,0)', 'rgb(0,170,7)', 'rgb(222,193,0)', 'rgb(0,45,203)', 'rgb(176,0,151)', 'rgb(42,161,152)', 'rgb(80,80,80)']
+use-system-font=false
+use-theme-colors=false
+
+[legacy/profiles:/:a7487e33-bafc-4ee7-80b3-059fa6f3874e]
+visible-name='large-Dark'
+background-color='rgb(0,0,0)'
+bold-color='rgb(255,224,63)'
+bold-color-same-as-fg=false
+bold-is-bright=true
+cursor-background-color='rgb(255,127,80)'
+cursor-blink-mode='on'
+cursor-colors-set=true
+cursor-foreground-color='rgb(67,167,167)'
+cursor-shape='block'
+default-size-columns=120
+default-size-rows=40
+font='$large_font_gnome'
+foreground-color='rgb(255,255,255)'
+highlight-colors-set=false
+highlight-foreground-color='rgb(255,255,255)'
+palette=['rgb(7,54,66)', 'rgb(220,50,47)', 'rgb(171,191,33)', 'rgb(181,137,0)', 'rgb(38,139,210)', 'rgb(211,54,130)', 'rgb(42,161,152)', 'rgb(238,232,213)', 'rgb(162,162,162)', 'rgb(203,75,22)', 'rgb(1,202,130)', 'rgb(213,217,9)', 'rgb(148,180,255)', 'rgb(240,7,206)', 'rgb(86,196,196)', 'rgb(253,246,227)']
+scrollbar-policy='never'
+use-system-font=false
+use-theme-colors=false
+
+[legacy/profiles:/:2032b70d-0cce-4e21-a870-f565d6195abc]
+visible-name='large-Bright'
+background-color='rgb(255,255,255)'
+bold-color='rgb(181,161,56)'
+bold-color-same-as-fg=false
+bold-is-bright=true
+cursor-background-color='rgb(255,127,80)'
+cursor-blink-mode='on'
+cursor-colors-set=true
+cursor-foreground-color='rgb(255,255,255)'
+cursor-shape='block'
+default-size-columns=120
+default-size-rows=40
+font='$large_font_gnome'
 foreground-color='rgb(0,0,0)'
 highlight-colors-set=false
 highlight-foreground-color='rgb(255,255,255)'
