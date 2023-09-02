@@ -3,20 +3,42 @@
 
 #Eterm -t top
 unset COLUMNS
+
+geometry=90x40
+theme=$(<~/.config/gnome-terminal-profile)
+profile=top-term-${theme:-Dark}
+
+while true; do
+    case "$1" in
+        --geometry)
+            geometry="$2"
+            shift 2
+            ;;
+        --title)
+            title="$2"
+            shift 2
+            ;;
+        --)
+            shift
+            break
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+
+: ${title:="$cmd $*"}
+: ${role:="$title*"}
+
 cmd="${1:-top}"
 [ -n "$1" ] && shift
 
-geometry=90x40
-case "$cmd" in
-    htop) geometry=150x50 ;;
-esac
-
 #urxvt-256color -fn $small_font -geometry $geometry -e "$cmd" "$@"
-theme=$(<~/.config/gnome-terminal-profile)
 gnome-terminal \
-    --profile=top-term-${theme:-Dark} \
+    --profile=$profile \
     --geometry $geometry \
-    --role "$cmd $*" \
-    --title "$cmd $*" \
+    --role "$role" \
+    --title "$title" \
     -- \
     "$cmd" "$@"

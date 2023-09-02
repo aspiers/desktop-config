@@ -265,7 +265,7 @@ reorg: Mod4 l :If {Matches (Layer=Normal)} {MacroCmd {SetLayer Top} {<%= notify_
 
 # opening terminals
 Mod4 t :Exec xterm-window
-Shift Mod4 t :Exec top-term htop
+Shift Mod4 t :Exec top-term --geometry 150x90 htop
 Shift Mod4 i :Exec top-term sudo nethogs `gw-dev`
 Control Mod4 i :Exec top-term sudo iotop
 Control Shift Mod4 i :Exec top-term sudo iftop -i `gw-dev`
