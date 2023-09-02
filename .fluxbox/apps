@@ -25,7 +25,7 @@
 [app] (name=gnome-terminal-server) (role=gnome-terminal-window-.*)
   [Head]	{1}
   [Position]	(TopLeft)	{0 0}
-  [Dimensions]	{47% 90%}
+  [Dimensions]	{50% 90%}
 [end]
 
 [app] (name=emacs) (title!=Ediff)
