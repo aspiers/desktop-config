@@ -28,6 +28,15 @@
   [Dimensions]	{50% 90%}
 [end]
 
+# Weirdly gnome-terminal --title=foo cannot be reliably matched by
+# (title=foo); it seems that the title is set to ''Terminal' on startup
+# and then changed soon after, creating a race condition.  So match on
+# role instead.
+[app] (role=Chrome fzf)
+  [Dimensions]	{90% 90%}
+  [Position]	(Center)	{0 0}
+[end]
+
 [app] (name=emacs) (title!=Ediff)
   [Head]	{1}
   [Position]	(TopLeft)	{50% 0}
@@ -68,9 +77,4 @@
 
 [app] (name=eog)
   [Deco] {NORMAL}
-[end]
-
-[app] (title=Chrome fzf)
-  [Dimensions]	{90% 90%}
-  [Position]	(Center)	{0 0}
 [end]
