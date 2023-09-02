@@ -1,4 +1,4 @@
 #!/bin/bash
 
 [ `monitors-connected` == 2 ] && \
-    inxi -Gxx | grep -q 'LG (GoldStar)'
+    inxi -Gxx | grep -q 'res: 3840x2160'

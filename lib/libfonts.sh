@@ -28,7 +28,7 @@ case "$localhost_nickname" in
         ;;
     celtic)
         # 2256x1504 (193x167 dpi)
-        if l39-monitor-connected; then
+        if large-monitor-connected; then
             tiny_font='smoothansi'
             #tiny_font='xft:Monospace:size=8'
             small_font='xft:Hack:size=12'

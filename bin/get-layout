@@ -11,9 +11,9 @@ layout_file () {
 
 case "$localhost_nickname" in
     celtic)
-        if l39-monitor-connected; then
+        if large-monitor-connected; then
             echo >&2 "Detected LG as second monitor"
-            if ! l39-monitor-primary; then
+            if ! large-monitor-primary; then
                 # Sometimes xfce4-display-settings doesn't manage to
                 # set LG to primary for some reason, so set it
                 # manually.
@@ -24,7 +24,7 @@ case "$localhost_nickname" in
                 xrandr --output "$monitor" --primary
                 echo >&2 "LG is $monitor; made primary"
             fi
-            layout_file l39
+            layout_file celtic+large
             exit
         elif [ `monitors-connected` == 1 ]; then
             layout_file "$localhost_nickname"
