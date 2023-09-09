@@ -34,6 +34,7 @@
 # role instead.
 [app] (role=Chrome fzf)
   [Dimensions]	{90% 90%}
+  [Layer]	{4}
   [Position]	(Center)	{0 0}
 [end]
 
