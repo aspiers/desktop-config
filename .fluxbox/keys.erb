@@ -299,8 +299,14 @@ Shift Control Mod1 Mod4 l :Exec xflock4
 Control Mod4 space :Exec fbrun
 
 Mod4 minus :Exec warpd --grid
-Mod4 semicolon :Exec warpd --hint --oneshot
+Mod4 semicolon :Exec warpd --normal
+
+# S-; x achieves the same as this:
 Control Mod4 semicolon :Exec warpd --hint
+
+Mod4 7 :MacroCmd {Exec xdotool keyup Super_R} {Exec warpd --click 1}
+Mod4 8 :MacroCmd {Exec xdotool keyup Super_R} {Exec warpd --click 2}
+Mod4 9 :MacroCmd {Exec xdotool keyup Super_R} {Exec warpd --click 3}
 
 # quick jumping to commonly open windows
 # xdotool can't filter by head on multi-head sessions
@@ -378,12 +384,9 @@ Control Mod1 Mod4 Shift e :Exit
 <%= prefix %>Mod4 4 :Workspace 4
 <%= prefix %>Mod4 5 :Workspace 5
 <%= prefix %>Mod4 6 :Workspace 6
-<%= prefix %>Mod4 7 :Workspace 7
-<%= prefix %>Mod4 8 :Workspace 8
-<%= prefix %>Mod4 9 :Workspace 9
-#<%= prefix %>Mod4 10 :Workspace 10
-#<%= prefix %>Mod4 11 :Workspace 11
-#<%= prefix %>Mod4 12 :Workspace 12
+#<%= prefix %>Mod4 7 :Workspace 7
+#<%= prefix %>Mod4 8 :Workspace 8
+#<%= prefix %>Mod4 9 :Workspace 9
 
 # send the current window to a specific workspace
 #<%= prefix %>Mod4 F1 :SendToWorkspace 1
@@ -395,9 +398,6 @@ Control Mod1 Mod4 Shift e :Exit
 #<%= prefix %>Mod4 F7 :SendToWorkspace 7
 #<%= prefix %>Mod4 F8 :SendToWorkspace 8
 #<%= prefix %>Mod4 F9 :SendToWorkspace 9
-#<%= prefix %>Mod4 F10 :SendToWorkspace 10
-#<%= prefix %>Mod4 F11 :SendToWorkspace 11
-#<%= prefix %>Mod4 F12 :SendToWorkspace 12
 
 # Send the current window and change to a specific workspace.
 # If it's sticky, remove stickiness first.
@@ -407,9 +407,9 @@ Control Mod1 Mod4 Shift e :Exit
 <%= prefix %>Mod1 Mod4 4 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 4}
 <%= prefix %>Mod1 Mod4 5 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 5}
 <%= prefix %>Mod1 Mod4 6 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 6}
-<%= prefix %>Mod1 Mod4 7 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 7}
-<%= prefix %>Mod1 Mod4 8 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 8}
-<%= prefix %>Mod1 Mod4 9 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 9}
+#<%= prefix %>Mod1 Mod4 7 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 7}
+#<%= prefix %>Mod1 Mod4 8 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 8}
+#<%= prefix %>Mod1 Mod4 9 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 9}
 
 <% end %>
 

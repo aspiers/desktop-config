@@ -1,4 +1,6 @@
-exit: space
-hint_exit: space
+# Run warpd --list-options to see all options
+exit: q
+hint_exit: q
+hint_chars: abcdefghijklmnoprstuvwxyz
 grid_size: 2
 hint_border_radius: 1
