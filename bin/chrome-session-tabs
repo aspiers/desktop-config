@@ -188,7 +188,7 @@ def focus_window(win):
     regexp = '^(0x[0-9a-f]+)\s+(-?\d+)\s+\w[\w.]+\s+%s$' % matcher
     m = re.search(regexp, window_list, re.MULTILINE)
     if not m:
-        die("Couldn't find [%s] in output of wmctrl -l" % title)
+        die("Couldn't find /%s/ in output of wmctrl -l" % regexp)
 
     window_id = m.group(1)
 
