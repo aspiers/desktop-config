@@ -41,6 +41,9 @@ case "$xrdb_dpi" in
     192|193)
         git_font_size=10
         ;;
+    284)
+        git_font_size=9
+        ;;
     *)
         echo >&2 "Don't know what git gui font size to set for dpi $xrdb_dpi"
         ;;

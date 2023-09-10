@@ -50,13 +50,13 @@ case "$localhost_nickname" in
         ;;
     aegean)
         # 3840x2160 (383dpi)
-        tiny_font='xft:Monospace:size=8'
+        tiny_font='xft:Monospace:size=5'
         #small_font='-misc-hack-medium-r-normal--0-0-0-0-m-0-iso8859-15'
         #small_font='10x20'
         small_font='xft:Hack:size=10'
         medium_font='xft:Monospace:size=12'
-        medium_font_tk='Roboto 12'
-        medium_font_tk_mono='{Source Code Pro} 12'
+        medium_font_tk='Roboto 9'
+        medium_font_tk_mono='{Source Code Pro} 9'
         large_font='xft:Hack:size=16'
         ;;
     *)
