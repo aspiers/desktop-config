@@ -4,3 +4,6 @@ hint_exit: q
 hint_chars: abcdefghijklmnoprstuvwxyz
 grid_size: 2
 hint_border_radius: 1
+decelerator: z
+scroll_up: e
+scroll_down: d
