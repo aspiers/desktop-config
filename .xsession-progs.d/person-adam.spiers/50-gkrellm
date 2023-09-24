@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 . $ZDOTDIR/lib/libproc.sh
 
@@ -9,6 +9,6 @@ case "$WINDOWMANAGER" in
         ;;
 esac
 
-if [ -z "$VNCDESKTOP" ] && which gkrellm >/dev/null; then
-    gkrellm -geometry -0+0 </dev/null >/dev/null 2>&1 &
+if [ -z "$VNCDESKTOP" ]; then
+    run_unless_running gkrellm -geometry -0+0 </dev/null &
 fi

@@ -21,7 +21,7 @@ run_if_executable () {
 # Checks for a named process running as me
 process_running_my_uid () {
     proc="$1"
-    pgrep -u "`id -un`" "$proc" >/dev/null
+    pgrep -x -u "`id -un`" "$proc" #>/dev/null
 }
 
 # Runs a named process unless it's already running as me
@@ -30,7 +30,10 @@ run_unless_running () {
     if ! executable_p "$prog"; then
         echo "$prog not executable" >&2
     fi
-    process_running_my_uid "$prog" || "$prog" "$@"
+    if ! process_running_my_uid "$prog"; then
+        echo Running "$prog" "$@"
+        "$prog" "$@"
+    fi
 }
 
 # obtain_lock LOCKFILE COMMAND
