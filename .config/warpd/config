@@ -2,6 +2,10 @@
 exit: q
 hint_exit: q
 hint_chars: abcdefghijklmnoprstuvwxyz
+# transparency doesn't work properly:
+# https://github.com/rvaiya/warpd/issues/143
+hint_bgcolor: #1c1c1edd
+hint_fgcolor: #ff4444ff
 grid_size: 2
 hint_border_radius: 1
 decelerator: z
