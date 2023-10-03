@@ -31,13 +31,13 @@ windows:
   - - (name=emacs) (title!=Ediff)
     - MacroCmd {<s_primary_SetHead>} {MoveTo <s_primary_col2_left> <s_primary_row1_top>} {ResizeTo <s_primary_col2_width> <s_primary_active_height>}
 
-  - - (Name=brave-browser|google-chrome|chromium) (Title=Toucan)
+  - - (Name=brave-browser|google-chrome|chromium) (Title=.*Toucan)
     - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 2}
 
-  - - (Name=brave-browser|google-chrome|chromium) (Title=personal$|Panther)
+  - - (Name=brave-browser|google-chrome|chromium) (Title=.*(personal|Panther))
     - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 5}
 
-  - - (Name=brave-browser|google-chrome|chromium) (Title=secondary|gather.town)
+  - - (Name=brave-browser|google-chrome|chromium) (Title=.*(secondary|gather.town))
     - MacroCmd {<s_secondary_SetHead>}
     - <stick>
 
