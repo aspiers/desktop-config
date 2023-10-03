@@ -24,9 +24,9 @@
     [separator]
 
     [nop] (Toucan PIM)
-    [exec] (tc: Toucan Google calendar) {chrome-session-tabs 'calendar.google.com/calendar/u/2'}
+    [exec] (tc: Toucan Google calendar) {chrome-session-tabs 'calendar.google.com/calendar/u/1'}
     [exec] (tm: Toucan mail) {chrome-session-tabs 'superhuman.com'}
-#    [exec] (tm: Toucan mail) {chrome-session-tabs 'mail.google.com/mail/u/2'}
+#    [exec] (tm: Toucan mail) {chrome-session-tabs 'mail.google.com/mail/u/1'}
     [exec] (ts: sync Toucan mail) {top-term sync-Toucan-mail}
     [exec] (tt: Toucan TODO) {switch-emacs-eval ~/lib/emacs/shortcuts/org-jump-Toucan-todo.el}
     [exec] (tk: Toucan capture) {switch-emacs-eval ~/lib/emacs/shortcuts/org-capture-Toucan.el}
@@ -37,8 +37,8 @@
     [separator]
 
     [nop] (Panther PIM)
-    [exec] (pc: Panther Google calendar) {chrome-session-tabs 'calendar.google.com/calendar/u/1'}
-    [exec] (pm: Panther mail) {chrome-session-tabs 'mail.google.com/mail/u/1'}
+    [exec] (pc: Panther Google calendar) {chrome-session-tabs 'calendar.google.com/calendar/u/2'}
+    [exec] (pm: Panther mail) {chrome-session-tabs 'mail.google.com/mail/u/2'}
     [exec] (ps: sync Panther mail) {top-term sync-Panther-mail}
     [exec] (pt: Panther TODO) {switch-emacs-eval ~/lib/emacs/shortcuts/org-jump-Panther-todo.el}
     [exec] (pk: Panther capture) {switch-emacs-eval ~/lib/emacs/shortcuts/org-capture-Panther.el}
