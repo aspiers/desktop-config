@@ -217,17 +217,19 @@ Rxvt*color15: COLOR15
 ! }}}
 ! {{{ fonts
 
-! Xft settings from https://askubuntu.com/a/45774
-! which I hoped would fix the width issues with fonts like Hack, but don't.
-!
-! Xft.antialias:  true
-! Xft.rgba:       rgb
-! Xft.hinting:    true
-! Xft.hintstyle:  hintslight
+/*
+Xft settings from https://askubuntu.com/a/45774
+which I hoped would fix the width issues with fonts like Hack, but don't.
 
-! xrdb-cpp needs to be in the $PATH, then
-!        xrdb -cpp xrdb-cpp
-! will substitute two @ signs for newlines.
+Xft.antialias:  true
+Xft.rgba:       rgb
+Xft.hinting:    true
+Xft.hintstyle:  hintslight
+
+xrdb-cpp needs to be in the $PATH, then
+       xrdb -cpp xrdb-cpp
+will substitute two @ signs for newlines.
+*/
 
 #define FontAndLabel(fontNum,fontName,label) \
 xterm*VT100*font##fontNum:           fontName@@\
