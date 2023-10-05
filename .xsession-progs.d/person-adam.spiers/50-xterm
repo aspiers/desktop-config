@@ -7,6 +7,6 @@ case "$WINDOWMANAGER" in
         i3-sensible-terminal &
         ;;
     *)
-        xterm-window --top-left >/dev/null &
+        xterm-window &
         ;;
 esac
