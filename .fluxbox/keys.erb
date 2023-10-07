@@ -298,11 +298,9 @@ Shift Control Mod1 Mod4 l :Exec xflock4
 # open a dialog to run programs
 Control Mod4 space :Exec fbrun
 
-Mod4 minus :Exec warpd --grid
-Mod4 semicolon :Exec warpd --normal
-
-# S-; x achieves the same as this:
-Control Mod4 semicolon :Exec warpd --hint
+Mod4 semicolon :Exec warpd --hint
+Control Mod4 semicolon :Exec warpd --normal
+Mod4 minus :Exec warpd --normal
 
 Mod4 7 :MacroCmd {Exec xdotool keyup Super_R} {Exec warpd --click 1}
 Mod4 8 :MacroCmd {Exec xdotool keyup Super_R} {Exec warpd --click 2}
