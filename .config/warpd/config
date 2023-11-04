@@ -6,7 +6,11 @@ hint_chars: abcdefghijklmnoprstuvwxyz
 # https://github.com/rvaiya/warpd/issues/143
 hint_bgcolor: #1c1c1edd
 hint_fgcolor: #ff4444ff
+
+grid_activation_key: G
 grid_size: 2
+# grid_border_size: 4
+grid_color: #ff0000
 hint_border_radius: 1
 decelerator: z
 scroll_up: e
