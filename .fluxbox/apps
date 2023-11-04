@@ -1,3 +1,6 @@
+[app] (name=xfce4-notifyd)
+  [Layer]	{0}
+[end]
 [app] (name=fbrun)
   [Position]	(CENTER)	{0 0}
   [Layer]	{2}
