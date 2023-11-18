@@ -1,5 +1,12 @@
 # Run warpd --list-options to see all options
 exit: q
+
+left: unbind
+left: j
+right: l
+up: i
+down: k
+
 hint_exit: q
 hint_chars: abcdefghijklmnoprstuvwxyz
 # transparency doesn't work properly:
