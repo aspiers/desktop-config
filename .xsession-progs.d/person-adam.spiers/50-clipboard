@@ -1,9 +1,11 @@
 #!/bin/bash
 
+. $ZDOTDIR/lib/libproc.sh
+
 if which clipit >&/dev/null; then
-    clipit >& ~/.log/clipit.log &
+    run_unless_running clipit >& ~/.log/clipit.log &
 elif which parcellite >&/dev/null; then
-    parcellite >& ~/.log/parcellite.log &
+    run_unless_running parcellite >& ~/.log/parcellite.log &
 else
     echo >&2 "Couldn't find clipboard manager to launch"
 fi
