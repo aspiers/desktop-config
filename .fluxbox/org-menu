@@ -1,12 +1,12 @@
 [begin] (Org diary menu)
 [encoding] {UTF-8}
-    [exec] (a: Agenda) {switch-emacs-eval ~/lib/emacs/shortcuts/org-agenda.el}
+    [exec] (a: Agenda) {switch-emacs-eval '(org-agenda)'}
     [exec] (b: Daily review) {switch-emacs-eval ~/lib/emacs/shortcuts/org-agenda-daily-review.el}
     # [exec] (g: Google Calendar) {url-handler https://www.google.com/calendar}
     [exec] (e: Add event(s) to Google Calendar) {urxvt -e sh -c 'while true; do rlwrap gca; div; done'}
-    [exec] (k: Capture) {switch-emacs-eval ~/lib/emacs/shortcuts/org-capture.el}
-    [exec] (n: Find personal note) {switch-emacs-eval ~/lib/emacs/shortcuts/org-jump-personal-note.el}
-    [exec] (j: Jump to clock) {switch-emacs-eval ~/lib/emacs/shortcuts/org-jump-to-clock.el}
+    [exec] (k: Capture) {switch-emacs-eval '(org-capture)'}
+    [exec] (n: Find personal note) {switch-emacs-eval '(as-find-personal-note)'}
+    [exec] (j: Jump to clock) {switch-emacs-eval '(org-clock-goto)'}
 
     [separator]
 
@@ -28,7 +28,7 @@
     [exec] (tm: Toucan mail) {chrome-session-tabs 'superhuman.com'}
 #    [exec] (tm: Toucan mail) {chrome-session-tabs 'mail.google.com/mail/u/1'}
     [exec] (ts: sync Toucan mail) {top-term sync-Toucan-mail}
-    [exec] (tt: Toucan TODO) {switch-emacs-eval ~/lib/emacs/shortcuts/org-jump-Toucan-todo.el}
+    [exec] (tt: Toucan TODO) {switch-emacs-eval '(as-find-Toucan-todo)'}
     [exec] (tk: Toucan capture) {switch-emacs-eval ~/lib/emacs/shortcuts/org-capture-Toucan.el}
     [exec] (tl: Toucan Linear) {chrome-session-tabs 'linear.app'}
     [exec] (td: Toucan diary) {switch-emacs-eval ~/lib/emacs/shortcuts/org-jump-Toucan-diary.el}
