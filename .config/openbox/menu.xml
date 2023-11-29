@@ -381,7 +381,7 @@
     <separator label="org-mode" />
     <item label="_agenda">
       <action name="Execute">
-        <execute>sh -c "switch-emacs-eval ~/lib/xmacro/org-agenda.el"</execute>
+        <execute>sh -c "switch-emacs-eval '(org-agenda)'"</execute>
       </action>
     </item>
     <item label="_b: daily review">
@@ -401,12 +401,12 @@
     </item>
     <item label="_capture">
       <action name="Execute">
-        <execute>sh -c "switch-emacs-eval ~/lib/xmacro/org-capture.el"</execute>
+        <execute>sh -c "switch-emacs-eval '(org-capture)'"</execute>
       </action>
     </item>
     <item label="_jump to clock">
       <action name="Execute">
-        <execute>sh -c "switch-emacs-eval ~/lib/xmacro/org-jump-to-clock.el"</execute>
+        <execute>sh -c "switch-emacs-eval '(org-clock-goto)'"</execute>
       </action>
     </item>
     <separator label="by category" />

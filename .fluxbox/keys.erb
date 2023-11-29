@@ -336,11 +336,11 @@ Shift Mod4 g :Exec chrome-session-tabs https://meet.google.com/
 Control Mod4 g :Exec chrome-session-tabs https://app.gather.town/
 
 Control Mod4 2 :Exec switch-emacs-eval ~/lib/emacs/shortcuts/org-jump-personal-todo.el
-Control Mod4 5 :Exec switch-emacs-eval ~/lib/emacs/shortcuts/org-jump-Toucan-todo.el
-Mod4 k :Exec switch-emacs-eval ~/lib/emacs/shortcuts/org-capture.el
+Control Mod4 5 :Exec switch-emacs-eval '(as-find-Toucan-todo)'
+Mod4 k :Exec switch-emacs-eval '(org-capture)'
 Control Mod4 k :Exec slack-capture-todo
-Mod4 n :Exec switch-emacs-eval ~/lib/emacs/shortcuts/org-jump-personal-note.el
 Mod4 v :Exec switch-emacs-eval ~/lib/emacs/shortcuts/org-agenda-daily-review.el
+Mod4 n :Exec switch-emacs-eval '(as-find-personal-note)'
 Mod1 Mod4 n :Exec fluxbox-focus-or-launch -c notion-app-enhanced ~/software/web/Notion-Enhanced.AppImage
 Mod4 m :Exec chrome-session-tabs 'mail.google.com/mail/u/0'
 Shift Mod4 n :Exec chrome-session-fzf 'https://www.notion.so/ '
