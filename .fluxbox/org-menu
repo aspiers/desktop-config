@@ -2,6 +2,7 @@
 [encoding] {UTF-8}
     [exec] (a: Agenda) {switch-emacs-eval '(org-agenda)'}
     [exec] (b: Daily review) {switch-emacs-eval ~/lib/emacs/shortcuts/org-agenda-daily-review.el}
+    [exec] (7: Weekly review) {switch-emacs-eval ~/lib/emacs/shortcuts/org-agenda-weekly-review.el}
     # [exec] (g: Google Calendar) {url-handler https://www.google.com/calendar}
     [exec] (e: Add event(s) to Google Calendar) {urxvt -e sh -c 'while true; do rlwrap gca; div; done'}
     [exec] (k: Capture) {switch-emacs-eval '(org-capture)'}
