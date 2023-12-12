@@ -7,18 +7,18 @@ read_localhost_nickname
 . "$ZDOTDIR/.Xdisplay.$localhost_nickname"
 
 apply_keymap () {
-    if kinesis-360-attached; then
-        echo "Found Kinesis 360 keyboard attached; using kinesis-360 keymap ..."
-        keymap-menu kinesis-360
-    elif kinesis-attached; then
-        echo "Found Kinesis keyboard attached; using kinesis keymap ..."
-        keymap-menu kinesis
-    elif model-01-attached; then
+    if model-01-attached; then
         echo "Found Keyboardio Model 01 attached; using model01 keymap ..."
         keymap-menu model01
     elif atreus-attached; then
         echo "Found Keyboardio Atreus attached; using atreus keymap ..."
         keymap-menu atreus
+    elif kinesis-attached; then
+        echo "Found Kinesis keyboard attached; using kinesis keymap ..."
+        keymap-menu kinesis
+    elif kinesis-360-attached; then
+        echo "Found Kinesis 360 keyboard attached; using kinesis-360 keymap ..."
+        keymap-menu kinesis-360
     else
         apply_local_keymap
     fi
