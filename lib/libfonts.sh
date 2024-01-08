@@ -6,6 +6,13 @@
 #   small_font: for top-term and similar
 #   medium_font: for terminals (and maybe emacs)
 #   large_font: for modal dialogs like chrome-session-fzf
+#
+# Also derives these variables from the above, so that
+# gnome-terminal-config can use them:
+#
+#   small_font_gnome
+#   medium_font_gnome
+#   large_font_gnome
 
 . $ZDOTDIR/lib/libhost.sh
 # eval $( $ZDOTDIR/lib/libdpy.py )
