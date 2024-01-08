@@ -44,6 +44,10 @@ case "$xrdb_dpi" in
     284)
         git_font_size=9
         ;;
+    '')
+        echo >&2 "ERROR: xrdb couldn't retrieve Xft.dpi"
+        exit 1
+        ;;
     *)
         echo >&2 "Don't know what git gui font size to set for dpi $xrdb_dpi"
         ;;

@@ -10,7 +10,7 @@ eval $($ZDOTDIR/lib/libdpy.py)
 
 . $ZDOTDIR/lib/libhost.sh
 
-#echo >&2 "display: ${dpy_width}x${dpy_height}; DPI: $dpi"
+#echo >&2 "! display: ${dpy_width}x${dpy_height}; DPI: $dpi"
 
 read_localhost_nickname
 case "$localhost_nickname" in
@@ -28,7 +28,8 @@ case "$localhost_nickname" in
         fi
         ;;
     *)
-        xrdb_dpi=${dpi[1]}
+        echo >&2 "! Didn't recognise localhost_nickname of '$localhost_nickname'; falling back to x DPI of $dpy_x_dpi from xdpyinfo"
+        xrdb_dpi=$dpy_x_dpi
         ;;
 esac
 
