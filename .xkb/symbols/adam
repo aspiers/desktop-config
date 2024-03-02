@@ -126,7 +126,6 @@ xkb_symbols "kinesis-360" {
     include "adam-common(kinesis-360-right-thumb-pad)"
     include "adam-common(kinesis-360-insert)"
     include "adam-common(kinesis-360-escape)"
-    include "adam-common(swap-up-down)"
     include "adam-common(kinesis-grave-tilde)"
     include "adam-common(kinesis-insert)"
     include "adam-common(us-backslash)"
