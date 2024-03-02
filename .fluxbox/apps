@@ -45,6 +45,8 @@
   [Head]	{1}
   [Position]	(TopLeft)	{50% 0}
   [Dimensions]	{47% 90%}
+  # This doesn't work :-(
+  [FocusNewWindow]	{yes}
 [end]
 
 [app] (title=Telegram)
