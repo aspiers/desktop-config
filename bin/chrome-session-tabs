@@ -162,7 +162,7 @@ def run_fzf(windows, initial):
         win_index = int(win_title[len(UNNAMED_WIN_PREFIX):])
         win = windows[win_index]
     else:
-        matches = [w for w in windows if w['title'] == win_title]
+        matches = [w for w in windows if 'title' in w and w['title'] == win_title]
         if len(matches) != 1:
             die("Couldn't find chosen window title [%s]" % win_title)
         win = matches[0]
