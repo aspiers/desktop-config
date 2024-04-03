@@ -1,8 +1,7 @@
 [begin] (Quickjump menu)
 [encoding] {UTF-8}
-      [exec] (Spotify) {chrome-session-tabs Spotify}
-      [exec] (gitk) {wmctrl -a gitk}
       [exec] (SMS) {chrome-session-tabs 'messages.google.com/'}
+      [exec] (gitk) {wmctrl -a gitk}
       [exec] (Firefox) {wmctrl -a firefox}
       [exec] (m: Facebook Messenger) {chrome-session-tabs 'messenger.com/'}
       [exec] (p: personal calendar) {chrome-session-tabs 'calendar.google.com/calendar/u/0'}
