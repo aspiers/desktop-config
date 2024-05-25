@@ -1,0 +1,40 @@
+#!/bin/bash
+
+set -e
+
+me=bt
+mode=`basename $0`
+
+die () {
+    echo >&2 "$*"
+    exit 1
+}
+
+if [ "$mode" = $me ] && [ -z "$*" ]; then
+  here=`dirname $0`
+  echo -n "Setting up bluetooth shortcuts in $here ..."
+  cd "$here"
+  for mode in buds sony; do
+    if ! [ -e $mode ]; then
+      ln -s $me $mode
+      echo -n " $mode"
+    fi
+  done
+  echo
+  exit 0
+fi
+
+case "$mode" in
+    buds) dev=EC:AA:25:27:CA:88 ;;
+    sony) dev=CC:98:8B:31:63:86 ;;
+    *)
+        die "$me: Unrecognised mode $mode"
+        ;;
+esac
+
+cmd=connect
+if [ -n "$1" ]; then
+    cmd=disconnect
+fi
+
+bluetoothctl $cmd $dev
