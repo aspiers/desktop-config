@@ -247,6 +247,7 @@ reorg: 6 :MacroCmd {Exec ly -s top-right}
 reorg: 7 :MacroCmd {Exec ly -s bottom-left}
 reorg: 8 :MacroCmd {Exec ly -s bottom-right}
 reorg: Shift 2 :MacroCmd {Exec ly -s 2cols} <%= reorg_done %>
+reorg: Shift 5 :ResizeTo 1280 720 <%= reorg_done %>
 reorg: Shift semicolon :MacroCmd {Exec ly -s 2rows} <%= reorg_done %>
 
 reorg: space :Raise
