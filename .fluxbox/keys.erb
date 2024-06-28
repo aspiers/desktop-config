@@ -247,6 +247,7 @@ reorg: 6 :MacroCmd {Exec ly -s top-right}
 reorg: 7 :MacroCmd {Exec ly -s bottom-left}
 reorg: 8 :MacroCmd {Exec ly -s bottom-right}
 reorg: Shift 2 :MacroCmd {Exec ly -s 2cols} <%= reorg_done %>
+reorg: Shift 5 :ResizeTo 1280 720 <%= reorg_done %>
 reorg: Shift semicolon :MacroCmd {Exec ly -s 2rows} <%= reorg_done %>
 
 reorg: space :Raise
@@ -325,6 +326,9 @@ Shift Mod4 b :MacroCmd {NextWindow (Name=brave-browser|google-chrome|chromium) (
 Mod4 Tab :Exec chrome-session-fzf
 Mod4 c :Exec chrome-session-tabs 'calendar.google.com/calendar/u/0'
 Shift Mod4 c :Exec chrome-session-tabs 'app.reclaim.ai'
+
+# useful as a calculator
+Control Mod1 Mod4 n :Exec top-term node
 
 #Mod4 e :Exec wmctrl -a emacs
 Mod4 e :MacroCmd {NextWindow (Name=emacs)} {<%= focus_active %>}

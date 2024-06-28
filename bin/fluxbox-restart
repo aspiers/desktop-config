@@ -7,8 +7,14 @@
 # NOTE! This relies on the XFCE session manager not immediately
 # automatically restarting xfwm4 after it's pkilled.
 
-exec >&~/.log/fluxbox-restart.log
-# set -x
+
+if [ -n "$1" ]; then
+    set -x
+else
+    exec >&~/.log/fluxbox-restart.log
+fi
+
+
 : $0 pid is $$
 
 INITIAL_SLEEP=0.5
