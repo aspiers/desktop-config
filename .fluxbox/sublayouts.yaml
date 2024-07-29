@@ -1,5 +1,7 @@
-full:
+active:
   - MacroCmd {MoveTo <sX_col1_left> <sX_row1_top>} {ResizeTo <sX_active_width> <sX_active_height>}
+full:
+  - MacroCmd {MoveTo <sX_col1_left> <sX_row1_top>} {ResizeTo <sX_full_width> <sX_full_height>}
 single:
   - MacroCmd {MoveTo <sX_single_left> <sX_single_top>} {ResizeTo <sX_single_width> <sX_single_height>}
   - Exec mousemove(<sX_active_middle_x>, <sX_active_middle_y>)

@@ -49,6 +49,9 @@ def get_layout_params(layout_file, layout):
         s['active_middle_x'] = s['left_margin'] + int(s['active_width'] / 2)
         s['active_middle_y'] = s['top_margin'] + int(s['active_height'] / 2)
 
+        s['full_width'] = s['width']
+        s['full_height'] = s['height'] - s['panel_height']
+
         s.setdefault('single_width_pc_of_active', 100)
         s.setdefault('single_height_pc_of_active', 100)
         s['single_width'] = int(s['single_width_pc_of_active'] * s['active_width'] / 100)

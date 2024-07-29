@@ -236,7 +236,8 @@ def mousemove(x, y)
 end
 %>
 
-reorg: Shift 0 :MacroCmd {Exec ly -s full}
+reorg: Shift 0 :MacroCmd {Exec ly -s active}
+reorg: Control 0 :MacroCmd {Exec ly -s full}
 reorg: 0 :MacroCmd {Exec ly -s single}
 reorg: 1 :MacroCmd {Exec ly -s left}
 reorg: 2 :MacroCmd {Exec ly -s right}
