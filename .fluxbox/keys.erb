@@ -171,25 +171,25 @@ Shift Mod4 s :StickWindow
 Mod4 q :Close
 Control Mod4 q :Kill
 
-Shift Mod4 Left :MoveLeft 10
-Shift Mod4 Right :MoveRight 10
-Shift Mod4 Up :MoveUp 10
-Shift Mod4 Down :MoveDown 10
+Shift Mod4 Left  :MacroCmd {MoveLeft  10} {<%= focus_active %>}
+Shift Mod4 Right :MacroCmd {MoveRight 10} {<%= focus_active %>}
+Shift Mod4 Up    :MacroCmd {MoveUp    10} {<%= focus_active %>}
+Shift Mod4 Down  :MacroCmd {MoveDown  10} {<%= focus_active %>}
 
-Shift Mod1 Mod4 Left :MoveLeft 50
-Shift Mod1 Mod4 Right :MoveRight 50
-Shift Mod1 Mod4 Up :MoveUp 50
-Shift Mod1 Mod4 Down :MoveDown 50
+Shift Mod1 Mod4 Left  :MacroCmd {MoveLeft  50} {<%= focus_active %>}
+Shift Mod1 Mod4 Right :MacroCmd {MoveRight 50} {<%= focus_active %>}
+Shift Mod1 Mod4 Up    :MacroCmd {MoveUp    50} {<%= focus_active %>}
+Shift Mod1 Mod4 Down  :MacroCmd {MoveDown  50} {<%= focus_active %>}
 
-Shift Mod4 h :MoveLeft 10
-Shift Mod4 l :MoveRight 10
-Shift Mod4 k :MoveUp 10
-Shift Mod4 j :MoveDown 10
+Shift Mod4 h :MacroCmd {MoveLeft  10} {<%= focus_active %>}
+Shift Mod4 l :MacroCmd {MoveRight 10} {<%= focus_active %>}
+Shift Mod4 k :MacroCmd {MoveUp    10} {<%= focus_active %>}
+Shift Mod4 j :MacroCmd {MoveDown  10} {<%= focus_active %>}
 
-Shift Mod1 Mod4 h :MoveLeft 50
-Shift Mod1 Mod4 l :MoveRight 50
-Shift Mod1 Mod4 k :MoveUp 50
-Shift Mod1 Mod4 j :MoveDown 50
+Shift Mod1 Mod4 h :MacroCmd {MoveLeft  50} {<%= focus_active %>}
+Shift Mod1 Mod4 l :MacroCmd {MoveRight 50} {<%= focus_active %>}
+Shift Mod1 Mod4 k :MacroCmd {MoveUp    50} {<%= focus_active %>}
+Shift Mod1 Mod4 j :MacroCmd {MoveDown  50} {<%= focus_active %>}
 
 <%
 def reorg_done
