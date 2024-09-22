@@ -1,10 +1,8 @@
 #!/bin/sh
 
-#font=5x7
-#font=nexus
-#font=smoothansi
-#font=kates
-font=9x15
-#font=10x20
-
-urxvt -fn $font -geometry 90x40 -e mutt "$@"
+xterm-window \
+    --geometry 150x50 \
+    --role "mutt: $1" \
+    --title 'mutt: $1' \
+    -- \
+    zsh -c "$@"

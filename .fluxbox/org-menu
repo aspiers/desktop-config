@@ -6,7 +6,7 @@
     # [exec] (g: Google Calendar) {url-handler https://www.google.com/calendar}
     [exec] (e: Add event(s) to Google Calendar) {urxvt -e sh -c 'while true; do rlwrap gca; div; done'}
     [exec] (k: Capture) {switch-emacs-eval '(org-capture)'}
-    [exec] (n: Find personal note) {switch-emacs-eval '(as-find-personal-note)'}
+#    [exec] (n: Find personal note) {switch-emacs-eval '(as-find-personal-note)'}
     [exec] (j: Jump to clock) {switch-emacs-eval '(org-clock-goto)'}
 
     [separator]
@@ -18,6 +18,7 @@
     [nop] (Personal PIM)
     [exec] (sync personal mail) {top-term sync-personal-mail}
     [exec] (m: personal mail) {chrome-session-tabs 'mail.google.com/mail/u/0'}
+    [exec] (n: personal neomutt) {mutt-term mp}
     [exec] (2: personal TODO) {switch-emacs-eval ~/lib/emacs/shortcuts/org-jump-personal-todo.el}
     [exec] (d: personal diary) {switch-emacs-eval ~/lib/emacs/shortcuts/org-jump-personal-diary.el}
     [exec] (g: personal gtd-timer) {urxvt -fn smoothansi -geometry 90x15-0-0 -e sh -c "gtd-timer ~/mail/personal/offlineimap/INBOX; sleep 60"}
@@ -27,6 +28,7 @@
     [nop] (Toucan PIM)
     [exec] (tc: Toucan Google calendar) {chrome-session-tabs 'calendar.google.com/calendar/u/1'}
     [exec] (tm: Toucan mail) {chrome-session-tabs 'superhuman.com'}
+    [exec] (tn: Toucan neomutt) {mutt-term mt}
 #    [exec] (tm: Toucan mail) {chrome-session-tabs 'mail.google.com/mail/u/1'}
     [exec] (ts: sync Toucan mail) {top-term sync-Toucan-mail}
     [exec] (tt: Toucan TODO) {switch-emacs-eval '(as-find-Toucan-todo)'}
