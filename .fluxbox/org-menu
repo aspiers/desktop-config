@@ -18,7 +18,7 @@
     [nop] (Personal PIM)
     [exec] (sync personal mail) {top-term sync-personal-mail}
     [exec] (m: personal mail) {chrome-session-tabs 'mail.google.com/mail/u/0'}
-    [exec] (n: personal neomutt) {mutt-term mp}
+    [exec] (n: personal neomutt) {mutt-term m}
     [exec] (2: personal TODO) {switch-emacs-eval ~/lib/emacs/shortcuts/org-jump-personal-todo.el}
     [exec] (d: personal diary) {switch-emacs-eval ~/lib/emacs/shortcuts/org-jump-personal-diary.el}
     [exec] (g: personal gtd-timer) {urxvt -fn smoothansi -geometry 90x15-0-0 -e sh -c "gtd-timer ~/mail/personal/offlineimap/INBOX; sleep 60"}
