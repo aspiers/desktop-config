@@ -38,6 +38,7 @@
       [exec] (ksnip) {ksnip}
       [exec] (Flameshot) {flameshot gui}
       [exec] (Window name) {xwinprops | xmessage -file - -center} 
+      [exec] (gpick) {gpick} 
       [exec] (kcolorchooser) {kcolorchooser} 
       [exec] (xfontsel) {xfontsel} 
       [exec] (gcalc) {gnome-calculator} 
