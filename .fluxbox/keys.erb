@@ -168,9 +168,18 @@ Mod4 space :Raise
 Mod4 l :MacroCmd {Lower} {<%= focus_active %>}
 Mod1 Mod4 l :Lower
 Mod4 i :Minimize
+
 Shift Mod4 m :MaximizeVertical
 Control Mod4 m :MaximizeHorizontal
 Shift Control Mod4 m :Maximize
+
+# Added into reorg mode instead
+# Shift Mod4 m :MacroCmd {KeyMode maximize} {<%= notify_persistent 'fluxbox maximize', 'maximize' %>}
+# maximize: v :MacroCmd {MaximizeVertical} <%= keymode_done 'maximize' %>
+# maximize: h :MacroCmd {MaximizeHorizontal} <%= keymode_done 'maximize' %>
+# maximize: b :MacroCmd {Maximize} <%= keymode_done 'maximize' %>
+# maximize: q :MacroCmd <%= keymode_done 'maximize' %>
+
 Shift Mod4 s :StickWindow
 Mod4 q :Close
 Control Mod4 q :Kill
@@ -227,6 +236,10 @@ reorg: Control Shift Left :ResizeHorizontal -10%
 reorg: Control Shift Right :ResizeHorizontal 10%
 reorg: Control Shift Up :ResizeVertical -10%
 reorg: Control Shift Down :ResizeVertical 10%
+
+reorg: m :Maximize
+reorg: Shift m :MaximizeVertical
+reorg: Control m :MaximizeHorizontal
 
 <%
 def mousemove(x, y)
