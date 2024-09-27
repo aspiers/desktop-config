@@ -25,6 +25,10 @@ def notify_done(mode)
   notify_replace "fluxbox #{mode} done", mode
 end
 
+def keymode_done(mode)
+  '{KeyMode default} ' + notify_done(mode)
+end
+
 def reconfigure
   %<Exec fluxbox-reconfigure && notify-send -t 3000 'Reloaded fluxbox config'>
 end
@@ -190,12 +194,6 @@ Shift Mod1 Mod4 h :MacroCmd {MoveLeft  50} {<%= focus_active %>}
 Shift Mod1 Mod4 l :MacroCmd {MoveRight 50} {<%= focus_active %>}
 Shift Mod1 Mod4 k :MacroCmd {MoveUp    50} {<%= focus_active %>}
 Shift Mod1 Mod4 j :MacroCmd {MoveDown  50} {<%= focus_active %>}
-
-<%
-def keymode_done(mode)
-  '{KeyMode default} ' + notify_done(mode)
-end
-%>
 
 Control Mod4 p :MacroCmd {KeyMode passthru} {<%= notify_persistent 'fluxbox passthru', 'passthru' %>}
 passthru: q :MacroCmd {KeyMode default} <%= notify_done('passthru') %>
