@@ -29,7 +29,7 @@ while true; do
 done
 
 : ${title:="$cmd $*"}
-: ${role:="$title*"}
+: ${role:="$title"}
 
 cmd="${1:-top}"
 [ -n "$1" ] && shift
