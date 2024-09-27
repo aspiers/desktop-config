@@ -3,8 +3,8 @@ def id_file(mode)
   "~/tmp/.fluxbox-#{mode}-id"
 end
 
-def notify(msg, timeout=3000, mode=nil)
-  s = %<Exec notify-send -t #{timeout} '#{msg}'>
+def notify(msg, timeout=3000, mode=nil, body='')
+  s = %<Exec notify-send -t #{timeout} "#{msg}" "#{body}">
   s += " -p >#{id_file mode}" if mode
   return s
 end
@@ -13,8 +13,8 @@ def notify_transient(msg, mode)
   notify(msg, 3000, mode)
 end
 
-def notify_persistent(msg, mode)
-  notify(msg, 999999, mode)
+def notify_persistent(msg, mode, body='')
+  notify(msg, 999999, mode, body)
 end
 
 def notify_replace(msg, mode, timeout=3000)
@@ -23,6 +23,11 @@ end
 
 def notify_done(mode)
   notify_replace "fluxbox #{mode} done", mode
+end
+
+def keymode(mode, body='')
+  n = notify_persistent("fluxbox #{mode} mode", mode, body)
+  "{KeyMode #{mode}} {#{n}}"
 end
 
 def keymode_done(mode)
@@ -173,8 +178,20 @@ Shift Mod4 m :MaximizeVertical
 Control Mod4 m :MaximizeHorizontal
 Shift Control Mod4 m :Maximize
 
+Mod4 m :MacroCmd <%= keymode 'mail', 'm: personal mutt\nt: Toucan mutt\ng: personal gmail\ns: Toucan superhuman\n-----------------------------------\n, sync-personal-mail\n. sync-Toucan-mail' %>
+mail: m      :MacroCmd {Exec mutt-term m} <%= keymode_done 'mail' %>
+mail: Mod4 m :MacroCmd {Exec mutt-term m} <%= keymode_done 'mail' %>
+mail: p      :MacroCmd {Exec mutt-term m} <%= keymode_done 'mail' %>
+mail: t      :MacroCmd {Exec mutt-term mt} <%= keymode_done 'mail' %>
+mail: g      :MacroCmd {Exec chrome-session-tabs 'mail.google.com/mail/u/0'} <%= keymode_done 'mail' %>
+mail: T      :MacroCmd {Exec chrome-session-tabs 'mail.google.com/mail/u/1'} <%= keymode_done 'mail' %>
+mail: s      :MacroCmd {Exec chrome-session-tabs 'mail.superhuman.com'} <%= keymode_done 'mail' %>
+mail: ,      :MacroCmd {Exec top-term --title 'sync personal mail' sync-personal-mail} <%= keymode_done 'mail' %>
+mail: .      :MacroCmd {Exec top-term --title 'sync Toucan mail' sync-Toucan-mail} <%= keymode_done 'mail' %>
+mail: q :MacroCmd <%= keymode_done 'mail' %>
+
 # Added into reorg mode instead
-# Shift Mod4 m :MacroCmd {KeyMode maximize} {<%= notify_persistent 'fluxbox maximize', 'maximize' %>}
+# Shift Mod4 m :MacroCmd <%= keymode 'fluxbox maximize', 'maximize' %>
 # maximize: v :MacroCmd {MaximizeVertical} <%= keymode_done 'maximize' %>
 # maximize: h :MacroCmd {MaximizeHorizontal} <%= keymode_done 'maximize' %>
 # maximize: b :MacroCmd {Maximize} <%= keymode_done 'maximize' %>
@@ -204,10 +221,10 @@ Shift Mod1 Mod4 l :MacroCmd {MoveRight 50} {<%= focus_active %>}
 Shift Mod1 Mod4 k :MacroCmd {MoveUp    50} {<%= focus_active %>}
 Shift Mod1 Mod4 j :MacroCmd {MoveDown  50} {<%= focus_active %>}
 
-Control Mod4 p :MacroCmd {KeyMode passthru} {<%= notify_persistent 'fluxbox passthru', 'passthru' %>}
-passthru: q :MacroCmd {KeyMode default} <%= notify_done('passthru') %>
+Control Mod4 p :MacroCmd <%= keymode 'passthru' %>
+passthru: q :MacroCmd <%= keymode_done 'passthru' %>
 
-Mod4 r :MacroCmd {KeyMode reorg} {<%= notify_persistent 'fluxbox reorg', 'reorg' %>}
+Mod4 r :MacroCmd <%= keymode 'reorg' %>
 reorg: q :MacroCmd <%= keymode_done 'reorg' %>
 
 reorg: slash :MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {<%= focus_active %>} {Delay {Raise} 10000}
@@ -277,12 +294,15 @@ reorg: Mod4 l :If {Matches (Layer=Normal)} {MacroCmd {SetLayer Top} {<%= notify_
 # Mod4 9 :Tab 9
 
 # opening terminals
-Mod4 t :Exec xterm-window
-Shift Mod4 t :Exec top-term --geometry 150x90 htop
-Shift Mod4 i :Exec top-term sudo nethogs `gw-dev`
-Control Mod4 i :Exec top-term sudo iotop
-Control Shift Mod4 i :Exec top-term sudo iftop -i `gw-dev`
-Mod1 Mod4 i :Exec top-term sudo powertop
+Mod4 t :MacroCmd <%= keymode 'terminals', 't: terminal\nh: htop\nn: nethogs\ni: iotop\ng: iftop gateway\np: powertop' %>
+terminals: q :MacroCmd <%= keymode_done 'terminals' %>
+terminals: t :MacroCmd {Exec xterm-window} <%= keymode_done 'terminals' %>
+terminals: Mod4 t :MacroCmd {Exec xterm-window} <%= keymode_done 'terminals' %>
+terminals: h :MacroCmd {Exec top-term --geometry 150x90 htop} <%= keymode_done 'terminals' %>
+terminals: n :MacroCmd {Exec top-term sudo nethogs `gw-dev`} <%= keymode_done 'terminals' %>
+terminals: i :MacroCmd {Exec top-term sudo iotop} <%= keymode_done 'terminals' %>
+terminals: g :MacroCmd {Exec top-term sudo iftop -i `gw-dev`} <%= keymode_done 'terminals' %>
+terminals: p :MacroCmd {Exec top-term sudo powertop} <%= keymode_done 'terminals' %>
 
 # opening programs
 Control Mod4 b :Exec brave-browser --disable-features=SendMouseLeaveEvents
@@ -364,7 +384,8 @@ Mod4 d :Exec switch-emacs-eval ~/lib/emacs/shortcuts/org-agenda-today.el
 Mod4 v :Exec switch-emacs-eval ~/lib/emacs/shortcuts/org-agenda-daily-review.el
 Mod4 n :Exec switch-emacs-eval '(as-find-personal-note)'
 Mod1 Mod4 n :Exec fluxbox-focus-or-launch -c notion-app-enhanced ~/software/web/Notion-Enhanced.AppImage
-Mod4 m :Exec chrome-session-tabs 'mail.google.com/mail/u/0'
+# Mod4 m m :Exec chrome-session-tabs 'mail.google.com/mail/u/0'
+# Mod4 m t :Exec chrome-session-tabs 'mail.google.com/mail/u/1'
 Shift Mod4 n :Exec chrome-session-fzf 'https://www.notion.so/ '
 Mod4 s :Exec fluxbox-focus-or-launch Slack slack
 Mod4 w :Exec chrome-session-tabs WhatsApp

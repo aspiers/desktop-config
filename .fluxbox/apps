@@ -44,6 +44,11 @@
   [Position]	(Center)	{0 0}
 [end]
 
+[app] (role=sync .* mail)
+  [Dimensions]	{90% 20%}
+  [Position]	(Bottom)	{0 20%}
+[end]
+
 [app] (name=emacs) (title!=Ediff)
   [Head]	{1}
   [Position]	(TopLeft)	{50% 0}
