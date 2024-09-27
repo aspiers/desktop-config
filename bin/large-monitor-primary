@@ -1,3 +1,6 @@
 #!/bin/bash
 
-xrandr | grep -q 'primary 3840x2160'
+eval $(~/lib/libdpy.py)
+
+[ "$screen_primary_name" != eDP-1 ]
+#xrandr | grep -q 'primary 3840x2160'
