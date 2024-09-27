@@ -1,0 +1,57 @@
+#!/bin/bash
+
+list () {
+   xfconf-query -l -R -c xfce4-terminal -v | \
+       perl -pe 's! {2,}(\S.*)$! '\'\$1\''!; s!^/!    pset !'
+}
+
+pset () {
+    prop="$1" val="$2"
+    xfconf-query -c xfce4-terminal -p "/$prop" -s "$val"
+}
+
+set_common () {
+    pset color-bold-is-bright true
+    pset misc-bell-urgent true
+    pset misc-cursor-blinks true
+    pset misc-cursor-shape TERMINAL_CURSOR_SHAPE_BLOCK
+    pset scrolling-bar "TERMINAL_SCROLLBAR_NONE"
+}
+
+set_theme () {
+    theme="$1"
+    case "$theme" in
+        dark)
+            pset color-background '#000000'
+            pset color-foreground '#ffffff'
+            pset color-cursor-foreground '#91914141acac'
+            pset color-cursor-use-default false
+            pset color-palette 'rgb(0,0,0);rgb(170,0,0);rgb(10,173,8);rgb(229,165,10);rgb(26,95,180);rgb(170,0,170);rgb(0,170,170);rgb(170,170,170);rgb(85,85,85);rgb(255,85,85);rgb(150,255,92);rgb(255,255,85);rgb(98,160,234);rgb(255,85,255);rgb(85,255,255);rgb(255,255,255)'
+            ;;
+        light)
+            pset color-background '#ffffff'
+            pset color-foreground '#000000'
+            pset color-palette 'rgb(0,0,0);rgb(170,0,0);rgb(3,217,0);rgb(150,104,0);rgb(0,0,170);rgb(170,0,170);rgb(0,177,170);rgb(94,92,100);rgb(85,85,85);rgb(255,85,85);rgb(85,255,85);rgb(255,255,85);rgb(85,85,255);rgb(255,85,255);rgb(18,159,161);rgb(0,0,0)'
+            ;;
+        solarized-light)
+            pset color-foreground '#073642'
+            pset color-background '#fdf6e3'
+            pset color-palette 'rgb(7,54,66);rgb(220,50,47);rgb(133,153,0);rgb(181,137,0);rgb(38,139,210);rgb(211,54,130);rgb(42,161,152);rgb(0,0,0);rgb(0,43,54);rgb(203,75,22);rgb(88,110,117);rgb(101,123,131);rgb(131,148,150);rgb(108,113,196);rgb(147,161,161);rgb(61,56,70)'
+            ;;
+        *)
+            echo >&2 "Unrecognised theme '$theme'"
+            exit 1
+            ;;
+    esac
+}
+
+main () {
+    if [ -z "$1" ]; then
+        list
+    else
+        set_common
+        set_theme "$@"
+    fi
+}
+
+main "$@"
