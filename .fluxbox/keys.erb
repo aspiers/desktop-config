@@ -192,8 +192,8 @@ Shift Mod1 Mod4 k :MacroCmd {MoveUp    50} {<%= focus_active %>}
 Shift Mod1 Mod4 j :MacroCmd {MoveDown  50} {<%= focus_active %>}
 
 <%
-def reorg_done
-  '{KeyMode default} ' + notify_done('reorg')
+def keymode_done(mode)
+  '{KeyMode default} ' + notify_done(mode)
 end
 %>
 
@@ -201,7 +201,7 @@ Control Mod4 p :MacroCmd {KeyMode passthru} {<%= notify_persistent 'fluxbox pass
 passthru: q :MacroCmd {KeyMode default} <%= notify_done('passthru') %>
 
 Mod4 r :MacroCmd {KeyMode reorg} {<%= notify_persistent 'fluxbox reorg', 'reorg' %>}
-reorg: q :MacroCmd <%= reorg_done %>
+reorg: q :MacroCmd <%= keymode_done 'reorg' %>
 
 reorg: slash :MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {<%= focus_active %>} {Delay {Raise} 10000}
 reorg: Mod4 slash :MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {<%= focus_active %>} {Delay {Raise} 10000}
@@ -247,9 +247,9 @@ reorg: 5 :MacroCmd {Exec ly -s top-left}
 reorg: 6 :MacroCmd {Exec ly -s top-right}
 reorg: 7 :MacroCmd {Exec ly -s bottom-left}
 reorg: 8 :MacroCmd {Exec ly -s bottom-right}
-reorg: Shift 2 :MacroCmd {Exec ly -s 2cols} <%= reorg_done %>
-reorg: Shift 5 :ResizeTo 1280 720 <%= reorg_done %>
-reorg: Shift semicolon :MacroCmd {Exec ly -s 2rows} <%= reorg_done %>
+reorg: Shift 2 :MacroCmd {Exec ly -s 2cols} <%= keymode_done 'reorg' %>
+reorg: Shift 5 :ResizeTo 1280 720 <%= keymode_done 'reorg' %>
+reorg: Shift semicolon :MacroCmd {Exec ly -s 2rows} <%= keymode_done 'reorg' %>
 
 reorg: space :Raise
 reorg: Mod4 l :If {Matches (Layer=Normal)} {MacroCmd {SetLayer Top} {<%= notify_transient 'set to top layer', 'layer' %>}} {MacroCmd {SetLayer Normal} {<%= notify_transient 'set to normal layer', 'layer'  %>}}
