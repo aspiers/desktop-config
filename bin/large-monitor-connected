@@ -9,8 +9,8 @@ then
     exit 0
 fi
 
-if grep -q 'BenQ BL3200 res: 2560x1440' $inxi; then
-    exit 0
-fi
+# if grep -q 'BenQ BL3200 res: 2560x1440' $inxi; then
+#     exit 0
+# fi
 
 exit 1

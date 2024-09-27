@@ -1,6 +1,6 @@
 #!/bin/bash
 
-eval $(~/lib/libdpy.py)
+# eval $(~/lib/libdpy.py)
+# [ "$screen_primary_name" != eDP-1 ]
 
-[ "$screen_primary_name" != eDP-1 ]
-#xrandr | grep -q 'primary 3840x2160'
+xrandr | grep -q 'primary 3840x2160'

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+inxi=~/tmp/.inxi.Gxx
+
 . $ZDOTDIR/lib/libhost.sh
 read_localhost_nickname
 
@@ -25,6 +27,10 @@ case "$localhost_nickname" in
                 echo >&2 "LG is $monitor; made primary"
             fi
             layout_file celtic+large
+            exit
+        # UGLY HACK: relies on $inxi being created by previous command
+        elif grep -q 'BenQ BL3200 res: 2560x1440' $inxi; then
+            layout_file celtic+BenQ
             exit
         elif [ `monitors-connected` == 1 ]; then
             layout_file "$localhost_nickname"
