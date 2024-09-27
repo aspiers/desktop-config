@@ -1,4 +1,4 @@
 #!/bin/bash
 
 # https://www.reddit.com/r/openSUSE/comments/ptqlfu/psa_vscode_and_some_nonpatched_electron/
-~/software/comms/discord/Discord --disable-gpu-sandbox --disable-features=SendMouseLeaveEvents "$@" >~/.log/discord.log 2>&1 &
+~/software/comms/discord/Discord --disable-gpu-sandbox "$@" >~/.log/discord.log 2>&1 &

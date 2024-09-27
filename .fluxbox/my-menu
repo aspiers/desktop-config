@@ -7,9 +7,9 @@
       [exec]   (gnome-terminal) {gnome-terminal} 
       [exec]   (Run) {fbrun} 
 [submenu] (Browsers)
-      [exec]   (Chrome) {google-chrome --disable-features=SendMouseLeaveEvents} 
-      [exec]   (Brave) {brave-browser --disable-features=SendMouseLeaveEvents} 
-      [exec]   (Chromium) {chromium --disable-features=SendMouseLeaveEvents} 
+      [exec]   (Chrome) {google-chrome} 
+      [exec]   (Brave) {brave-browser} 
+      [exec]   (Chromium) {chromium} 
       [exec]   (Firefox) {firefox} 
 [end]
 [submenu] (Comms)
