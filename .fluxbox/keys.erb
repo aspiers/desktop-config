@@ -186,8 +186,11 @@ mail: t      :MacroCmd {Exec fluxbox-mutt-term mt} <%= keymode_done 'mail' %>
 mail: g      :MacroCmd {Exec chrome-session-tabs 'mail.google.com/mail/u/0'} <%= keymode_done 'mail' %>
 mail: T      :MacroCmd {Exec chrome-session-tabs 'mail.google.com/mail/u/1'} <%= keymode_done 'mail' %>
 mail: s      :MacroCmd {Exec chrome-session-tabs 'mail.superhuman.com'} <%= keymode_done 'mail' %>
-mail: comma  :MacroCmd {Exec top-term --title 'sync personal mail' sync-personal-mail} <%= keymode_done 'mail' %>
-mail: period :MacroCmd {Exec top-term --title 'sync Toucan mail' sync-Toucan-mail} <%= keymode_done 'mail' %>
+
+mail: comma  :MacroCmd {Exec sync-personal-mail-now} <%= keymode_done 'mail' %>
+mail: period :MacroCmd {Exec sync-Toucan-mail-now} <%= keymode_done 'mail' %>
+
+mail: l p    :MacroCmd {Exec top-term --title 'personal mail sync daemon' ujlu personal-mail-sync} <%= keymode_done 'mail' %>
 mail: q :MacroCmd <%= keymode_done 'mail' %>
 
 # Added into reorg mode instead
