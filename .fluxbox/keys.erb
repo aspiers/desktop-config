@@ -344,7 +344,7 @@ Mod4 9 :MacroCmd {Exec xdotool keyup Super_R} {Exec warpd --click 3}
 # xdotool can't filter by head on multi-head sessions
 # Mod4 x :Exec wmctrl -s 0; xdotool search --onlyvisible --desktop 0 --class gnome-terminal windowactivate; focus-active-window
 # Heads start from 1 but workspaces from 0?!
-Mod4 x :MacroCmd {NextWindow (Name=gnome-terminal-server) (Head=1) (workspace=0)} {<%= focus_active %>}
+Mod4 x :MacroCmd {NextWindow (Name=gnome-terminal-server) (Role=gnome-terminal-.*) (Head=1) (workspace=0)} {<%= focus_active %>}
 Control Mod4 x :Exec rmx-window
 
 Control Mod4 a :Exec chrome-session-fzf 'poe.com | gemini.google.com'
