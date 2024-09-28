@@ -115,7 +115,7 @@ obtain_lock () {
     fi
 
     if [ -d "/proc/$pid" ]; then
-        running="$(</proc/$pid/cmdline)"
+        running="$(tr '\0' ' ' </proc/$pid/cmdline)"
         cmd0="${cmd%% *}"
         case "$running" in
           *$cmd0*)
