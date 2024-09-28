@@ -191,6 +191,9 @@ mail: comma  :MacroCmd {Exec sync-personal-mail-now} <%= keymode_done 'mail' %>
 mail: period :MacroCmd {Exec sync-Toucan-mail-now} <%= keymode_done 'mail' %>
 
 mail: l p    :MacroCmd {Exec top-term --title 'personal mail sync daemon' ujlu personal-mail-sync} <%= keymode_done 'mail' %>
+mail: p l    :MacroCmd {Exec top-term --title 'personal mail sync daemon' ujlu personal-mail-sync} <%= keymode_done 'mail' %>
+mail: l t    :MacroCmd {Exec top-term --title 'Toucan mail sync daemon' ujlu Toucan-mail-sync} <%= keymode_done 'mail' %>
+mail: t l    :MacroCmd {Exec top-term --title 'Toucan mail sync daemon' ujlu Toucan-mail-sync} <%= keymode_done 'mail' %>
 mail: q :MacroCmd <%= keymode_done 'mail' %>
 
 # Added into reorg mode instead
