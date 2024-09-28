@@ -178,7 +178,18 @@ Shift Mod4 m :MaximizeVertical
 Control Mod4 m :MaximizeHorizontal
 Shift Control Mod4 m :Maximize
 
-Mod4 m :MacroCmd <%= keymode 'mail', 'm: personal mutt\nt: Toucan mutt\ng: personal gmail\ns: Toucan superhuman\n-----------------------------------\n, sync-personal-mail\n. sync-Toucan-mail' %>
+Mod4 m :MacroCmd <%= keymode 'mail',
+'m: personal mutt
+t: Toucan mutt
+g: personal gmail
+s: Toucan superhuman
+--------------------------------------------------------
+p l: show personal-mail-sync log
+t l: show Toucan-mail-sync log
+--------------------------------------------------------
+, sync-personal-mail-now
+. sync-Toucan-mail-now'
+.gsub("\n", '\n') %>
 mail: m      :MacroCmd {Exec fluxbox-mutt-term m} <%= keymode_done 'mail' %>
 mail: Mod4 m :MacroCmd {Exec fluxbox-mutt-term m} <%= keymode_done 'mail' %>
 mail: p      :MacroCmd {Exec fluxbox-mutt-term m} <%= keymode_done 'mail' %>
