@@ -2,6 +2,6 @@
 
 eval $(~/lib/libdpy.py)
 
-# Starts counting at 0. Currently ordered by output of xrandr which
-# is only 95% stable.
+# Starts counting at 0. Currently ordered left to right based on
+# X offsets in output of xrandr.
 echo "$screen_primary_num"

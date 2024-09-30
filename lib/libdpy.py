@@ -57,6 +57,7 @@ def extract_xrandr_screen_geometries(xrandr=None):
         sys.stderr.write("Couldn't extract screens info from xrandr\n")
         sys.exit(1)
 
+    screens.sort(key = lambda x: int(x['x_offset']))
     for i, screen in enumerate(screens):
         for k, v in screen.items():
             if v:

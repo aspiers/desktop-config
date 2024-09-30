@@ -35,9 +35,9 @@ def get_layout_params(layout_file):
         sys.exit(1)
 
     for i, s in enumerate(screens):
-        # Note: this makes the unsafe assumption that the ordering of
-        # screens in the YAML layout file match the ordering from
-        # xrandr, but xrandr doesn't guarantee stable ordering.
+        # Note: this assumes that the ordering of screens in the YAML
+        # layout file match the ordering based on X offsets given by
+        # xrandr.
         screen_layout = layout['screens'][i]
         s.update(screen_layout)
 
