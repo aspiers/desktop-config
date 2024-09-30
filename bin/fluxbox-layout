@@ -113,11 +113,8 @@ def main():
     active_win_id = subprocess.check_output(['xdotool', 'getactivewindow']).rstrip()
 
     layout_file = liblayout.get_layout_file(args.layout, args.dir)
-    with open(layout_file) as f:
-        layout = yaml.safe_load(f)
-
+    layout_params, layout = liblayout.get_layout_params(layout_file)
     window_cmds = layout['windows']
-    layout_params = liblayout.get_layout_params(layout_file, layout)
 
     init_magic_cmds(layout_params)
 

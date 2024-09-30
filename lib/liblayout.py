@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import os
+import yaml
 
 import libdpy
 
@@ -19,7 +20,10 @@ def percent(x, y):
     return round(x / y * 100)
 
 
-def get_layout_params(layout_file, layout):
+def get_layout_params(layout_file):
+    with open(layout_file) as f:
+        layout = yaml.safe_load(f)
+
     screens = libdpy.extract_xrandr_screen_geometries().copy()
     if len(screens) != len(layout['screens']):
         sys.stderr.write(
@@ -92,4 +96,4 @@ def get_layout_params(layout_file, layout):
 
         s['SetHead'] = 'SetHead %d' % s['head']
 
-    return screens
+    return screens, layout
