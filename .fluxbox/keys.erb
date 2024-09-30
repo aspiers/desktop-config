@@ -189,7 +189,9 @@ p l: show personal-mail-sync log
 t l: show Toucan-mail-sync log
 --------------------------------------------------------
 , sync-personal-mail-now
-. sync-Toucan-mail-now'
+. sync-Toucan-mail-now
+< sync-personal-mail
+> sync-Toucan-mail'
 .gsub("\n", '\n') %>
 mail: m       :MacroCmd {Exec fluxbox-mutt-term m } <%= keymode_done 'mail' %>
 mail: Shift m :MacroCmd {Exec         mutt-term m } <%= keymode_done 'mail' %>
@@ -205,6 +207,9 @@ mail: s       :MacroCmd {Exec chrome-session-tabs 'mail.superhuman.com'}      <%
 
 mail: comma   :MacroCmd {Exec sync-personal-mail-now} <%= keymode_done 'mail' %>
 mail: period  :MacroCmd {Exec sync-Toucan-mail-now}   <%= keymode_done 'mail' %>
+
+mail: Shift comma  :MacroCmd {Exec top-term --title 'personal mail sync' sync-personal-mail} <%= keymode_done 'mail' %>
+mail: Shift period :MacroCmd {Exec top-term --title 'Toucan mail sync'   sync-Toucan-mail  } <%= keymode_done 'mail' %>
 
 mail: l p     :MacroCmd {Exec top-term --title 'personal mail sync daemon' ujlu personal-mail-sync} <%= keymode_done 'mail' %>
 mail: p l     :MacroCmd {Exec top-term --title 'personal mail sync daemon' ujlu personal-mail-sync} <%= keymode_done 'mail' %>
