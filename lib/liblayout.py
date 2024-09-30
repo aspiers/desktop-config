@@ -2,6 +2,7 @@
 
 import os
 import sys
+import json
 import yaml
 
 import libdpy
@@ -98,3 +99,14 @@ def get_layout_params(layout_file):
         s['SetHead'] = 'SetHead %d' % s['head']
 
     return screens, layout
+
+
+def main():
+    exe, layout_name, *_rest = sys.argv
+    layout_file = get_layout_file(layout_name, os.path.expanduser('~/.fluxbox/layouts'))
+    screens, layout = get_layout_params(layout_file)
+    print(json.dumps({'screens': screens, 'layout': layout}))
+
+
+if __name__ == "__main__":
+    main()
