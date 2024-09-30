@@ -183,6 +183,7 @@ Mod4 m :MacroCmd <%= keymode 'mail',
 t: Toucan mutt (T avoids reuse)
 g: personal gmail
 s: Toucan superhuman
+G: Toucan gmail
 --------------------------------------------------------
 p l: show personal-mail-sync log
 t l: show Toucan-mail-sync log
@@ -199,7 +200,7 @@ mail: Shift p :MacroCmd {Exec         mutt-term m } <%= keymode_done 'mail' %>
 mail: t       :MacroCmd {Exec fluxbox-mutt-term mt} <%= keymode_done 'mail' %>
 mail: Shift t :MacroCmd {Exec         mutt-term mt} <%= keymode_done 'mail' %>
 mail: g       :MacroCmd {Exec chrome-session-tabs 'mail.google.com/mail/u/0'} <%= keymode_done 'mail' %>
-mail: T       :MacroCmd {Exec chrome-session-tabs 'mail.google.com/mail/u/1'} <%= keymode_done 'mail' %>
+mail: Shift g :MacroCmd {Exec chrome-session-tabs 'mail.google.com/mail/u/1'} <%= keymode_done 'mail' %>
 mail: s       :MacroCmd {Exec chrome-session-tabs 'mail.superhuman.com'}      <%= keymode_done 'mail' %>
 
 mail: comma   :MacroCmd {Exec sync-personal-mail-now} <%= keymode_done 'mail' %>
