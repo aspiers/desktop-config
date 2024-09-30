@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import os
+import sys
 import yaml
 
 import libdpy
