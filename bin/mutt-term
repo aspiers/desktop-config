@@ -1,6 +1,7 @@
 #!/bin/sh -x
 
 xterm-window \
+    --zoom 1.2 \
     --geometry 150x50 \
     --role "mutt: $1" \
     --title "mutt: $1" \
