@@ -185,8 +185,8 @@ g: personal gmail
 s: Toucan superhuman
 G: Toucan gmail
 --------------------------------------------------------
-p l: show personal-mail-sync log
-t l: show Toucan-mail-sync log
+l p: show personal-mail-sync log
+l t: show Toucan-mail-sync log
 --------------------------------------------------------
 , sync-personal-mail-now
 . sync-Toucan-mail-now
@@ -212,9 +212,7 @@ mail: Shift comma  :MacroCmd {Exec top-term --title 'personal mail sync' sync-pe
 mail: Shift period :MacroCmd {Exec top-term --title 'Toucan mail sync'   sync-Toucan-mail  } <%= keymode_done 'mail' %>
 
 mail: l p     :MacroCmd {Exec top-term --title 'personal mail sync daemon' ujlu personal-mail-sync} <%= keymode_done 'mail' %>
-mail: p l     :MacroCmd {Exec top-term --title 'personal mail sync daemon' ujlu personal-mail-sync} <%= keymode_done 'mail' %>
 mail: l t     :MacroCmd {Exec top-term --title 'Toucan mail sync daemon' ujlu Toucan-mail-sync} <%= keymode_done 'mail' %>
-mail: t l     :MacroCmd {Exec top-term --title 'Toucan mail sync daemon' ujlu Toucan-mail-sync} <%= keymode_done 'mail' %>
 mail: q :MacroCmd <%= keymode_done 'mail' %>
 
 # Added into reorg mode instead
