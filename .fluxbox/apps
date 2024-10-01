@@ -44,7 +44,7 @@
   [Position]	(Center)	{0 0}
 [end]
 
-[app] (role=.* mail sync daemon)
+[app] (role=.* mail sync( daemon)?)
   [Dimensions]	{90% 20%}
   [Position]	(Bottom)	{0 20%}
 [end]
