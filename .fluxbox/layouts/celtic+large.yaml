@@ -31,8 +31,11 @@ windows:
     - <stick>
     - MacroCmd {<s_primary_SetHead>} {ResizeTo 100% <s_primary_logs_height_pc>} {MoveTo 0 <s_primary_panel_height> BottomLeft} {SetAlpha 50}
 
-  - - (Name=gnome-terminal-server)
+  - - (Name=gnome-terminal-server) (Role=gnome-terminal-window-.*)
     - MacroCmd {<s_primary_SetHead>} {MoveTo <s_primary_col1_left> <s_primary_row1_top>} {ResizeTo <s_primary_col1_width> <s_primary_active_height>}
+
+  - - (Name=gnome-terminal-server) (Role=mutt:\ .*)
+    - MacroCmd {<s_primary_SetHead>} {MoveTo 0 0 Center}
 
   - - (name=emacs) (title!=Ediff)
     - MacroCmd {<s_primary_SetHead>} {MoveTo <s_primary_col2_left> <s_primary_row1_top>} {ResizeTo <s_primary_col2_width> <s_primary_active_height>}
