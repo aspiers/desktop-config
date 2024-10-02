@@ -45,8 +45,8 @@
 [end]
 
 [app] (role=.* mail sync( daemon)?)
-  [Dimensions]	{90% 20%}
-  [Position]	(Bottom)	{0 20%}
+  [Dimensions]	{90% 40%}
+  [Position]	(Bottom)	{0 30%}
 [end]
 
 [app] (name=emacs) (title!=Ediff)
