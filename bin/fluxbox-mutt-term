@@ -1,4 +1,4 @@
 #!/bin/bash
 
 title="mutt: $1"
-fluxbox-focus-or-launch "$title" mutt-term "$*"
+fluxbox-focus-or-launch "$title\$" mutt-term "$*"
