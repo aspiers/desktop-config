@@ -4,7 +4,7 @@
 #Eterm -t top
 unset COLUMNS
 
-geometry=90x40
+geometry=140x60
 theme=$(<~/.config/gnome-terminal-profile)
 profile=top-term-${theme:-Dark}
 
