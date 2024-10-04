@@ -64,7 +64,7 @@ focus_window () {
     if [ -n "$class" ]; then
         fluxbox_pattern="(Class=$window_pattern)"
     else
-        fluxbox_pattern="(Title=.*$window_pattern.*)"
+        fluxbox_pattern="(Title=$window_pattern)"
     fi
     echo "NextWindow $fluxbox_pattern"
     fluxbox-remote "NextWindow $fluxbox_pattern"
@@ -80,7 +80,7 @@ exit_if_window_focused () {
         window_op=getwindowname
     fi
     window_name="$(xdotool getactivewindow $window_op)"
-    if [[ "$window_name" =~ "$window_pattern" ]]; then
+    if [[ "$window_name" =~ $window_pattern ]]; then
         echo "Focused window '$window_name' matches '$window_pattern'"
         exit 0
     fi
