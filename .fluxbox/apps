@@ -47,6 +47,7 @@
 [app] (role=.* mail sync( daemon)?)
   [Dimensions]	{90% 40%}
   [Position]	(Bottom)	{0 30%}
+  [Deco]	{NONE}
 [end]
 
 [app] (name=emacs) (title!=Ediff)
