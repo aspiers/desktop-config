@@ -392,7 +392,7 @@ Control Mod1 Mod4 n :Exec top-term node
 Mod4 e :MacroCmd {NextWindow (Name=emacs)} {<%= focus_active %>}
 Shift Mod4 e :Exec chrome-session-fzf 'https://linear.app/ '
 
-Control Mod4 d :Exec fluxbox-focus-or-launch Discord discord
+Control Mod4 d :Exec fluxbox-focus-or-launch -c discord discord
 
 Mod4 g :Exec fluxbox-focus-or-launch -c TelegramDesktop ~/software/telegram/Telegram
 Shift Mod4 g :Exec chrome-session-tabs https://meet.google.com/
@@ -412,10 +412,10 @@ Mod1 Mod4 n :Exec fluxbox-focus-or-launch -c notion-app-enhanced ~/software/web/
 # Mod4 m m :Exec chrome-session-tabs 'mail.google.com/mail/u/0'
 # Mod4 m t :Exec chrome-session-tabs 'mail.google.com/mail/u/1'
 Shift Mod4 n :Exec chrome-session-fzf 'https://www.notion.so/ '
-Mod4 s :Exec fluxbox-focus-or-launch Slack slack
+Mod4 s :Exec fluxbox-focus-or-launch -c Slack slack
 Mod4 w :Exec chrome-session-tabs WhatsApp
 Mod4 y :Exec chrome-session-fzf youtube.com
-Mod4 z :Exec fluxbox-focus-or-launch Zulip zulip
+Mod4 z :Exec fluxbox-focus-or-launch -c Zulip zulip
 
 #Shift Mod4 z :Exec fluxbox-focus-or-launch Zoom 'zoom --disable-gpu-sandbox'
 Shift Mod4 z :MacroCmd {NextWindow (Title=Zoom Meeting.*)} {<%= focus_active %>}

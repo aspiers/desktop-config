@@ -18,8 +18,8 @@ Options:
   -h, --help     Show this help and exit
   -c, --class    Match WINDOW-PATTERN against class rather than title
 
-WINDOW-PATTERN is a regexp matching the window name or title
-LAUNCH-CMD is a command for launching the program if it's not found
+WINDOW-PATTERN is a regexp matching the window title or class.
+LAUNCH-CMD is a command for launching the program if it's not found.
 EOF
 
     if [ -n "$1" ]; then
