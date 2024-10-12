@@ -185,6 +185,9 @@ g: personal gmail
 G: Toucan gmail
 s: Toucan superhuman
 --------------------------------------------------------
+c p: gtd-timer countdown for personal notmuch
+c t: gtd-timer countdown for Toucan notmuch
+--------------------------------------------------------
 l p: show personal-mail-sync log
 l t: show Toucan-mail-sync log
 --------------------------------------------------------
@@ -204,6 +207,9 @@ mail: Shift t :MacroCmd {Exec         mutt-term mt} <%= keymode_done 'mail' %>
 mail: g       :MacroCmd {Exec chrome-session-tabs 'mail.google.com/mail/u/0'} <%= keymode_done 'mail' %>
 mail: Shift g :MacroCmd {Exec chrome-session-tabs 'mail.google.com/mail/u/1'} <%= keymode_done 'mail' %>
 mail: s       :MacroCmd {Exec chrome-session-tabs 'mail.superhuman.com'}      <%= keymode_done 'mail' %>
+
+mail: c p     :MacroCmd {Exec urxvt -fn smoothansi -geometry 90x15-0-0 -e sh -c "gtd-timer -c 'nmp count tag:inbox'; sleep 60"} <%= keymode_done 'mail' %>
+mail: c t     :MacroCmd {Exec urxvt -fn smoothansi -geometry 90x15-0-0 -e sh -c "gtd-timer -c 'nmt count tag:inbox'; sleep 60"} <%= keymode_done 'mail' %>
 
 mail: l p     :MacroCmd {Exec top-term --title 'personal mail sync daemon' ujlu personal-mail-sync} <%= keymode_done 'mail' %>
 mail: l t     :MacroCmd {Exec top-term --title 'Toucan mail sync daemon' ujlu Toucan-mail-sync} <%= keymode_done 'mail' %>
