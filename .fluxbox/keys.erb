@@ -182,8 +182,8 @@ Mod4 m :MacroCmd <%= keymode 'mail',
 'm: personal mutt (M avoids reuse)
 t: Toucan mutt (T avoids reuse)
 g: personal gmail
-s: Toucan superhuman
 G: Toucan gmail
+s: Toucan superhuman
 --------------------------------------------------------
 l p: show personal-mail-sync log
 l t: show Toucan-mail-sync log
@@ -205,14 +205,15 @@ mail: g       :MacroCmd {Exec chrome-session-tabs 'mail.google.com/mail/u/0'} <%
 mail: Shift g :MacroCmd {Exec chrome-session-tabs 'mail.google.com/mail/u/1'} <%= keymode_done 'mail' %>
 mail: s       :MacroCmd {Exec chrome-session-tabs 'mail.superhuman.com'}      <%= keymode_done 'mail' %>
 
+mail: l p     :MacroCmd {Exec top-term --title 'personal mail sync daemon' ujlu personal-mail-sync} <%= keymode_done 'mail' %>
+mail: l t     :MacroCmd {Exec top-term --title 'Toucan mail sync daemon' ujlu Toucan-mail-sync} <%= keymode_done 'mail' %>
+
 mail: comma   :MacroCmd {Exec sync-personal-mail-now} <%= keymode_done 'mail' %>
 mail: period  :MacroCmd {Exec sync-Toucan-mail-now}   <%= keymode_done 'mail' %>
 
 mail: Shift comma  :MacroCmd {Exec top-term --title 'personal mail sync' sync-personal-mail} <%= keymode_done 'mail' %>
 mail: Shift period :MacroCmd {Exec top-term --title 'Toucan mail sync'   sync-Toucan-mail  } <%= keymode_done 'mail' %>
 
-mail: l p     :MacroCmd {Exec top-term --title 'personal mail sync daemon' ujlu personal-mail-sync} <%= keymode_done 'mail' %>
-mail: l t     :MacroCmd {Exec top-term --title 'Toucan mail sync daemon' ujlu Toucan-mail-sync} <%= keymode_done 'mail' %>
 mail: q :MacroCmd <%= keymode_done 'mail' %>
 
 # Added into reorg mode instead
