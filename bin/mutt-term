@@ -1,9 +1,11 @@
-#!/bin/sh -x
+#!/bin/sh
 
-xterm-window \
-    --zoom 1.2 \
+# Don't use gnome-terminal as it can't handle emojis properly!
+
+#xterm-window \
+xfce4-terminal \
     --geometry 150x50 \
     --role "mutt: $1" \
     --title "mutt: $1" \
-    -- \
+    -x \
     "$@"
