@@ -25,7 +25,7 @@
   [Sticky]	{yes}
 [end]
 
-[app] (name=gnome-terminal-server) (role=gnome-terminal-window-.*)
+[app] (name=gnome-terminal-server|xfce4-terminal) (role=gnome-terminal-window-.*|xfce4-terminal-.*)
   [Head]	{1}
   [Position]	(TopLeft)	{0 0}
   [Dimensions]	{50% 90%}
