@@ -58,7 +58,11 @@ if [ -n "$git_font_size" ]; then
     git config --global gui.fontui "-family Roboto -size $git_font_size -weight normal -slant roman -underline 0 -overstrike 0"
     git config --global gui.fontdiff "-family \"Source Code Pro\"  -size $git_font_size -weight normal -slant roman -underline 0 -overstrike 0"
 
+    gitk_config=~/.config/git/gitk
     cat <<EOF
+
+In $gitk_config:
+
 Setting gitk uifont (for menus etc.) to $medium_font_tk
 Setting gitk mainfont (for commits)  to $medium_font_tk
 Setting gitk textfont (for diffs)    to $medium_font_tk_mono
@@ -70,5 +74,10 @@ EOF
 
       # More effort than its worth - single line not sufficient.
       # s/^(set geometry\(main\)) .*/$1 '"${geometry%% *}"'/;
-    ' ~/.config/git/gitk
+    ' $gitk_config
+
+    echo -e "\nAfter editing:\n"
+    grep 'set uifont' $gitk_config || echo "uifont not found!"
+    grep 'set textfont' $gitk_config || echo "textfont not found!"
+    grep 'set textfont' $gitk_config || echo "textfont not found!"
 fi
