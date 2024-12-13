@@ -217,8 +217,8 @@ mail: l t     :MacroCmd {Exec top-term --title 'Toucan mail sync daemon' ujlu To
 mail: comma   :MacroCmd {Exec sync-personal-mail-now} <%= keymode_done 'mail' %>
 mail: period  :MacroCmd {Exec sync-Toucan-mail-now}   <%= keymode_done 'mail' %>
 
-mail: Shift comma  :MacroCmd {Exec top-term --title 'personal mail sync' sync-personal-mail} <%= keymode_done 'mail' %>
-mail: Shift period :MacroCmd {Exec top-term --title 'Toucan mail sync'   sync-Toucan-mail  } <%= keymode_done 'mail' %>
+mail: Shift comma  :MacroCmd {Exec top-term --title 'personal mail sync' sync-personal-mail --wait-for-key} <%= keymode_done 'mail' %>
+mail: Shift period :MacroCmd {Exec top-term --title 'Toucan mail sync'   sync-Toucan-mail --wait-for-key} <%= keymode_done 'mail' %>
 
 mail: q :MacroCmd <%= keymode_done 'mail' %>
 
