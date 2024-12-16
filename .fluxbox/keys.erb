@@ -389,7 +389,8 @@ Shift Mod4 b :MacroCmd {NextWindow (Name=brave-browser|google-chrome|chromium) (
 
 <% end %>
 Mod4 Tab :Exec chrome-session-fzf
-Mod4 c :Exec chrome-session-tabs 'calendar.google.com/calendar/u/0'
+Mod4 c :Exec fluxbox-focus-or-launch -c Code code
+Control Mod4 c :Exec chrome-session-tabs 'calendar.google.com/calendar/u/0'
 Shift Mod4 c :Exec chrome-session-tabs 'app.reclaim.ai'
 
 # useful as a calculator
