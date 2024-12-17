@@ -1,0 +1,101 @@
+screens:
+  -
+    name: laptop
+    label: laptop
+    head: 3
+    # fluxbox treats primary as head 1, and we are setting the BenQ
+    # as the primary head (see bin/get-layout)
+    right_margin: 0
+    panel_height: 35
+    logs_height_pc: 0
+    col1_width_pc_of_active: 55
+    col2_width_pc_of_active: 45
+  -
+    name: BenQ
+    # label: primary
+    head: 1
+    gkrellm_width: &GKRELLM_WIDTH 92
+    panel_height: 30
+    logs_height_pc: 14
+    right_margin: *GKRELLM_WIDTH
+    col1_width_pc_of_active: 55
+    single_width_pc_of_active: 80
+  -
+    name: Dell
+    label: Dell
+    head: 2
+    right_margin: 0
+    panel_height: 35
+    logs_height_pc: 0
+    col1_width_pc_of_active: 55
+
+windows:
+  - - (Name=gkrellm)
+    - MacroCmd {<s_primary_SetHead>} {MoveTo 0 0 TopRight} {Activate}
+    - <stick>
+
+  - - (Title=lnav-system)
+    - <stick>
+    - MacroCmd {<s_primary_SetHead>} {ResizeTo 100% <s_primary_logs_height_pc>} {MoveTo 0 <s_primary_panel_height> BottomLeft} {SetAlpha 50}
+
+  - - (Name=gnome-terminal-server) (Role=gnome-terminal-window-.*)
+    - MacroCmd {<s_primary_SetHead>} {MoveTo <s_primary_col1_left> <s_primary_row1_top>} {ResizeTo <s_primary_col1_width> <s_primary_active_height>}
+
+  - - (Name=gnome-terminal-server) (Role=mutt:\ .*)
+    - MacroCmd {<s_primary_SetHead>} {MoveTo 0 0 Center}
+
+  - - (name=emacs) (title!=Ediff)
+    - MacroCmd {<s_primary_SetHead>} {MoveTo <s_primary_col2_left> <s_primary_row1_top>} {ResizeTo <s_primary_col2_width> <s_primary_active_height>}
+
+  - - (Name=brave-browser|google-chrome|chromium) (Title=.*Toucan)
+    - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 2}
+
+  - - (Name=brave-browser|google-chrome|chromium) (Title=.*(personal$|Panther))
+    - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 5}
+
+  - - (Name=brave-browser|google-chrome|chromium) (Title=.*(secondary))
+    - MacroCmd {<s_Dell_SetHead>}
+    - <stick>
+
+  - - (Name=brave-browser|google-chrome|chromium) (Title=.*(gather.town))
+    - MacroCmd {<s_laptop_SetHead>}
+    - <stick>
+
+  - - (Name=brave-browser|google-chrome|chromium) (Head=<s_primary_head>)
+    - MacroCmd {MoveTo <s_primary_single_left> <s_primary_single_top>} {ResizeTo <s_primary_single_width> <s_primary_single_height>}
+
+  - - (Name=brave-browser|google-chrome|chromium) (Head=<s_Dell_head>)
+    - MacroCmd {MoveTo <s_Dell_single_left> <s_Dell_single_top>} {ResizeTo <s_Dell_single_width> <s_Dell_single_height>}
+
+  - - (Name=brave-browser|google-chrome|chromium) (Head=<s_primary_head>)
+    - <unstick>
+
+  - - (Name=brave-browser|google-chrome|chromium) (Head=<s_laptop_head>|<s_Dell_head>)
+    - <stick>
+
+  - - (Class=firefox)
+    - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 3} {MoveTo <s_primary_col1_left> <s_primary_row1_top>} {ResizeTo <s_primary_active_width> <s_primary_active_height>}
+
+  - - (Name=notion-app-enhanced)
+    - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 3} {MoveTo <s_primary_col1_left> <s_primary_row1_top>} {ResizeTo <s_primary_active_width> <s_primary_active_height>}
+    - <unstick>
+
+  - - (Class=Gitk)
+    - <unstick>
+    - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 3} {MoveTo <s_primary_col1_left> <s_primary_row1_top>} {ResizeTo <s_primary_active_width> <s_primary_active_height>}
+
+  - - (Name=slack|Telegram|discord|Discord*|zulip)
+    - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 4} {MoveTo <s_primary_col1_left> <s_primary_row1_top>} {ResizeTo <s_primary_active_width> <s_primary_active_height>}
+    - <unstick>
+
+  - - (Class=Pavucontrol)
+    - <stick>
+    - MacroCmd {<s_laptop_SetHead>} {MoveTo 2% 2%} {ResizeTo 40% 35%}
+
+  - - (Class=Blueman-manager)
+    - <stick>
+    - MacroCmd {<s_laptop_SetHead>} {ResizeTo 35% 40%} {MoveTo 2% 22% BottomLeft}
+
+  - - (Class=Chrysalis)
+    - <stick>
+    - MacroCmd {<s_laptop_SetHead>} {ResizeTo 90% 90%} {MoveTo 5% 5%}
