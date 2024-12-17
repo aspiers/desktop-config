@@ -29,8 +29,8 @@ def get_layout_params(layout_file):
     screens = libdpy.extract_xrandr_screen_geometries().copy()
     if len(screens) != len(layout['screens']):
         sys.stderr.write(
-            "xrandr got %d screens but %s had %d screens" %
-            (len(screens), len(layout['screens']))
+            "xrandr got %d screens but %s had %d screens\n" %
+            (len(screens), layout_file, len(layout['screens']))
         )
         sys.exit(1)
 
