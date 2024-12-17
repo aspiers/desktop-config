@@ -28,7 +28,7 @@ case "$localhost_nickname" in
             fi
             layout_file celtic+large
             exit
-        # UGLY HACK: relies on $inxi being created by previous command
+        # UGLY HACK: relies on $inxi being created by previous command (large-monitor-connected)
         elif grep -q 'BenQ BL3200 res: 2560x1440' $inxi; then
             layout_file celtic+BenQ
             exit

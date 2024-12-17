@@ -1,4 +1,13 @@
 #!/usr/bin/python3
+#
+# Note: screens section of layout files should match the
+# order given by X coordinates in xrandr output.
+#
+# Screen numbers from libdpy are numbered counting from 0
+# and going left to right by X coordinate.
+#
+# head numbers are what fluxbox SetHead and Head matcher
+# use.  They start at 1, which is the primary display.
 
 import os
 import sys

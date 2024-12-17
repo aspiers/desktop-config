@@ -1,4 +1,7 @@
 #!/usr/bin/python3
+#
+# Screen numbers are numbered counting from 0 and going
+# left to right by X coordinate.
 
 import re
 import subprocess
@@ -107,6 +110,7 @@ def get_mouse_location_info():
     return info
 
 
+# FIXME: check y coord too
 def get_screen(x):
     screens = extract_xrandr_screen_geometries()
     for i, screen in enumerate(screens):
