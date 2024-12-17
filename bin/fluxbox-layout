@@ -39,7 +39,7 @@ def expand_magic(cmd):
     return cmd
 
 
-def exec_window_cmds(window_cmds):
+def exec_window_cmds(window_cmds, args):
     for matcher, *cmds in window_cmds:
         matcher = expand_magic(matcher)
         print(matcher)
@@ -47,17 +47,19 @@ def exec_window_cmds(window_cmds):
             expanded = expand_magic(cmd)
             map_cmd = "Map {%s} {Matches %s}" % (expanded, matcher)
             print("   %s" % map_cmd)
-            subprocess.check_call(['fluxbox-remote', map_cmd])
-            time.sleep(0.1)
+            if not args.dump:
+                subprocess.check_call(['fluxbox-remote', map_cmd])
+                time.sleep(0.1)
         print()
 
 
-def exec_cmds(cmds):
+def exec_cmds(cmds, args):
     for cmd in cmds:
         expanded = expand_magic(cmd)
         print("   %s" % expanded)
-        subprocess.check_call(['fluxbox-remote', expanded])
-        time.sleep(0.1)
+        if not args.dump:
+            subprocess.check_call(['fluxbox-remote', expanded])
+            time.sleep(0.1)
 
     print()
 
@@ -65,6 +67,11 @@ def exec_cmds(cmds):
 def parse_args():
     parser = argparse.ArgumentParser(
         description='Activate a fluxbox layout')
+    parser.add_argument(
+        '--dump',
+        action='store_true',
+        default=False,
+        help="Just show expanded layout; don't apply")
     parser.add_argument(
         '--dir',
         type=str,
@@ -111,7 +118,8 @@ def init_magic_cmds(layout_params):
     print()
 
 
-def apply_sublayout(layout_file, sublayouts, name):
+def apply_sublayout(layout_file, sublayouts, args):
+    name = args.sublayout
     if not name in sublayouts:
         sys.stderr.write(
             "Didn't find sublayout '%s' in %s\n" %
@@ -120,7 +128,7 @@ def apply_sublayout(layout_file, sublayouts, name):
         sys.exit(1)
 
     sublayout = sublayouts[name]
-    exec_cmds(sublayout)
+    exec_cmds(sublayout, args)
 
 
 def main():
@@ -138,10 +146,10 @@ def main():
         sublayout_file = liblayout.get_sublayout_file()
         with open(sublayout_file) as sf:
             sublayouts = yaml.safe_load(sf)
-            apply_sublayout(sublayout_file, sublayouts, args.sublayout)
+            apply_sublayout(sublayout_file, sublayouts, args)
     else:
         # pp(window_cmds)
-        exec_window_cmds(window_cmds)
+        exec_window_cmds(window_cmds, args)
 
     subprocess.call(['wmctrl', '-ia', active_win_id])
 
