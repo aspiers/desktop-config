@@ -1,20 +1,8 @@
 screens:
   -
-    name: BenQ
-    head: 1
-    gkrellm_width: &GKRELLM_WIDTH 92
-    panel_height: 30
-    logs_height_pc: 14
-    right_margin: *GKRELLM_WIDTH
-    col1_width_pc_of_active: 55
-    single_width_pc_of_active: 80
+    <INCLUDE screens/BenQ>
   -
-    name: Dell
-    head: 2
-    right_margin: 0
-    panel_height: 35
-    logs_height_pc: 0
-    col1_width_pc_of_active: 55
+    <INCLUDE screens/Dell>
 
 windows:
   - - (Name=gkrellm)

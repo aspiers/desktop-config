@@ -12,15 +12,21 @@
 import os
 import sys
 import json
+import re
 import yaml
 
 import libdpy
 
 
-def get_layout_file(layout_name_or_path, dir=None):
+def get_layout_file(layout_name_or_path, dir=os.path.expanduser('~/.fluxbox/layouts')):
     if os.path.isabs(layout_name_or_path):
         return layout_name_or_path
     return os.path.join(dir, layout_name_or_path) + '.yaml'
+
+
+def read_layout_file(layout_name_or_path, dir=os.path.expanduser('~/.fluxbox/layouts')):
+    with open(get_layout_file(layout_name_or_path, dir)) as f:
+        return f.read()
 
 
 def get_sublayout_file():
@@ -31,9 +37,21 @@ def percent(x, y):
     return round(x / y * 100)
 
 
+def get_include_content(include_file, indent=''):
+    to_include = read_layout_file(include_file)
+    to_include = '\n'.join(indent + line for line in to_include.splitlines())
+    return to_include
+
 def get_layout_params(layout_file):
     with open(layout_file) as f:
-        layout = yaml.safe_load(f)
+        content = f.read()
+        content = re.sub(
+            r'^(\s*)<INCLUDE\s+(.+?)>',
+            lambda m: get_include_content(m.group(2), m.group(1)),
+            content,
+            flags=re.MULTILINE)
+        print(content)
+        layout = yaml.safe_load(content)
 
     screens = libdpy.extract_xrandr_screen_geometries().copy()
     if len(screens) != len(layout['screens']):
@@ -112,7 +130,7 @@ def get_layout_params(layout_file):
 
 def main():
     exe, layout_name, *_rest = sys.argv
-    layout_file = get_layout_file(layout_name, os.path.expanduser('~/.fluxbox/layouts'))
+    layout_file = get_layout_file(layout_name)
     screens, layout = get_layout_params(layout_file)
     print(json.dumps({'screens': screens, 'layout': layout}))
 
