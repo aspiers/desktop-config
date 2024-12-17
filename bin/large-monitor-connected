@@ -1,7 +1,7 @@
 #!/bin/bash
 
 inxi=~/tmp/.inxi.Gxx
-inxi -Gxx -c 0 > $inxi
+inxi -Gxx -c 0 -y 300 > $inxi
 
 if grep -q 'res: 3840x2160' $inxi &&
         [ `monitors-connected` -ge 2 ]
