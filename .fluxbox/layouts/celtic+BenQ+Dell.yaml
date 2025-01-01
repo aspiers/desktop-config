@@ -1,6 +1,10 @@
 screens:
   -
     <INCLUDE screens/celtic>
+    # fluxbox treats primary as head 1, and we are setting the BenQ
+    # as the primary head (see bin/get-layout).  It also sets the laptop
+    # as head 3 for some reason, even though it's on the far left.
+    head: 3
   -
     <INCLUDE screens/BenQ>
   -

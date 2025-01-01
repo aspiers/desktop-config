@@ -1,8 +1,5 @@
-name: laptop
-label: laptop
-head: 3
-# fluxbox treats primary as head 1, and we are setting the BenQ
-# as the primary head (see bin/get-layout)
+name: celtic
+label: celtic
 right_margin: 0
 panel_height: 35
 logs_height_pc: 0

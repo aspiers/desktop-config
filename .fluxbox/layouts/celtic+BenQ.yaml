@@ -1,23 +1,11 @@
 screens:
   -
-    name: laptop
-    head: 2
     # fluxbox treats primary as head 1, and we are setting the BenQ
-    # as the primary head (see bin/get-layout)
-    right_margin: 0
-    panel_height: 35
-    logs_height_pc: 0
-    col1_width_pc_of_active: 55
-    col2_width_pc_of_active: 45
+    # as the primary head (see bin/get-layout).
+    head: 2
+    <INCLUDE screens/celtic>
   -
-    name: BenQ
-    head: 1
-    gkrellm_width: &GKRELLM_WIDTH 92
-    panel_height: 30
-    logs_height_pc: 14
-    right_margin: *GKRELLM_WIDTH
-    col1_width_pc_of_active: 55
-    single_width_pc_of_active: 80
+    <INCLUDE screens/BenQ>
 
 windows:
   - - (Name=gkrellm)
