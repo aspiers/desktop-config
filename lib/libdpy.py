@@ -35,6 +35,8 @@ def extract_display_geometry(xrandr=None):
     for k, v in m.groupdict().items():
         d[k] = int(v)
 
+    # Note that the physical dimensions in mm here are not guaranteed
+    # accurate and actually depend on the software dpi setting.
     d['dpy_x_dpi'] = round(d['dpy_width'] / d['dpy_x_mm'] * 25.4)
     d['dpy_y_dpi'] = round(d['dpy_height'] / d['dpy_y_mm'] * 25.4)
 

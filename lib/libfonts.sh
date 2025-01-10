@@ -34,7 +34,9 @@ case "$localhost_nickname" in
         large_font='xft:Hack:size=16'
         ;;
     celtic)
-        # 2256x1504 (193x167 dpi)
+        # 285mm x 190mm according grep mm /var/log/Xorg.0.log
+        # new hi-res display 2880x1920 (256x256 dpi)
+        # old matte display 2256x1504 (193x167 dpi)
         if large-monitor-connected; then
             tiny_font='smoothansi'
             #tiny_font='xft:Monospace:size=8'
