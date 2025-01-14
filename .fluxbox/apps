@@ -58,6 +58,14 @@
   [FocusNewWindow]	{yes}
 [end]
 
+[app] (class=Code|Cursor)
+  [Head]	{1}
+  [Position]	(Top)	{0 0}
+  [Dimensions]	{90% 90%}
+  # This doesn't work :-(
+  [FocusNewWindow]	{yes}
+[end]
+
 [app] (title=Telegram)
   [Deco]	{0x5e0}
   [Position]	(TopLeft)	{0 0}
