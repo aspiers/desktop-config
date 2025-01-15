@@ -1,4 +1,14 @@
 #!/bin/bash
+#
+# Provide no args to list existing settings
+# Provide dark | light | solarized-light to set that theme
+
+. $ZDOTDIR/lib/libfonts.sh
+
+if [ -z "$medium_font_gnome" ]; then
+    echo >&2 "Couldn't figure out font for xfce4-terminal"
+    exit 1
+fi
 
 list () {
    xfconf-query -l -R -c xfce4-terminal -v | \
@@ -21,6 +31,7 @@ bset () {
 }
 
 set_common () {
+    sset font-name "$medium_font_gnome"
     bset color-bold-is-bright true
     bset misc-bell-urgent true
     bset misc-cursor-blinks true
