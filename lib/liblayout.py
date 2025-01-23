@@ -46,7 +46,7 @@ def get_layout_params(layout_file):
     with open(layout_file) as f:
         content = f.read()
         content = re.sub(
-            r'^(\s*)<INCLUDE\s+(.+?)>',
+            r'^([ \t]*)<INCLUDE\s+(.+?)>',
             lambda m: get_include_content(m.group(2), m.group(1)),
             content,
             flags=re.MULTILINE)
