@@ -44,8 +44,7 @@ windows:
   - - (Name=brave-browser|google-chrome|chromium) (Head=<s_laptop_head>|<s_Dell_head>)
     - <stick>
 
-  - - (Class=firefox)
-    - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 3} {MoveTo <s_primary_col1_left> <s_primary_row1_top>} {ResizeTo <s_primary_active_width> <s_primary_active_height>}
+  <INCLUDE common/firefox>
 
   - - (Name=notion-app-enhanced)
     - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 3} {MoveTo <s_primary_col1_left> <s_primary_row1_top>} {ResizeTo <s_primary_active_width> <s_primary_active_height>}
