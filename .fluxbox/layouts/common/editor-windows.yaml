@@ -1,0 +1,2 @@
+- - (name=emacs) (title!=Ediff)
+  - MacroCmd {<s_primary_SetHead>} {MoveTo <s_primary_col2_left> <s_primary_row1_top>} {ResizeTo <s_primary_col2_width> <s_primary_active_height>}
