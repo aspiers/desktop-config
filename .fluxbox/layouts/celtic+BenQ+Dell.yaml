@@ -18,8 +18,7 @@ windows:
 
   <INCLUDE common/editor-windows>
 
-  - - (Name=brave-browser|google-chrome|chromium) (Title=.*Toucan)
-    - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 2}
+  <INCLUDE common/toucan>
 
   - - (Name=brave-browser|google-chrome|chromium) (Title=.*(personal$|Panther))
     - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 5}
