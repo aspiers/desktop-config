@@ -1,0 +1,3 @@
+- - (Name=slack|Telegram|discord|Discord*|zulip)
+  - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 4} {MoveTo <s_primary_col1_left> <s_primary_row1_top>} {ResizeTo <s_primary_active_width> <s_primary_active_height>}
+  - <unstick> 
