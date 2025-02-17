@@ -46,6 +46,4 @@ windows:
     - <unstick>
     - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 6} {MoveTo 0% 0%} {ResizeTo 20% 52%}
 
-  - - (Class=Chrysalis)
-    - <unstick>
-    - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 6 } {MoveTo 5% 5%} {ResizeTo <s_primary_active_width> <s_primary_active_height>}
+  <INCLUDE common/chrysalis-single>

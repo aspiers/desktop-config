@@ -52,6 +52,4 @@ windows:
     - <stick>
     - MacroCmd {<s_secondary_SetHead>} {ResizeTo 35% 40%} {MoveTo 2% 22% BottomLeft}
 
-  - - (Class=Chrysalis)
-    - <stick>
-    - MacroCmd {<s_secondary_SetHead>} {ResizeTo 90% 90%} {MoveTo 5% 5%}
+  <INCLUDE common/chrysalis-multi>
