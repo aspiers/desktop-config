@@ -23,7 +23,7 @@ screens:
     single_width_pc_of_active: 80
 
 windows:
-  <INCLUDE common/primary-monitoring>
+  <INCLUDE common/monitoring-full-width>
 
   <INCLUDE common/terminal-windows>
 

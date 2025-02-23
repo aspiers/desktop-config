@@ -5,7 +5,7 @@ screens:
     <INCLUDE screens/Dell>
 
 windows:
-  <INCLUDE common/primary-monitoring>
+  <INCLUDE common/monitoring-full-width>
 
   <INCLUDE common/editor-windows>
 

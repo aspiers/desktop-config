@@ -12,7 +12,7 @@ screens:
 
 windows:
 
-  <INCLUDE common/primary-monitoring>
+  <INCLUDE common/monitoring-full-width>
 
   <INCLUDE common/terminal-windows>
 
