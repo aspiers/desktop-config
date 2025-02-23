@@ -1,0 +1,7 @@
+  - - (Class=Pavucontrol)
+    - <stick>
+    - MacroCmd {<s_secondary_SetHead>} {MoveTo 2% 2%} {ResizeTo 40% 35%}
+
+  - - (Class=Blueman-manager)
+    - <stick>
+    - MacroCmd {<s_secondary_SetHead>} {ResizeTo 35% 40%} {MoveTo 2% 22% BottomLeft}
