@@ -9,13 +9,7 @@ screens:
     col2_width_pc_of_active: 45
 
 windows:
-  - - (Name=gkrellm)
-    - MacroCmd {<s_primary_SetHead>} {MoveTo 0 0 TopRight} {Activate}
-    - <stick>
-
-  - - (Title=lnav-system)
-    - <stick>
-    - MacroCmd {<s_primary_SetHead>} {ResizeTo <s_primary_active_width_pc> <s_primary_logs_height_pc>} {MoveTo 0 <s_primary_panel_height> BottomLeft} {SetAlpha 50}
+  <INCLUDE common/monitoring-active-width>
 
   <INCLUDE common/terminal-windows>
 
