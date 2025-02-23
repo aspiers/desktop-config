@@ -24,17 +24,7 @@ windows:
     - MacroCmd {<s_secondary_SetHead>}
     - <stick>
 
-  - - (Name=brave-browser|google-chrome|chromium) (Head=1)
-    - MacroCmd {MoveTo <s_primary_single_left> <s_primary_single_top>} {ResizeTo <s_primary_single_width> <s_primary_single_height>}
-
-  - - (Name=brave-browser|google-chrome|chromium) (Head=2)
-    - MacroCmd {MoveTo <s_secondary_single_left> <s_secondary_single_top>} {ResizeTo <s_secondary_single_width> <s_secondary_single_height>}
-
-  - - (Name=brave-browser|google-chrome|chromium) (Head=<s_primary_head>)
-    - <unstick>
-
-  - - (Name=brave-browser|google-chrome|chromium) (Head=<s_secondary_head>)
-    - <stick>
+  <INCLUDE common/browser-multi>
 
   <INCLUDE common/firefox>
 
