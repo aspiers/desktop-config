@@ -1,6 +1,4 @@
-- - (Name=gkrellm)
-  - MacroCmd {<s_primary_SetHead>} {MoveTo 0 0 TopRight} {Activate}
-  - <stick>
+<INCLUDE common/gkrellm>
 
 - - (Title=lnav-system)
   - <stick>
