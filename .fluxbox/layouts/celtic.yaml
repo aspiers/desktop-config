@@ -9,7 +9,7 @@ screens:
     col2_width_pc_of_active: 45
 
 windows:
-  <INCLUDE common/monitoring-active-width>
+  <INCLUDE common/monitoring-full-width>
 
   <INCLUDE common/terminal-windows>
 
