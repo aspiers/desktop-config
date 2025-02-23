@@ -37,21 +37,31 @@ def percent(x, y):
     return round(x / y * 100)
 
 
-def get_include_content(include_file, indent=''):
+def process_includes(content, indent=''):
+    return re.sub(
+        r'^([ \t]*)<INCLUDE\s+(.+?)>',
+        lambda m: get_include_content(m.group(2), m.group(1)),
+        content,
+        flags=re.MULTILINE
+    )
+
+def get_include_content(include_file, parent_indent=''):
     to_include = read_layout_file(include_file)
-    to_include = '\n'.join(indent + line for line in to_include.splitlines())
-    return to_include
+    # Process includes recursively
+    processed = process_includes(to_include)
+    # Add parent's indentation to each line
+    return parent_indent + processed.replace('\n', '\n' + parent_indent)
 
 def get_layout_params(layout_file):
     with open(layout_file) as f:
         content = f.read()
-        content = re.sub(
-            r'^([ \t]*)<INCLUDE\s+(.+?)>',
-            lambda m: get_include_content(m.group(2), m.group(1)),
-            content,
-            flags=re.MULTILINE)
+        content = process_includes(content)
         print(content)
-        layout = yaml.safe_load(content)
+        try:
+            layout = yaml.safe_load(content)
+        except yaml.YAMLError as e:
+            print("YAML parsing error:", e)
+            sys.exit(1)
 
     screens = libdpy.extract_xrandr_screen_geometries().copy()
     if len(screens) != len(layout['screens']):
