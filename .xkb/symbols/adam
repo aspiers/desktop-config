@@ -118,18 +118,28 @@ xkb_symbols "kinesis" {
     include "adam-common(kinesis-insert)"
     include "adam-common(us-backslash)"
     include "adam-common(us-3)"
+
+    // Top-right key:
     key <AE11> { [ sterling, EuroSign ] };
 };
 
 xkb_symbols "kinesis-360" {
     include "adam-common(kinesis-left-thumb-pad)"
     include "adam-common(kinesis-360-right-thumb-pad)"
+
+    // We swap up and down via firmware (https://clique.kinesis-ergo.com/)
+    // since that works better with some things, e.g. Javascript apps
+    // which rely on the key scan code rather than what it's mapped to.
+    // include "adam-common(swap-up-down)"
+
     include "adam-common(kinesis-360-insert)"
     include "adam-common(kinesis-360-escape)"
     include "adam-common(kinesis-grave-tilde)"
     include "adam-common(kinesis-insert)"
     include "adam-common(us-backslash)"
     include "adam-common(us-3)"
+
+    // Top-right key:
     key <AE11> { [ sterling, EuroSign ] };
 };
 
