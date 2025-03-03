@@ -13,6 +13,7 @@
       [exec]   (Firefox) {firefox} 
 [end]
 [submenu] (Comms)
+      [exec]   (Signal) {signal-desktop} 
       [exec]   (Discord) {discord} 
       [exec]   (Slack) {slack} 
       [exec]   (Telegram) {telegram} 
