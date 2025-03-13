@@ -13,6 +13,8 @@ windows:
 
   <INCLUDE common/toucan>
 
+  <INCLUDE common/side-projects>
+
   - - (Name=brave-browser|google-chrome|chromium) (Title=.*(personal|Panther))
     - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 5}
 
