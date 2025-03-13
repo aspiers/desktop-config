@@ -19,6 +19,11 @@
   [Hidden]	{yes}
   [Alpha]	{50}
 [end]
+[app] (role=.*Workrave.*)
+  [Layer]	{2}
+  [Hidden]	{yes}
+  [Sticky]	{yes}
+[end]
 [app] (title=Workrave)
   [Layer]	{2}
   [Hidden]	{yes}
