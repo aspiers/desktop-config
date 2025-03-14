@@ -380,7 +380,7 @@ Mod4 9 :MacroCmd {Exec xdotool keyup Super_R} {Exec warpd --click 3}
 # N.B. used to have (Name=gnome-terminal-server) here too as an additional
 # pattern, but it seems these days the instance name is org.gnome.Terminal.
 # Not clear when that changed or why.
-Mod4 x :MacroCmd {NextWindow (Role=gnome-terminal-.*) (Head=1) (workspace=0)} {<%= focus_active %>}
+Mod4 x :MacroCmd {NextWindow (Role=(xfce4|gnome)-terminal-.*) (Head=1) (workspace=0)} {<%= focus_active %>}
 Control Mod4 x :Exec rmx-window
 
 Control Mod4 a :Exec chrome-session-fzf 't3.chat | poe.com | chat.deepseek.com | claude.ai | chatgpt.com | gemini.google.com'
