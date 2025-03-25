@@ -383,9 +383,9 @@ Mod4 9 :MacroCmd {Exec xdotool keyup Super_R} {Exec warpd --click 3}
 Mod4 x :MacroCmd {NextWindow (Role=(xfce4|gnome)-terminal-.*) (Head=1) (workspace=0)} {<%= focus_active %>}
 Control Mod4 x :Exec rmx-window
 
-Control Mod4 a :Exec chrome-session-fzf 't3.chat | poe.com | chat.deepseek.com | claude.ai | chatgpt.com | gemini.google.com'
+Mod4 a :Exec chrome-session-fzf 't3.chat | poe.com | chat.deepseek.com | claude.ai | chatgpt.com | gemini.google.com'
 
-Mod4 a :Exec chrome-session-tabs 'open.spotify.com'
+Control Mod4 a :Exec chrome-session-tabs 'open.spotify.com'
 #Mod4 b :Exec wmctrl -s 1; xdotool search --desktop 1 --class brave-browser windowactivate
 Mod4 b :MacroCmd {NextWindow (Name=brave-browser|google-chrome|chromium) (Head=1) (Minimized=no)} {<%= focus_active %>}
 <% if monitors_connected.to_i > 1 %>
