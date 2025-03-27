@@ -434,8 +434,8 @@ Mod4 y :Exec chrome-session-fzf youtube.com
 Mod4 z :Exec fluxbox-focus-or-launch -c Zulip zulip
 
 #Shift Mod4 z :Exec fluxbox-focus-or-launch Zoom 'zoom --disable-gpu-sandbox'
-Shift Mod4 z :MacroCmd {NextWindow (Title=Zoom Meeting.*|.*https://.*\.zoom\.us/.*)} {<%= focus_active %>}
-Control Mod4 z :Exec chrome-session-fzf 'Zoom meeting | Personal\ meeting\ with | ://app.zoom.us/'
+Shift Mod4 z :MacroCmd {NextWindow (Title=Zoom Meeting|Personal Meeting|://.*\.zoom\.us/.*)} {<%= focus_active %>}
+Control Mod4 z :Exec chrome-session-fzf 'Zoom\ meeting | Personal\ Meeting | ://app.zoom.us/'
 
 # volume settings
 # Mod4 bracketright :MacroCmd {Exec amixer sset Master,0 2%+} {Delay {Exec amixer sset Master,0 unmute} 10000}
