@@ -235,6 +235,8 @@ Shift Mod4 s :StickWindow
 Mod4 q :Close
 Control Mod4 q :Kill
 
+Mod4 equal :MacroCmd {<%= mousemove 96, 94 %>} {Exec warpd --normal}
+
 Shift Mod4 Left  :MacroCmd {MoveLeft  10} {<%= focus_active %>}
 Shift Mod4 Right :MacroCmd {MoveRight 10} {<%= focus_active %>}
 Shift Mod4 Up    :MacroCmd {MoveUp    10} {<%= focus_active %>}
