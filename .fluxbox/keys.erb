@@ -1,4 +1,14 @@
 <%
+def focus_active(delay=10, sync=false)
+  "Delay {Exec focus-active-window%s} #{delay * 1000}" % [
+    sync ? ' --sync' : ''
+  ]
+end
+
+def mousemove(x, y)
+  "Exec mousemove #{x} #{y}"
+end
+
 def id_file(mode)
   "~/tmp/.fluxbox-#{mode}-id"
 end
@@ -120,14 +130,6 @@ OnTitlebar Mouse2 :Lower
 
 # right click on the titlebar for a menu of options
 OnTitlebar Mouse3 :WindowMenu
-
-<%
-def focus_active(delay=10, sync=false)
-  "Delay {Exec focus-active-window%s} #{delay * 1000}" % [
-    sync ? ' --sync' : ''
-  ]
-end
-%>
 
 # cycle windows on current display and workspace
 Mod4 slash :MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {<%= focus_active %>}
@@ -289,12 +291,6 @@ reorg: Control Shift Down :ResizeVertical 10%
 reorg: m :Maximize
 reorg: Shift m :MaximizeVertical
 reorg: Control m :MaximizeHorizontal
-
-<%
-def mousemove(x, y)
-  "Exec mousemove #{x} #{y}"
-end
-%>
 
 reorg: Shift 0 :MacroCmd {Exec ly -s active}
 reorg: Control 0 :MacroCmd {Exec ly -s full}
