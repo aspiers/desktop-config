@@ -69,8 +69,12 @@ left_head, right_head =
 %>
 
 Control Mod1 Mod4 r :MacroCmd {<%= reconfigure %>}
+
+# For some reason this doesn't always work:
 Shift Control Mod4 r :MacroCmd {Restart} {<%= notify 'Restarted fluxbox' %>}
-Control Mod1 Mod4 6 :MacroCmd {Restart} {<%= notify 'Restarted fluxbox' %>}
+# so offer an alternative:
+Control Mod1 Mod4 9 :MacroCmd {Restart} {<%= notify 'Restarted fluxbox' %>}
+
 Control Mod1 Mod4 y :<%= layout %>
 # {<%= delay('Restart', 500) %>} {<%= delay(notify('Restarted fluxbox'), 500) %>}
 
