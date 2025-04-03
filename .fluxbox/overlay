@@ -1,2 +1,10 @@
-! The following line will prevent styles from setting the background.
-! background: none
+menu.bevelWidth:                  5
+menu.frame.font:                  sans-23:bold
+menu.title.font:                  sans-28:bold
+toolbar.clock.font:               sans-23:bold
+toolbar.height:                   51
+toolbar.iconbar.focused.font:     sans-20:bold
+toolbar.iconbar.unfocused.font:   sans-20
+toolbar.workspace.font:           sans-24:bold
+window.font:                      sans-24:bold
+window.title.height:              44
