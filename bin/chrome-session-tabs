@@ -185,7 +185,7 @@ def focus_window(win):
     window_list = check_output(['wmctrl', '-l']).decode('utf')
     matcher = (re.escape(win['userTitle']) if win['userTitle']
                else (re.escape(win['title']) + '( - (Google Chrome|Chromium))?'))
-    regexp = '^(0x[0-9a-f]+)\s+(-?\d+)\s+\w[\w.]+\s+%s$' % matcher
+    regexp = r'^(0x[0-9a-f]+)\s+(-?\d+)\s+\w[\w.]+\s+%s$' % matcher
     m = re.search(regexp, window_list, re.MULTILINE)
     if not m:
         die("Couldn't find /%s/ in output of wmctrl -l" % regexp)
