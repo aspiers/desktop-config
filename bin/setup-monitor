@@ -2,6 +2,9 @@
 
 #exec >& ~/.log/setup-monitor.log
 
+inxi=~/tmp/.inxi.Gxx
+inxi -Gxx -c 0 -y 300 > $inxi
+
 sleep 5
 fr
 sleep 1
