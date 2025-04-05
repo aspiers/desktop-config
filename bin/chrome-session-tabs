@@ -1,4 +1,7 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --script
+# /// script
+# dependencies = ["pyfzf"]
+# ///
 
 import json
 import os.path
@@ -9,7 +12,6 @@ import sys
 import time
 from shutil import which
 
-# pip install --user pyfzf
 from pyfzf.pyfzf import FzfPrompt
 
 
