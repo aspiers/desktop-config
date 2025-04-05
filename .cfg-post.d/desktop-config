@@ -19,3 +19,8 @@ else
 fi
 
 ggkg
+
+. ~/lib/libhost.sh
+read_localhost_nickname
+
+ln -sf overlay.$localhost_nickname ~/.fluxbox/overlay

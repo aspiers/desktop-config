@@ -1,0 +1,6 @@
+menu.title.font:                  sans-14:bold
+menu.frame.font:                  sans-13
+window.font:                      sans-11:bold
+menu.titleHeight:                 76
+menu.itemHeight:                  76
+window.title.height:              46
