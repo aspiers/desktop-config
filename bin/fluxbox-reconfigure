@@ -2,4 +2,6 @@
 
 if ~/.cfg-post.d/desktop-config; then
     fluxbox-remote Reconfigure
+    # Annoyingly this doesn't force a reload of style overlay settings :-(
+    # fluxbox-remote ReloadStyle
 fi
