@@ -1,25 +1,6 @@
-#!/usr/bin/python3
+#!/bin/sh
 
-import os
-import subprocess
-import sys
+x="$1" y="$2"
+shift 2
 
-sys.path.append(os.getenv('HOME') + '/lib')
-
-import libdpy
-
-
-if len(sys.argv) != 3:
-   sys.stderr.write("""Usage: mousemove X Y
-
-X and Y are percentages of the screen size""")
-   sys.exit(1)
-
-x_percent = int(sys.argv[1])
-y_percent = int(sys.argv[2])
-
-current_screen = libdpy.get_current_screen_info()
-x = current_screen['x_offset'] + current_screen['width'] * x_percent / 100
-y = current_screen['height'] * y_percent / 100
-
-subprocess.check_call(['xdotool', 'mousemove', str(x), str(y)])
+xdotool mousemove $(screen-coords $x $y) "$@"
