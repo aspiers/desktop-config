@@ -1,0 +1,44 @@
+#!/usr/bin/python3
+
+import os
+import subprocess
+import sys
+
+sys.path.append(os.getenv('HOME') + '/lib')
+
+import libdpy
+
+
+def main():
+    if len(sys.argv) != 3:
+       sys.stderr.write("""Usage: screen-coords X[%] Y[%]
+
+    X and Y are percentages of the screen size""")
+       sys.exit(1)
+
+    x, y = get_coords(*sys.argv[1:3])
+    print(f'{x} {y}')
+
+
+def get_coords(a, b):
+    current_screen = libdpy.get_current_screen_info()
+
+    if a.endswith('%'):
+        x = int(current_screen['x_offset'] + current_screen['width'] * int(a[:-1]) / 100)
+    elif a.startswith('-'):
+        x = current_screen['x_offset'] + current_screen['width'] - int(a[1:])
+    else:
+        x = int(a)
+
+    if b.endswith('%'):
+        y = int(current_screen['height'] * int(b[:-1]) / 100)
+    elif b.startswith('-'):
+        y = current_screen['height'] - int(b[1:])
+    else:
+        y = int(b)
+
+    return x, y
+
+
+if __name__ == "__main__":
+    main()
