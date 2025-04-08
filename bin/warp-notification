@@ -1,0 +1,9 @@
+#!/bin/bash
+
+args=()
+
+if [ "$1" = 'clear' ]; then
+    args=(click 1 mousemove restore)
+fi
+
+mousemove -100 -60 "${args[@]}"
