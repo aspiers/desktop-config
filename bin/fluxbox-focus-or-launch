@@ -69,7 +69,6 @@ focus_window () {
     echo "NextWindow $fluxbox_pattern"
     fluxbox-remote "NextWindow $fluxbox_pattern"
     sleep 0.1
-    focus-active-window
     # {If {Matches $focus} {Exec focus-active-window}"
 }
 
