@@ -1,5 +1,5 @@
-- - (Role=gnome-terminal-window-.*)
+- - (Role=(gnome|xfce4)-terminal-.*)
   - MacroCmd {<s_primary_SetHead>} {MoveTo <s_primary_col1_left> <s_primary_row1_top>} {ResizeTo <s_primary_col1_width> <s_primary_active_height>}
 
-- - (Name=gnome-terminal-server) (Role=mutt:\ .*)
+- - (Name=(gnome|xfce4)-terminal-server) (Role=mutt:\ .*)
   - MacroCmd {<s_primary_SetHead>} {MoveTo 0 0 Center}
