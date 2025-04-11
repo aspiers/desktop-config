@@ -52,7 +52,7 @@ set_theme () {
         light)
             sset color-background '#ffffff'
             sset color-foreground '#000000'
-            sset color-palette 'rgb(0,0,0);rgb(170,0,0);rgb(3,217,0);rgb(150,104,0);rgb(0,0,170);rgb(170,0,170);rgb(0,177,170);rgb(94,92,100);rgb(85,85,85);rgb(255,85,85);rgb(85,255,85);rgb(255,255,85);rgb(85,85,255);rgb(255,85,255);rgb(18,159,161);rgb(0,0,0)'
+            sset color-palette 'rgb(255,255,255);rgb(229,83,81);rgb(170,196,0);rgb(197,149,0);rgb(38,139,210);rgb(211,54,130);rgb(86,196,196);rgb(148,148,148);rgb(0,0,0);rgb(237,0,0);rgb(0,170,7);rgb(222,193,0);rgb(0,45,203);rgb(176,0,151);rgb(42,161,152);rgb(80,80,80);rgb(0,0,0)'
             ;;
         solarized-light)
             sset color-foreground '#073642'
