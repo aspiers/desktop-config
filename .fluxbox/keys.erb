@@ -1,5 +1,5 @@
 <%
-def next_unhidden(s, focus: false, prev: false)
+def next_unhidden(s, focus: true, prev: false)
   cmd = prev ? "PrevWindow" : "NextWindow"
   if focus
     ":MacroCmd {#{cmd} #{s} (FocusHidden=no) (Minimized=no)} {%s}" % \
@@ -9,7 +9,7 @@ def next_unhidden(s, focus: false, prev: false)
   end
 end
 
-def focus_active(delay=10, sync=false)
+def focus_active(delay=50, sync=false)
   "Delay {Exec focus-active-window%s} #{delay * 1000}" % [
     sync ? ' --sync' : ''
   ]
@@ -146,10 +146,10 @@ OnTitlebar Mouse2 :Lower
 OnTitlebar Mouse3 :WindowMenu
 
 # cycle windows on current display and workspace
-Mod4 slash <%= next_unhidden "(workspace=[current]) (Head=[mouse])", focus: true %>
+Mod4 slash <%= next_unhidden "(workspace=[current]) (Head=[mouse])" %>
 
 # add Shift to cycle in opposite direction:
-Shift Mod4 slash <%= next_unhidden "(workspace=[current]) (Head=[mouse])", focus: true, prev: true %>
+Shift Mod4 slash <%= next_unhidden "(workspace=[current]) (Head=[mouse])", prev: true %>
 
 # add Control to include minimized windows:
 Control Mod4 slash :MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {<%= focus_active %>}
