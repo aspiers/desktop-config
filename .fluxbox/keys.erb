@@ -1,4 +1,14 @@
 <%
+def next_unhidden(s, focus: false, prev: false)
+  cmd = prev ? "PrevWindow" : "NextWindow"
+  if focus
+    ":MacroCmd {#{cmd} #{s} (FocusHidden=no) (Minimized=no)} {%s}" % \
+      focus_active
+  else
+    ":#{cmd} #{s} (FocusHidden=no) (Minimized=no)"
+  end
+end
+
 def focus_active(delay=10, sync=false)
   "Delay {Exec focus-active-window%s} #{delay * 1000}" % [
     sync ? ' --sync' : ''
@@ -136,10 +146,10 @@ OnTitlebar Mouse2 :Lower
 OnTitlebar Mouse3 :WindowMenu
 
 # cycle windows on current display and workspace
-Mod4 slash :MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no) (Minimized=no)} {<%= focus_active %>}
+Mod4 slash <%= next_unhidden "(workspace=[current]) (Head=[mouse])", focus: true %>
 
 # add Shift to cycle in opposite direction:
-Shift Mod4 slash :MacroCmd {PrevWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {<%= focus_active %>}
+Shift Mod4 slash <%= next_unhidden "(workspace=[current]) (Head=[mouse])", focus: true, prev: true %>
 
 # add Control to include minimized windows:
 Control Mod4 slash :MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {<%= focus_active %>}
@@ -386,7 +396,7 @@ Mod4 9 :MacroCmd {Exec xdotool keyup Super_R} {Exec warpd --click 3}
 # N.B. used to have (Name=gnome-terminal-server) here too as an additional
 # pattern, but it seems these days the instance name is org.gnome.Terminal.
 # Not clear when that changed or why.
-Mod4 x :MacroCmd {NextWindow (Role=(xfce4|gnome)-terminal-.*) (Head=1) (workspace=0)} {<%= focus_active %>}
+Mod4 x <%= next_unhidden "(Role=(xfce4|gnome)-terminal-.*) (Head=1) (workspace=0)" %>
 Control Mod4 x :Exec rmx-window
 
 Mod4 a :Exec chrome-session-fzf 't3.chat | poe.com | chat.deepseek.com | claude.ai | chatgpt.com | gemini.google.com'
@@ -408,7 +418,7 @@ Shift Mod4 r :Exec chrome-session-tabs 'app.reclaim.ai'
 Control Mod1 Mod4 n :Exec top-term node
 
 #Mod4 e :Exec wmctrl -a emacs
-Mod4 e :MacroCmd {NextWindow (Name=emacs)} {<%= focus_active %>}
+Mod4 e  <%= next_unhidden "(Name=emacs)" %>
 Shift Mod4 e :Exec chrome-session-fzf 'https://linear.app/ '
 
 Mod4 apostrophe :Exec fluxbox-focus-or-launch -c Beeper beeper
