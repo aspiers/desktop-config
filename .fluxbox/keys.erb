@@ -9,7 +9,7 @@ def next_unhidden(s, focus: true, prev: false)
   end
 end
 
-def focus_active(delay=50, sync=false)
+def focus_active(delay=100, sync=false)
   "Delay {Exec focus-active-window%s} #{delay * 1000}" % [
     sync ? ' --sync' : ''
   ]
