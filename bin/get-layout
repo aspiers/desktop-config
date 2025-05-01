@@ -13,7 +13,17 @@ layout_file () {
 
 case "$localhost_nickname" in
     celtic)
-        if large-monitor-connected; then
+        if grep -q 'BenQ BL3200' $inxi; then
+            case "`monitors-connected`" in
+                2)
+                    layout_file celtic+BenQ
+                    ;;
+                3)
+                    layout_file celtic+BenQ+Dell
+                    ;;
+            esac
+            exit
+        elif large-monitor-connected; then
             echo >&2 "Detected LG as second monitor"
             if ! large-monitor-primary; then
                 # Sometimes xfce4-display-settings doesn't manage to
@@ -31,16 +41,6 @@ case "$localhost_nickname" in
         # UGLY HACK: relies on $inxi being created by previous command (large-monitor-connected)
         elif [ `monitors-connected` == 1 ]; then
             layout_file "$localhost_nickname"
-            exit
-        elif grep -q 'BenQ BL3200 res: 2560x1440' $inxi; then
-            case "`monitors-connected`" in
-                2)
-                    layout_file celtic+BenQ
-                    ;;
-                3)
-                    layout_file celtic+BenQ+Dell
-                    ;;
-            esac
             exit
         fi
         ;;
