@@ -12,8 +12,8 @@ screens:
     <INCLUDE screens/BenQ>
   -
     <INCLUDE screens/Dell>
-    assignment: secondary
     head: 3
+    assignment: secondary
 
 windows:
 
