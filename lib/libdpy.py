@@ -10,6 +10,13 @@
 import re
 import subprocess
 import sys
+import os
+import json
+import time
+
+# Global constants
+XRANDR_CACHE_DIR = os.path.expanduser("~/tmp")
+XRANDR_CACHE_FILE = os.path.join(XRANDR_CACHE_DIR, ".xrandr.json")
 
 
 def xrandr_status():
@@ -84,7 +91,43 @@ def extract_xrandr_screen_geometries(xrandr=None):
     # screen is configured as primary at the xrandr level, then it
     # could be auto-detected by comparing these two.
 
+    # Cache the results
+    os.makedirs(XRANDR_CACHE_DIR, exist_ok=True)
+
+    try:
+        cache_data = {
+            "timestamp": time.time(),
+            "screens": screens
+        }
+        with open(XRANDR_CACHE_FILE, 'w') as f:
+            json.dump(cache_data, f, indent=2)
+    except Exception as e:
+        sys.stderr.write(f"Warning: Failed to write XRandr cache: {str(e)}\n")
+
     return screens
+
+
+def get_xrandr_screen_geometries(use_cache=False):
+    """
+    Get XRandr screen geometries, optionally using cached results if available.
+
+    Args:
+        use_cache: If True, use cached results if available
+
+    Returns:
+        List of screen geometries
+    """
+    if use_cache:
+        try:
+            if os.path.exists(XRANDR_CACHE_FILE):
+                with open(XRANDR_CACHE_FILE, 'r') as f:
+                    cache_data = json.load(f)
+                    return cache_data["screens"]
+        except Exception as e:
+            sys.stderr.write(f"Warning: Failed to read XRandr cache: {str(e)}\n")
+
+    # No cache or cache loading failed, extract fresh data
+    return extract_xrandr_screen_geometries()
 
 
 def display_xrandr_screen_geometries(screens):
@@ -115,8 +158,8 @@ def get_mouse_location_info():
 
 
 # FIXME: check y coord too
-def get_screen(x):
-    screens = extract_xrandr_screen_geometries()
+def get_screen(x, use_cache=False):
+    screens = get_xrandr_screen_geometries(use_cache)
     for i, screen in enumerate(screens):
         if (x >= screen['x_offset'] and
             x <= screen['right']):
@@ -125,9 +168,9 @@ def get_screen(x):
     raise RuntimeError("Failed to find screen for x=%d" % x)
 
 
-def get_current_screen_info():
+def get_current_screen_info(use_cache=False):
     info = get_mouse_location_info()
-    return get_screen(info['X'])
+    return get_screen(info['X'], use_cache)
 
 
 def main():

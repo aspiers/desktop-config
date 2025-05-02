@@ -71,7 +71,7 @@ def get_include_content(include_file, parent_indent=''):
 #
 #   - windows, which is an array of [window_matcher, *layout_cmds]
 #     arrays
-def get_layout_params(layout_file):
+def get_layout_params(layout_file, use_cache=False):
     with open(layout_file) as f:
         content = f.read()
         content = process_includes(content)
@@ -81,7 +81,7 @@ def get_layout_params(layout_file):
         except yaml.YAMLError as e:
             die("YAML parsing error:", e)
 
-    screens = libdpy.extract_xrandr_screen_geometries().copy()
+    screens = libdpy.get_xrandr_screen_geometries(use_cache=use_cache).copy()
     if len(screens) != len(layout['screens']):
         die(
             "xrandr got %d screens but %s had %d screens\n" %
@@ -165,13 +165,14 @@ def get_layout_params(layout_file):
     return screens, layout
 
 
-def get_adjacent_screen(direction, layout_name_or_path=None):
+def get_adjacent_screen(direction, layout_name_or_path=None, use_cache=False):
     """
     Get the screen to the left or right of the current screen.
 
     Args:
         direction (str): Either 'left' or 'right' to specify which adjacent screen to find
         layout_name_or_path (str, optional): Layout name or path to use. If None, will need to be determined.
+        use_cache (bool, optional): Whether to use cached XRandr data if available. Default is False.
 
     Returns:
         dict: The adjacent screen information or None if not found
@@ -180,7 +181,7 @@ def get_adjacent_screen(direction, layout_name_or_path=None):
         raise ValueError("Direction must be either 'left' or 'right'")
 
     # Get current screen where mouse is located
-    current_screen = libdpy.get_current_screen_info()
+    current_screen = libdpy.get_current_screen_info(use_cache=use_cache)
 
     # We need to have a layout file to look up the mapping
     if not layout_name_or_path:
@@ -189,7 +190,7 @@ def get_adjacent_screen(direction, layout_name_or_path=None):
         raise ValueError("layout_name_or_path must be provided")
 
     layout_file = get_layout_file(layout_name_or_path)
-    screens, layout = get_layout_params(layout_file)
+    screens, layout = get_layout_params(layout_file, use_cache=use_cache)
 
     # Find the current screen in the layout using the num attribute
     # This assumes the screens array in both libdpy and the layout file

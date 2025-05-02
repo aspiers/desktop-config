@@ -18,6 +18,7 @@ def main():
     parser.add_argument('--layout', '-l', dest='layout', help='Layout name or path (default: use get-layout script)')
     parser.add_argument('--json', '-j', action='store_true', help='Output in JSON format')
     parser.add_argument('--move', '-m', action='store_true', help='Output SetHead command for moving to the screen')
+    parser.add_argument('--use-xrandr-cache', '-c', action='store_true', help='Use cached XRandr data if available')
     parser.add_argument('--format', '-f',
                         choices=['name', 'assignment', 'head', 'num', 'width', 'height', 'x_offset', 'y_offset', 'full'],
                         default='name',
@@ -38,7 +39,7 @@ def main():
 
     # Get the adjacent screen
     try:
-        adjacent_screen = liblayout.get_adjacent_screen(args.direction, layout_file)
+        adjacent_screen = liblayout.get_adjacent_screen(args.direction, layout_file, use_cache=args.use_xrandr_cache)
     except Exception as e:
         sys.stderr.write(f"Error: {str(e)}\n")
         sys.exit(1)
@@ -58,7 +59,7 @@ def main():
         else:
             sys.stderr.write("Error: Screen number not found in screen data\n")
             sys.exit(1)
-    
+
     if args.json:
         print(json.dumps(adjacent_screen, indent=2))
         return
