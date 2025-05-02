@@ -6,7 +6,7 @@ inxi=~/tmp/.inxi.Gxx
 read_localhost_nickname
 
 layout_file () {
-    echo >&2 "Using $1 layout in ~/.fluxbox/layouts"
+    # echo >&2 "Using $1 layout in ~/.fluxbox/layouts"
     echo ~/.fluxbox/layouts/$1.yaml
     exit
 }

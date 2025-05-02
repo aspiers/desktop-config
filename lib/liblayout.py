@@ -75,7 +75,7 @@ def get_layout_params(layout_file):
     with open(layout_file) as f:
         content = f.read()
         content = process_includes(content)
-        sys.stderr.write(content)
+        # sys.stderr.write(content)
         try:
             layout = yaml.safe_load(content)
         except yaml.YAMLError as e:
