@@ -5,8 +5,10 @@ screens:
     head: 2
     <INCLUDE screens/celtic-auxiliary>
     assignment: secondary
+    right: BenQ
   -
     <INCLUDE screens/BenQ>
+    left: celtic
 
 windows:
 

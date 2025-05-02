@@ -8,12 +8,16 @@ screens:
     # semi-stable numbering since there's no obvious way to auto-detect.
     head: 2
     assignment: celtic
+    right: BenQ
   -
     <INCLUDE screens/BenQ>
+    left: celtic
+    right: Dell
   -
     <INCLUDE screens/Dell>
     head: 3
     assignment: secondary
+    left: BenQ
 
 windows:
 

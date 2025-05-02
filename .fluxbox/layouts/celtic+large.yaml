@@ -5,9 +5,11 @@ screens:
     head: 2
     <INCLUDE screens/celtic-auxiliary>
     assignment: secondary
+    right: LG
   -
     name: LG
     head: 1  # see above
+    left: celtic
     left_margin: 200
     gkrellm_width: &GKRELLM_WIDTH 92
     right_margin: *GKRELLM_WIDTH

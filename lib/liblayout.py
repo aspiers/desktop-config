@@ -159,9 +159,61 @@ def get_layout_params(layout_file):
         s['row1_middle'] = s['row1_top'] + int(s['row1_height'] / 2)
         s['row2_middle'] = s['row2_top'] + int(s['row2_height'] / 2)
 
+        s['head'] = s['head']
         s['SetHead'] = 'SetHead %d' % s['head']
 
     return screens, layout
+
+
+def get_adjacent_screen(direction, layout_name_or_path=None):
+    """
+    Get the screen to the left or right of the current screen.
+
+    Args:
+        direction (str): Either 'left' or 'right' to specify which adjacent screen to find
+        layout_name_or_path (str, optional): Layout name or path to use. If None, will need to be determined.
+
+    Returns:
+        dict: The adjacent screen information or None if not found
+    """
+    if direction not in ('left', 'right'):
+        raise ValueError("Direction must be either 'left' or 'right'")
+
+    # Get current screen where mouse is located
+    current_screen = libdpy.get_current_screen_info()
+
+    # We need to have a layout file to look up the mapping
+    if not layout_name_or_path:
+        # In a real implementation, you would need to determine the active layout
+        # This is a placeholder - you might want to add code to detect the active layout
+        raise ValueError("layout_name_or_path must be provided")
+
+    layout_file = get_layout_file(layout_name_or_path)
+    screens, layout = get_layout_params(layout_file)
+
+    # Find the current screen in the layout using the num attribute
+    # This assumes the screens array in both libdpy and the layout file
+    # are ordered the same way (by x_offset)
+    current_screen_num = current_screen['num']
+
+    if current_screen_num < 0 or current_screen_num >= len(screens):
+        return None
+
+    current_layout_screen = screens[current_screen_num]
+
+    # Check if the current screen has the requested adjacent screen
+    if direction in current_layout_screen:
+        adjacent_name = current_layout_screen[direction]
+
+        # Find the screen with this name
+        for screen in screens:
+            if 'name' in screen and screen['name'] == adjacent_name:
+                return screen
+            # Some screens might use 'assignment' instead of 'name'
+            elif 'assignment' in screen and screen['assignment'] == adjacent_name:
+                return screen
+
+    return None
 
 
 def main():

@@ -1,0 +1,84 @@
+#!/usr/bin/python3
+
+import argparse
+import json
+import os
+import subprocess
+import sys
+
+sys.path.append(os.getenv('HOME') + '/lib')
+
+import liblayout
+import libdpy
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Get the adjacent screen (left or right) from the current screen')
+    parser.add_argument('direction', choices=['left', 'right'], help='Direction to look for adjacent screen')
+    parser.add_argument('--layout', '-l', dest='layout', help='Layout name or path (default: use get-layout script)')
+    parser.add_argument('--json', '-j', action='store_true', help='Output in JSON format')
+    parser.add_argument('--move', '-m', action='store_true', help='Output SetHead command for moving to the screen')
+    parser.add_argument('--format', '-f',
+                        choices=['name', 'assignment', 'head', 'num', 'width', 'height', 'x_offset', 'y_offset', 'full'],
+                        default='name',
+                        help='Output format (default: name)')
+    args = parser.parse_args()
+
+    # Get the layout file to use
+    layout_file = args.layout
+    if not layout_file:
+        # Try to get layout from the get-layout script
+        try:
+            import subprocess
+            layout = subprocess.check_output([os.path.join(os.path.dirname(os.path.realpath(__file__)), 'get-layout')]).decode().strip()
+            layout_file = layout
+        except (subprocess.SubprocessError, FileNotFoundError):
+            sys.stderr.write("Error: Could not determine layout. Please specify with --layout\n")
+            sys.exit(1)
+
+    # Get the adjacent screen
+    try:
+        adjacent_screen = liblayout.get_adjacent_screen(args.direction, layout_file)
+    except Exception as e:
+        sys.stderr.write(f"Error: {str(e)}\n")
+        sys.exit(1)
+
+    if adjacent_screen is None:
+        sys.stderr.write(f"No {args.direction} screen found from current position\n")
+        sys.exit(1)
+
+    # Output the result
+    if args.move:
+        # Output the SetHead command
+        if 'num' in adjacent_screen:
+            cmd = f'NextWindow (workspace=[current]) (FocusHidden=no) (Head={adjacent_screen["head"]})'
+            subprocess.run(['fluxbox-remote', cmd], check=True)
+            subprocess.run(['focus-active-window'], check=True)
+            return
+        else:
+            sys.stderr.write("Error: Screen number not found in screen data\n")
+            sys.exit(1)
+    
+    if args.json:
+        print(json.dumps(adjacent_screen, indent=2))
+        return
+
+    if args.format == 'full':
+        for key, value in adjacent_screen.items():
+            print(f"{key}={value}")
+    else:
+        # Try to get the requested attribute
+        if args.format in adjacent_screen:
+            print(adjacent_screen[args.format])
+        else:
+            # If the requested attribute isn't available, try some fallbacks
+            if args.format == 'name' and 'assignment' in adjacent_screen:
+                print(adjacent_screen['assignment'])
+            elif args.format == 'assignment' and 'name' in adjacent_screen:
+                print(adjacent_screen['name'])
+            else:
+                sys.stderr.write(f"Error: Attribute '{args.format}' not found in screen data\n")
+                sys.exit(1)
+
+if __name__ == "__main__":
+    main()

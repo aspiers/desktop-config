@@ -518,9 +518,9 @@ Control Mod1 Mod4 Shift e :Exit
 <% if monitors_connected.to_i > 1 %>
 # Change to previous/next head.
 # Make sure synergys isn't running otherwise it will grab these keys!
-Shift Mod4 comma :MacroCmd {NextWindow (workspace=[current]) (FocusHidden=no) (Head=<%= left_head %>)} {<%= focus_active %>}
+Shift Mod4 comma :Exec screen-navigation --move left
 # xdotool mousemove 1200 500}
 
-Shift Mod4 period :MacroCmd {NextWindow (workspace=[current]) (FocusHidden=no) (Head=<%= right_head %>)} {<%= focus_active %>}
+Shift Mod4 period :Exec screen-navigation --move right
 # xdotool mousemove 3200 400}
 <% end %>
