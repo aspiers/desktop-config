@@ -1,3 +1,18 @@
-#!/bin/bash
+#!/usr/bin/env python3
 
-xrandr | grep -c ' connected '
+import os
+import sys
+import json
+import subprocess
+import time
+
+# Add the lib path for importing libdpy
+sys.path.append(os.path.expanduser('~/lib'))
+
+import libdpy
+
+screens = libdpy.get_xrandr_screen_geometries(use_cache=True)
+connected_monitors = len(screens)
+
+# Output the number of monitors
+print(connected_monitors)
