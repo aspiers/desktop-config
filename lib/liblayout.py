@@ -18,6 +18,11 @@ import yaml
 import libdpy
 
 
+def die(msg):
+    sys.stderr.write(msg + "\n")
+    sys.exit(1)
+
+
 def get_layout_file(layout_name_or_path, dir=os.path.expanduser('~/.fluxbox/layouts')):
     if os.path.isabs(layout_name_or_path):
         return layout_name_or_path
@@ -60,16 +65,14 @@ def get_layout_params(layout_file):
         try:
             layout = yaml.safe_load(content)
         except yaml.YAMLError as e:
-            print("YAML parsing error:", e)
-            sys.exit(1)
+            die("YAML parsing error:", e)
 
     screens = libdpy.extract_xrandr_screen_geometries().copy()
     if len(screens) != len(layout['screens']):
-        sys.stderr.write(
+        die(
             "xrandr got %d screens but %s had %d screens\n" %
             (len(screens), layout_file, len(layout['screens']))
         )
-        sys.exit(1)
 
     for i, s in enumerate(screens):
         # Note: this assumes that the ordering of screens in the YAML
