@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 #
-# N.B. in addition to screen numbers from libdpy numbered counting
-# from 0 and going left to right by X coordinate, screen numbers in sX
-# form in layouts are numbered counting from 1 and going left to right
-# by X coordinate.  This is insanely stupid and should be fixed.
+# N.B. screen numbers from libdpy and layouts are numbered counting
+# from 0 and going left to right by X coordinate.
 #
 # Debug by:
 # - running ~/lib/libdpy.py
@@ -95,10 +93,7 @@ def init_magic_cmds(layout_params):
     for i, s in enumerate(layout_params):
         print("Screen %d:" % i)
 
-        # FIXME: 3 different sets of screen/head numbers is
-        # insanely stupid.  We should make the two sets of screen
-        # numbers both count from 0.
-        for prefix in ('s%d_' % (i + 1), 's_%s_' % s['label']):
+        for prefix in ('s%d_' % i, 's_%s_' % s['assignment']):
             for k, v in s.items():
                 k2 = prefix + k
                 v2 = str(v) + ("%" if k.endswith('_pc') else '')

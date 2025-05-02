@@ -1,5 +1,5 @@
 name: BenQ
-# label: primary
+assignment: primary
 head: 1
 gkrellm_width: &GKRELLM_WIDTH 92
 panel_height: 30

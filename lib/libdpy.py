@@ -2,6 +2,10 @@
 #
 # Screen numbers are numbered counting from 0 and going
 # left to right by X coordinate.
+#
+# Note that this code has NO awareness of layouts, including
+# assignments, such as which screen will actually be used as the
+# primary screen.  That needs to be handled in liblayout.
 
 import re
 import subprocess
@@ -75,11 +79,10 @@ def extract_xrandr_screen_geometries(xrandr=None):
         screen['num'] = i
         screen['right'] = screen['x_offset'] + screen['width']
 
-    if len(screens) == 1:
-        screens[0]['label'] = 'primary'
-    else:
-        for i, screen in enumerate(screens):
-            screen['label'] = screen.get('primary') or 'secondary'
+    # Note: There's a difference between "primary" as listed by xrandr
+    # and a primary assignment in liblayout.  If the wrong (or no)
+    # screen is configured as primary at the xrandr level, then it
+    # could be auto-detected by comparing these two.
 
     return screens
 
@@ -88,11 +91,10 @@ def display_xrandr_screen_geometries(screens):
     for i, screen in enumerate(screens):
         screen['x_dpi'] = round(int(screen['width']) / int(screen['x_mm']) * 25.4, 2)
         screen['y_dpi'] = round(int(screen['height']) / int(screen['y_mm']) * 25.4, 2)
-        for label in (str(i), screen['label']):
-            for k, v in screen.items():
-                if k in ('primary', 'label'):
-                    continue
-                print("screen_%s_%s=%s" % (label, k, v))
+        for k, v in screen.items():
+            if k in ('primary', 'assignment'):
+                continue
+            print("screen_%d_%s=%s" % (i, k, v))
 
     print("monitors_connected=%d" % len(screens))
 

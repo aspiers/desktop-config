@@ -1,18 +1,27 @@
 screens:
   -
-    <INCLUDE screens/celtic-secondary>
-    # fluxbox treats primary as head 1, and we are setting the BenQ
-    # as the primary head (see bin/get-layout).  It also sets the laptop
-    # as head 3 for some reason, even though it's on the far left.
-    head: 3
+    <INCLUDE screens/celtic-auxiliary>
+    # fluxbox treats primary as head 1, and we are setting the BenQ as
+    # the primary head (see bin/get-layout).  It also used to set the
+    # laptop as head 3 for some reason, even though it's on the far
+    # left - however now we see these swapped?!  Hopefully this is a
+    # semi-stable numbering since there's no obvious way to auto-detect.
+    head: 2
+    assignment: celtic
   -
     <INCLUDE screens/BenQ>
   -
     <INCLUDE screens/Dell>
+    assignment: secondary
+    head: 3
 
 windows:
 
-  <INCLUDE common/monitoring-full-width>
+  <INCLUDE common/gkrellm>
+
+  - - (Title=lnav-system)
+    - <stick>
+    - MacroCmd {<s_celtic_SetHead>} {ResizeTo 100% <s_celtic_logs_height_pc>} {MoveTo 0 <s_celtic_panel_height> BottomLeft} {SetAlpha 50}
 
   <INCLUDE common/terminal-windows>
 
@@ -26,23 +35,24 @@ windows:
     - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 5}
 
   - - (Name=brave-browser|google-chrome|chromium) (Title=.*(secondary))
-    - MacroCmd {<s_Dell_SetHead>}
+    - MacroCmd {<s_secondary_SetHead>}
     - <stick>
 
-  - - (Name=brave-browser|google-chrome|chromium) (Title=.*(gather.town))
-    - MacroCmd {<s_laptop_SetHead>}
+  - - (Name=brave-browser|google-chrome|chromium) (Title=.*(gather\.town|.* \| Gather.*))
+    - MacroCmd {<s_celtic_SetHead>}
+    - MacroCmd {MoveTo <s_celtic_single_left> <s_celtic_single_top>} {ResizeTo <s_celtic_single_width> <s_celtic_single_height>}
     - <stick>
 
   - - (Name=brave-browser|google-chrome|chromium) (Head=<s_primary_head>)
     - MacroCmd {MoveTo <s_primary_single_left> <s_primary_single_top>} {ResizeTo <s_primary_single_width> <s_primary_single_height>}
 
-  - - (Name=brave-browser|google-chrome|chromium) (Head=<s_Dell_head>)
-    - MacroCmd {MoveTo <s_Dell_single_left> <s_Dell_single_top>} {ResizeTo <s_Dell_single_width> <s_Dell_single_height>}
+  - - (Name=brave-browser|google-chrome|chromium) (Head=<s_secondary_head>)
+    - MacroCmd {MoveTo <s_secondary_single_left> <s_secondary_single_top>} {ResizeTo <s_secondary_single_width> <s_secondary_single_height>}
 
   - - (Name=brave-browser|google-chrome|chromium) (Head=<s_primary_head>)
     - <unstick>
 
-  - - (Name=brave-browser|google-chrome|chromium) (Head=<s_laptop_head>|<s_Dell_head>)
+  - - (Name=brave-browser|google-chrome|chromium) (Head=<s_celtic_head>|<s_secondary_head>)
     - <stick>
 
   <INCLUDE common/firefox>
@@ -55,12 +65,12 @@ windows:
 
   - - (Class=Pavucontrol)
     - <stick>
-    - MacroCmd {<s_laptop_SetHead>} {MoveTo 2% 2%} {ResizeTo 40% 35%}
+    - MacroCmd {<s_celtic_SetHead>} {MoveTo 2% 2%} {ResizeTo 40% 35%}
 
   - - (Class=Blueman-manager)
     - <stick>
-    - MacroCmd {<s_laptop_SetHead>} {ResizeTo 35% 40%} {MoveTo 2% 22% BottomLeft}
+    - MacroCmd {<s_celtic_SetHead>} {ResizeTo 35% 40%} {MoveTo 2% 22% BottomLeft}
 
   - - (Class=Chrysalis)
     - <stick>
-    - MacroCmd {<s_laptop_SetHead>} {ResizeTo 90% 90%} {MoveTo 5% 5%}
+    - MacroCmd {<s_celtic_SetHead>} {ResizeTo 90% 90%} {MoveTo 5% 5%}

@@ -57,11 +57,25 @@ def get_include_content(include_file, parent_indent=''):
     # Add parent's indentation to each line
     return parent_indent + processed.replace('\n', '\n' + parent_indent)
 
+# Returns (embellished_xrandr_screens, layout) where:
+#
+# - embellished_xrandr_screens is xrandr per-screen data with extra
+#   config from the "screens" section of the layout file merged
+#   in. Note: this assumes that the ordering of screens in the YAML
+#   layout file match the ordering based on X offsets given by xrandr.
+#
+# - layout is the parsed YAML layout file, which is a top-level dict
+#   with two keys:
+#
+#   - screens (used to calculate embellished_xrandr_screens above)
+#
+#   - windows, which is an array of [window_matcher, *layout_cmds]
+#     arrays
 def get_layout_params(layout_file):
     with open(layout_file) as f:
         content = f.read()
         content = process_includes(content)
-        print(content)
+        sys.stderr.write(content)
         try:
             layout = yaml.safe_load(content)
         except yaml.YAMLError as e:
@@ -79,6 +93,15 @@ def get_layout_params(layout_file):
         # layout file match the ordering based on X offsets given by
         # xrandr.
         screen_layout = layout['screens'][i]
+
+        if screen_layout["assignment"] == "primary" and not s["primary"]:
+            die(f'screen {screen_layout["name"]} was assigned as primary '
+                'by layout but not by xrandr')
+
+        if screen_layout["assignment"] != "primary" and s["primary"]:
+            die(f'screen {screen_layout["name"]} was assigned as primary '
+                'by xrandr but not by layout')
+
         s.update(screen_layout)
 
         s.setdefault('left_margin', 0)
@@ -145,7 +168,7 @@ def main():
     exe, layout_name, *_rest = sys.argv
     layout_file = get_layout_file(layout_name)
     screens, layout = get_layout_params(layout_file)
-    print(json.dumps({'screens': screens, 'layout': layout}))
+    print(json.dumps({'screens': screens, 'layout': layout}, indent=2))
 
 
 if __name__ == "__main__":
