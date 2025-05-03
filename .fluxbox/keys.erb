@@ -519,9 +519,6 @@ Control Mod1 Mod4 Shift e :Exit
 <% if monitors_connected.to_i > 1 %>
 # Change to previous/next head.
 # Make sure synergys isn't running otherwise it will grab these keys!
-Shift Mod4 comma :Exec screen-navigation --move left
-# xdotool mousemove 1200 500}
-
-Shift Mod4 period :Exec screen-navigation --move right
-# xdotool mousemove 3200 400}
+Shift Mod4 comma :Exec screen-navigation --move left --use-xrandr-cache
+Shift Mod4 period :Exec screen-navigation --move right --use-xrandr-cache
 <% end %>
