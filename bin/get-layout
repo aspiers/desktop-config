@@ -1,9 +1,7 @@
 #!/bin/bash
 
-INXI_CACHE=~/tmp/.inxi.Gxx
-XRANDR_CACHE=~/tmp/.xrandr.json
-
 . $ZDOTDIR/lib/libhost.sh
+eval $($ZDOTDIR/lib/libdpy.py)
 read_localhost_nickname
 
 layout_file () {
