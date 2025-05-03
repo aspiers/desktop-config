@@ -1,16 +1,13 @@
 #!/bin/bash
 
-inxi=~/tmp/.inxi.Gxx
-# Called by setup-monitor to avoid delay in libfonts.sh
-# inxi -Gxx -c 0 -y 300 > $inxi
+eval $( ~/lib/libdpy.py )
 
-if grep -q 'res: 3840x2160' $inxi &&
-        [ `monitors-connected` -ge 2 ]
+if [ "`monitors-connected`" -ge 2 ] && grep -q 'res: 3840x2160' $INXI_CACHE
 then
     exit 0
 fi
 
-# if grep -q 'BenQ BL3200 res: 2560x1440' $inxi; then
+# if BenQ-connected; then
 #     exit 0
 # fi
 

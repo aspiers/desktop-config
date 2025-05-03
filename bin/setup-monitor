@@ -2,10 +2,18 @@
 
 #exec >& ~/.log/setup-monitor.log
 
-inxi=~/tmp/.inxi.Gxx
-inxi -Gxx -c 0 -y 300 > $inxi
+# Refresh xrandr cache and grab cache paths
+eval $( ~/lib/libdpy.py --no-use-cache )
 
-rm ~/tmp/.xrandr.json
+# Refresh inxi cache
+inxi -Gxx -c 0 -y 300 > $INXI_CACHE
+
+if BenQ-connected; then
+    # Connect to Kinesis Advantage 360 over Bluetooth
+    adv
+else
+    adv off
+fi
 
 sleep 5
 fr

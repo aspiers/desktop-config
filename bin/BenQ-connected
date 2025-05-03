@@ -1,0 +1,5 @@
+#!/bin/bash
+
+eval $( ~/lib/libdpy.py )
+
+grep -q 'BenQ BL3200' $INXI_CACHE
