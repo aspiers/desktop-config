@@ -9,7 +9,6 @@ import sys
 sys.path.append(os.getenv('HOME') + '/lib')
 
 import liblayout
-import libdpy
 
 
 def main():
