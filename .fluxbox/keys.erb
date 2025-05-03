@@ -313,17 +313,17 @@ reorg: m :Maximize
 reorg: Shift m :MaximizeVertical
 reorg: Control m :MaximizeHorizontal
 
-reorg: Shift 0 :MacroCmd {Exec ly -s active}
-reorg: Control 0 :MacroCmd {Exec ly -s full}
-reorg: 0 :MacroCmd {Exec ly -s single}
-reorg: 1 :MacroCmd {Exec ly -s left}
-reorg: 2 :MacroCmd {Exec ly -s right}
-reorg: 3 :MacroCmd {Exec ly -s top}
-reorg: 4 :MacroCmd {Exec ly -s bottom}
-reorg: 5 :MacroCmd {Exec ly -s top-left}
-reorg: 6 :MacroCmd {Exec ly -s top-right}
-reorg: 7 :MacroCmd {Exec ly -s bottom-left}
-reorg: 8 :MacroCmd {Exec ly -s bottom-right}
+reorg: Shift 0 :MacroCmd {Exec ly -s active} <%= keymode_done 'reorg' %>
+reorg: Control 0 :MacroCmd {Exec ly -s full} <%= keymode_done 'reorg' %>
+reorg: 0 :MacroCmd {Exec ly -s single} <%= keymode_done 'reorg' %>
+reorg: 1 :MacroCmd {Exec ly -s left} <%= keymode_done 'reorg' %>
+reorg: 2 :MacroCmd {Exec ly -s right} <%= keymode_done 'reorg' %>
+reorg: 3 :MacroCmd {Exec ly -s top} <%= keymode_done 'reorg' %>
+reorg: 4 :MacroCmd {Exec ly -s bottom} <%= keymode_done 'reorg' %>
+reorg: 5 :MacroCmd {Exec ly -s top-left} <%= keymode_done 'reorg' %>
+reorg: 6 :MacroCmd {Exec ly -s top-right} <%= keymode_done 'reorg' %>
+reorg: 7 :MacroCmd {Exec ly -s bottom-left} <%= keymode_done 'reorg' %>
+reorg: 8 :MacroCmd {Exec ly -s bottom-right} <%= keymode_done 'reorg' %>
 reorg: Shift 2 :MacroCmd {Exec ly -s 2cols} <%= keymode_done 'reorg' %>
 reorg: Shift 5 :ResizeTo 1280 720 <%= keymode_done 'reorg' %>
 reorg: Shift semicolon :MacroCmd {Exec ly -s 2rows} <%= keymode_done 'reorg' %>
