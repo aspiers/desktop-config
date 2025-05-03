@@ -1,4 +1,9 @@
 #!/bin/bash
+#
+# Downsides of using this:
+#
+# - There's no way to reliably tell whether a program is minimized
+#   vs. not running.
 
 me=$(basename $0)
 
