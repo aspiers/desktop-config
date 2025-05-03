@@ -1,14 +1,15 @@
 screens:
   -
-    # fluxbox treats primary as head 1, and we are setting the LG
-    # as the primary head (see bin/get-layout)
+    # fluxbox treats primary as head 1, and we are setting the large
+    # display as the primary head (see bin/get-layout)
     head: 2
     <INCLUDE screens/celtic-auxiliary>
     assignment: secondary
-    right: LG
+    right: large
   -
-    name: LG
+    name: large
     head: 1  # see above
+    assignment: primary
     left: celtic
     left_margin: 200
     gkrellm_width: &GKRELLM_WIDTH 92

@@ -25,17 +25,17 @@ case "$localhost_nickname" in
             esac
             exit
         elif large-monitor-connected; then
-            echo >&2 "Detected LG as second monitor"
+            echo >&2 "Detected large monitor attached"
             if ! large-monitor-primary; then
                 # Sometimes xfce4-display-settings doesn't manage to
-                # set LG to primary for some reason, so set it
+                # set it to the primary for some reason, so set it
                 # manually.
                 monitor=$(
                     xrandr |
                         awk '/connected .*3840x2160/ {print $1}'
                 )
                 xrandr --output "$monitor" --primary
-                echo >&2 "LG is $monitor; made primary"
+                echo >&2 "Large monitor is $monitor; made primary"
             fi
             layout_file celtic+large
             exit
