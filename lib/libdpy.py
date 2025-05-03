@@ -22,7 +22,8 @@ INXI_CACHE_FILE = os.path.join(CACHE_DIR, ".inxi-Gxx.out")
 
 
 def xrandr_status():
-    # sys.stderr.write("Calling xrandr\n")
+    # import traceback
+    # traceback.print_stack()
     return subprocess.check_output('xrandr').decode()
 
 
