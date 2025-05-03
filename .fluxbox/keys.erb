@@ -410,7 +410,8 @@ Shift Mod4 b :MacroCmd {NextWindow (Name=brave-browser|google-chrome|chromium) (
 
 <% end %>
 Mod4 Tab :Exec chrome-session-fzf
-Mod4 c :Exec fluxbox-focus-or-launch -c 'Cursor|Code' cursor
+#Mod4 c :Exec fluxbox-focus-or-launch -c 'Cursor|Code' cursor
+Mod4 c <%= next_unhidden "(Class=Cursor|Code)" %>
 Shift Mod4 c :Exec chrome-session-tabs 'calendar.google.com/calendar/u/0'
 Control Mod4 c :Exec chrome-session-tabs 'calendar.google.com/calendar/u/1'
 Shift Mod4 r :Exec chrome-session-tabs 'app.reclaim.ai'
@@ -422,7 +423,7 @@ Control Mod1 Mod4 n :Exec top-term node
 Mod4 e  <%= next_unhidden "(Name=emacs)" %>
 Shift Mod4 e :Exec chrome-session-fzf 'https://linear.app/ '
 
-Mod4 apostrophe :Exec fluxbox-focus-or-launch -c Beeper beeper
+Mod4 apostrophe <%= next_unhidden "(Class=Beeper)" %>
 Control Mod4 d :Exec fluxbox-focus-or-launch -c discord discord
 Control Mod4 f :Exec chrome-session-fzf messenger.com
 
