@@ -25,7 +25,7 @@ if [ "$mode" = $me ] && [ -z "$*" ]; then
 fi
 
 case "$mode" in
-    adv)  dev=DC:28:CC:C6:1E:C5 ;;
+    adv)  dev=DC:28:CC:C6:1E:C5; blocking=y ;;
     buds) dev=EC:AA:25:27:CA:88 ;;
     sony) dev=CC:98:8B:31:63:86 ;;
     lift) dev=D1:B5:24:64:5E:82 ;;
@@ -40,6 +40,14 @@ esac
 cmd=connect
 if [ -n "$1" ]; then
     cmd=disconnect
+fi
+
+if [ -n "$blocking" ]; then
+    if [ "$cmd" = connect ]; then
+        bluetoothctl unblock $dev
+    else
+        bluetoothctl block $dev
+    fi
 fi
 
 bluetoothctl $cmd $dev
