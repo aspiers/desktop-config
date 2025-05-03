@@ -18,6 +18,10 @@ import yaml
 import libdpy
 
 
+def warn(msg):
+    sys.stderr.write(msg + "\n")
+
+
 def die(msg):
     sys.stderr.write(msg + "\n")
     sys.exit(1)
@@ -88,6 +92,13 @@ def get_layout_params(layout_file, use_cache=False):
             (len(screens), layout_file, len(layout['screens']))
         )
 
+    if len(screens) == 1:
+        screen_layout = layout['screens'][0]
+        assignment = screen_layout.get('assignment')
+        if assignment and assignment != 'primary':
+            warn(f'WARNING: sole screen had assignment {assignment} not primary')
+        screen_layout['assignment'] = 'primary'
+
     for i, s in enumerate(screens):
         # Note: this assumes that the ordering of screens in the YAML
         # layout file match the ordering based on X offsets given by
@@ -96,11 +107,13 @@ def get_layout_params(layout_file, use_cache=False):
         if not screen_layout.get('name'):
             die(f'screen {i} is missing name in layout')
 
-        if screen_layout["assignment"] == "primary" and not s["primary"]:
+        assignment = screen_layout.get('assignment')
+
+        if assignment == "primary" and not s["primary"]:
             die(f'screen {screen_layout["name"]} was assigned as primary '
                 'by layout but not by xrandr')
 
-        if screen_layout["assignment"] != "primary" and s["primary"]:
+        if not assignment and s["primary"]:
             die(f'screen {screen_layout["name"]} was assigned as primary '
                 'by xrandr but not by layout')
 
