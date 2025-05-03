@@ -12,13 +12,10 @@ import liblayout
 
 
 def move_to_adjacent_screen(adjacent_screen):
-    if 'num' in adjacent_screen:
-        cmd = f'NextWindow (workspace=[current]) (FocusHidden=no) (Head={adjacent_screen["head"]})'
-        subprocess.run(['fluxbox-remote', cmd], check=True)
-        subprocess.run(['focus-active-window'], check=True)
-    else:
-        sys.stderr.write("Error: Screen number not found in screen data\n")
-        sys.exit(1)
+    x = int(adjacent_screen['x_offset'] + (adjacent_screen['width'] / 2))
+    y = int(adjacent_screen['y_offset'] + (adjacent_screen['height'] / 2))
+    subprocess.run(['xdotool', 'mousemove', str(x), str(y)], check=True)
+    # subprocess.run(['focus-active-window'], check=True)
 
 
 def main():
