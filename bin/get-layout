@@ -1,6 +1,6 @@
 #!/bin/bash
 
-inxi=~/tmp/.inxi.Gxx
+INXI_CACHE=~/tmp/.inxi.Gxx
 
 . $ZDOTDIR/lib/libhost.sh
 read_localhost_nickname
@@ -13,7 +13,7 @@ layout_file () {
 
 case "$localhost_nickname" in
     celtic)
-        if grep -q 'BenQ BL3200' $inxi; then
+        if grep -q 'BenQ BL3200' $INXI_CACHE; then
             case "`monitors-connected`" in
                 2)
                     layout_file celtic+BenQ
@@ -38,7 +38,7 @@ case "$localhost_nickname" in
             fi
             layout_file celtic+large
             exit
-        # UGLY HACK: relies on $inxi being created by previous command (large-monitor-connected)
+        # UGLY HACK: relies on inxi cache being created by previous command
         elif [ `monitors-connected` == 1 ]; then
             layout_file "$localhost_nickname"
             exit
