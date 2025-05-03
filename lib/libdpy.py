@@ -109,7 +109,7 @@ def extract_xrandr_screen_geometries(xrandr=None):
 
 def get_xrandr_screen_geometries(use_cache=False):
     """
-    Get XRandr screen geometries, optionally using cached results if available.
+    Get xrandr screen geometries, optionally using cached results if available.
 
     Args:
         use_cache: If True, use cached results if available
@@ -124,7 +124,7 @@ def get_xrandr_screen_geometries(use_cache=False):
                     cache_data = json.load(f)
                     return cache_data["screens"]
         except Exception as e:
-            sys.stderr.write(f"Warning: Failed to read XRandr cache: {str(e)}\n")
+            sys.stderr.write(f"Warning: Failed to read xrandr cache: {str(e)}\n")
 
     # No cache or cache loading failed, extract fresh data
     return extract_xrandr_screen_geometries()
