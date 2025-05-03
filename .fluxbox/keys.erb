@@ -1,10 +1,16 @@
 <%
-def next_unhidden(s, focus: true, prev: false)
+def next_unhidden(s, focus: true, prev: false, native: false)
   cmd = prev ? "PrevWindow" : "NextWindow"
   cmd_args = "#{cmd} #{s} (FocusHidden=no) (Minimized=no)"
   if focus
-    # ":MacroCmd {%s} {#{cmd_args}}" % focus_active
-    ":Exec fluxbox-remote-then-focus '#{cmd_args}'"
+    if native
+      # This one is needed for cycling between arbitrary windows,
+      # otherwise it doesn't preserve a stack of most recently
+      # focused windows.
+      ":MacroCmd {%s} {#{cmd_args}}" % focus_active
+    else
+      ":Exec fluxbox-remote-then-focus '#{cmd_args}'"
+    end
   else
     ":#{cmd_args}"
   end
@@ -147,10 +153,10 @@ OnTitlebar Mouse2 :Lower
 OnTitlebar Mouse3 :WindowMenu
 
 # cycle windows on current display and workspace
-Mod4 slash <%= next_unhidden "(workspace=[current]) (Head=[mouse])" %>
+Mod4 slash <%= next_unhidden "(workspace=[current]) (Head=[mouse])", native: true %>
 
 # add Shift to cycle in opposite direction:
-Shift Mod4 slash <%= next_unhidden "(workspace=[current]) (Head=[mouse])", prev: true %>
+Shift Mod4 slash <%= next_unhidden "(workspace=[current]) (Head=[mouse])", native: true, prev: true %>
 
 # add Control to include minimized windows:
 Control Mod4 slash :MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {<%= focus_active %>}
