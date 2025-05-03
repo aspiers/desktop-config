@@ -3,13 +3,14 @@ def next_unhidden(s, focus: true, prev: false)
   cmd = prev ? "PrevWindow" : "NextWindow"
   cmd_args = "#{cmd} #{s} (FocusHidden=no) (Minimized=no)"
   if focus
-    ":MacroCmd {#{cmd_args}} {%s}" % focus_active
+    # ":MacroCmd {%s} {#{cmd_args}}" % focus_active
+    ":Exec fluxbox-remote-then-focus '#{cmd_args}'"
   else
     ":#{cmd_args}"
   end
 end
 
-def focus_active(delay=200, sync=false)
+def focus_active(delay=300, sync=false)
   "Delay {Exec focus-active-window%s} #{delay * 1000}" % [
     sync ? ' --sync' : ''
   ]

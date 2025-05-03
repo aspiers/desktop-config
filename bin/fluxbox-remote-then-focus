@@ -1,0 +1,22 @@
+#!/bin/bash -e
+
+# For some weird reason, attempting window switching and then focusing
+# the active window via something like
+#
+#   MacroCmd {NextWindow (Role=(xfce4|gnome)-terminal-.*) (Head=1) (workspace=0) (FocusHidden=no) (Minimized=no)} {Delay {Exec focus-active-window} 1000000}
+#
+# can be very unreliable when launched from a key binding (even though
+# it's reliable when called via fluxbox-remote from CLI).  Placing the
+# {Delay ...} first doesn't help either.
+#
+# There must be some kind of race condition.  So chain them together.
+# This fixes the reliability issue, and also has the benefit that we
+# never launch focus-active-window until fluxbox-remote is complete.
+
+fluxbox-remote "$@"
+
+# Seems we need to wait at least this long before the focus can
+# reliably succeed.
+sleep 0.3
+
+focus-active-window
