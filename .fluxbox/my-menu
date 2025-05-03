@@ -4,33 +4,39 @@
 
 [begin] (Fluxbox)
 [encoding] {UTF-8}
-      [exec]   (gnome-terminal) {gnome-terminal} 
-      [exec]   (Run) {fbrun} 
+      [exec]   (gnome-terminal) {gnome-terminal}
+      [exec]   (Run) {fbrun}
 [submenu] (Browsers)
-      [exec]   (Chrome) {google-chrome} 
-      [exec]   (Brave) {brave-browser} 
-      [exec]   (Chromium) {chromium} 
-      [exec]   (Firefox) {firefox} 
+      [exec]   (Chrome) {google-chrome}
+      [exec]   (Brave) {brave-browser}
+      [exec]   (Chromium) {chromium}
+      [exec]   (Firefox) {firefox}
 [end]
 [submenu] (Comms)
-      [exec]   (Signal) {signal-desktop} 
-      [exec]   (Discord) {discord} 
-      [exec]   (Slack) {slack} 
-      [exec]   (Telegram) {telegram} 
-      [exec]   (Zoom) {zoom --disable-gpu-sandbox} 
-      [exec]   (u: Zulip) {zulip} 
+      [exec]   (Beeper) {beeper}
+      [exec]   (Signal) {signal-desktop}
+      [exec]   (Discord) {discord}
+      [exec]   (Slack) {slack}
+      [exec]   (Telegram) {telegram}
+      [exec]   (Zoom) {zoom --disable-gpu-sandbox}
+      [exec]   (u: Zulip) {zulip}
+[end]
+[submenu] (Editors)
+      [exec]   (Cursor) {cursor}
+      [exec]   (Code) {code}
+      [exec]   (Emacs) {emacs}
 [end]
 [submenu] (Graphics)
-      [exec]   (gimp) {gimp} 
-      [exec]   (inkscape) {inkscape} 
+      [exec]   (gimp) {gimp}
+      [exec]   (inkscape) {inkscape}
 [end]
 [submenu] (Audio)
-      [exec]   (kmix) {kmix} 
-      [exec]   (audacity) {audacity} 
-      [exec]   (alsamixer) {top-term alsamixer} 
+      [exec]   (kmix) {kmix}
+      [exec]   (audacity) {audacity}
+      [exec]   (alsamixer) {top-term alsamixer}
 [end]
 [submenu] (Video)
-      [exec]   (vlc) {vlc} 
+      [exec]   (vlc) {vlc}
 [end]
 [submenu] (Utils)
       [exec] (xfce4-display-settings) {xfce4-display-settings}
@@ -38,32 +44,32 @@
       [exec] (blueman-manager) {blueman-manager}
       [exec] (ksnip) {ksnip}
       [exec] (Flameshot) {flameshot gui}
-      [exec] (Window name) {xwinprops | xmessage -file - -center} 
-      [exec] (gpick) {gpick} 
-      [exec] (kcolorchooser) {kcolorchooser} 
-      [exec] (xfontsel) {xfontsel} 
-      [exec] (gcalc) {gnome-calculator} 
-      [exec] (kcalc) {kcalc} 
-      [exec] (xclock) {xclock} 
+      [exec] (Window name) {xwinprops | xmessage -file - -center}
+      [exec] (gpick) {gpick}
+      [exec] (kcolorchooser) {kcolorchooser}
+      [exec] (xfontsel) {xfontsel}
+      [exec] (gcalc) {gnome-calculator}
+      [exec] (kcalc) {kcalc}
+      [exec] (xclock) {xclock}
 [end]
 [submenu] (Office)
-      [exec] (Open Office)      {ooffice} 
-      [exec]   (dia) {dia} 
+      [exec] (Open Office)      {ooffice}
+      [exec]   (dia) {dia}
 [end]
 [submenu] (System Monitoring)
-      [exec]   (watchlogs-system-window) {watchlogs-system-window} 
-      [exec]   (htop) {top-term htop} 
-      [exec]   (iotop) {top-term sudo iotop} 
+      [exec]   (watchlogs-system-window) {watchlogs-system-window}
+      [exec]   (htop) {top-term htop}
+      [exec]   (iotop) {top-term sudo iotop}
       [exec]   (nethogs) {top-term sudo nethogs `gw-dev`}
       [exec]   (iftop) {top-term sudo iftop -i `gw-dev`}
-      [exec]   (powertop) {top-term sudo powertop} 
-      [exec]   (gkrellm) {gkrellm} 
+      [exec]   (powertop) {top-term sudo powertop}
+      [exec]   (gkrellm) {gkrellm}
 [end]
 [submenu] (Fluxbox menu)
 [include] (/home/adam/.fluxbox/fluxboxmenu)
 [end]
 [separator]
-      [exec] (Lock screen) {xscreensaver-command -lock} 
-      [exec]   (xscreensaver-demo) {xscreensaver-demo} 
+      [exec] (Lock screen) {xscreensaver-command -lock}
+      [exec]   (xscreensaver-demo) {xscreensaver-demo}
 [endencoding]
 [end]
