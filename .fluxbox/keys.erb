@@ -1,11 +1,11 @@
 <%
 def next_unhidden(s, focus: true, prev: false)
   cmd = prev ? "PrevWindow" : "NextWindow"
+  cmd_args = "#{cmd} #{s} (FocusHidden=no) (Minimized=no)"
   if focus
-    ":MacroCmd {#{cmd} #{s} (FocusHidden=no) (Minimized=no)} {%s}" % \
-      focus_active
+    ":MacroCmd {#{cmd_args}} {%s}" % focus_active
   else
-    ":#{cmd} #{s} (FocusHidden=no) (Minimized=no)"
+    ":#{cmd_args}"
   end
 end
 
