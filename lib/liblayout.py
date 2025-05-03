@@ -93,6 +93,8 @@ def get_layout_params(layout_file, use_cache=False):
         # layout file match the ordering based on X offsets given by
         # xrandr.
         screen_layout = layout['screens'][i]
+        if not screen_layout.get('name'):
+            die(f'screen {i} is missing name in layout')
 
         if screen_layout["assignment"] == "primary" and not s["primary"]:
             die(f'screen {screen_layout["name"]} was assigned as primary '

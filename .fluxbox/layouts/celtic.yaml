@@ -1,6 +1,7 @@
 screens:
   -
     head: 1
+    name: celtic
     gkrellm_width: &GKRELLM_WIDTH 92
     panel_height: 35
     logs_height_pc: 14
