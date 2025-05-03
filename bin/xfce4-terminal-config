@@ -47,7 +47,8 @@ set_theme () {
             sset color-foreground '#ffffff'
             sset color-cursor-foreground '#91914141acac'
             bset color-cursor-use-default false
-            sset color-palette 'rgb(0,0,0);rgb(170,0,0);rgb(10,173,8);rgb(229,165,10);rgb(26,95,180);rgb(170,0,170);rgb(0,170,170);rgb(170,170,170);rgb(85,85,85);rgb(255,85,85);rgb(150,255,92);rgb(255,255,85);rgb(98,160,234);rgb(255,85,255);rgb(85,255,255);rgb(255,255,255)'
+            sset color-palette 'rgb(7,54,66);rgb(220,50,47);rgb(171,191,33);rgb(181,137,0);rgb(38,139,210);rgb(211,54,130);rgb(42,161,152);rgb(238,232,213);rgb(162,162,162);rgb(203,75,22);rgb(1,202,130);rgb(213,217,9);rgb(148,180,255);rgb(240,7,206);rgb(86,196,196);rgb(253,246,227)'
+            # sset color-palette 'rgb(0,0,0);rgb(170,0,0);rgb(10,173,8);rgb(229,165,10);rgb(26,95,180);rgb(170,0,170);rgb(0,170,170);rgb(170,170,170);rgb(85,85,85);rgb(255,85,85);rgb(150,255,92);rgb(255,255,85);rgb(98,160,234);rgb(255,85,255);rgb(85,255,255);rgb(255,255,255)'
             ;;
         light)
             sset color-background '#ffffff'
