@@ -110,11 +110,11 @@ def get_layout_params(layout_file, use_cache=False):
         assignment = screen_layout.get('assignment')
 
         if assignment == "primary" and not s["primary"]:
-            die(f'screen {screen_layout["name"]} was assigned as primary '
+            die(f'Screen {screen_layout["name"]} was assigned as primary '
                 'by layout but not by xrandr')
 
         if not assignment and s["primary"]:
-            die(f'screen {screen_layout["name"]} was assigned as primary '
+            die(f'Screen {screen_layout["name"]} was assigned as primary '
                 'by xrandr but not by layout')
 
         s.update(screen_layout)
