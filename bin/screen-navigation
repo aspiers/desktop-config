@@ -11,6 +11,16 @@ sys.path.append(os.getenv('HOME') + '/lib')
 import liblayout
 
 
+def move_to_adjacent_screen(adjacent_screen):
+    if 'num' in adjacent_screen:
+        cmd = f'NextWindow (workspace=[current]) (FocusHidden=no) (Head={adjacent_screen["head"]})'
+        subprocess.run(['fluxbox-remote', cmd], check=True)
+        subprocess.run(['focus-active-window'], check=True)
+    else:
+        sys.stderr.write("Error: Screen number not found in screen data\n")
+        sys.exit(1)
+
+
 def main():
     parser = argparse.ArgumentParser(description='Get the adjacent screen (left or right) from the current screen')
     parser.add_argument('direction', choices=['left', 'right'], help='Direction to look for adjacent screen')
@@ -49,15 +59,8 @@ def main():
 
     # Output the result
     if args.move:
-        # Output the SetHead command
-        if 'num' in adjacent_screen:
-            cmd = f'NextWindow (workspace=[current]) (FocusHidden=no) (Head={adjacent_screen["head"]})'
-            subprocess.run(['fluxbox-remote', cmd], check=True)
-            subprocess.run(['focus-active-window'], check=True)
-            return
-        else:
-            sys.stderr.write("Error: Screen number not found in screen data\n")
-            sys.exit(1)
+        move_to_adjacent_screen(adjacent_screen)
+        return
 
     if args.json:
         print(json.dumps(adjacent_screen, indent=2))
