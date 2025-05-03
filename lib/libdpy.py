@@ -15,8 +15,9 @@ import json
 import time
 
 # Global constants
-XRANDR_CACHE_DIR = os.path.expanduser("~/tmp")
-XRANDR_CACHE_FILE = os.path.join(XRANDR_CACHE_DIR, ".xrandr.json")
+CACHE_DIR = os.path.expanduser("~/tmp")
+XRANDR_CACHE_FILE = os.path.join(CACHE_DIR, ".xrandr.json")
+INXI_CACHE_FILE = os.path.join(CACHE_DIR, ".inxi-Gxx.out")
 
 
 def xrandr_status():
@@ -92,7 +93,7 @@ def extract_xrandr_screen_geometries(xrandr=None):
     # could be auto-detected by comparing these two.
 
     # Cache the results
-    os.makedirs(XRANDR_CACHE_DIR, exist_ok=True)
+    os.makedirs(CACHE_DIR, exist_ok=True)
 
     try:
         cache_data = {
@@ -175,6 +176,8 @@ def get_current_screen_info(use_cache=False):
 
 def main():
     (dpy, screens) = extract_xrandr_geometries()
+    print(f'XRANDR_CACHE={XRANDR_CACHE_FILE}')
+    print(f'INXI_CACHE={INXI_CACHE_FILE}')
     display_xrandr_display_geometry(dpy)
     display_xrandr_screen_geometries(screens)
 
