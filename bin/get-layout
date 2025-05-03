@@ -1,6 +1,7 @@
 #!/bin/bash
 
 INXI_CACHE=~/tmp/.inxi.Gxx
+XRANDR_CACHE=~/tmp/.xrandr.json
 
 . $ZDOTDIR/lib/libhost.sh
 read_localhost_nickname
@@ -39,7 +40,19 @@ case "$localhost_nickname" in
             layout_file celtic+large
             exit
         # UGLY HACK: relies on inxi cache being created by previous command
+        # (large-monitor-connected)
         elif [ `monitors-connected` == 1 ]; then
+            # Note: running monitors-connected guarantees presence of
+            # $XRANDR_CACHE
+            output="$( jq -r .screens[0].name $XRANDR_CACHE )"
+            xrandr --output "$output" --primary
+
+            # Could edit the cache like this:
+            # jq '.screens[0].primary = "primary"' $XRANDR_CACHE > $XRANDR_CACHE.new
+            # mv $XRANDR_CACHE{.new,}
+            # but better not to make assumptions about schema, so just invalidate
+            rm $XRANDR_CACHE
+
             layout_file "$localhost_nickname"
             exit
         fi
