@@ -13,6 +13,7 @@ import sys
 import os
 import json
 import time
+import argparse
 
 # Global constants
 CACHE_DIR = os.path.expanduser("~/tmp")
@@ -21,17 +22,17 @@ INXI_CACHE_FILE = os.path.join(CACHE_DIR, ".inxi-Gxx.out")
 
 
 def xrandr_status():
+    # sys.stderr.write("Calling xrandr\n")
     return subprocess.check_output('xrandr').decode()
 
 
-def extract_xrandr_geometries():
-    xrandr = xrandr_status()
-    dpy = extract_display_geometry(xrandr)
-    screens = extract_xrandr_screen_geometries(xrandr)
+def get_screen_geometries(use_cache=False):
+    screens = get_xrandr_screen_geometries(use_cache)
+    dpy = extract_xdpyinfo_geometry()
     return (dpy, screens)
 
 
-def extract_display_geometry(xrandr=None):
+def extract_xdpyinfo_geometry():
     dpy = subprocess.check_output('xdpyinfo').decode()
     m = re.search(
         r'^\s*dimensions:\s+(?P<dpy_width>\d+)x(?P<dpy_height>\d+) pixels\s+' +
@@ -175,7 +176,16 @@ def get_current_screen_info(use_cache=False):
 
 
 def main():
-    (dpy, screens) = extract_xrandr_geometries()
+    parser = argparse.ArgumentParser(
+        description='Display information about XRandR screen geometries')
+    parser.add_argument('--use-cache',
+                        action=argparse.BooleanOptionalAction,
+                        default=True,
+                        help='Use cached XRandR data if available')
+    args = parser.parse_args()
+
+    (dpy, screens) = get_screen_geometries(use_cache=args.use_cache)
+
     print(f'XRANDR_CACHE={XRANDR_CACHE_FILE}')
     print(f'INXI_CACHE={INXI_CACHE_FILE}')
     display_xrandr_display_geometry(dpy)
