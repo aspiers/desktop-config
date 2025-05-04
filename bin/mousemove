@@ -1,6 +1,18 @@
 #!/bin/sh
 
+if [ "$1" == '--shell' ]; then
+    shell=y
+    shift
+fi
+
 x="$1" y="$2"
 shift 2
 
-xdotool mousemove $(screen-coords $x $y) "$@"
+eval $(screen-coords --shell $x $y)
+
+xdotool mousemove "$X" "$Y" "$@"
+
+if [ -n "$shell" ]; then
+    echo "X=$X"
+    echo "Y=$Y"
+fi

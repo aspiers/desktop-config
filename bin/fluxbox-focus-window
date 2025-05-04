@@ -1,0 +1,43 @@
+#!/bin/bash -e
+
+# NextWindow isn't reliable with focus follows mouse, because if we
+# were on a different workspace, when it switches to the workspace
+# with the matching window, if the mouse was in a position over a
+# different window on the new workspace, it focuses that (wrong)
+# window.
+#
+# Weirdly I don't remember this being an issue until recently.  Maybe
+# it's only with certain layouts or monitors attached?
+#
+# We attempt to work around this by momentarily warping the mouse to a
+# corner of the screen so that it's not focused on a focusable window,
+# and then restoring it to the desired position afterwards.
+#
+# However this is an obviously horrendous hack, so probably wmctrl -a
+# is a better approach.
+
+eval $(xdotool getmouselocation --shell)
+ORIG_X="$X"
+ORIG_Y="$Y"
+
+eval $(mousemove --shell 100% 99%)
+CORNER_X="$X"
+CORNER_Y="$Y"
+
+fluxbox-remote "$@"
+
+# Seems we need to wait at least this long before the focus can
+# reliably succeed.
+sleep 0.3
+
+# Check whether we've moved the mouse, to see if we found the window
+# we wanted
+eval $(xdotool getmouselocation --shell)
+
+if [[ $X == $CORNER_X && $Y == $CORNER_Y ]]; then
+    : "Didn't find it, so move the mouse back to where it was"
+    mousemove "$ORIG_X" "$ORIG_Y"
+else
+    : "Found it!  Focus that window"
+    focus-active-window
+fi

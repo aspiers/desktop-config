@@ -9,7 +9,7 @@ def next_unhidden(s, focus: true, prev: false, native: false)
       # focused windows.
       ":MacroCmd {%s} {#{cmd_args}}" % focus_active
     else
-      ":Exec fluxbox-remote-then-focus '#{cmd_args}'"
+      ":Exec fluxbox-focus-window '#{cmd_args}'"
     end
   else
     ":#{cmd_args}"
@@ -403,7 +403,8 @@ Mod4 9 :MacroCmd {Exec xdotool keyup Super_R} {Exec warpd --click 3}
 # N.B. used to have (Name=gnome-terminal-server) here too as an additional
 # pattern, but it seems these days the instance name is org.gnome.Terminal.
 # Not clear when that changed or why.
-Mod4 x <%= next_unhidden "(Role=(xfce4|gnome)-terminal-.*) (Head=1) (workspace=0)" %>
+Mod4 x :MacroCmd {Exec wmctrl -x -a xfce4-terminal} {<%= focus_active %>}
+#Mod4 x <%= next_unhidden "(Role=(xfce4|gnome)-terminal-.*) (Head=1) (workspace=0)" %>
 Control Mod4 x :Exec rmx-window
 
 Mod4 a :Exec chrome-session-fzf 't3.chat | poe.com | chat.deepseek.com | claude.ai | chatgpt.com | gemini.google.com'
@@ -416,8 +417,9 @@ Shift Mod4 b :MacroCmd {NextWindow (Name=brave-browser|google-chrome|chromium) (
 
 <% end %>
 Mod4 Tab :Exec chrome-session-fzf
+Mod4 c :MacroCmd {Exec wmctrl -x -a 'Cursor|Code'} {<%= focus_active %>}
 #Mod4 c :Exec fluxbox-focus-or-launch -c 'Cursor|Code' cursor
-Mod4 c <%= next_unhidden "(Class=Cursor|Code)" %>
+#Mod4 c <%= next_unhidden "(Class=Cursor|Code)" %>
 Shift Mod4 c :Exec chrome-session-tabs 'calendar.google.com/calendar/u/0'
 Control Mod4 c :Exec chrome-session-tabs 'calendar.google.com/calendar/u/1'
 Shift Mod4 r :Exec chrome-session-tabs 'app.reclaim.ai'
@@ -425,11 +427,12 @@ Shift Mod4 r :Exec chrome-session-tabs 'app.reclaim.ai'
 # useful as a calculator
 Control Mod1 Mod4 n :Exec top-term node
 
-#Mod4 e :Exec wmctrl -a emacs
-Mod4 e  <%= next_unhidden "(Name=emacs)" %>
+Mod4 e :MacroCmd {Exec wmctrl -x -a emacs} {<%= focus_active %>}
+#Mod4 e  <%= next_unhidden "(Name=emacs)" %>
 Shift Mod4 e :Exec chrome-session-fzf 'https://linear.app/ '
 
-Mod4 apostrophe <%= next_unhidden "(Class=Beeper)" %>
+Mod4 apostrophe :MacroCmd {Exec wmctrl -x -a beeper} {<%= focus_active %>}
+#Mod4 apostrophe <%= next_unhidden "(Class=Beeper)" %>
 Control Mod4 d :Exec fluxbox-focus-or-launch -c discord discord
 Control Mod4 f :Exec chrome-session-fzf messenger.com
 

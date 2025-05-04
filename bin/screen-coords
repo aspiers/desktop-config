@@ -3,6 +3,7 @@
 import os
 import subprocess
 import sys
+import argparse
 
 sys.path.append(os.getenv('HOME') + '/lib')
 
@@ -10,14 +11,21 @@ import libdpy
 
 
 def main():
-    if len(sys.argv) != 3:
-       sys.stderr.write("""Usage: screen-coords X[%] Y[%]
+    parser = argparse.ArgumentParser(description="Calculate screen coordinates.")
+    parser.add_argument("x", help="X coordinate as a percentage or absolute value")
+    parser.add_argument("y", help="Y coordinate as a percentage or absolute value")
+    parser.add_argument(
+        "--shell", action="store_true", help="Output coordinates in shell variable format"
+    )
+    args = parser.parse_args()
 
-    X and Y are percentages of the screen size""")
-       sys.exit(1)
+    x, y = get_coords(args.x, args.y)
 
-    x, y = get_coords(*sys.argv[1:3])
-    print(f'{x} {y}')
+    if args.shell:
+        print(f"X={x}")
+        print(f"Y={y}")
+    else:
+        print(f"{x} {y}")
 
 
 def get_coords(a, b):
