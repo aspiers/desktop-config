@@ -1,8 +1,10 @@
 screens:
   -
     <INCLUDE screens/BenQ>
+    right: Dell
   -
     <INCLUDE screens/Dell>
+    left: BenQ
 
 windows:
   <INCLUDE common/monitoring-full-width>
