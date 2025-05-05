@@ -22,6 +22,7 @@ windows:
 
   - - (Name=brave-browser|google-chrome|chromium) (Title=.*(personal$|secondary|Panther))
     - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 5}
+    - Attach (Name=brave-browser|google-chrome|chromium) (Title=.*(personal$|secondary))
 
   - - (Name=brave-browser|google-chrome|chromium)
     - MacroCmd {<s_primary_SetHead>} {MoveTo <s_primary_single_left> <s_primary_single_top>} {ResizeTo <s_primary_single_width> <s_primary_single_height>}
