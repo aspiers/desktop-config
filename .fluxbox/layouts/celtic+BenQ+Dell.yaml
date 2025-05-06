@@ -11,6 +11,7 @@ screens:
     right: BenQ
   -
     <INCLUDE screens/BenQ>
+    scale: 1.5
     left: celtic
     right: Dell
   -
