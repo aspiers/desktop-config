@@ -10,7 +10,7 @@ fi
 read_localhost_nickname
 
 if layout="$( get-layout )"; then
-    fluxbox-layout "$@" "$layout"
+    desktop-layout "$@" "$layout"
 else
     exit 1
 fi
