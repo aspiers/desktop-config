@@ -45,9 +45,10 @@ def ensure_primary_set_py(find_by_attribute, search_value):
         sys.stderr.write(f"Info: Monitor not found via inxi: {find_by_attribute}='{search_value}'.\n")
         return
 
-    desired_output_name = desired_monitor_info.get('mapped')
+    desired_output_name = (desired_monitor_info.get('mapped') or
+                           desired_monitor_info.get('Monitor'))
     if not desired_output_name:
-        sys.stderr.write(f"Info: Monitor {desired_monitor_info.get('model', 'Unknown')} found but has no 'mapped' in inxi data.\n")
+        sys.stderr.write(f"Info: Monitor {desired_monitor_info.get('model', 'Unknown')} found but has no 'mapped' or 'Monitor' in inxi data.\n")
         return
 
     current_primary_info = libdpy.get_xrandr_primary_monitor(use_cache=True)
