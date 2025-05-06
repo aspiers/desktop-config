@@ -31,11 +31,11 @@ case "$localhost_nickname" in
         if grep -q 'BenQ BL3200' $INXI_CACHE; then
             case "`monitors-connected`" in
                 2)
-                    ensure_primary_set Monitor BenQ
+                    ensure_primary_set model BenQ
                     layout_file celtic+BenQ
                     ;;
                 3)
-                    ensure_primary_set Monitor BenQ
+                    ensure_primary_set model BenQ
                     layout_file celtic+BenQ+Dell
                     ;;
             esac
@@ -65,7 +65,7 @@ case "$localhost_nickname" in
         ;;
     ionian)
         if [ `monitors-connected` == 2 ]; then
-            ensure_primary_set Monitor BenQ
+            ensure_primary_set model BenQ
             layout_file "$localhost_nickname"
             exit
         fi
