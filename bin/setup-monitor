@@ -8,11 +8,13 @@ eval $( ~/lib/libdpy.py --no-use-cache )
 # Refresh inxi cache
 inxi -Gxx -c 0 -y 300 > $INXI_CACHE
 
-if BenQ-connected; then
-    # Connect to Kinesis Advantage 360 over Bluetooth
-    adv &
-else
-    adv off &
+if host-has-prop laptop; then
+    if BenQ-connected; then
+        # Connect to Kinesis Advantage 360 over Bluetooth
+        adv &
+    else
+        adv off &
+    fi
 fi
 
 sleep 5
