@@ -158,7 +158,8 @@ Mod4 slash <%= next_unhidden "(workspace=[current]) (Head=[mouse])", native: tru
 # add Shift to cycle in opposite direction:
 Shift Mod4 slash <%= next_unhidden "(workspace=[current]) (Head=[mouse])", native: true, prev: true %>
 
-# add Control to include minimized windows:
+# add Control to include minimized windows
+# Not currently working?!
 Control Mod4 slash :MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {<%= focus_active %>}
 
 # cycle windows on any display head, current workspace
@@ -200,6 +201,8 @@ Mod4 space :Raise
 Mod4 l :MacroCmd {Lower} {<%= focus_active %>}
 Mod1 Mod4 l :Lower
 Mod4 i :Minimize
+# Deminimize
+Control Mod4 i :MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (Minimized=yes) (FocusHidden=no)} {<%= focus_active %>}
 
 Shift Mod4 m :MaximizeVertical
 Control Mod4 m :MaximizeHorizontal
