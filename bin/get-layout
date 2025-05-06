@@ -1,87 +1,126 @@
-#!/bin/bash
+#!/usr/bin/python3
 
-. $ZDOTDIR/lib/libhost.sh
-eval $($ZDOTDIR/lib/libdpy.py)
-read_localhost_nickname
+import os
+import sys
+import subprocess
+import json
+import re
 
-layout_file () {
-    # echo >&2 "Using $1 layout in ~/.fluxbox/layouts"
-    echo ~/.fluxbox/layouts/$1.yaml
-    exit
-}
+# Simplified sys.path modification
+sys.path.append(os.path.join(os.getenv('HOME'), 'lib'))
+sys.path.append(os.path.join(os.getenv('HOME'), 'bin'))
 
-# Sometimes xfce4-display-settings doesn't manage to set it to the
-# primary for some reason, so set it manually if needed.
-ensure_primary_set () {
-    find_by="$1" search="$2"
+import libdpy
+import large_monitor_connected
 
-    # Find the desired monitor output name from inxi
-    monitor=$(~/lib/libdpy.py --find-by-"$find_by" "$search")
-    desired_output=$(echo "$monitor" | jq -r .mapped)
+XRANDR_CACHE = libdpy.XRANDR_CACHE_FILE
+INXI_RAW_CACHE = libdpy.INXI_RAW_CACHE_FILE
+# INXI_JSON_CACHE = libdpy.INXI_JSON_CACHE_FILE # Available if needed
 
-    # Find the current xrandr primary output name
-    primary_output=$(~/lib/libdpy.py --find-xrandr-primary | jq -r .name)
+def get_localhost_nickname():
+    zdotdir = os.environ.get('ZDOTDIR', os.path.expanduser('~')) # Default to ~ if ZDOTDIR not set
+    host_name_file = os.path.join(zdotdir, '.localhost-nickname')
+    if not os.path.exists(host_name_file):
+        sys.stderr.write(f"Put host nickname in {host_name_file}\n")
+        sys.exit(1)
 
-    if [[ "$primary_output" == "$desired_output" ]]; then
-        : "$desired_output is already primary (according to xrandr)"
+    with open(host_name_file, 'r') as f:
+        localhost_nickname = f.read().strip()
+    if localhost_nickname:
+        return localhost_nickname
+
+    sys.stderr.write(".localhost-nickname empty?!")
+    sys.exit(1)
+
+def layout_file(layout_name_suffix):
+    # print(f"Using {layout_name_suffix} layout in {os.path.expanduser('~/.fluxbox/layouts')}", file=sys.stderr)
+    print(os.path.join(os.path.expanduser('~/.fluxbox/layouts'), f"{layout_name_suffix}.yaml"))
+    sys.exit(0)
+
+def ensure_primary_set_py(find_by_attribute, search_value):
+    inxi_monitors = libdpy.get_inxi_monitors(use_cache=True)
+    desired_monitor_info = libdpy.find_monitor_by_attribute(inxi_monitors, find_by_attribute, search_value)
+
+    if not desired_monitor_info:
+        sys.stderr.write(f"Info: Monitor not found via inxi: {find_by_attribute}='{search_value}'.\n")
         return
-    fi
-    xrandr --output "$desired_output" --primary
-    rm "$XRANDR_CACHE"
-    : "Set $desired_output as primary"
-}
 
-case "$localhost_nickname" in
-    celtic)
-        if grep -q 'BenQ BL3200' $INXI_RAW_CACHE; then
-            case "`monitors-connected`" in
-                2)
-                    ensure_primary_set model BenQ
-                    layout_file celtic+BenQ
-                    ;;
-                3)
-                    ensure_primary_set model BenQ
-                    layout_file celtic+BenQ+Dell
-                    ;;
-            esac
-            exit
-        elif large-monitor-connected; then
-            echo >&2 "Detected large monitor attached"
-            ensure_primary_set res 3840x2160
-            layout_file celtic+large
-            exit
-        # UGLY HACK: relies on inxi cache being created by previous command
-        # (large-monitor-connected)
-        elif [ `monitors-connected` == 1 ]; then
-            # Note: running monitors-connected guarantees presence of
-            # $XRANDR_CACHE
-            output="$( jq -r .screens[0].name $XRANDR_CACHE )"
-            xrandr --output "$output" --primary
+    desired_output_name = desired_monitor_info.get('mapped')
+    if not desired_output_name:
+        sys.stderr.write(f"Info: Monitor {desired_monitor_info.get('model', 'Unknown')} found but has no 'mapped' in inxi data.\n")
+        return
 
-            # Could edit the cache like this:
-            # jq '.screens[0].primary = "primary"' $XRANDR_CACHE > $XRANDR_CACHE.new
-            # mv $XRANDR_CACHE{.new,}
-            # but better not to make assumptions about schema, so just invalidate
-            rm $XRANDR_CACHE
+    current_primary_info = libdpy.get_xrandr_primary_monitor(use_cache=True)
+    current_primary_name = current_primary_info.get('name') if current_primary_info else None
 
-            layout_file "$localhost_nickname"
-            exit
-        fi
-        ;;
-    ionian)
-        if [ `monitors-connected` == 2 ]; then
-            ensure_primary_set model BenQ
-            layout_file "$localhost_nickname"
-            exit
-        fi
-        ;;
-    aegean)
-        if [ `monitors-connected` == 1 ]; then
-            layout_file "$localhost_nickname"
-            exit
-        fi
-        ;;
-esac
+    if current_primary_name == desired_output_name:
+        # print(f"{desired_output_name} is already primary (according to xrandr)", file=sys.stderr)
+        return
 
-echo >&2 "ERROR: Couldn't figure out which layout to apply for $localhost_nickname!"
-exit 1
+    set_primary(desired_output_name)
+
+def set_primary(desired_output_name):
+    # print(f"Attempting to set {desired_output_name} as primary...", file=sys.stderr)
+    subprocess.run(['xrandr', '--output', desired_output_name, '--primary'], check=True, capture_output=True, text=True)
+    if os.path.exists(XRANDR_CACHE):
+        os.remove(XRANDR_CACHE)
+        # print(f"Removed XRandR cache: {XRANDR_CACHE}", file=sys.stderr)
+    # print(f"Successfully set {desired_output_name} as primary.", file=sys.stderr)
+
+def get_monitors_connected_count(use_cache=True):
+    screens = libdpy.get_xrandr_screen_geometries(use_cache=use_cache)
+    return len(screens)
+
+def benq_bl3200_connected():
+    if not os.path.exists(INXI_RAW_CACHE):
+        sys.stderr.write(f"Error: {INXI_RAW_CACHE} missing; run setup-monitor\n")
+        sys.exit(1)
+
+    with open(INXI_RAW_CACHE, 'r') as f_raw:
+        return 'BenQ BL3200' in f_raw.read()
+
+def large_monitor_connected_and_setup_cache_py():
+    return large_monitor_connected.check_large_monitor()
+
+def main():
+    localhost_nickname = get_localhost_nickname()
+
+    if localhost_nickname == "celtic":
+        if benq_bl3200_connected():
+            num_monitors = get_monitors_connected_count()
+            if num_monitors == 2:
+                ensure_primary_set_py("model", "BenQ")
+                layout_file("celtic+BenQ")
+            elif num_monitors == 3:
+                ensure_primary_set_py("model", "BenQ")
+                layout_file("celtic+BenQ+Dell")
+
+        elif large_monitor_connected_and_setup_cache_py():
+            # print("Detected large monitor attached", file=sys.stderr)
+            ensure_primary_set_py("res", "3840x2160")
+            layout_file("celtic+large")
+
+        elif get_monitors_connected_count(use_cache=False) == 1:
+            screens_data = libdpy.get_xrandr_screen_geometries(use_cache=False)
+            if screens_data: # Should be true if count is 1
+                output_name = screens_data[0]['name']
+                set_primary(output_name)
+                layout_file(localhost_nickname)
+            else:
+                sys.stderr.write("Error: Monitor count was 1 but failed to get screen data for primary setting.\n")
+                sys.exit(1)
+
+    elif localhost_nickname == "ionian":
+        if get_monitors_connected_count() == 2:
+            ensure_primary_set_py("model", "BenQ") # Assuming "BenQ" is the desired primary
+            layout_file(localhost_nickname)
+
+    elif localhost_nickname == "aegean":
+        if get_monitors_connected_count() == 1:
+            layout_file(localhost_nickname)
+
+    sys.stderr.write(f"ERROR: Couldn't figure out which layout to apply for {localhost_nickname}!\n")
+    sys.exit(1)
+
+if __name__ == "__main__":
+    main()
