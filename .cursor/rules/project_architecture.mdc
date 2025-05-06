@@ -1,0 +1,84 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Project Architecture: Display and Layout Management
+
+This document outlines the architecture of the scripts responsible for managing display configurations and applying window layouts within this `desktop-config` repository. Understanding these components and their interactions is crucial for effective development and maintenance.
+
+## Core Components
+
+The system is primarily composed of three Python modules/scripts and user-defined layout configuration files:
+
+1.  **`[lib/libdpy.py](mdc:lib/libdpy.py)` (Display Python Library):**
+    *   **Purpose:** Provides low-level information about the display hardware and the current X server state. It is the sole source for raw screen geometry, resolution, DPI, connected monitors, and mouse location.
+    *   **Responsibilities:**
+        *   Querying `xrandr` for connected screens, their dimensions, offsets, and primary status.
+        *   Querying `xdpyinfo` for overall display dimensions.
+        *   Querying `inxi` for detailed monitor hardware information (e.g., model, serial number) for matching.
+        *   Getting the current mouse pointer location using `xdotool`.
+        *   Caching results from external commands (`xrandr`, `inxi`) to improve performance and reduce system calls.
+    *   **Key Abstraction:** `libdpy.py` is **strictly about the current physical/logical state of the displays as reported by the system**. It has NO KNOWLEDGE of user-defined layouts, window management concepts, or specific application configurations. It serves as the ground truth for what the display hardware is currently doing. This clean separation is vital.
+
+2.  **`[lib/liblayout.py](mdc:lib/liblayout.py)` (Layout Python Library):**
+    *   **Purpose:** Parses user-defined layout configuration files (YAML), merges this configuration with the runtime screen information obtained from `[lib/libdpy.py](mdc:lib/libdpy.py)`, and calculates various derived geometric properties needed for window placement.
+    *   **Responsibilities:**
+        *   Reading and parsing YAML layout files from `~/.fluxbox/layouts/` (or a specified directory).
+        *   Handling `<INCLUDE ...>` directives within layout files for modularity.
+        *   Validating consistency between the number of screens detected by `libdpy.py` and the number of screens defined in the layout file.
+        *   Merging layout-specific parameters (e.g., margins, panel height, assignments like "primary", "secondary", "left", "right", relative screen positioning) onto the raw screen data from `libdpy.py`.
+        *   Calculating "active" workspace areas on each screen by accounting for margins and panels.
+        *   Computing dimensions and positions for predefined layout zones (e.g., single centered window, two columns, two rows) based on percentages and fixed values defined in the layout.
+        *   Providing functions to get adjacent screens based on layout definitions (e.g., screen to the 'left' or 'right' of current).
+    *   **Interaction:** Acts as the crucial bridge between the hardware-agnostic layout definitions and the concrete, current state of the display hardware.
+
+3.  **`[bin/desktop-layout](mdc:bin/desktop-layout)` (Fluxbox Layout Applicator):**
+    *   **Purpose:** The main executable script that a user runs to apply a specific window layout to their Fluxbox session.
+    *   **Responsibilities:**
+        *   Parsing command-line arguments (e.g., layout name, sublayout name, dump mode).
+        *   Retrieving the active window ID before applying changes, to re-focus it afterward.
+        *   Utilizing `[lib/liblayout.py](mdc:lib/liblayout.py)` to load and process the specified layout file and obtain the embellished screen parameters.
+        *   Initializing "magic commands" (e.g., `<s0_width>`, `<s_primary_height_pc>`) based on the processed layout parameters. These magic commands are placeholders used in the layout's command definitions.
+        *   Iterating through the `windows` section of the layout configuration.
+        *   For each window definition, expanding any magic commands in the matcher and the Fluxbox commands.
+        *   Constructing and executing `fluxbox-remote` commands to apply the desired properties (e.g., `MoveTo`, `ResizeTo`, `SetDecor`, `Stick`) to windows matching the specified criteria.
+        *   Handling sublayouts defined in `~/.fluxbox/sublayouts.yaml`.
+    *   **Interaction:** Orchestrates the layout application process, translating abstract layout rules and screen parameters into concrete `fluxbox-remote` calls.
+
+4.  **Layout Configuration Files (`~/.fluxbox/layouts/*.yaml`):**
+    *   **Purpose:** User-defined YAML files that specify how windows should be arranged, which screen is primary, how screens are relatively positioned (e.g. `screen_A left screen_B`), and specific Fluxbox commands to apply.
+    *   **Structure:**
+        *   `screens`: A list where each item defines properties for a physical screen, matching the left-to-right order from `xrandr`. Includes assignments (primary, secondary, etc.), model names (for matching with `inxi` data), margins, panel heights, and custom geometric percentages.
+        *   `windows`: A list of window rules. Each rule is typically `[window_matcher_string, command1_string, command2_string, ...]`. The matcher uses Fluxbox's matching syntax, and commands are Fluxbox actions. These strings can contain "magic commands" that `bin/desktop-layout` expands.
+        *   Can use `<INCLUDE ...>` to pull in common snippets or other layout files.
+
+## Architectural Principles
+
+*   **Separation of Concerns:**
+    *   `[lib/libdpy.py](mdc:lib/libdpy.py)` is purely for discovering and reporting current display state. It knows nothing about layouts.
+    *   `[lib/liblayout.py](mdc:lib/liblayout.py)` is for interpreting layout *definitions* and combining them with current display state. It knows how to calculate positions based on these two sources.
+    *   `[bin/desktop-layout](mdc:bin/desktop-layout)` is for *acting* on the combined information by sending commands to Fluxbox.
+*   **Maintain a Clean Abstraction Layer:** It is critical that `[lib/libdpy.py](mdc:lib/libdpy.py)` remains independent of any layout-specific logic or user configuration. Changes to layout strategies or Fluxbox commands should not necessitate changes in `[lib/libdpy.py](mdc:lib/libdpy.py)` unless the underlying system commands for display information change.
+*   **Modularity:** Layout files can include other files, promoting reuse of common configurations.
+*   **Data-Driven Layouts:** The YAML files define the "what" and "where," while the Python scripts handle the "how."
+
+## Orchestration and Event Handling
+
+*   **`setup-monitor` Script:**
+    *   A higher-level script, `setup-monitor`, is responsible for orchestrating the display and layout configuration.
+    *   It is automatically invoked whenever a monitor is connected or disconnected (e.g., via udev rules or a similar mechanism).
+    *   `setup-monitor` calls `[bin/desktop-layout](mdc:bin/desktop-layout)` to apply both `xrandr` screen configurations (including setting the primary monitor) and Fluxbox window layouts as defined in the layout files.
+    *   This script ensures that display caches (like those in `[lib/libdpy.py](mdc:lib/libdpy.py)`) are appropriately updated or invalidated after a hardware change and before `[bin/desktop-layout](mdc:bin/desktop-layout)` applies the new layout.
+
+*   **Caching in `[lib/libdpy.py](mdc:lib/libdpy.py)`:**
+    *   The caching mechanism within `[lib/libdpy.py](mdc:lib/libdpy.py)` (for `xrandr` and `inxi` data) is designed to maintain its validity between invocations of `setup-monitor`.
+    *   Since `setup-monitor` is triggered by any display hardware change and is responsible for ensuring a consistent state, `[lib/libdpy.py](mdc:lib/libdpy.py)` should prioritize using its cached data. This assumes `setup-monitor` has ensured the cache reflects the current state post-event. This approach minimizes redundant system calls for display information when the configuration is being reapplied or queried without an underlying hardware change.
+
+This architecture allows for flexible layout definitions while keeping the low-level display information separate and reusable.
+
+## Deployment with GNU Stow
+
+It's important to note that GNU Stow is used to manage the symlinking of scripts and libraries from this repository into standard system locations (e.g., `~/bin`, `~/lib/pythonX.Y/site-packages`). This means that while the canonical source code for components like `[bin/desktop-layout](mdc:bin/desktop-layout)` and `[lib/libdpy.py](mdc:lib/libdpy.py)` resides within the `desktop-config` git repository, they are typically executed from their symlinked locations in the user's home directory.
+
+This setup allows for easy management and updates of these scripts while keeping the repository self-contained. Developers and users should be aware that commands like `desktop-layout` might be invoked directly from `~/bin/desktop-layout`, which points back to the actual script in the repository.

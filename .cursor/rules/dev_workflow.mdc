@@ -7,6 +7,10 @@ alwaysApply: true
 
 This guide outlines the typical process for using Task Master to manage software development projects.
 
+## Understanding the Codebase (IMPORTANT)
+
+- **Before diving into specific tasks, especially when onboarding or working on a new module, it is highly recommended to review the [project_architecture.mdc](mdc:.cursor/rules/project_architecture.mdc) file.** This document provides a high-level overview of the repository structure, key components, and their interactions, which is crucial for both human developers and AI assistants to make informed decisions and generate relevant code.
+
 ## Primary Interaction: MCP Server vs. CLI
 
 Task Master offers two primary ways to interact:
