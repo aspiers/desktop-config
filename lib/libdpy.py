@@ -18,7 +18,8 @@ import argparse
 # Global constants
 CACHE_DIR = os.path.expanduser("~/tmp")
 XRANDR_CACHE_FILE = os.path.join(CACHE_DIR, ".xrandr.json")
-INXI_CACHE_FILE = os.path.join(CACHE_DIR, ".inxi-Gxx.out")
+INXI_RAW_CACHE_FILE = os.path.join(CACHE_DIR, ".inxi-Gxx.out")
+INXI_JSON_CACHE_FILE = os.path.join(CACHE_DIR, ".inxi-Gxx.json")
 
 
 def xrandr_status():
@@ -176,21 +177,157 @@ def get_current_screen_info(use_cache=False):
     return get_screen(info['X'], use_cache)
 
 
+def extract_inxi_monitors():
+    """
+    Calls inxi -Gxx --output json --output-file print, parses the JSON from stdout,
+    and extracts all sections for monitors.
+    """
+    command = "inxi -Gxx --output json --output-file print"
+    inxi_output = subprocess.check_output(command, shell=True).decode('utf-8')
+
+    inxi_data = json.loads(inxi_output)
+
+    # Extract monitor sections
+    monitors = []
+    monitors = []
+    if not (inxi_data and isinstance(inxi_data, list) and len(inxi_data) > 0):
+        return monitors
+
+    graphics_list = None
+    for key, value in inxi_data[0].items():
+        if key.endswith("#Graphics") and isinstance(value, list):
+            graphics_list = value
+            break
+
+    if not graphics_list:
+        return monitors
+
+    for item in graphics_list:
+        if not isinstance(item, dict):
+            continue
+
+        is_monitor = False
+        cleaned_item = {}
+        for key, value in item.items():
+            if key.endswith("#Monitor"):
+                is_monitor = True
+            # Remove prefix (number#number#number#) from key
+            cleaned_key = re.sub(r'^\d+#\d+#\d+#', '', key)
+            cleaned_item[cleaned_key] = value
+
+        if is_monitor:
+            monitors.append(cleaned_item)
+
+    return monitors
+
+
+def get_inxi_monitors(use_cache=False):
+    """
+    Get inxi monitor data, optionally using cached results if available.
+
+    Args:
+        use_cache: If True, use cached results if available
+
+    Returns:
+        List of monitor dictionaries
+    """
+    if use_cache:
+        if os.path.exists(INXI_JSON_CACHE_FILE):
+            with open(INXI_JSON_CACHE_FILE, 'r') as f:
+                cache_data = json.load(f)
+                # Assuming the cache file directly stores the list of monitors
+                return cache_data
+
+    # No cache or cache loading failed, extract fresh data
+    monitors = extract_inxi_monitors()
+
+    # Cache the results
+    os.makedirs(CACHE_DIR, exist_ok=True)
+    with open(INXI_JSON_CACHE_FILE, 'w') as f:
+        # Directly dump the list of monitors
+        json.dump(monitors, f, indent=2)
+
+    return monitors
+
+
+def find_monitor_by_attribute(monitors, attribute, value):
+    """
+    Finds a monitor in the list whose specified attribute contains the given value (case-insensitive).
+
+    Args:
+        monitors: List of monitor dictionaries.
+        attribute: The attribute key to search within (e.g., 'model', 'resolution').
+        value: The substring to search for within the attribute's value.
+
+    Returns:
+        The matching monitor dictionary, or None if not found.
+    """
+    search_value = value.lower()
+    for monitor in monitors:
+        if attribute in monitor and isinstance(monitor[attribute], str) and search_value in monitor[attribute].lower():
+            return monitor
+    return None
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='Display information about XRandR screen geometries')
     parser.add_argument('--use-cache',
                         action=argparse.BooleanOptionalAction,
                         default=True,
-                        help='Use cached XRandR data if available')
+                        help='Use cached XRandR/inxi data if available')
+    parser.add_argument('--inxi-json',
+                        action='store_true',
+                        help='Output inxi monitor JSON instead of normal output')
+    parser.add_argument('--find-by-model',
+                        metavar='MODEL',
+                        help='Search for a monitor model containing MODEL and output its JSON data')
+    parser.add_argument('--find-by-res',
+                        metavar='RESOLUTION',
+                        help='Search for a monitor resolution containing RESOLUTION and output its JSON data')
     args = parser.parse_args()
+
+    if args.find_by_model or args.find_by_res:
+        inxi_monitors = get_inxi_monitors(use_cache=args.use_cache)
+        found_monitor = None
+        search_attribute = None
+        search_value = None
+
+        if args.find_by_model:
+            search_attribute = 'model'
+            search_value = args.find_by_model
+        elif args.find_by_res:
+            search_attribute = 'res'
+            search_value = args.find_by_res
+
+        if search_attribute and search_value:
+            found_monitor = find_monitor_by_attribute(inxi_monitors, search_attribute, search_value)
+
+        if found_monitor:
+            print(json.dumps(found_monitor, indent=2))
+            sys.exit(0)
+        else:
+            sys.stderr.write(f"Error: No monitor found with {search_attribute} containing '{search_value}'\n")
+            sys.exit(1)
+
+    if args.inxi_json:
+        inxi_monitors = get_inxi_monitors(use_cache=args.use_cache)
+        if inxi_monitors:
+            print(json.dumps(inxi_monitors, indent=2))
+        sys.exit(0)
 
     (dpy, screens) = get_screen_geometries(use_cache=args.use_cache)
 
     print(f'XRANDR_CACHE={XRANDR_CACHE_FILE}')
-    print(f'INXI_CACHE={INXI_CACHE_FILE}')
+    print(f'INXI_CACHE={INXI_RAW_CACHE_FILE}')
     display_xrandr_display_geometry(dpy)
     display_xrandr_screen_geometries(screens)
+
+    # Example usage of the new function
+    # inxi_monitors = extract_inxi_monitors()
+    # if inxi_monitors:
+    #     print("\nInxi Monitor Information:")
+    #     print(json.dumps(inxi_monitors, indent=2))
 
 
 if __name__ == "__main__":
