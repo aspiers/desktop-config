@@ -38,8 +38,8 @@ When working with complex projects, it is highly advisable to consult any availa
     *   `skipInstall`: `Skip installing dependencies (default: false).` (CLI: `--skip-install`)
     *   `addAliases`: `Add shell aliases (tm, taskmaster) (default: false).` (CLI: `--aliases`)
     *   `yes`: `Skip prompts and use defaults/provided arguments (default: false).` (CLI: `-y, --yes`)
-*   **Usage:** Run this once at the beginning of a new project, typically via an integrated tool like Cursor. Operates on the current working directory of the MCP server. 
-*   **Important:** Once complete, you *MUST* parse a prd in order to generate tasks. There will be no tasks files until then. The next step after initializing should be to create a PRD using the example PRD in scripts/example_prd.txt. 
+*   **Usage:** Run this once at the beginning of a new project, typically via an integrated tool like Cursor. Operates on the current working directory of the MCP server.
+*   **Important:** Once complete, you *MUST* parse a prd in order to generate tasks. There will be no tasks files until then. The next step after initializing should be to create a PRD using the example PRD in scripts/example_prd.txt.
 
 ### 2. Parse PRD (`parse_prd`)
 
@@ -332,7 +332,7 @@ When working with complex projects, it is highly advisable to consult any availa
 Taskmaster's behavior can be customized via environment variables. These affect both CLI and MCP server operation:
 
 *   **ANTHROPIC_API_KEY** (Required): Your Anthropic API key for Claude.
-*   **MODEL**: Claude model to use (default: `claude-3-opus-20240229`). 
+*   **MODEL**: Claude model to use (default: `claude-3-opus-20240229`).
 *   **MAX_TOKENS**: Maximum tokens for AI responses (default: 8192).
 *   **TEMPERATURE**: Temperature for AI model responses (default: 0.7).
 *   **DEBUG**: Enable debug logging (`true`/`false`, default: `false`).
