@@ -3,7 +3,6 @@ description: Guide for using Task Master to manage task-driven development workf
 globs: **/*
 alwaysApply: true
 ---
-
 # Task Master Development Workflow
 
 This guide outlines the typical process for using Task Master to manage software development projects.
@@ -94,9 +93,9 @@ Task Master offers two primary ways to interact:
     - Dependencies are displayed with status indicators (✅ for completed, ⏱️ for pending)
     - This helps quickly identify which prerequisite tasks are blocking work
 - **priority**: Importance level (Example: `"high"`, `"medium"`, `"low"`)
-- **details**: In-depth implementation instructions (Example: `"Use GitHub client ID/secret, handle callback, set session token."`) 
-- **testStrategy**: Verification approach (Example: `"Deploy and call endpoint to confirm 'Hello World' response."`) 
-- **subtasks**: List of smaller, more specific tasks (Example: `[{"id": 1, "title": "Configure OAuth", ...}]`) 
+- **details**: In-depth implementation instructions (Example: `"Use GitHub client ID/secret, handle callback, set session token."`)
+- **testStrategy**: Verification approach (Example: `"Deploy and call endpoint to confirm 'Hello World' response."`)
+- **subtasks**: List of smaller, more specific tasks (Example: `[{"id": 1, "title": "Configure OAuth", ...}]`)
 - Refer to [`tasks.mdc`](mdc:.cursor/rules/tasks.mdc) for more details on the task data structure.
 
 ## Environment Variables Configuration
@@ -154,6 +153,15 @@ Task Master offers two primary ways to interact:
 
 Once a task has been broken down into subtasks using `expand_task` or similar methods, follow this iterative process for implementation:
 
+**Guiding Principles for Code Changes:**
+
+*   **Adhere to Coding Standards:** All code modifications should follow the guidelines outlined in [`code_style.mdc`](mdc:.cursor/rules/code_style.mdc).
+*   **Stay Focused on the Current Task:** Only make changes directly related to the subtask at hand. Avoid unrelated modifications, such as cosmetic whitespace adjustments or minor refactorings in other parts of the file, unless there is a compelling reason and you have explicitly asked for and received permission.
+*   **Addressing Technical Debt:**
+    *   Identifying opportunities to proactively address technical debt (e.g., refactorings that improve code clarity or structure without altering behavior) is encouraged.
+    *   However, such changes **MUST be committed separately** from the commits related to the primary subtask's implementation.
+    *   For any **major refactoring or significant technical debt work**, always request and receive permission *before* undertaking the changes. This ensures alignment and allows for proper planning.
+
 1.  **Understand the Goal (Preparation):**
     *   Use `get_task` / `task-master show <subtaskId>` (see [`taskmaster.mdc`](mdc:.cursor/rules/taskmaster.mdc)) to thoroughly understand the specific goals and requirements of the subtask.
 
@@ -196,8 +204,22 @@ Once a task has been broken down into subtasks using `expand_task` or similar me
 
 9.  **Commit Changes (If using Git):**
     *   Stage the relevant code changes and any updated/new rule files (`git add .`).
-    *   Craft a comprehensive Git commit message summarizing the work done for the subtask, including both code implementation and any rule adjustments.
-    *   Execute the commit command directly in the terminal (e.g., `git commit -m 'feat(module): Implement feature X for subtask <subtaskId>\n\n- Details about changes...\n- Updated rule Y for pattern Z'`).
+    *   Craft a comprehensive Git commit message summarizing the work done for the subtask. The message body should follow this structure:
+        ```
+        Without this patch, ... (Explain the state of the codebase or the problem before this change)
+
+        This is a problem because ... (Explain the negative impact of the problem)
+
+        This commit solves the problem by ... (Explain how the changes in this commit address the problem)
+        ```
+    *   Include details about both code implementation and any rule adjustments in the commit message.
+    *   Execute the commit command directly in the terminal (e.g., `git commit -m 'feat(module): Implement feature X for subtask <subtaskId>
+
+Without this patch, ...
+
+This is a problem because ...
+
+This commit solves the problem by ...'`).
     *   Consider if a Changeset is needed according to [`changeset.mdc`](mdc:.cursor/rules/changeset.mdc). If so, run `npm run changeset`, stage the generated file, and amend the commit or create a new one.
 
 10. **Proceed to Next Subtask:**
@@ -213,3 +235,4 @@ Once a task has been broken down into subtasks using `expand_task` or similar me
 
 ---
 *This workflow provides a general guideline. Adapt it based on your specific project needs and team practices.*
+

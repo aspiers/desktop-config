@@ -1,0 +1,65 @@
+---
+description: Code style guidelines for maintaining high quality, readable, and maintainable code
+globs: lib/**/*.py, scripts/**/*.py
+alwaysApply: true
+---
+# Python Code Style Guidelines
+
+- **Implementation Complexity and Bloat**
+  - Don't implement things unless they're clearly needed.
+  - Prefer simplicity over anticipating future needs.
+
+- **Function Size and Complexity**
+  - **Keep Functions Small and Focused**
+    - Each function should perform a single, well-defined task
+    - Target maximum function length of 20-25 lines
+    - Longer functions should be broken down into smaller helper functions
+    - Extract complex logic into separate functions with descriptive names
+
+  ```python
+  # ✅ DO: Keep functions small and focused
+  def calculate_position(screen, offset, scale):
+      width = screen.get('width', 0)
+      return offset + int(width * scale)
+
+  # ❌ DON'T: Create large monolithic functions
+  def do_everything(screens, layouts, options):
+      # 100+ lines of code handling multiple responsibilities
+      pass
+  ```
+
+- **Code Duplication**
+  - **Strictly Avoid Duplication**
+    - Do not copy-paste code blocks across the codebase
+    - Extract common functionality into shared helper functions
+    - If similar logic appears in multiple places, refactor into a reusable function
+    - Only duplicate code when there is a clear, documented reason
+
+  ```python
+  # ✅ DO: Extract common functionality
+  def get_screen_property(screen, property_name, default=None):
+      return screen.get(property_name, default)
+
+  # Then use it consistently
+  width = get_screen_property(screen, 'width', 0)
+  height = get_screen_property(screen, 'height', 0)
+
+  # ❌ DON'T: Duplicate similar code patterns
+  width = screen.get('width', 0) if screen else 0
+  height = screen.get('height', 0) if screen else 0
+  ```
+
+- **Comments**
+  - **Preserve Relevant Comments**
+    - NEVER remove existing comments unless they are definitely no longer relevant or are incorrect.
+  - **Avoid Excessive Commenting**
+    - Do not state the obvious. Code should be as self-documenting as possible.
+    - Comment on the "why" not the "what" if the code's intent isn't clear.
+
+- **Exception Handling**
+  - **Prefer Stack Traces for Debugging**
+    - This repository is primarily for a single, advanced user who prefers to see full stack traces.
+    - Do NOT use `try...except` blocks to catch and suppress exceptions unless there is a very compelling reason (e.g., interacting with an external API that is expected to fail sometimes, and the failure is recoverable or needs specific handling).
+    - If a `try...except` block is necessary, ensure the reason is well-documented in comments.
+  - **Use Specific Exception Types**
+    - If you must catch exceptions, catch specific exception types (e.g., `FileNotFoundError` instead of a bare `except:` or `except Exception:`).

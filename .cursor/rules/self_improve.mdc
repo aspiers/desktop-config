@@ -3,7 +3,6 @@ description: Guidelines for continuously improving Cursor rules based on emergin
 globs: **/*
 alwaysApply: true
 ---
-
 - **Rule Improvement Triggers:**
   - New code patterns not covered by existing rules
   - Repeated similar implementations across files
@@ -38,7 +37,7 @@ alwaysApply: true
     select: { id: true, email: true },
     where: { status: 'ACTIVE' }
   });
-  
+
   // Consider adding to [prisma.mdc](mdc:.cursor/rules/prisma.mdc):
   // - Standard select fields
   // - Common where conditions
@@ -50,6 +49,15 @@ alwaysApply: true
   - Examples should come from actual code
   - References should be up to date
   - Patterns should be consistently enforced
+
+- **AI Assistant Problem Solving Strategy:**
+  - **Recognize Repetitive Failures:** If simple tasks (e.g., applying file edits, basic tool use) fail repeatedly (e.g., 2-3 attempts on the same simple goal), this indicates a potential misunderstanding or a more complex issue than initially assessed.
+  - **Prioritize User Assistance over Repeated Attempts:** To avoid excessive LLM inference cycles and user frustration, stop and clearly explain the problem encountered. Ask for clarification, guidance, or an alternative approach from the user.
+  - **Example Scenario:**
+    - AI attempts to edit a file.
+    - The edit is not applied as expected, or the verification step shows the change didn't happen.
+    - AI re-attempts the edit with minor variations.
+    - If failure persists after 2-3 attempts, AI should state: "I'm encountering difficulty applying the edit to `filename.ext`. I've tried [briefly mention attempts/approaches]. Could you please verify the file state or suggest how to proceed?"
 
 - **Continuous Improvement:**
   - Monitor code review comments
