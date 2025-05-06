@@ -10,31 +10,39 @@ layout_file () {
     exit
 }
 
+ensure_primary_set () {
+    find_by="$1" search="$2"
+
+    # Sometimes xfce4-display-settings doesn't manage to set it to the
+    # primary for some reason, so set it manually.
+    monitor=$(~/lib/libdpy.py --find-by-"$find_by" "$search")
+    output=$(echo "$monitor" | jq -r .Monitor)
+    pos=$(echo "$monitor" | jq -r .pos)
+    if [[ $pos =~ primary ]]; then
+        : "$output is already primary"
+        return
+    fi
+    xrandr --output "$output" --primary
+    echo >&2 "Largest monitor is $output; made primary"
+}
+
 case "$localhost_nickname" in
     celtic)
         if grep -q 'BenQ BL3200' $INXI_CACHE; then
             case "`monitors-connected`" in
                 2)
+                    ensure_primary_set Monitor BenQ
                     layout_file celtic+BenQ
                     ;;
                 3)
+                    ensure_primary_set Monitor BenQ
                     layout_file celtic+BenQ+Dell
                     ;;
             esac
             exit
         elif large-monitor-connected; then
             echo >&2 "Detected large monitor attached"
-            if ! large-monitor-primary; then
-                # Sometimes xfce4-display-settings doesn't manage to
-                # set it to the primary for some reason, so set it
-                # manually.
-                monitor=$(
-                    xrandr |
-                        awk '/connected .*3840x2160/ {print $1}'
-                )
-                xrandr --output "$monitor" --primary
-                echo >&2 "Large monitor is $monitor; made primary"
-            fi
+            ensure_primary_set res 3840x2160
             layout_file celtic+large
             exit
         # UGLY HACK: relies on inxi cache being created by previous command
@@ -57,6 +65,7 @@ case "$localhost_nickname" in
         ;;
     ionian)
         if [ `monitors-connected` == 2 ]; then
+            ensure_primary_set Monitor BenQ
             layout_file "$localhost_nickname"
             exit
         fi
