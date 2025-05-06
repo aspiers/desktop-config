@@ -2,7 +2,7 @@
 
 eval $( ~/lib/libdpy.py )
 
-if [ "`monitors-connected`" -ge 2 ] && grep -q 'res: 3840x2160' $INXI_CACHE
+if [ "`monitors-connected`" -ge 2 ] && grep -q 'res: 3840x2160' $INXI_RAW_CACHE
 then
     exit 0
 fi

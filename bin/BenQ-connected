@@ -2,4 +2,4 @@
 
 eval $( ~/lib/libdpy.py )
 
-grep -q 'BenQ BL3200' $INXI_CACHE
+grep -q 'BenQ BL3200' $INXI_RAW_CACHE

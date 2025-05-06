@@ -319,7 +319,8 @@ def main():
     (dpy, screens) = get_screen_geometries(use_cache=args.use_cache)
 
     print(f'XRANDR_CACHE={XRANDR_CACHE_FILE}')
-    print(f'INXI_CACHE={INXI_RAW_CACHE_FILE}')
+    print(f'INXI_RAW_CACHE={INXI_RAW_CACHE_FILE}')
+    print(f'INXI_JSON_CACHE={INXI_JSON_CACHE_FILE}')
     display_xrandr_display_geometry(dpy)
     display_xrandr_screen_geometries(screens)
 

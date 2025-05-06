@@ -28,7 +28,7 @@ ensure_primary_set () {
 
 case "$localhost_nickname" in
     celtic)
-        if grep -q 'BenQ BL3200' $INXI_CACHE; then
+        if grep -q 'BenQ BL3200' $INXI_RAW_CACHE; then
             case "`monitors-connected`" in
                 2)
                     ensure_primary_set model BenQ
