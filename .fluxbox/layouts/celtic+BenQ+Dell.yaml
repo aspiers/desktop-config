@@ -39,6 +39,7 @@ windows:
     - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 5}
 
   - - (Name=brave-browser|google-chrome|chromium) (Title=.*(secondary))
+    - MacroCmd {NextWindow (Title=.*(secondary))} {DetachClient}
     - MacroCmd {<s_secondary_SetHead>}
     - <stick>
 
