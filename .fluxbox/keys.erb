@@ -417,9 +417,16 @@ Shift Mod4 b :MacroCmd {NextWindow (Name=brave-browser|google-chrome|chromium) (
 
 <% end %>
 Mod4 Tab :Exec chrome-session-fzf
-Mod4 c :MacroCmd {Exec wmctrl -x -a 'Code'} {<%= focus_active %>}
+
+# Cleanest but can't find both Cursor and Code:
+#Mod4 c :MacroCmd {Exec wmctrl -x -a 'Code'} {<%= focus_active %>}
+
+# Can't handle iconified windows:
 #Mod4 c :Exec fluxbox-focus-or-launch -c 'Cursor|Code' cursor
-#Mod4 c <%= next_unhidden "(Class=Cursor|Code)" %>
+
+# Hacky but best results:
+Mod4 c <%= next_unhidden "(Class=Cursor|Code)" %>
+
 Shift Mod4 c :Exec chrome-session-tabs 'calendar.google.com/calendar/u/0'
 Control Mod4 c :Exec chrome-session-tabs 'calendar.google.com/calendar/u/1'
 Shift Mod4 r :Exec chrome-session-tabs 'app.reclaim.ai'
