@@ -10,9 +10,9 @@ inxi -Gxx -c 0 -y 300 > $INXI_CACHE
 
 if BenQ-connected; then
     # Connect to Kinesis Advantage 360 over Bluetooth
-    adv
+    adv &
 else
-    adv off
+    adv off &
 fi
 
 sleep 5
