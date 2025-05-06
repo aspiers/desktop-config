@@ -269,6 +269,17 @@ def find_monitor_by_attribute(monitors, attribute, value):
     return None
 
 
+def get_xrandr_primary_monitor(use_cache=False):
+    """
+    Returns the primary monitor from xrandr (using cache if available), or None if not found.
+    """
+    screens = get_xrandr_screen_geometries(use_cache)
+    for screen in screens:
+        if screen.get('primary') == 'primary':
+            return screen
+    return None
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='Display information about XRandR screen geometries')
@@ -285,7 +296,19 @@ def main():
     parser.add_argument('--find-by-res',
                         metavar='RESOLUTION',
                         help='Search for a monitor resolution containing RESOLUTION and output its JSON data')
+    parser.add_argument('--find-xrandr-primary',
+                        action='store_true',
+                        help='Output the primary monitor according to xrandr (not inxi) as JSON')
     args = parser.parse_args()
+
+    if args.find_xrandr_primary:
+        primary = get_xrandr_primary_monitor(use_cache=args.use_cache)
+        if primary:
+            print(json.dumps(primary, indent=2))
+            sys.exit(0)
+        else:
+            sys.stderr.write("No primary monitor found in xrandr\n")
+            sys.exit(1)
 
     if args.find_by_model or args.find_by_res:
         inxi_monitors = get_inxi_monitors(use_cache=args.use_cache)

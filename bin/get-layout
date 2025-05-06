@@ -10,20 +10,25 @@ layout_file () {
     exit
 }
 
+# Sometimes xfce4-display-settings doesn't manage to set it to the
+# primary for some reason, so set it manually if needed.
 ensure_primary_set () {
     find_by="$1" search="$2"
 
-    # Sometimes xfce4-display-settings doesn't manage to set it to the
-    # primary for some reason, so set it manually.
+    # Find the desired monitor output name from inxi
     monitor=$(~/lib/libdpy.py --find-by-"$find_by" "$search")
-    output=$(echo "$monitor" | jq -r .Monitor)
-    pos=$(echo "$monitor" | jq -r .pos)
-    if [[ $pos =~ primary ]]; then
-        : "$output is already primary"
+    desired_output=$(echo "$monitor" | jq -r .mapped)
+
+    # Find the current xrandr primary output name
+    primary_output=$(~/lib/libdpy.py --find-xrandr-primary | jq -r .name)
+
+    if [[ "$primary_output" == "$desired_output" ]]; then
+        : "$desired_output is already primary (according to xrandr)"
         return
     fi
-    xrandr --output "$output" --primary
-    echo >&2 "Largest monitor is $output; made primary"
+    xrandr --output "$desired_output" --primary
+    rm "$XRANDR_CACHE"
+    : "Set $desired_output as primary"
 }
 
 case "$localhost_nickname" in
