@@ -161,6 +161,8 @@ Once a task has been broken down into subtasks using `expand_task` or similar me
 
 *   **Adhere to Coding Standards:** All code modifications should follow the guidelines outlined in [`code_style.mdc`](mdc:.cursor/rules/code_style.mdc).
 *   **Stay Focused on the Current Task:** Only make changes directly related to the subtask at hand. Avoid unrelated modifications, such as cosmetic whitespace adjustments or minor refactorings in other parts of the file, unless there is a compelling reason and you have explicitly asked for and received permission.
+*   **NEVER commit anything unrelated to the change being worked on.**
+*   **Commit Rule Changes Separately:** Updates to Cursor rules (`.cursor/rules/`) should generally be committed separately from code changes. The only exception is if a rule change is a *direct and sole consequence* of the code modifications made within the *current subtask* (e.g., updating a rule to match a new function signature introduced in this subtask). Broader rule updates or new rules for unrelated patterns must be in their own commits.
 *   **Addressing Technical Debt:**
     *   Identifying opportunities to proactively address technical debt (e.g., refactorings that improve code clarity or structure without altering behavior) is encouraged.
     *   However, such changes **MUST be committed separately** from the commits related to the primary subtask's implementation.
@@ -184,7 +186,7 @@ Once a task has been broken down into subtasks using `expand_task` or similar me
 
 5.  **Begin Implementation:**
     *   Set the subtask status using `set_task_status` / `task-master set-status --id=<subtaskId> --status=in-progress` (see [`taskmaster.mdc`](mdc:.cursor/rules/taskmaster.mdc)).
-    *   Start coding based on the logged plan.
+    *   Start coding based on the logged plan.  Note that as per step 9 below, each logical change must be in a separate commit, so you will need to make at least one commit for each task or subtask, but possibly more if you're also adjusting rules or addressing technical debt along the way.
 
 6.  **Refine and Log Progress (Iteration 2+):**
     *   As implementation progresses, you will encounter challenges, discover nuances, or confirm successful approaches.
@@ -201,14 +203,20 @@ Once a task has been broken down into subtasks using `expand_task` or similar me
 7.  **Review & Update Rules (Post-Implementation):**
     *   Once the implementation for the subtask is functionally complete, review all code changes and the relevant chat history.
     *   Identify any new or modified code patterns, conventions, or best practices established during the implementation.
-    *   Create new or update existing Cursor rules in the `.cursor/rules/` directory to capture these patterns, following the guidelines in [`cursor_rules.mdc`](mdc:.cursor/rules/cursor_rules.mdc) and [`self_improve.mdc`](mdc:.cursor/rules/self_improve.mdc).
+    *   If appropriate, create new or update existing Cursor rules in the `.cursor/rules/` directory to capture these patterns, following the guidelines in [`cursor_rules.mdc`](mdc:.cursor/rules/cursor_rules.mdc) and [`self_improve.mdc`](mdc:.cursor/rules/self_improve.mdc). (Note: Committing these rule changes is typically done separately, see step 9).
 
 8.  **Mark Task Complete:**
     *   After verifying the implementation and updating any necessary rules, mark the subtask as completed: `set_task_status` / `task-master set-status --id=<subtaskId> --status=done`.
 
-9.  **Commit Changes (If using Git):**
-    *   Stage the relevant code changes and any updated/new rule files (`git add .`).
-    *   Craft a comprehensive Git commit message summarizing the work done for the subtask. The message body should follow this structure:
+9.  **Commit Changes (if using Git):**
+    *   There must be a separate git commit for each logical change.  NEVER mix unrelated changes in the same commit.  If you get stuck with this, pause and ask for help rather than proceeding and creating a mess in the git history.
+    *   Carefully stage *only* the relevant code changes made for the subtask. For example: `git add path/to/modified_file.py`. **NEVER use `git add .` or similar since unrelated changes or new untracked files might be present in the workspace.**
+    *   Commit rule changes separately, unless they directly and solely result from this subtask's code modifications.)
+    *   Craft a comprehensive Git commit message summarizing the work done for the subtask.
+        *   The first line is the subject, and should be concise (ideally <= 50 chars, max 72).
+        *   The commit message body (after a blank line) should explain the "why" and "what" of the change.
+        *   **Crucially, each line within the commit message body MUST be wrapped at 80 columns.**
+        *   The body should follow this structure:
         ```
         Without this patch, ... (Explain the state of the codebase or the problem before this change)
 
@@ -217,13 +225,7 @@ Once a task has been broken down into subtasks using `expand_task` or similar me
         This commit solves the problem by ... (Explain how the changes in this commit address the problem)
         ```
     *   Include details about both code implementation and any rule adjustments in the commit message.
-    *   Execute the commit command directly in the terminal (e.g., `git commit -m 'feat(module): Implement feature X for subtask <subtaskId>
-
-Without this patch, ...
-
-This is a problem because ...
-
-This commit solves the problem by ...'`).
+    *   Execute the git commit command directly in the terminal, with a sensible way of handling multi-line commit messages. If you get stuck creating a commit, pause and ask for help.
     *   Consider if a Changeset is needed according to [`changeset.mdc`](mdc:.cursor/rules/changeset.mdc). If so, run `npm run changeset`, stage the generated file, and amend the commit or create a new one.
 
 10. **Proceed to Next Subtask:**
@@ -239,4 +241,3 @@ This commit solves the problem by ...'`).
 
 ---
 *This workflow provides a general guideline. Adapt it based on your specific project needs and team practices.*
-
