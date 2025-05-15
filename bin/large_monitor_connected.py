@@ -30,7 +30,4 @@ def check_large_monitor():
     return False
 
 if __name__ == "__main__":
-    if check_large_monitor():
-        sys.exit(0)
-    else:
-        sys.exit(1)
+    sys.exit(0 if large_monitor_connected() else 1)
