@@ -323,6 +323,9 @@ reorg: m :Maximize
 reorg: Shift m :MaximizeVertical
 reorg: Control m :MaximizeHorizontal
 
+#reorg: Shift d :MacroCmd {Exec get-layout --debug >&~/.log/get-layout.log} <%= keymode_done 'reorg' %>
+#reorg: Shift i :MacroCmd {Exec strace /usr/bin/inxi --tty -c 0 -Gxx --output json --output-file print >&~/.log/inxi.log} <%= keymode_done 'reorg' %>
+#reorg: Shift i :MacroCmd {Exec which inxi >&~/.log/inxi.path} <%= keymode_done 'reorg' %>
 reorg: Shift 0 :MacroCmd {Exec ly -s active} <%= keymode_done 'reorg' %>
 reorg: Control 0 :MacroCmd {Exec ly -s full} <%= keymode_done 'reorg' %>
 reorg: 0 :MacroCmd {Exec ly -s single} <%= keymode_done 'reorg' %>
