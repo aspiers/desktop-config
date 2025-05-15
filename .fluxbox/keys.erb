@@ -66,7 +66,7 @@ def reconfigure
 end
 
 def layout
-  %<Exec ly && notify-send -t 3000 'Applied auto-layout'>
+  %<Exec ly --debug && notify-send -t 3000 'Applied auto-layout'>
 end
 
 def delay(cmd, ms)
@@ -326,20 +326,20 @@ reorg: Control m :MaximizeHorizontal
 #reorg: Shift d :MacroCmd {Exec get-layout --debug >&~/.log/get-layout.log} <%= keymode_done 'reorg' %>
 #reorg: Shift i :MacroCmd {Exec strace /usr/bin/inxi --tty -c 0 -Gxx --output json --output-file print >&~/.log/inxi.log} <%= keymode_done 'reorg' %>
 #reorg: Shift i :MacroCmd {Exec which inxi >&~/.log/inxi.path} <%= keymode_done 'reorg' %>
-reorg: Shift 0 :MacroCmd {Exec ly -s active} <%= keymode_done 'reorg' %>
-reorg: Control 0 :MacroCmd {Exec ly -s full} <%= keymode_done 'reorg' %>
-reorg: 0 :MacroCmd {Exec ly -s single} <%= keymode_done 'reorg' %>
-reorg: 1 :MacroCmd {Exec ly -s left} <%= keymode_done 'reorg' %>
-reorg: 2 :MacroCmd {Exec ly -s right} <%= keymode_done 'reorg' %>
-reorg: 3 :MacroCmd {Exec ly -s top} <%= keymode_done 'reorg' %>
-reorg: 4 :MacroCmd {Exec ly -s bottom} <%= keymode_done 'reorg' %>
-reorg: 5 :MacroCmd {Exec ly -s top-left} <%= keymode_done 'reorg' %>
-reorg: 6 :MacroCmd {Exec ly -s top-right} <%= keymode_done 'reorg' %>
-reorg: 7 :MacroCmd {Exec ly -s bottom-left} <%= keymode_done 'reorg' %>
-reorg: 8 :MacroCmd {Exec ly -s bottom-right} <%= keymode_done 'reorg' %>
-reorg: Shift 2 :MacroCmd {Exec ly -s 2cols} <%= keymode_done 'reorg' %>
+reorg: Shift 0 :MacroCmd {Exec ly --debug -s active} <%= keymode_done 'reorg' %>
+reorg: Control 0 :MacroCmd {Exec ly --debug -s full} <%= keymode_done 'reorg' %>
+reorg: 0 :MacroCmd {Exec ly --debug -s single} <%= keymode_done 'reorg' %>
+reorg: 1 :MacroCmd {Exec ly --debug -s left} <%= keymode_done 'reorg' %>
+reorg: 2 :MacroCmd {Exec ly --debug -s right} <%= keymode_done 'reorg' %>
+reorg: 3 :MacroCmd {Exec ly --debug -s top} <%= keymode_done 'reorg' %>
+reorg: 4 :MacroCmd {Exec ly --debug -s bottom} <%= keymode_done 'reorg' %>
+reorg: 5 :MacroCmd {Exec ly --debug -s top-left} <%= keymode_done 'reorg' %>
+reorg: 6 :MacroCmd {Exec ly --debug -s top-right} <%= keymode_done 'reorg' %>
+reorg: 7 :MacroCmd {Exec ly --debug -s bottom-left} <%= keymode_done 'reorg' %>
+reorg: 8 :MacroCmd {Exec ly --debug -s bottom-right} <%= keymode_done 'reorg' %>
+reorg: Shift 2 :MacroCmd {Exec ly --debug -s 2cols} <%= keymode_done 'reorg' %>
 reorg: Shift 5 :ResizeTo 1280 720 <%= keymode_done 'reorg' %>
-reorg: Shift semicolon :MacroCmd {Exec ly -s 2rows} <%= keymode_done 'reorg' %>
+reorg: Shift semicolon :MacroCmd {Exec ly --debug -s 2rows} <%= keymode_done 'reorg' %>
 
 reorg: space :Raise
 reorg: Mod4 l :If {Matches (Layer=Normal)} {MacroCmd {SetLayer Top} {<%= notify_transient 'set to top layer', 'layer' %>}} {MacroCmd {SetLayer Normal} {<%= notify_transient 'set to normal layer', 'layer'  %>}}

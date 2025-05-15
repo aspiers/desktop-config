@@ -1,7 +1,10 @@
 #!/bin/bash
 
-#exec >  >(tee -ia ~/.log/ly.log)
-#exec 2> >(tee -ia ~/.log/ly.log >&2)
+if [ "$1" = --debug ]; then
+    shift
+    exec >  >(tee -ia ~/.log/ly.log)
+    exec 2> >(tee -ia ~/.log/ly.log >&2)
+fi
 
 . $ZDOTDIR/lib/libhost.sh
 read_localhost_nickname
