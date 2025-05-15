@@ -179,10 +179,10 @@ def get_current_screen_info(use_cache=False):
 
 def extract_inxi_monitors():
     """
-    Calls inxi -Gxx --output json --output-file print, parses the JSON from stdout,
+    Calls inxi, parses the JSON from stdout,
     and extracts all sections for monitors.
     """
-    command = "inxi -Gxx --output json --output-file print"
+    command = "inxi --tty -c 0 -Gxx --output json --output-file print"
     inxi_output = subprocess.check_output(command, shell=True).decode('utf-8')
 
     inxi_data = json.loads(inxi_output)
