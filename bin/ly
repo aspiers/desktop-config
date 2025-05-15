@@ -1,5 +1,8 @@
 #!/bin/bash
 
+#exec >  >(tee -ia ~/.log/ly.log)
+#exec 2> >(tee -ia ~/.log/ly.log >&2)
+
 . $ZDOTDIR/lib/libhost.sh
 read_localhost_nickname
 
