@@ -17,6 +17,5 @@ def get_monitors_count(use_cache=True):
     return len(screens)
 
 if __name__ == "__main__":
-    # Default behavior for CLI: use cache, consistent with original script's typical usage
     count = get_monitors_count(use_cache=True)
     print(count)
