@@ -5,6 +5,7 @@ import sys
 import subprocess
 import json
 import re
+import argparse
 
 # Simplified sys.path modification
 sys.path.append(os.path.join(os.getenv('HOME'), 'lib'))
@@ -16,6 +17,12 @@ import large_monitor_connected
 XRANDR_CACHE = libdpy.XRANDR_CACHE_FILE
 INXI_RAW_CACHE = libdpy.INXI_RAW_CACHE_FILE
 # INXI_JSON_CACHE = libdpy.INXI_JSON_CACHE_FILE # Available if needed
+
+debug = False
+
+def debug_print(msg):
+    if debug:
+        print(f"DEBUG: {msg}", file=sys.stderr)
 
 def get_localhost_nickname():
     zdotdir = os.environ.get('ZDOTDIR', os.path.expanduser('~')) # Default to ~ if ZDOTDIR not set
@@ -84,11 +91,19 @@ def large_monitor_connected_and_setup_cache_py():
     return large_monitor_connected.check_large_monitor()
 
 def main():
+    global debug
+    parser = argparse.ArgumentParser(description="Get monitor layout.")
+    parser.add_argument('--debug', action='store_true', help='Enable debug output')
+    args = parser.parse_args()
+    debug = args.debug
+
     localhost_nickname = get_localhost_nickname()
+    debug_print(f"localhost_nickname: {localhost_nickname}")
 
     if localhost_nickname == "celtic":
         if benq_bl3200_connected():
             num_monitors = get_monitors_connected_count()
+            debug_print(f"benq_bl3200_connected: True, num_monitors: {num_monitors}")
             if num_monitors == 2:
                 ensure_primary_set_py("model", "BenQ")
                 layout_file("celtic+BenQ")
@@ -97,12 +112,13 @@ def main():
                 layout_file("celtic+BenQ+Dell")
 
         elif large_monitor_connected_and_setup_cache_py():
-            # print("Detected large monitor attached", file=sys.stderr)
+            debug_print("large_monitor_connected_and_setup_cache_py: True")
             ensure_primary_set_py("res", "3840x2160")
             layout_file("celtic+large")
 
         elif get_monitors_connected_count(use_cache=False) == 1:
             screens_data = libdpy.get_xrandr_screen_geometries(use_cache=False)
+            debug_print(f"single monitor, screens_data: {screens_data}")
             if screens_data: # Should be true if count is 1
                 output_name = screens_data[0]['name']
                 set_primary(output_name)
@@ -113,11 +129,13 @@ def main():
 
     elif localhost_nickname == "ionian":
         if get_monitors_connected_count() == 2:
+            debug_print("ionian: 2 monitors connected")
             ensure_primary_set_py("model", "BenQ") # Assuming "BenQ" is the desired primary
             layout_file(localhost_nickname)
 
     elif localhost_nickname == "aegean":
         if get_monitors_connected_count() == 1:
+            debug_print("aegean: 1 monitor connected")
             layout_file(localhost_nickname)
 
     sys.stderr.write(f"ERROR: Couldn't figure out which layout to apply for {localhost_nickname}!\n")
