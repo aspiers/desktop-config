@@ -13,12 +13,8 @@ import monitors_connected
 
 INXI_RAW_CACHE = libdpy.INXI_RAW_CACHE_FILE
 
-def check_large_monitor():
-    # 1. Updates/populates inxi cache (both raw and JSON).
-    libdpy.get_inxi_monitors(use_cache=False) # Force cache refresh
-
-    # 2. Checks if a large monitor is connected.
-    num_monitors = monitors_connected.get_monitors_count(use_cache=True)
+def large_monitor_connected():
+    num_monitors = monitors_connected.get_monitors_count()
 
     if num_monitors >= 2:
         if not os.path.exists(INXI_RAW_CACHE):

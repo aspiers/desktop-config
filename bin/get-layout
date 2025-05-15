@@ -12,7 +12,7 @@ sys.path.append(os.path.join(os.getenv('HOME'), 'lib'))
 sys.path.append(os.path.join(os.getenv('HOME'), 'bin'))
 
 import libdpy
-import large_monitor_connected
+from large_monitor_connected import large_monitor_connected
 
 XRANDR_CACHE = libdpy.XRANDR_CACHE_FILE
 INXI_RAW_CACHE = libdpy.INXI_RAW_CACHE_FILE
@@ -88,7 +88,7 @@ def benq_bl3200_connected():
         return 'BenQ BL3200' in f_raw.read()
 
 def large_monitor_connected_and_setup_cache_py():
-    return large_monitor_connected.check_large_monitor()
+    return large_monitor_connected()
 
 def main():
     global debug
