@@ -75,6 +75,7 @@ def extract_xrandr_screen_geometries(xrandr=None):
     screens = [m.groupdict() for m in iterator]
     if not screens:
         sys.stderr.write("Couldn't extract screens info from xrandr\n")
+        sys.stderr.write(xrandr)
         sys.exit(1)
 
     screens.sort(key = lambda x: int(x['x_offset']))
