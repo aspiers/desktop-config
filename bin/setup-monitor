@@ -9,10 +9,14 @@ eval $( ~/lib/libdpy.py --no-use-cache )
 inxi -Gxx -c 0 -y 300 > $INXI_RAW_CACHE
 rm -f $INXI_JSON_CACHE
 
+ln -sf overlay.$localhost_nickname ~/.fluxbox/overlay
+
 if host-has-prop laptop; then
     if BenQ-connected; then
         # Connect to Kinesis Advantage 360 over Bluetooth
         adv &
+
+        ln -sf overlay.ionian ~/.fluxbox/overlay
     else
         adv off &
     fi
