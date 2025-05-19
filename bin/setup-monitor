@@ -70,25 +70,27 @@ ln -sf overlay.$localhost_nickname ~/.fluxbox/overlay
 # p values for panel position:
 #   0 not anchored to any edge
 
-#  RIGHT:
+# RIGHT:
 #    1 right, Y from y parameter
 #    2 right top
 #    3 right middle
 #    4 right bottom
 #
-#  LEFT:
+# LEFT:
 #    5 left, Y from y parameter
 #    6 left top
 #    7 left middle
 #    8 left bottom <- we always want this one
 #
-#  X CENTRE:
+# X CENTRE:
 #    9 centre top
 #   10 centre bottom
 #
-#  X from x parameter
-#  11 floating x, top
-#  12 floating x, bottom
+# X from x parameter
+#   11 floating x, top
+#   12 floating x, bottom
+
+# xfconf-query -c xfce4-panel -p /panels -lRv
 
 xfconf-query -c xfce4-panel -p /panels/panel-1/position -s 'p=8;x=0;y=0' -t string
 xfconf-query -c xfce4-panel -p /panels/panel-2/position -s 'p=8;x=0;y=0' -t string
