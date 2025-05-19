@@ -60,15 +60,17 @@ if [ -n "$SSH_CONNECTION" ]; then
 fi
 
 if is_running fluxbox; then
-    info "Replacing fluxbox with xfwm4"
+    info "Stopping fluxbox"
     pkill -x fluxbox
     ensure_stopped fluxbox
-    ( xfwm4 & )
-    ensure_started xfwm4
+
+    # info "Replacing fluxbox with xfwm4"
+    # ( xfwm4 & )
+    # ensure_started xfwm4
 fi
 
 if is_running xfwm4; then
-    info "Replacing xfwm4 with fluxbox"
+    info "Stopping xfwm4"
     pkill xfwm4
     ensure_stopped xfwm4
 fi
