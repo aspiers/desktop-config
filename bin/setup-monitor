@@ -2,27 +2,66 @@
 
 #exec >& ~/.log/setup-monitor.log
 
-# Refresh xrandr cache and grab cache paths
+echo "Refreshing xrandr cache ..." # and grab cache paths
 eval $( ~/lib/libdpy.py --no-use-cache )
 
-# Refresh inxi cache
+echo "Refreshing inxi cache"
 inxi -Gxx -c 0 -y 300 > $INXI_RAW_CACHE
 rm -f $INXI_JSON_CACHE
 
 ln -sf overlay.$localhost_nickname ~/.fluxbox/overlay
+
+echo -n "Getting layout ... "
+if ! layout=$( get-layout ); then
+    exit 1
+fi
+
+layout=$(basename -s .yaml "$layout")
+echo "$layout"
+
+# FIXME: replace the below with a dynamic xrandr command based
+# on config within the layout file.
+case "$layout" in
+    celtic)
+        : no xrandr needed
+        ;;
+    celtic+large)
+        xrandr \
+            --output eDP-1 --pos 0x0 --scale 1 --auto \
+            --output DP-4-5 --pos 2880x0 --scale 1 --primary --auto
+        ;;
+    celtic+BenQ)
+        xrandr \
+            --output eDP-1 --pos 0x0 --scale 1 --auto \
+            --output DP-4-5 --pos 2880x0 --scale 1 --primary --auto
+        ;;
+    celtic+BenQ+Dell)
+        xrandr \
+            --output eDP-1 --pos 0x0 --scale 1 --auto \
+            --output DP-4-5 --pos 2880x0 --scale 1 --primary --auto \
+            --output DP-4-6-8 --pos 5440x0 --scale 1 --auto
+        ;;
+    *)
+        echo "setup-monitor: don't know how to handle layout $layout"
+        exit 1
+        ;;
+esac
 
 if host-has-prop laptop; then
     if BenQ-connected; then
         # Connect to Kinesis Advantage 360 over Bluetooth
         adv &
 
+        xfconf-query -c xsettings -p /Xft/DPI -s 84 -t int
         ln -sf overlay.ionian ~/.fluxbox/overlay
     else
         adv off &
+
+        xfconf-query -c xsettings -p /Xft/DPI -s 128 -t int
     fi
 fi
 
-sleep 5
+sleep 2
 fr
 sleep 1
 run-with-local-X-display ly
