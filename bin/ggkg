@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Set gitk geometry
+# Set gitk geometry, and fonts for gitk and git-gui
 
 declare -A GEOMETRIES=(
     ionian '1385x844+456+163 238 179'
