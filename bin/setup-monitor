@@ -53,16 +53,69 @@ read_localhost_nickname
 
 ln -sf overlay.$localhost_nickname ~/.fluxbox/overlay
 
+# /panels/panel-$i/mode values
+#   0 horizontal
+#   1 vertical
+#   2 deskbar
+#
+# /panels/panel-$i/position values
+#
+#   x is centre of panel on virtual display (xrandr coords across all displays)
+#
+# https://gitlab.xfce.org/xfce/xfce4-panel/-/blob/master/libxfce4panel/libxfce4panel-enums.h
+# p values for panel position:
+#   0 not anchored to any edge
+
+#  RIGHT:
+#    1 right, Y from y parameter
+#    2 right top
+#    3 right middle
+#    4 right bottom
+#
+#  LEFT:
+#    5 left, Y from y parameter
+#    6 left top
+#    7 left middle
+#    8 left bottom
+#
+#  X CENTRE:
+#    9 centre top
+#   10 centre bottom
+#
+#  X from x parameter
+#  11 floating x, top
+#  12 floating x, bottom
+
+xfconf-query -c xfce4-panel -p /panels/panel-1/position -s 'p=8;x=0;y=0' -t string
+xfconf-query -c xfce4-panel -p /panels/panel-2/position -s 'p=8;x=0;y=0' -t string
+xfconf-query -c xfce4-panel -p /panels/panel-3/position -s 'p=8;x=0;y=0' -t string
+
+xfconf-query -c xfce4-panel -p /panels/panel-1/length -s 100 -t int
+xfconf-query -c xfce4-panel -p /panels/panel-2/length -s 100 -t int
+xfconf-query -c xfce4-panel -p /panels/panel-3/length -s 100 -t int
+
 if host-has-prop laptop; then
     if BenQ-connected; then
         # Connect to Kinesis Advantage 360 over Bluetooth
         adv &
 
-        xfconf-query -c xsettings -p /Xft/DPI -s 84 -t int
         ln -sf overlay.ionian ~/.fluxbox/overlay
+        xfconf-query -c xsettings -p /Xft/DPI -s 84 -t int
+        xfconf-query -c xfce4-panel -p /panels/panel-1/output-name -s eDP-1 -t string
+        xfconf-query -c xfce4-panel -p /panels/panel-2/output-name -s DP-4-5 -t string
+        xfconf-query -c xfce4-panel -p /panels/panel-3/output-name -s DP-4-6-8 -t string
+        xfconf-query -c xfce4-panel -p /panels/panel-1/size -s 40 -t int
+        xfconf-query -c xfce4-panel -p /panels/panel-2/size -s 30 -t int
+        xfconf-query -c xfce4-panel -p /panels/panel-3/size -s 28 -t int
     elif large-monitor-connected; then
         # Even though xrandr reports DPI as more like 160
         xfconf-query -c xsettings -p /Xft/DPI -s 128 -t int
+        xfconf-query -c xfce4-panel -p /panels/panel-1/output-name -s eDP-1 -t string
+        xfconf-query -c xfce4-panel -p /panels/panel-2/output-name -s DP-4-5 -t string
+        xfconf-query -c xfce4-panel -p /panels/panel-1/position -s 'p=8;x=0;y=0' -t string
+        xfconf-query -c xfce4-panel -p /panels/panel-2/position -s 'p=8;x=0;y=0' -t string
+        xfconf-query -c xfce4-panel -p /panels/panel-1/size -s 40 -t int
+        xfconf-query -c xfce4-panel -p /panels/panel-2/size -s 36 -t int
     else
         adv off &
 
