@@ -62,7 +62,11 @@ ln -sf overlay.$localhost_nickname ~/.fluxbox/overlay
 #
 #   x is centre of panel on virtual display (xrandr coords across all displays)
 #
+# One might think the below values correspond to this enum, but
+# apparently not:
+#
 # https://gitlab.xfce.org/xfce/xfce4-panel/-/blob/master/libxfce4panel/libxfce4panel-enums.h
+#
 # p values for panel position:
 #   0 not anchored to any edge
 
@@ -76,7 +80,7 @@ ln -sf overlay.$localhost_nickname ~/.fluxbox/overlay
 #    5 left, Y from y parameter
 #    6 left top
 #    7 left middle
-#    8 left bottom
+#    8 left bottom <- we always want this one
 #
 #  X CENTRE:
 #    9 centre top
