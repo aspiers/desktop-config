@@ -130,6 +130,10 @@ if host-has-prop laptop; then
 fi
 
 sleep 1
+
+xfce4-panel -r
 fr
+
 sleep 1
+
 run-with-local-X-display ly
