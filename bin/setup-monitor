@@ -21,6 +21,9 @@ echo "$layout"
 
 # FIXME: replace the below with a dynamic xrandr command based
 # on config within the layout file.
+celtic_width=2880
+BenQ_width=2560
+
 case "$layout" in
     celtic)
         : no xrandr needed
@@ -28,18 +31,18 @@ case "$layout" in
     celtic+large)
         xrandr \
             --output eDP-1 --pos 0x0 --scale 1 --auto \
-            --output DP-4-5 --pos 2880x0 --scale 1 --primary --auto
+            --output DP-3 --pos ${celtic_width}x0 --scale 1 --primary --auto
         ;;
     celtic+BenQ)
         xrandr \
             --output eDP-1 --pos 0x0 --scale 1 --auto \
-            --output DP-4-5 --pos 2880x0 --scale 1 --primary --auto
+            --output DP-4-5 --pos ${celtic_width}x0 --scale 1 --primary --auto
         ;;
     celtic+BenQ+Dell)
         xrandr \
             --output eDP-1 --pos 0x0 --scale 1 --auto \
-            --output DP-4-5 --pos 2880x0 --scale 1 --primary --auto \
-            --output DP-4-6-8 --pos 5440x0 --scale 1 --auto
+            --output DP-4-5 --pos ${celtic_width}x0 --scale 1 --primary --auto \
+            --output DP-4-6-8 --pos $(( celtic_width + BenQ_width ))x0 --scale 1 --auto
         ;;
     *)
         echo "setup-monitor: don't know how to handle layout $layout"
