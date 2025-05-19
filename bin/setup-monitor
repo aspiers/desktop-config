@@ -51,7 +51,11 @@ esac
 . ~/lib/libhost.sh
 read_localhost_nickname
 
-ln -sf overlay.$localhost_nickname ~/.fluxbox/overlay
+if [ -e ~/.fluxbox/overlay.$layout ]; then
+    ln -sf overlay.$layout ~/.fluxbox/overlay
+else
+    ln -sf overlay.$localhost_nickname ~/.fluxbox/overlay
+fi
 
 # /panels/panel-$i/mode values
 #   0 horizontal
@@ -105,7 +109,6 @@ if host-has-prop laptop; then
         # Connect to Kinesis Advantage 360 over Bluetooth
         adv &
 
-        ln -sf overlay.ionian ~/.fluxbox/overlay
         xfconf-query -c xsettings -p /Xft/DPI -s 84 -t int
         xfconf-query -c xfce4-panel -p /panels/panel-1/output-name -s eDP-1 -t string
         xfconf-query -c xfce4-panel -p /panels/panel-2/output-name -s DP-4-5 -t string
