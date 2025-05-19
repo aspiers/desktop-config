@@ -70,7 +70,7 @@ if host-has-prop laptop; then
     fi
 fi
 
-sleep 2
+sleep 1
 fr
 sleep 1
 run-with-local-X-display ly
