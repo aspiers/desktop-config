@@ -131,7 +131,7 @@ class InxiJsonCache(DisplayDataCache):
 
     def builder(self):
         return subprocess.check_output(
-            'inxi -c 0 -Gxx --output json --output-file print',
+            'inxi -c 0 --tty -Gxx --output json --output-file print',
             shell=True
         )
 
