@@ -13,8 +13,7 @@ import libdpy
 info = libdpy.get_mouse_location_info()
 print("xdotool_screen=%s" % info['SCREEN'])
 
-screens = libdpy.extract_xrandr_geometries()
-print("monitors_connected=%d" % len(screens))
+print("monitors_connected=%d" % libdpy.monitors_connected())
 
 screen = libdpy.get_current_screen_info()
 

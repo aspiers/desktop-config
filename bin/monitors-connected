@@ -1,2 +1,11 @@
-#!/bin/sh
-exec python3 "$HOME/lib/monitors_connected.py" "$@"
+#!/usr/bin/env python3
+
+import os
+import sys
+
+sys.path.append(os.getenv('HOME') + '/lib')
+
+import libdpy
+
+count = libdpy.monitors_connected()
+print(count)

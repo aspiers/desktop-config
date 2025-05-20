@@ -16,26 +16,96 @@ import time
 import argparse
 
 # Global constants
-CACHE_DIR = os.path.expanduser("~/tmp")
-XRANDR_CACHE_FILE = os.path.join(CACHE_DIR, ".xrandr.json")
-INXI_RAW_CACHE_FILE = os.path.join(CACHE_DIR, ".inxi-Gxx.out")
-INXI_JSON_CACHE_FILE = os.path.join(CACHE_DIR, ".inxi-Gxx.json")
+GLOBAL_CACHE_DIR = os.environ.get('XDG_CACHE_HOME') or os.path.expanduser("~/.cache")
+CACHE_DIR = os.path.join(GLOBAL_CACHE_DIR, "libdpy")
+
+os.makedirs(CACHE_DIR, exist_ok=True)
+
+CACHE_FILES = {
+    'xrandr': os.path.join(CACHE_DIR, "xrandr.out"),
+    'xrandr_json': os.path.join(CACHE_DIR, "xrandr.json"),
+    'xdpyinfo': os.path.join(CACHE_DIR, "xdpyinfo.out"),
+    'inxi_json': os.path.join(CACHE_DIR, "inxi-Gxx.json"),
+}
 
 
-def xrandr_status():
-    # import traceback
-    # traceback.print_stack()
-    return subprocess.check_output('xrandr').decode()
+# Any cache file should only be invalidated if the displays change in
+# some way, in which case all of them should be invalidated at once.
+def clear_cache():
+    for _cache_name, cache_file in CACHE_FILES.items():
+        if os.path.exists(cache_file):
+            os.remove(cache_file)
+            # print(f"Removed {cache_file}", file=sys.stderr)
 
 
-def get_screen_geometries(use_cache=False):
+def cache_command_output(command, cache_name, use_cache=True, builder=None, cache_reader=None):
+    """
+    Run a shell command and cache its output to a file, or return cached output if available.
+    Optionally, use a custom builder function to generate the data, and/or a custom cache_reader to read cached data.
+
+    Args:
+        command: Command to run (str or list for subprocess)
+        cache_name: Key for the cache file in CACHE_FILES
+        use_cache: If True, use cached output if available
+        builder: Optional callable that returns the data to cache (bytes or str)
+        cache_reader: Optional callable that takes the cache file path and returns the cached data (str)
+
+    Returns:
+        Output of the command or builder or cache_reader (str)
+    """
+    cache_file = CACHE_FILES[cache_name]
+
+    if not use_cache or not os.path.exists(cache_file):
+        if builder:
+            data_to_cache = builder()
+            if isinstance(data_to_cache, str):
+                data_to_cache = data_to_cache.encode('utf-8')
+        else:
+            if isinstance(command, str):
+                data_to_cache = subprocess.check_output(command, shell=True)
+            else:
+                data_to_cache = subprocess.check_output(command)
+
+        with open(cache_file, 'wb') as f:
+            f.write(data_to_cache)
+
+    if cache_reader:
+        return cache_reader(cache_file)
+
+    with open(cache_file, 'rb') as f:
+        data = f.read()
+        return data.decode()
+
+
+def xrandr_output(use_cache=True):
+    return cache_command_output('xrandr', 'xrandr', use_cache=use_cache)
+
+
+def xdpyinfo_output(use_cache=True):
+    return cache_command_output('xdpyinfo', 'xdpyinfo', use_cache=use_cache)
+
+
+def monitors_connected(use_cache=True):
+    xrandr = xrandr_output(use_cache)
+    return len(re.findall(r'\bconnected\b', xrandr))
+
+
+def large_monitor_connected(use_cache=True):
+    if monitors_connected(use_cache) < 2:
+        return False
+
+    inxi = inxi_json_output(use_cache)
+    return '"res": "3840x2160"' in inxi
+
+
+def get_screen_geometries(use_cache=True):
     screens = get_xrandr_screen_geometries(use_cache)
-    dpy = extract_xdpyinfo_geometry()
+    dpy = extract_xdpyinfo_geometry(use_cache)
     return (dpy, screens)
 
 
-def extract_xdpyinfo_geometry():
-    dpy = subprocess.check_output('xdpyinfo').decode()
+def extract_xdpyinfo_geometry(use_cache=True):
+    dpy = xdpyinfo_output(use_cache)
     m = re.search(
         r'^\s*dimensions:\s+(?P<dpy_width>\d+)x(?P<dpy_height>\d+) pixels\s+' +
         r'\((?P<dpy_x_mm>\d+)x(?P<dpy_y_mm>\d+) millimeters\)',
@@ -63,10 +133,11 @@ def display_xrandr_display_geometry(dpy):
         print("%s=%d" % (k, v))
 
 
-def extract_xrandr_screen_geometries(xrandr=None):
-    if not xrandr:
-        xrandr = xrandr_status()
-
+def extract_xrandr_screen_geometries_builder():
+    """
+    Builder function for xrandr JSON cache: runs xrandr, parses, and returns JSON string.
+    """
+    xrandr = xrandr_output()
     iterator = re.finditer(
         r'^(?P<name>\S+) connected ((?P<primary>primary) )?(?P<width>\d+)x(?P<height>\d+)\+(?P<x_offset>\d+)\+(?P<y_offset>\d+) \(.+\) (?P<x_mm>\d+)mm x (?P<y_mm>\d+)mm',
         xrandr,
@@ -96,23 +167,14 @@ def extract_xrandr_screen_geometries(xrandr=None):
     # screen is configured as primary at the xrandr level, then it
     # could be auto-detected by comparing these two.
 
-    # Cache the results
-    os.makedirs(CACHE_DIR, exist_ok=True)
-
-    try:
-        cache_data = {
-            "timestamp": time.time(),
-            "screens": screens
-        }
-        with open(XRANDR_CACHE_FILE, 'w') as f:
-            json.dump(cache_data, f, indent=2)
-    except Exception as e:
-        sys.stderr.write(f"Warning: Failed to write XRandr cache: {str(e)}\n")
-
-    return screens
+    cache_data = {
+        "timestamp": time.time(),
+        "screens": screens
+    }
+    return json.dumps(cache_data, indent=2)
 
 
-def get_xrandr_screen_geometries(use_cache=False):
+def get_xrandr_screen_geometries(use_cache=True):
     """
     Get xrandr screen geometries, optionally using cached results if available.
 
@@ -122,17 +184,16 @@ def get_xrandr_screen_geometries(use_cache=False):
     Returns:
         List of screen geometries
     """
-    if use_cache:
-        try:
-            if os.path.exists(XRANDR_CACHE_FILE):
-                with open(XRANDR_CACHE_FILE, 'r') as f:
-                    cache_data = json.load(f)
-                    return cache_data["screens"]
-        except Exception as e:
-            sys.stderr.write(f"Warning: Failed to read xrandr cache: {str(e)}\n")
-
-    # No cache or cache loading failed, extract fresh data
-    return extract_xrandr_screen_geometries()
+    cache_file = CACHE_FILES['xrandr_json']
+    if use_cache and os.path.exists(cache_file):
+        with open(cache_file, 'r') as f:
+            cache_data = json.load(f)
+            return cache_data["screens"]
+    # Use builder to generate and cache the data
+    cache_command_output(None, 'xrandr_json', use_cache=False, builder=extract_xrandr_screen_geometries_builder)
+    with open(cache_file, 'r') as f:
+        cache_data = json.load(f)
+        return cache_data["screens"]
 
 
 def display_xrandr_screen_geometries(screens):
@@ -163,7 +224,7 @@ def get_mouse_location_info():
 
 
 # FIXME: check y coord too
-def get_screen(x, use_cache=False):
+def get_screen(x, use_cache=True):
     screens = get_xrandr_screen_geometries(use_cache)
     for i, screen in enumerate(screens):
         if (x >= screen['x_offset'] and
@@ -173,26 +234,29 @@ def get_screen(x, use_cache=False):
     raise RuntimeError("Failed to find screen for x=%d" % x)
 
 
-def get_current_screen_info(use_cache=False):
+def get_current_screen_info(use_cache=True):
     info = get_mouse_location_info()
     return get_screen(info['X'], use_cache)
 
 
-def extract_inxi_monitors():
+def inxi_json_output():
+    return subprocess.check_output(
+        'inxi -c 0 -Gxx --output json --output-file print',
+        shell=True).decode('utf8')
+
+
+def build_inxi_monitors():
     """
     Calls inxi, parses the JSON from stdout,
     and extracts all sections for monitors.
+    Returns a JSON string of the monitors list for caching.
     """
-    command = "inxi --tty -c 0 -Gxx --output json --output-file print"
-    inxi_output = subprocess.check_output(command, shell=True).decode('utf-8')
-
-    inxi_data = json.loads(inxi_output)
+    inxi_data = json.loads(inxi_json_output())
 
     # Extract monitor sections
     monitors = []
-    monitors = []
     if not (inxi_data and isinstance(inxi_data, list) and len(inxi_data) > 0):
-        return monitors
+        return json.dumps(monitors, indent=2)
 
     graphics_list = None
     for key, value in inxi_data[0].items():
@@ -201,7 +265,7 @@ def extract_inxi_monitors():
             break
 
     if not graphics_list:
-        return monitors
+        return json.dumps(monitors, indent=2)
 
     for item in graphics_list:
         if not isinstance(item, dict):
@@ -219,10 +283,15 @@ def extract_inxi_monitors():
         if is_monitor:
             monitors.append(cleaned_item)
 
-    return monitors
+    return json.dumps(monitors, indent=2)
 
 
-def get_inxi_monitors(use_cache=False):
+def inxi_monitors_cache_reader(cache_file):
+    with open(cache_file, 'r') as f:
+        return json.load(f)
+
+
+def get_inxi_monitors(use_cache=True):
     """
     Get inxi monitor data, optionally using cached results if available.
 
@@ -232,23 +301,13 @@ def get_inxi_monitors(use_cache=False):
     Returns:
         List of monitor dictionaries
     """
-    if use_cache:
-        if os.path.exists(INXI_JSON_CACHE_FILE):
-            with open(INXI_JSON_CACHE_FILE, 'r') as f:
-                cache_data = json.load(f)
-                # Assuming the cache file directly stores the list of monitors
-                return cache_data
-
-    # No cache or cache loading failed, extract fresh data
-    monitors = extract_inxi_monitors()
-
-    # Cache the results
-    os.makedirs(CACHE_DIR, exist_ok=True)
-    with open(INXI_JSON_CACHE_FILE, 'w') as f:
-        # Directly dump the list of monitors
-        json.dump(monitors, f, indent=2)
-
-    return monitors
+    return cache_command_output(
+        None,
+        'inxi_json',
+        use_cache=use_cache,
+        builder=build_inxi_monitors,
+        cache_reader=inxi_monitors_cache_reader
+    )
 
 
 def find_monitor_by_attribute(monitors, attribute, value):
@@ -342,9 +401,6 @@ def main():
 
     (dpy, screens) = get_screen_geometries(use_cache=args.use_cache)
 
-    print(f'XRANDR_CACHE={XRANDR_CACHE_FILE}')
-    print(f'INXI_RAW_CACHE={INXI_RAW_CACHE_FILE}')
-    print(f'INXI_JSON_CACHE={INXI_JSON_CACHE_FILE}')
     display_xrandr_display_geometry(dpy)
     display_xrandr_screen_geometries(screens)
 

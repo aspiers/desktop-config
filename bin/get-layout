@@ -12,11 +12,7 @@ sys.path.append(os.path.join(os.getenv('HOME'), 'lib'))
 sys.path.append(os.path.join(os.getenv('HOME'), 'bin'))
 
 import libdpy
-from large_monitor_connected import large_monitor_connected
 
-XRANDR_CACHE = libdpy.XRANDR_CACHE_FILE
-INXI_RAW_CACHE = libdpy.INXI_RAW_CACHE_FILE
-# INXI_JSON_CACHE = libdpy.INXI_JSON_CACHE_FILE # Available if needed
 
 debug = False
 
@@ -70,9 +66,7 @@ def ensure_primary_set_py(find_by_attribute, search_value):
 def set_primary(desired_output_name):
     # print(f"Attempting to set {desired_output_name} as primary...", file=sys.stderr)
     subprocess.run(['xrandr', '--output', desired_output_name, '--primary'], check=True, capture_output=True, text=True)
-    if os.path.exists(XRANDR_CACHE):
-        os.remove(XRANDR_CACHE)
-        # print(f"Removed XRandR cache: {XRANDR_CACHE}", file=sys.stderr)
+    libdpy.clear_cache()
     # print(f"Successfully set {desired_output_name} as primary.", file=sys.stderr)
 
 def get_monitors_connected_count(use_cache=True):
@@ -80,15 +74,11 @@ def get_monitors_connected_count(use_cache=True):
     return len(screens)
 
 def benq_bl3200_connected():
-    if not os.path.exists(INXI_RAW_CACHE):
-        sys.stderr.write(f"Error: {INXI_RAW_CACHE} missing; run setup-monitor\n")
-        sys.exit(1)
-
-    with open(INXI_RAW_CACHE, 'r') as f_raw:
-        return 'BenQ BL3200' in f_raw.read()
+    inxi_monitors = libdpy.get_inxi_monitors()
+    return 'BenQ BL3200' in inxi_monitors
 
 def large_monitor_connected_and_setup_cache_py():
-    return large_monitor_connected()
+    return libdpy.large_monitor_connected()
 
 def main():
     global debug

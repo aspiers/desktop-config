@@ -1,2 +1,14 @@
-#!/bin/sh
-exec python3 "$HOME/lib/large_monitor_connected.py" "$@"
+#!/usr/bin/python3
+
+import os
+import sys
+import re
+
+# Simplified sys.path modification
+sys.path.append(os.path.join(os.getenv('HOME'), 'lib'))
+sys.path.append(os.path.join(os.getenv('HOME'), 'bin'))
+
+import libdpy
+
+
+sys.exit(0 if libdpy.large_monitor_connected() else 1)
