@@ -7,13 +7,24 @@
 # NOTE! This relies on the XFCE session manager not immediately
 # automatically restarting xfwm4 after it's pkilled.
 
+while [ -n "$1" ]; do
+    case "$1" in
+        -x)
+            set -x
+            shift
+            no_log_to_file=true
+            ;;
+        -n|--no-xfwm*)
+            xfwm=n
+            shift
+            ;;
+    esac
 
-if [ -n "$1" ]; then
-    set -x
-else
+done
+
+if [ -z "$no_log_to_file" ]; then
     exec >&~/.log/fluxbox-restart.log
 fi
-
 
 : $0 pid is $$
 
@@ -64,9 +75,11 @@ if is_running fluxbox; then
     pkill -x fluxbox
     ensure_stopped fluxbox
 
-    # info "Replacing fluxbox with xfwm4"
-    # ( xfwm4 & )
-    # ensure_started xfwm4
+    if [ -z "$no_xfwm" ]; then
+        info "Replacing fluxbox with xfwm4"
+        ( xfwm4 & )
+        ensure_started xfwm4
+    fi
 fi
 
 if is_running xfwm4; then
