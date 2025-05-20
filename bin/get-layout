@@ -85,10 +85,6 @@ def benq_bl3200_connected():
     return 'BenQ BL3200' in inxi_monitors
 
 
-def large_monitor_connected_and_setup_cache_py():
-    return libdpy.large_monitor_connected()
-
-
 def main():
     global debug
     parser = argparse.ArgumentParser(description="Get monitor layout.")
@@ -110,8 +106,8 @@ def main():
                 ensure_primary_set_py("model", "BenQ")
                 layout_file("celtic+BenQ+Dell")
 
-        elif large_monitor_connected_and_setup_cache_py():
-            debug_print("large_monitor_connected_and_setup_cache_py: True")
+        elif libdpy.large_monitor_connected():
+            debug_print("large monitor connected")
             ensure_primary_set_py("res", "3840x2160")
             layout_file("celtic+large")
 
