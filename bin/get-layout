@@ -77,7 +77,7 @@ def set_primary(desired_output_name):
 
 def benq_bl3200_connected():
     inxi_monitors = libdpy.get_inxi_monitors()
-    return 'BenQ BL3200' in inxi_monitors
+    return libdpy.find_monitor_by_attribute('model', 'BenQ BL3200')
 
 
 def main():
@@ -93,9 +93,11 @@ def main():
     if localhost_nickname == "celtic":
         debug_print("Finding layout for celtic")
 
+        num_monitors = libdpy.monitors_connected()
+        debug_print(f"{num_monitors} monitor(s) connected")
+
         if benq_bl3200_connected():
-            num_monitors = libdpy.monitors_connected()
-            debug_print(f"benq_bl3200_connected: True, num_monitors: {num_monitors}")
+            debug_print(f"benq_bl3200_connected: True")
             if num_monitors == 2:
                 ensure_primary_set_py("model", "BenQ")
                 layout_file("celtic+BenQ")
