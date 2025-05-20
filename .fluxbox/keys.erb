@@ -77,14 +77,6 @@ def monitors_connected
   %x('monitors-connected').chomp
 end
 
-left_head, right_head =
-  if %x('primary-screen-pos').chomp == '0'
-    [1, 2]
-  else
-    [2, 1]
-  end
-%>
-
 Control Mod1 Mod4 r :MacroCmd {<%= reconfigure %>}
 
 # For some reason this doesn't always work:
