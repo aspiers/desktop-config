@@ -245,12 +245,12 @@ def extract_xdpyinfo_geometry(use_cache=True):
     return d
 
 
-def display_xrandr_display_geometry(dpy):
+def show_xrandr_display_geometry(dpy):
     for k, v in dpy.items():
         print("%s=%d" % (k, v))
 
 
-def display_xrandr_screen_geometries(screens):
+def show_xrandr_screen_geometries(screens):
     for i, screen in enumerate(screens):
         screen['x_dpi'] = round(int(screen['width']) / int(screen['x_mm']) * 25.4, 2)
         screen['y_dpi'] = round(int(screen['height']) / int(screen['y_mm']) * 25.4, 2)
@@ -384,8 +384,8 @@ def main():
 
     (dpy, screens) = get_screen_geometries(use_cache=args.use_cache)
 
-    display_xrandr_display_geometry(dpy)
-    display_xrandr_screen_geometries(screens)
+    show_xrandr_display_geometry(dpy)
+    show_xrandr_screen_geometries(screens)
 
     # Example usage of the new function
     # inxi_monitors = extract_inxi_monitors()
