@@ -17,7 +17,8 @@ layout=$(basename -s .yaml "$layout")
 echo "$layout"
 
 # FIXME: replace the below with dynamic xrandr and xfconf commands based
-# on config within the layout file.
+# on config within the layout file.  The xrandr outputs should be discovered
+# dynamically based on model name.
 celtic_width=2880
 BenQ_width=2560
 
@@ -33,7 +34,7 @@ case "$layout" in
     celtic+BenQ)
         xrandr \
             --output eDP-1 --pos 0x0 --scale 1 --auto \
-            --output DP-4-5 --pos ${celtic_width}x0 --scale 1 --primary --auto
+            --output DP-4 --pos ${celtic_width}x0 --scale 1 --primary --auto
         ;;
     celtic+BenQ+Dell)
         xrandr \
