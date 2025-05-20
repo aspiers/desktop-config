@@ -2,6 +2,10 @@
 
 #exec >& ~/.log/setup-monitor.log
 
+echo "Enabling any disabled monitors ..."
+xrandr --auto
+sleep 1
+
 clear-dpy-cache
 
 echo -n "Getting layout ... "
