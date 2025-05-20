@@ -91,6 +91,8 @@ def main():
     debug_print(f"localhost_nickname: {localhost_nickname}")
 
     if localhost_nickname == "celtic":
+        debug_print("Finding layout for celtic")
+
         if benq_bl3200_connected():
             num_monitors = libdpy.monitors_connected()
             debug_print(f"benq_bl3200_connected: True, num_monitors: {num_monitors}")
