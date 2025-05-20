@@ -2,12 +2,7 @@
 
 #exec >& ~/.log/setup-monitor.log
 
-echo "Refreshing xrandr cache ..." # and grab cache paths
-eval $( ~/lib/libdpy.py --no-use-cache )
-
-echo "Refreshing inxi cache"
-inxi -Gxx -c 0 -y 300 > $INXI_RAW_CACHE
-rm -f $INXI_JSON_CACHE
+clear-dpy-cache
 
 echo -n "Getting layout ... "
 if ! layout=$( get-layout ); then
