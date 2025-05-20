@@ -1,5 +1,3 @@
 #!/bin/bash
 
-eval $( ~/lib/libdpy.py )
-
-grep -q 'BenQ BL3200' $INXI_RAW_CACHE
+monitor-models-connected | grep -q 'BenQ BL3200'
