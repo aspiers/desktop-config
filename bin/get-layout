@@ -46,7 +46,7 @@ def layout_file(layout_name_suffix):
 
 def ensure_primary_set_py(find_by_attribute, search_value):
     inxi_monitors = libdpy.get_inxi_monitors(use_cache=True)
-    desired_monitor_info = libdpy.find_monitor_by_attribute(inxi_monitors, find_by_attribute, search_value)
+    desired_monitor_info = libdpy.find_monitor_by_attribute(find_by_attribute, search_value)
 
     if not desired_monitor_info:
         sys.stderr.write(f"Info: Monitor not found via inxi: {find_by_attribute}='{search_value}'.\n")

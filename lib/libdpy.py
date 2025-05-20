@@ -293,7 +293,7 @@ def get_current_screen_info(use_cache=True):
     return get_screen(info['X'], use_cache)
 
 
-def find_monitor_by_attribute(monitors, attribute, value):
+def find_monitor_by_attribute(attribute, value, use_cache=True):
     """
     Finds a monitor in the list whose specified attribute contains the given value (case-insensitive).
 
@@ -306,8 +306,10 @@ def find_monitor_by_attribute(monitors, attribute, value):
         The matching monitor dictionary, or None if not found.
     """
     search_value = value.lower()
-    for monitor in monitors:
-        if attribute in monitor and isinstance(monitor[attribute], str) and search_value in monitor[attribute].lower():
+    for monitor in get_inxi_monitors(use_cache=use_cache):
+        if (attribute in monitor and
+            isinstance(monitor[attribute], str) and
+            search_value in monitor[attribute].lower()):
             return monitor
     return None
 
@@ -354,7 +356,6 @@ def main():
             sys.exit(1)
 
     if args.find_by_model or args.find_by_res:
-        inxi_monitors = get_inxi_monitors(use_cache=args.use_cache)
         found_monitor = None
         search_attribute = None
         search_value = None
@@ -367,7 +368,7 @@ def main():
             search_value = args.find_by_res
 
         if search_attribute and search_value:
-            found_monitor = find_monitor_by_attribute(inxi_monitors, search_attribute, search_value)
+            found_monitor = find_monitor_by_attribute(search_attribute, search_value)
 
         if found_monitor:
             print(json.dumps(found_monitor, indent=2))
