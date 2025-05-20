@@ -16,9 +16,11 @@ import libdpy
 
 debug = False
 
+
 def debug_print(msg):
     if debug:
         print(f"DEBUG: {msg}", file=sys.stderr)
+
 
 def get_localhost_nickname():
     zdotdir = os.environ.get('ZDOTDIR', os.path.expanduser('~')) # Default to ~ if ZDOTDIR not set
@@ -35,10 +37,12 @@ def get_localhost_nickname():
     sys.stderr.write(".localhost-nickname empty?!")
     sys.exit(1)
 
+
 def layout_file(layout_name_suffix):
     # print(f"Using {layout_name_suffix} layout in {os.path.expanduser('~/.fluxbox/layouts')}", file=sys.stderr)
     print(os.path.join(os.path.expanduser('~/.fluxbox/layouts'), f"{layout_name_suffix}.yaml"))
     sys.exit(0)
+
 
 def ensure_primary_set_py(find_by_attribute, search_value):
     inxi_monitors = libdpy.get_inxi_monitors(use_cache=True)
@@ -63,22 +67,27 @@ def ensure_primary_set_py(find_by_attribute, search_value):
 
     set_primary(desired_output_name)
 
+
 def set_primary(desired_output_name):
     # print(f"Attempting to set {desired_output_name} as primary...", file=sys.stderr)
     subprocess.run(['xrandr', '--output', desired_output_name, '--primary'], check=True, capture_output=True, text=True)
     libdpy.clear_cache()
     # print(f"Successfully set {desired_output_name} as primary.", file=sys.stderr)
 
+
 def get_monitors_connected_count(use_cache=True):
     screens = libdpy.get_xrandr_screen_geometries(use_cache=use_cache)
     return len(screens)
+
 
 def benq_bl3200_connected():
     inxi_monitors = libdpy.get_inxi_monitors()
     return 'BenQ BL3200' in inxi_monitors
 
+
 def large_monitor_connected_and_setup_cache_py():
     return libdpy.large_monitor_connected()
+
 
 def main():
     global debug
@@ -130,6 +139,7 @@ def main():
 
     sys.stderr.write(f"ERROR: Couldn't figure out which layout to apply for {localhost_nickname}!\n")
     sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
