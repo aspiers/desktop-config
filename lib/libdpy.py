@@ -141,7 +141,7 @@ class InxiJsonCache(DisplayDataCache):
 
 
 class InxiMonitorsCache(DisplayDataCache):
-    cache_file = os.path.join(CACHE_DIR, "inxi-Gxx.json")
+    cache_file = os.path.join(CACHE_DIR, "inxi-Gxx.monitors.json")
 
     def builder(self):
         inxi_data = InxiJsonCache().get()
