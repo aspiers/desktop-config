@@ -45,7 +45,7 @@ def layout_file(layout_name_suffix):
 
 
 def ensure_primary_set_py(find_by_attribute, search_value):
-    inxi_monitors = libdpy.get_inxi_monitors(use_cache=True)
+    inxi_monitors = libdpy.get_inxi_monitors()
     desired_monitor_info = libdpy.find_monitor_by_attribute(find_by_attribute, search_value)
 
     if not desired_monitor_info:
@@ -58,7 +58,7 @@ def ensure_primary_set_py(find_by_attribute, search_value):
         sys.stderr.write(f"Info: Monitor {desired_monitor_info.get('model', 'Unknown')} found but has no 'mapped' or 'Monitor' in inxi data.\n")
         return
 
-    current_primary_info = libdpy.get_xrandr_primary_monitor(use_cache=True)
+    current_primary_info = libdpy.get_xrandr_primary_monitor()
     current_primary_name = current_primary_info.get('name') if current_primary_info else None
 
     if current_primary_name == desired_output_name:
@@ -115,8 +115,8 @@ def main():
             ensure_primary_set_py("res", "3840x2160")
             layout_file("celtic+large")
 
-        elif get_monitors_connected_count(use_cache=False) == 1:
-            screens_data = libdpy.get_xrandr_screen_geometries(use_cache=False)
+        elif libdpy.monitors_connected() == 1:
+            screens_data = libdpy.get_xrandr_screen_geometries()
             debug_print(f"single monitor, screens_data: {screens_data}")
             if screens_data: # Should be true if count is 1
                 output_name = screens_data[0]['name']
