@@ -75,11 +75,6 @@ def set_primary(desired_output_name):
     # print(f"Successfully set {desired_output_name} as primary.", file=sys.stderr)
 
 
-def get_monitors_connected_count(use_cache=True):
-    screens = libdpy.get_xrandr_screen_geometries(use_cache=use_cache)
-    return len(screens)
-
-
 def benq_bl3200_connected():
     inxi_monitors = libdpy.get_inxi_monitors()
     return 'BenQ BL3200' in inxi_monitors
@@ -97,7 +92,7 @@ def main():
 
     if localhost_nickname == "celtic":
         if benq_bl3200_connected():
-            num_monitors = get_monitors_connected_count()
+            num_monitors = libdpy.monitors_connected()
             debug_print(f"benq_bl3200_connected: True, num_monitors: {num_monitors}")
             if num_monitors == 2:
                 ensure_primary_set_py("model", "BenQ")
@@ -123,13 +118,13 @@ def main():
                 sys.exit(1)
 
     elif localhost_nickname == "ionian":
-        if get_monitors_connected_count() == 2:
+        if libdpy.monitors_connected() == 2:
             debug_print("ionian: 2 monitors connected")
             ensure_primary_set_py("model", "BenQ") # Assuming "BenQ" is the desired primary
             layout_file(localhost_nickname)
 
     elif localhost_nickname == "aegean":
-        if get_monitors_connected_count() == 1:
+        if libdpy.monitors_connected() == 1:
             debug_print("aegean: 1 monitor connected")
             layout_file(localhost_nickname)
 
