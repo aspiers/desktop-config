@@ -96,12 +96,8 @@ fi
 # xfconf-query -c xfce4-panel -p /panels -lRv
 
 xfconf-query -c xfce4-panel -p /panels/panel-1/position -s 'p=8;x=0;y=0' -t string
-xfconf-query -c xfce4-panel -p /panels/panel-2/position -s 'p=8;x=0;y=0' -t string
-xfconf-query -c xfce4-panel -p /panels/panel-3/position -s 'p=8;x=0;y=0' -t string
-
 xfconf-query -c xfce4-panel -p /panels/panel-1/length -s 100 -t int
-xfconf-query -c xfce4-panel -p /panels/panel-2/length -s 100 -t int
-xfconf-query -c xfce4-panel -p /panels/panel-3/length -s 100 -t int
+
 
 if host-has-prop laptop; then
     if BenQ-connected; then
@@ -115,6 +111,10 @@ if host-has-prop laptop; then
         xfconf-query -c xfce4-panel -p /panels/panel-1/size -s 40 -t int
         xfconf-query -c xfce4-panel -p /panels/panel-2/size -s 30 -t int
         xfconf-query -c xfce4-panel -p /panels/panel-3/size -s 28 -t int
+        xfconf-query -c xfce4-panel -p /panels/panel-2/position -s 'p=8;x=0;y=0' -t string
+        xfconf-query -c xfce4-panel -p /panels/panel-3/position -s 'p=8;x=0;y=0' -t string
+        xfconf-query -c xfce4-panel -p /panels/panel-2/length -s 100 -t int
+        xfconf-query -c xfce4-panel -p /panels/panel-3/length -s 100 -t int
     elif large-monitor-connected; then
         # Even though xrandr reports DPI as more like 160
         xfconf-query -c xsettings -p /Xft/DPI -s 128 -t int
