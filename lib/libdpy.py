@@ -212,7 +212,7 @@ def large_monitor_connected(use_cache=True):
         return False
 
     inxi = inxi_json_output(use_cache)
-    return '"res": "3840x2160"' in inxi
+    return find_monitor_by_attribute("res", "3840x2160")
 
 
 def get_screen_geometries(use_cache=True):
