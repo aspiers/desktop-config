@@ -285,7 +285,7 @@ def get_screen(x, use_cache=True):
             x <= screen['right']):
             return screen
 
-    raise RuntimeError("Failed to find screen for x=%d" % x)
+    raise RuntimeError("Failed to find xrandr screen for x=%d" % x)
 
 
 def get_current_screen_info(use_cache=True):
