@@ -1,0 +1,13 @@
+!window.borderWidth:               1
+!window.bevelWidth:                1
+!window.borderColor:               #718541
+window.handleWidth:               8
+
+window.font:                      sans-12:bold
+window.title.height:              24
+
+! These require a restart of fluxbox; reload isn't enough
+menu.title.font:                  sans-12:bold
+menu.frame.font:                  sans-13
+menu.titleHeight:                 26
+menu.itemHeight:                  10
