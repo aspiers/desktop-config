@@ -77,6 +77,8 @@ def monitors_connected
   %x('monitors-connected').chomp
 end
 
+%>
+
 Control Mod1 Mod4 r :MacroCmd {<%= reconfigure %>}
 
 # For some reason this doesn't always work:
