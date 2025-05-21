@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# Quick and dirty checks to make sure libdpy is working correctly
+
+set -e
+
+~/lib/libdpy.py
+~/lib/libdpy.py --inxi-json --no-use-cache
+~/lib/libdpy.py --inxi-json
+~/lib/libdpy.py --find-by-model BOE
+if ~/lib/libdpy.py --find-by-res 12345; then
+    echo "Shouldn't find resolution 12345"
+    exit 1
+else
+    echo "Got expected error - good"
+fi
+~/lib/libdpy.py --find-xrandr-primary
+
+monitors-connected
+monitor-models-connected
+current-screen-info
+get-layout
+screen-coords 50% 50%
