@@ -42,9 +42,13 @@ class DisplayDataCache:
         if self.cache_file is None:
             raise ValueError(f"cache_file must be set in {self.__class__.__name__}")
 
-    def builder(self):
+    def builder(self, use_cache=True):
         """
         Override in subclass to provide data to cache (as bytes or str).
+
+        The use_cache option is for when caches are layered on caches;
+        then there's an option of a request to bypass the top-level
+        cache also causing a bypass of any caches it depends on.
         """
         raise NotImplementedError
 
@@ -57,8 +61,9 @@ class DisplayDataCache:
             return data.decode()
 
     def get(self, use_cache=True):
+        # print(f"{self.__class__}.get(use_cache={use_cache})")
         if not use_cache or not os.path.exists(self.cache_file):
-            data_to_cache = self.builder()
+            data_to_cache = self.builder(use_cache)
             if isinstance(data_to_cache, str):
                 data_to_cache = data_to_cache.encode('utf-8')
             with open(self.cache_file, 'wb') as f:
@@ -69,15 +74,15 @@ class DisplayDataCache:
 class XrandrCache(DisplayDataCache):
     cache_file = os.path.join(CACHE_DIR, "xrandr.out")
 
-    def builder(self):
+    def builder(self, _use_cache):
         return subprocess.check_output('xrandr')
 
 
 class XrandrJsonCache(DisplayDataCache):
     cache_file = os.path.join(CACHE_DIR, "xrandr.json")
 
-    def builder(self):
-        xrandr = XrandrCache().get()
+    def builder(self, use_cache=True):
+        xrandr = XrandrCache().get(use_cache)
         iterator = re.finditer(
             r'^(?P<name>\S+) connected ((?P<primary>primary) )?(?P<width>\d+)x(?P<height>\d+)\+(?P<x_offset>\d+)\+(?P<y_offset>\d+) \(.+\) (?P<x_mm>\d+)mm x (?P<y_mm>\d+)mm',
             xrandr,
@@ -122,14 +127,14 @@ class XrandrJsonCache(DisplayDataCache):
 class XdpyinfoCache(DisplayDataCache):
     cache_file = os.path.join(CACHE_DIR, "xdpyinfo.out")
 
-    def builder(self):
+    def builder(self, _use_cache):
         return subprocess.check_output('xdpyinfo')
 
 
 class InxiJsonCache(DisplayDataCache):
     cache_file = os.path.join(CACHE_DIR, "inxi-Gxx.json")
 
-    def builder(self):
+    def builder(self, _use_cache):
         return subprocess.check_output(
             'inxi -c 0 --tty -Gxx --output json --output-file print',
             shell=True
@@ -143,8 +148,8 @@ class InxiJsonCache(DisplayDataCache):
 class InxiMonitorsCache(DisplayDataCache):
     cache_file = os.path.join(CACHE_DIR, "inxi-Gxx.monitors.json")
 
-    def builder(self):
-        inxi_data = InxiJsonCache().get()
+    def builder(self, use_cache=True):
+        inxi_data = InxiJsonCache().get(use_cache)
         monitors = []
         graphics_list = None
 
