@@ -104,7 +104,19 @@ fi
 
 xfconf-query -c xfce4-panel -p /panels/panel-1/position -s 'p=8;x=0;y=0' -t string
 xfconf-query -c xfce4-panel -p /panels/panel-1/length -s 100 -t int
+xfconf-query -c xfce4-panel -p /panels/panel-1/output-name -s ${screen_1_name} -t string
 
+if [ -n "$screen_2_name" ]; then
+    xfconf-query -c xfce4-panel -p /panels/panel-2/output-name -s ${screen_2_name} -t string
+    xfconf-query -c xfce4-panel -p /panels/panel-2/position -s 'p=8;x=0;y=0' -t string
+    xfconf-query -c xfce4-panel -p /panels/panel-2/length -s 100 -t int
+fi
+
+if [ -n "$screen_3_name" ]; then
+    xfconf-query -c xfce4-panel -p /panels/panel-3/output-name -s ${screen_3_name} -t string
+    xfconf-query -c xfce4-panel -p /panels/panel-3/position -s 'p=8;x=0;y=0' -t string
+    xfconf-query -c xfce4-panel -p /panels/panel-3/length -s 100 -t int
+fi
 
 if host-has-prop laptop; then
     if BenQ-connected; then
@@ -112,23 +124,13 @@ if host-has-prop laptop; then
         adv &
 
         xfconf-query -c xsettings -p /Xft/DPI -s 84 -t int
-        xfconf-query -c xfce4-panel -p /panels/panel-1/output-name -s eDP-1 -t string
-        xfconf-query -c xfce4-panel -p /panels/panel-2/output-name -s DP-4-5 -t string
-        xfconf-query -c xfce4-panel -p /panels/panel-3/output-name -s DP-4-6-8 -t string
+
         xfconf-query -c xfce4-panel -p /panels/panel-1/size -s 40 -t int
         xfconf-query -c xfce4-panel -p /panels/panel-2/size -s 30 -t int
         xfconf-query -c xfce4-panel -p /panels/panel-3/size -s 28 -t int
-        xfconf-query -c xfce4-panel -p /panels/panel-2/position -s 'p=8;x=0;y=0' -t string
-        xfconf-query -c xfce4-panel -p /panels/panel-3/position -s 'p=8;x=0;y=0' -t string
-        xfconf-query -c xfce4-panel -p /panels/panel-2/length -s 100 -t int
-        xfconf-query -c xfce4-panel -p /panels/panel-3/length -s 100 -t int
     elif large-monitor-connected; then
         # Even though xrandr reports DPI as more like 160
         xfconf-query -c xsettings -p /Xft/DPI -s 128 -t int
-        xfconf-query -c xfce4-panel -p /panels/panel-1/output-name -s eDP-1 -t string
-        xfconf-query -c xfce4-panel -p /panels/panel-2/output-name -s DP-4-5 -t string
-        xfconf-query -c xfce4-panel -p /panels/panel-1/position -s 'p=8;x=0;y=0' -t string
-        xfconf-query -c xfce4-panel -p /panels/panel-2/position -s 'p=8;x=0;y=0' -t string
         xfconf-query -c xfce4-panel -p /panels/panel-1/size -s 40 -t int
         xfconf-query -c xfce4-panel -p /panels/panel-2/size -s 36 -t int
     else
@@ -141,7 +143,7 @@ fi
 sleep 1
 
 fr
-#xfce4-panel -r
+xfce4-panel -r
 
 sleep 1
 
