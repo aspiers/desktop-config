@@ -1,4 +1,13 @@
 #!/usr/bin/python3
+#
+# Calculate coordinates of a given position on the current screen, using
+# the xrandr coordinate system of a virtual desktop which spans
+# all displays.
+#
+# Inputs: X and Y coordinates as a percentage or absolute value;
+#         either way, they are relative to the current screen only.
+#
+# Outputs: X and Y coordinates on the virtual desktop spanning all displays.
 
 import os
 import subprocess
