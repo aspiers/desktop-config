@@ -31,18 +31,18 @@ case "$layout" in
     celtic+large)
         xrandr \
             --output eDP-1 --pos 0x0 --scale 1 --auto \
-            --output ${screen_1_name} --pos ${celtic_width}x0 --scale 1 --primary --auto
+            --output ${screen_0_name} --pos ${celtic_width}x0 --scale 1 --primary --auto
         ;;
     celtic+BenQ)
         xrandr \
             --output eDP-1 --pos 0x0 --scale 1 --auto \
-            --output ${screen_1_name} --pos ${celtic_width}x0 --scale 1 --primary --auto
+            --output ${screen_0_name} --pos ${celtic_width}x0 --scale 1 --primary --auto
         ;;
     celtic+BenQ+Dell)
         xrandr \
             --output eDP-1 --pos 0x0 --scale 1 --auto \
-            --output ${screen_1_name} --pos ${celtic_width}x0 --scale 1 --primary --auto \
-            --output ${screen_2_name} --pos $(( celtic_width + BenQ_width ))x0 --scale 1 --auto
+            --output ${screen_0_name} --pos ${celtic_width}x0 --scale 1 --primary --auto \
+            --output ${screen_1_name} --pos $(( celtic_width + BenQ_width ))x0 --scale 1 --auto
         # xrandr \
         #     --output eDP-1 --pos 0x0 --scale 1 --off \
         #     --output DP-4-5 --pos 0x0 --scale 1 --primary --auto \
@@ -104,16 +104,16 @@ fi
 
 xfconf-query -c xfce4-panel -p /panels/panel-1/position -s 'p=8;x=0;y=0' -t string
 xfconf-query -c xfce4-panel -p /panels/panel-1/length -s 100 -t int
-xfconf-query -c xfce4-panel -p /panels/panel-1/output-name -s ${screen_1_name} -t string
+xfconf-query -c xfce4-panel -p /panels/panel-1/output-name -s ${screen_0_name} -t string
 
-if [ -n "$screen_2_name" ]; then
-    xfconf-query -c xfce4-panel -p /panels/panel-2/output-name -s ${screen_2_name} -t string
+if [ -n "$screen_1_name" ]; then
+    xfconf-query -c xfce4-panel -p /panels/panel-2/output-name -s ${screen_1_name} -t string
     xfconf-query -c xfce4-panel -p /panels/panel-2/position -s 'p=8;x=0;y=0' -t string
     xfconf-query -c xfce4-panel -p /panels/panel-2/length -s 100 -t int
 fi
 
-if [ -n "$screen_3_name" ]; then
-    xfconf-query -c xfce4-panel -p /panels/panel-3/output-name -s ${screen_3_name} -t string
+if [ -n "$screen_2_name" ]; then
+    xfconf-query -c xfce4-panel -p /panels/panel-3/output-name -s ${screen_2_name} -t string
     xfconf-query -c xfce4-panel -p /panels/panel-3/position -s 'p=8;x=0;y=0' -t string
     xfconf-query -c xfce4-panel -p /panels/panel-3/length -s 100 -t int
 fi
