@@ -48,6 +48,11 @@ case "$layout" in
         #     --output DP-4-5 --pos 0x0 --scale 1 --primary --auto \
         #     --output DP-4-6-8 --pos ${BenQ_width}x0 --scale 1 --auto
         ;;
+    ionian)
+        xrandr \
+            --output ${screen_0_name} --pos 0x0 --scale 1 --auto \
+            --output ${screen_1_name} --pos 2560x0 --scale 1 --auto
+        ;;
     *)
         echo "setup-monitor: don't know how to handle layout $layout"
         exit 1
