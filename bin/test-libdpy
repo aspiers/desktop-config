@@ -4,10 +4,25 @@
 
 set -e
 
+. ~/lib/libhost.sh
+read_localhost_nickname
+
 ~/lib/libdpy.py
 ~/lib/libdpy.py --inxi-json --no-use-cache
 ~/lib/libdpy.py --inxi-json
-~/lib/libdpy.py --find-by-model BOE
+
+case "$localhost_nickname" in
+    celtic)
+        ~/lib/libdpy.py --find-by-model BOE
+        ;;
+    ionian)
+        ~/lib/libdpy.py --find-by-model 'BenQ BL3200'
+        ;;
+    *)
+        echo "Skipping --find-by-model test for $localhost_nickname"
+        ;;
+esac
+
 if ~/lib/libdpy.py --find-by-res 12345; then
     echo "Shouldn't find resolution 12345"
     exit 1
