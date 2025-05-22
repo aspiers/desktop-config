@@ -221,8 +221,8 @@ def large_monitor_connected(use_cache=True):
 
 
 def get_screen_geometries(use_cache=True):
-    screens = get_xrandr_screen_geometries(use_cache)
     dpy = extract_xdpyinfo_geometry(use_cache)
+    screens = get_xrandr_screen_geometries(use_cache)
     return (dpy, screens)
 
 
