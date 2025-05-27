@@ -43,10 +43,11 @@ case "$layout" in
             --output ${screen_0_name} --pos 0x0 --scale 1 --auto \
             --output ${screen_1_name} --pos ${celtic_width}x0 --scale 1 --primary --auto \
             --output ${screen_2_name} --pos $(( celtic_width + BenQ_width ))x0 --scale 1 --auto
+        # Alternate setup where laptop screen is off
         # xrandr \
-        #     --output eDP-1 --pos 0x0 --scale 1 --off \
-        #     --output DP-4-5 --pos 0x0 --scale 1 --primary --auto \
-        #     --output DP-4-6-8 --pos ${BenQ_width}x0 --scale 1 --auto
+        #     --output ${screen_0_name} --pos 0x0 --scale 1 --off \
+        #     --output ${screen_1_name} --pos 0x0 --scale 1 --primary --auto \
+        #     --output ${screen_2_name} --pos ${BenQ_width}x0 --scale 1 --auto
         ;;
     ionian)
         xrandr \
