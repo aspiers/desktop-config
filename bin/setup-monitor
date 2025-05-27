@@ -107,49 +107,68 @@ fi
 
 # xfconf-query -c xfce4-panel -p /panels -lRv
 
-xfconf-query -c xfce4-panel -p /panels/panel-1/position -s 'p=8;x=0;y=0' -t string
-xfconf-query -c xfce4-panel -p /panels/panel-1/length -s 100 -t int
-xfconf-query -c xfce4-panel -p /panels/panel-1/output-name -s ${screen_0_name} -t string
+set_panel_prop () {
+    panel="$1" output="$2"
+    echo "Setting XFCE4 panel $panel to output $output"
+    xfconf-query -c xfce4-panel -p /panels/panel-$panel/position -s 'p=8;x=0;y=0' -t string
+    xfconf-query -c xfce4-panel -p /panels/panel-$panel/output-name -s "$output" -t string
+    xfconf-query -c xfce4-panel -p /panels/panel-$panel/length -s 100 -t int
+}
 
-if [ -n "$screen_1_name" ]; then
-    xfconf-query -c xfce4-panel -p /panels/panel-2/output-name -s ${screen_1_name} -t string
-    xfconf-query -c xfce4-panel -p /panels/panel-2/position -s 'p=8;x=0;y=0' -t string
-    xfconf-query -c xfce4-panel -p /panels/panel-2/length -s 100 -t int
-fi
+set_dpi () {
+    xfconf-query -c xsettings -p /Xft/DPI -s "$1" -t int
+}
 
-if [ -n "$screen_2_name" ]; then
-    xfconf-query -c xfce4-panel -p /panels/panel-3/output-name -s ${screen_2_name} -t string
-    xfconf-query -c xfce4-panel -p /panels/panel-3/position -s 'p=8;x=0;y=0' -t string
-    xfconf-query -c xfce4-panel -p /panels/panel-3/length -s 100 -t int
-fi
+set_panel_size () {
+    panel="$1" size="$2"
+    xfconf-query -c xfce4-panel -p /panels/panel-$panel/size -s "$size" -t int
+}
 
-if host-has-prop laptop; then
-    if BenQ-connected; then
-        # Connect to Kinesis Advantage 360 over Bluetooth
-        adv &
+setup_panels_and_keyboard () {
+    set_panel_prop 1 ${screen_0_name}
 
-        xfconf-query -c xsettings -p /Xft/DPI -s 84 -t int
-
-        xfconf-query -c xfce4-panel -p /panels/panel-1/size -s 40 -t int
-        xfconf-query -c xfce4-panel -p /panels/panel-2/size -s 30 -t int
-        xfconf-query -c xfce4-panel -p /panels/panel-3/size -s 28 -t int
-    elif large-monitor-connected; then
-        # Even though xrandr reports DPI as more like 160
-        xfconf-query -c xsettings -p /Xft/DPI -s 128 -t int
-        xfconf-query -c xfce4-panel -p /panels/panel-1/size -s 40 -t int
-        xfconf-query -c xfce4-panel -p /panels/panel-2/size -s 36 -t int
-    else
-        adv off &
-
-        xfconf-query -c xsettings -p /Xft/DPI -s 128 -t int
+    if [ -n "$screen_1_name" ]; then
+        set_panel_prop 2 ${screen_1_name}
     fi
-fi
 
-sleep 1
+    if [ -n "$screen_2_name" ]; then
+        set_panel_prop 3 ${screen_2_name}
+    fi
 
-fr
-xfce4-panel -r
+    if host-has-prop laptop; then
+        if BenQ-connected; then
+            # Connect to Kinesis Advantage 360 over Bluetooth
+            adv &
 
-sleep 1
+            set_dpi 84
 
-run-with-local-X-display ly
+            set_panel_size 1 40
+            set_panel_size 2 30
+            set_panel_size 3 28
+        elif large-monitor-connected; then
+            # Even though xrandr reports DPI as more like 160
+            set_dpi 128
+            set_panel_size 1 40
+            set_panel_size 2 36
+        else
+            adv off &
+
+            set_dpi 128
+        fi
+    fi
+}
+
+main () {
+    setup_panels
+
+    sleep 1
+
+    fr
+    xfce4-panel -r
+
+    sleep 1
+
+    run-with-local-X-display ly
+}
+
+main
