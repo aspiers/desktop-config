@@ -31,6 +31,7 @@
       [exec]   (inkscape) {inkscape}
 [end]
 [submenu] (Audio)
+      [exec]   (easyeffects) {easyeffects}
       [exec]   (kmix) {kmix}
       [exec]   (audacity) {audacity}
       [exec]   (alsamixer) {top-term alsamixer}
