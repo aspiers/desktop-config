@@ -35,7 +35,7 @@ def main():
     subprocess.run(['fluxbox-remote', *sys.argv[1:]])
 
     # Wait for focus to succeed
-    time.sleep(0.3)
+    time.sleep(0.4)
 
     # Get current active window
     result = subprocess.run(['xdotool', 'getactivewindow'], capture_output=True, text=True)
