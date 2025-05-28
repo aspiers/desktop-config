@@ -164,6 +164,7 @@ main () {
 
     sleep 1
 
+    fluxbox-reconfigure  # update ~/.fluxbox/keys
     fr
     xfce4-panel -r
 
