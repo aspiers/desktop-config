@@ -160,7 +160,7 @@ setup_panels_and_keyboard () {
 }
 
 main () {
-    setup_panels
+    setup_panels_and_keyboard
 
     sleep 1
 
