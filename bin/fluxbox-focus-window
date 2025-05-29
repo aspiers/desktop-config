@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
 
+import argparse
 import subprocess
 import time
-import sys
+
+DEBUG = True
+
+def debug(*args, **kwargs):
+    if DEBUG:
+        print(*args, **kwargs)
 
 def get_mouse_location():
     result = subprocess.run(['xdotool', 'getmouselocation', '--shell'], capture_output=True, text=True)
@@ -10,15 +16,27 @@ def get_mouse_location():
     for line in result.stdout.splitlines():
         key, value = line.split('=')
         location[key] = int(value)
+    debug(f"Mouse location: {location}")
     return location
 
 def main():
+    global DEBUG
+    parser = argparse.ArgumentParser(description="Focus a window using fluxbox-remote and xdotool hacks.")
+    parser.add_argument('--debug', action='store_true', help='Enable debug output')
+    parser.add_argument('fluxbox_args', nargs=argparse.REMAINDER, help='Arguments to pass to fluxbox-remote')
+    args = parser.parse_args()
+    DEBUG = args.debug
+
+    debug("Starting fluxbox-focus-window with args:", args.fluxbox_args)
+
     # Get original active window
     result = subprocess.run(['xdotool', 'getactivewindow'], capture_output=True, text=True)
     orig_window = result.stdout.strip()
+    debug(f"Original active window: {orig_window}")
 
     # Get original mouse location
     orig_location = get_mouse_location()
+    debug(f"Original mouse location: {orig_location}")
 
     # Move mouse to a corner.  This is a horrible hack to avoid
     # fluxbox's focus follows mouse incorrectly activating after the
@@ -30,21 +48,27 @@ def main():
     subprocess.run(['mousemove', str(-2), str(-2)])
     corner_location = get_mouse_location()
     corner_x, corner_y = corner_location['X'], corner_location['Y']
+    debug(f"Moved mouse to corner: ({corner_x}, {corner_y})")
 
     # Execute fluxbox-remote with provided arguments
-    subprocess.run(['fluxbox-remote', *sys.argv[1:]])
+    debug(f"Running fluxbox-remote with args: {args.fluxbox_args}")
+    subprocess.run(['fluxbox-remote', *args.fluxbox_args])
 
     # Wait for focus to succeed
+    debug("Sleeping for 0.4 seconds to allow focus to change...")
     time.sleep(0.4)
 
     # Get current active window
     result = subprocess.run(['xdotool', 'getactivewindow'], capture_output=True, text=True)
     current_window = result.stdout.strip()
+    debug(f"Current active window: {current_window}")
 
     if current_window == orig_window:
+        debug("Did not find the window, moving mouse back to original position.")
         # Didn't find the window, move mouse back to original position
         subprocess.run(['mousemove', str(orig_location['X']), str(orig_location['Y'])])
     else:
+        debug("Found the window, focusing it with focus-active-window.")
         # Found the window, focus it
         subprocess.run(['focus-active-window'])
 
