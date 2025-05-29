@@ -1,4 +1,18 @@
 #!/usr/bin/env python3
+#
+# This is a horrible hack wrapping fluxbox's NextWindow command, with
+# the intention of avoiding fluxbox's focus follows mouse incorrectly
+# activating after the NextWindow command is run.  This can happen if
+# we're on a different workspace and if after NextWindow switches to
+# the workspace containing the desired window to focus, the mouse
+# position is over a different window - then that other window ends up
+# with the focus.  Seems like a bug in fluxbox.
+#
+# The workaround is to first warp the mouse to the bottom-right corner
+# of the screen (where the xfce4-panel clock is usually visible) so
+# that NextWindow doesn't focus a different window after switching
+# workspace, and then calling focus-active-window to move the mouse to
+# the window which was hopefully activated by NextWindow.
 
 import argparse
 import subprocess
@@ -10,6 +24,18 @@ def debug(*args, **kwargs):
     if DEBUG:
         print(*args, **kwargs)
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Focus a window using fluxbox-remote and xdotool hacks.")
+    parser.add_argument('--debug', action='store_true', help='Enable debug output')
+    parser.add_argument('fluxbox_args', nargs=argparse.REMAINDER, help='Arguments to pass to fluxbox-remote')
+    return parser.parse_args()
+
+def get_active_window():
+    result = subprocess.run(['xdotool', 'getactivewindow'], capture_output=True, text=True)
+    window = result.stdout.strip()
+    debug(f"Active window: {window}")
+    return window
+
 def get_mouse_location():
     result = subprocess.run(['xdotool', 'getmouselocation', '--shell'], capture_output=True, text=True)
     location = {}
@@ -19,58 +45,45 @@ def get_mouse_location():
     debug(f"Mouse location: {location}")
     return location
 
+def move_mouse(x, y):
+    debug(f"Moving mouse to: ({x}, {y})")
+    subprocess.run(['mousemove', str(x), str(y)])
+
+def run_fluxbox_remote(args):
+    debug(f"Running fluxbox-remote with args: {args}")
+    subprocess.run(['fluxbox-remote', *args])
+
+def focus_active_window():
+    debug("Focusing active window with focus-active-window.")
+    subprocess.run(['focus-active-window'])
+
 def main():
     global DEBUG
-    parser = argparse.ArgumentParser(description="Focus a window using fluxbox-remote and xdotool hacks.")
-    parser.add_argument('--debug', action='store_true', help='Enable debug output')
-    parser.add_argument('fluxbox_args', nargs=argparse.REMAINDER, help='Arguments to pass to fluxbox-remote')
-    args = parser.parse_args()
+    args = parse_args()
     DEBUG = args.debug
-
     debug("Starting fluxbox-focus-window with args:", args.fluxbox_args)
 
-    # Get original active window
-    result = subprocess.run(['xdotool', 'getactivewindow'], capture_output=True, text=True)
-    orig_window = result.stdout.strip()
-    debug(f"Original active window: {orig_window}")
-
-    # Get original mouse location
+    orig_window = get_active_window()
     orig_location = get_mouse_location()
     debug(f"Original mouse location: {orig_location}")
 
-    # Move mouse to a corner.  This is a horrible hack to avoid
-    # fluxbox's focus follows mouse incorrectly activating after the
-    # NextWindow command.  This can happen if we're on a different
-    # workspace and if after NextWindow switches to the workspace
-    # containing the desired window to focus, the mouse position is
-    # over a different window - then that other window ends up with
-    # the focus.  Seems like a bug in fluxbox.
-    subprocess.run(['mousemove', str(-2), str(-2)])
+    move_mouse(-2, -2)
     corner_location = get_mouse_location()
-    corner_x, corner_y = corner_location['X'], corner_location['Y']
-    debug(f"Moved mouse to corner: ({corner_x}, {corner_y})")
+    debug(f"Moved mouse to corner: ({corner_location['X']}, {corner_location['Y']})")
 
-    # Execute fluxbox-remote with provided arguments
-    debug(f"Running fluxbox-remote with args: {args.fluxbox_args}")
-    subprocess.run(['fluxbox-remote', *args.fluxbox_args])
+    run_fluxbox_remote(args.fluxbox_args)
 
-    # Wait for focus to succeed
     debug("Sleeping for 0.4 seconds to allow focus to change...")
     time.sleep(0.4)
 
-    # Get current active window
-    result = subprocess.run(['xdotool', 'getactivewindow'], capture_output=True, text=True)
-    current_window = result.stdout.strip()
-    debug(f"Current active window: {current_window}")
+    current_window = get_active_window()
 
     if current_window == orig_window:
         debug("Did not find the window, moving mouse back to original position.")
-        # Didn't find the window, move mouse back to original position
-        subprocess.run(['mousemove', str(orig_location['X']), str(orig_location['Y'])])
+        move_mouse(orig_location['X'], orig_location['Y'])
     else:
         debug("Found the window, focusing it with focus-active-window.")
-        # Found the window, focus it
-        subprocess.run(['focus-active-window'])
+        focus_active_window()
 
 if __name__ == "__main__":
     main()
