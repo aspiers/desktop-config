@@ -40,24 +40,63 @@ is_running () {
 }
 
 ensure_stopped () {
-    secs=$INITIAL_SLEEP
-    while is_running "$1"; do
-        info "Waiting for $1 to stop running"
+    local proc="$1"
+    local timeout="${2:-20}"
+    local secs=$INITIAL_SLEEP
+    local waited=0
+    while is_running "$proc"; do
+        info "Waiting ${secs}s for $proc to stop running (waited ${waited}s, timeout ${timeout}s)"
         sleep $secs
-        if (( secs < MAX_SLEEP )); then
-            secs=$(( secs * 2 ))
+        waited=$(echo "$waited + $secs" | bc -l)
+        if (( $(echo "$waited >= $timeout" | bc -l) )); then
+            echo "ERROR: Timeout waiting for $proc to stop (waited $waited >= $timeout seconds)" >&2
+            return 1
+        fi
+        if (( $(echo "$secs < $MAX_SLEEP" | bc -l) )); then
+            secs=$(echo "$secs * 2" | bc)
             info "Doubled sleep to $secs seconds"
         fi
     done
 }
 
+ensure_fluxbox_stopped () {
+    info "Attempting to stop fluxbox via fluxbox-remote Exit"
+    fluxbox-remote Exit
+    if ensure_stopped fluxbox 1; then
+        return 0
+    fi
+
+    info "Attempting to stop fluxbox via pkill -x fluxbox"
+    pkill -x fluxbox
+    if ensure_stopped fluxbox 3; then
+        return 0
+    fi
+
+    info "Attempting to stop fluxbox via pkill -9x fluxbox"
+    pkill -9x fluxbox
+    if ensure_stopped fluxbox 10; then
+        return 0
+    fi
+
+    echo "ERROR: Failed to stop fluxbox via multiple methods" >&2
+    exit 1
+}
+
 ensure_started () {
-    secs=$INITIAL_SLEEP
-    while ! is_running "$1"; do
-        info "Waiting for $1 to start"
+    local proc="$1"
+    local timeout="${2:-20}"
+    local secs=$INITIAL_SLEEP
+    local waited=0
+    while ! is_running "$proc"; do
+        info "Waiting ${secs}s for $proc to start (waited ${waited}s, timeout ${timeout}s)"
         sleep $secs
-        if (( secs < MAX_SLEEP )); then
-            secs=$(( secs * 2 ))
+        waited=$(echo "$waited + $secs" | bc -l)
+        if (( $(echo "$waited >= $timeout" | bc -l) )); then
+            echo "ERROR: Timeout waiting for $proc to start (waited $waited >= $timeout seconds)" >&2
+            exit 1
+        fi
+        if (( $(echo "$secs < $MAX_SLEEP" | bc -l) )); then
+            secs=$(echo "$secs * 2" | bc)
             info "Doubled sleep to $secs seconds"
         fi
     done
@@ -71,21 +110,19 @@ if [ -n "$SSH_CONNECTION" ]; then
 fi
 
 if is_running fluxbox; then
-    info "Stopping fluxbox"
-    pkill -x fluxbox
-    ensure_stopped fluxbox
+    ensure_fluxbox_stopped
 
     if [ -z "$no_xfwm" ]; then
         info "Replacing fluxbox with xfwm4"
         ( xfwm4 & )
-        ensure_started xfwm4
+        ensure_started xfwm4 20
     fi
 fi
 
 if is_running xfwm4; then
     info "Stopping xfwm4"
     pkill xfwm4
-    ensure_stopped xfwm4
+    ensure_stopped xfwm4 20
 fi
 
 info "Starting fluxbox"
