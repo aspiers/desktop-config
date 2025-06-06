@@ -1,3 +1,4 @@
 #!/bin/bash
 
-xinput list | grep -q Adv360
+xinput list-props 'Adv360 Pro Keyboard' 2>&1 | \
+    egrep -q 'Device Enabled .+:	1'
