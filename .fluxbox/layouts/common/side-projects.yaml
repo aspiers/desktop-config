@@ -1,2 +1,2 @@
-- - (Name=brave-browser|google-chrome|chromium) (Title=.*studies|Kernel|ZKML|rolod0x|SMV|MF)
+- - (Name=brave-browser|google-chrome|chromium) (Title=.*studies|Kernel|ZKML|rolod0x|SMV|MF|Astral)
   - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 2}
