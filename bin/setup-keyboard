@@ -39,6 +39,7 @@ apply_local_keymap () {
             keymap-menu thinkpad-x1-extreme-g2-hacked
             ;;
         ionian)
+            keymap-menu kinesis-360
             ;;
         atlantic)
             #keymap-menu gb

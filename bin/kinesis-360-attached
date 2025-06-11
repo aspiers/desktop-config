@@ -1,4 +1,13 @@
 #!/bin/bash
 
-xinput list-props 'Adv360 Pro Keyboard' 2>&1 | \
-    egrep -q 'Device Enabled .+:	1'
+# xinput list can show the device name as either
+# "Kinesis Corporation Adv360 Pro Keyboard" or
+# "Adv360 Pro Keyboard"
+id=$(
+    xinput list |
+        perl -lne '/Adv360 Pro Keyboard.*\tid=([0-9]+)/ && print $1'
+)
+
+[ -n "$id" ] && \
+    xinput list-props "$id" 2>&1 | \
+        egrep -q 'Device Enabled .+:	1'
