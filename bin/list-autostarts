@@ -11,7 +11,7 @@ do
     echo
 done
 
-egrep -ir 'AutoStart=(true|yes)' ~/.kde/share/config
+grep -Eir 'AutoStart=(true|yes)' ~/.kde/share/config
 
 echo
 echo -e "\e[1mgconf"

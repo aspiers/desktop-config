@@ -27,7 +27,7 @@ display_file=${ZDOTDIR:-$HOME}/.Xdisplay.$host
 if [ -e $display_file ]; then
     . "$display_file"
     re="/[X](org(\.bin)?)? (.+ )?(${DISPLAY%.*}|vt[0-9])"
-    if ! ps -efww | egrep -q "$re"; then
+    if ! ps -efww | grep -Eq "$re"; then
         exit_no_X "Didn't find /${re//\//\\/}/ in process table"
     fi
     "$@"
