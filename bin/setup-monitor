@@ -165,6 +165,8 @@ main () {
     sleep 1
 
     fluxbox-reconfigure  # update ~/.fluxbox/keys
+
+    emacsclient -e '(load "as-fonts")'
     fr
     xfce4-panel -r
 
