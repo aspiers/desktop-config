@@ -8,6 +8,7 @@
     [exec] (k: Capture) {switch-emacs-eval '(org-capture)'}
 #    [exec] (n: Find personal note) {switch-emacs-eval '(as-find-personal-note)'}
     [exec] (j: Jump to clock) {switch-emacs-eval '(org-clock-goto)'}
+    [exec] (n: Anytype) {fluxbox-focus-or-launch -c anytype anytype}
 
     [separator]
 
