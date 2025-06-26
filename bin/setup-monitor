@@ -51,14 +51,19 @@ case "$layout" in
         ;;
     ionian)
         xrandr \
-            --output ${screen_0_name} --pos 0x0 --scale 1 --auto \
-            --output ${screen_1_name} --pos 2560x0 --scale 1 --auto
+            --output DP-0 --pos 0x0 --scale 1 --primary --auto \
+            --output DP-2.8 --pos 2560x0 --scale 1 --auto
         ;;
     *)
         echo "setup-monitor: don't know how to handle layout $layout"
         exit 1
         ;;
 esac
+
+# xrandr might have reordered the screens (since libdpy orders by
+# xoffset)
+clear-dpy-cache
+eval $(~/lib/libdpy.py)
 
 . ~/lib/libhost.sh
 read_localhost_nickname
