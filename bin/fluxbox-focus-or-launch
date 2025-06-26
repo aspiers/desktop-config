@@ -62,7 +62,9 @@ main () {
     # page.  So we have to launch programs ourselves.
     echo "Launching $* ..."
     nohup "$@" </dev/null >&/dev/null &
-    wait_until_window_focused
+
+    # Don't try to focus after launch since it can steal focus unexpectedly
+    # wait_until_window_focused
 }
 
 focus_window () {
