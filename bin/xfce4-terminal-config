@@ -72,8 +72,8 @@ main () {
     if [ -z "$1" ]; then
         list
     else
-        set_common
         set_theme "$@"
+        set_common
     fi
 }
 
