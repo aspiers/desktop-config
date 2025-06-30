@@ -31,6 +31,7 @@ bset () {
 }
 
 set_common () {
+    echo "Using font: $medium_font_gnome"
     sset font-name "$medium_font_gnome"
     bset color-bold-is-bright true
     bset misc-bell-urgent true
