@@ -22,6 +22,10 @@ def debug_print(msg):
         print(f"DEBUG: {msg}", file=sys.stderr)
 
 
+def fatal(msg):
+    sys.stderr.write(f"ERROR: {msg}\n")
+    sys.exit(1)
+
 def get_localhost_nickname():
     zdotdir = os.environ.get('ZDOTDIR', os.path.expanduser('~')) # Default to ~ if ZDOTDIR not set
     host_name_file = os.path.join(zdotdir, '.localhost-nickname')
@@ -118,8 +122,7 @@ def main():
                 set_primary(output_name)
                 layout_file(localhost_nickname)
             else:
-                sys.stderr.write("Error: Monitor count was 1 but failed to get screen data for primary setting.\n")
-                sys.exit(1)
+                fatal("Monitor count was 1 but failed to get screen data for primary setting.")
 
     elif localhost_nickname == "ionian":
         if libdpy.monitors_connected() == 2:
@@ -132,8 +135,7 @@ def main():
             debug_print("aegean: 1 monitor connected")
             layout_file(localhost_nickname)
 
-    sys.stderr.write(f"ERROR: Couldn't figure out which layout to apply for {localhost_nickname}!\n")
-    sys.exit(1)
+    fatal(f"Couldn't figure out which layout to apply for {localhost_nickname}!")
 
 
 if __name__ == "__main__":
