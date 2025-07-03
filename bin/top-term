@@ -28,7 +28,7 @@ while true; do
     esac
 done
 
-: ${title:="$cmd $*"}
+: ${title:="$*"}
 : ${role:="$title"}
 
 cmd="${1:-top}"

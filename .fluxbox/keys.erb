@@ -354,7 +354,8 @@ Mod4 t :MacroCmd <%= keymode 'terminals', 't: terminal\nb: btop\nh: htop\nn: net
 terminals: q :MacroCmd <%= keymode_done 'terminals' %>
 terminals: t :MacroCmd {Exec xterm-window} <%= keymode_done 'terminals' %>
 terminals: Mod4 t :MacroCmd {Exec xterm-window} <%= keymode_done 'terminals' %>
-terminals: b :MacroCmd {Exec top-term btop} <%= keymode_done 'terminals' %>
+terminals: b :MacroCmd {Exec fluxbox-focus-or-launch --toggle btop top-term btop} <%= keymode_done 'terminals' %>
+Mod4 grave :Exec fluxbox-focus-or-launch --toggle btop top-term btop
 terminals: h :MacroCmd {Exec top-term htop} <%= keymode_done 'terminals' %>
 terminals: n :MacroCmd {Exec top-term sudo nethogs `gw-dev`} <%= keymode_done 'terminals' %>
 terminals: i :MacroCmd {Exec top-term sudo iotop} <%= keymode_done 'terminals' %>

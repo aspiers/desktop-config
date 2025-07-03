@@ -22,6 +22,8 @@ Usage: $me [OPTIONS] WINDOW-PATTERN LAUNCH-CMD
 Options:
   -h, --help     Show this help and exit
   -c, --class    Match WINDOW-PATTERN against class rather than title
+  -t, --toggle   If matching window is focused, minimize it; otherwise focus/launch
+  -f, --focus    Focus the window after launching (if launched)
 
 WINDOW-PATTERN is a regexp matching the window title or class.
 LAUNCH-CMD is a command for launching the program if it's not found.
@@ -40,10 +42,25 @@ main () {
         usage 0
     fi
 
-    if [ "$1" = '-c' ] || [ "$1" = '--class' ]; then
-        class=y
-        shift
-    fi
+    while [[ "$1" =~ ^- ]]; do
+        case "$1" in
+            -c|--class)
+                class=y
+                shift
+                ;;
+            -t|--toggle)
+                toggle=y
+                shift
+                ;;
+            -f|--focus)
+                focus_after_launch=y
+                shift
+                ;;
+            *)
+                usage 1 "Unknown option: $1"
+                ;;
+        esac
+    done
 
     if [ $# -lt 2 ]; then
         usage 1
@@ -51,6 +68,19 @@ main () {
 
     window_pattern="$1"
     shift
+
+    # Check if toggle mode and window is already focused
+    if [ -n "$toggle" ] && window_is_focused; then
+        echo "Window is focused, minimizing..."
+        fluxbox-remote "Minimize"
+        restore_previous_desktop
+        exit 0
+    fi
+
+    # In toggle mode, store current desktop before focusing/launching
+    if [ -n "$toggle" ]; then
+        store_current_desktop
+    fi
 
     focus_window
 
@@ -63,8 +93,47 @@ main () {
     echo "Launching $* ..."
     nohup "$@" </dev/null >&/dev/null &
 
-    # Don't try to focus after launch since it can steal focus unexpectedly
-    # wait_until_window_focused
+    if [ -n "$focus_after_launch" ]; then
+        # N.B. this can steal focus unexpectedly if launching takes
+        # a while and the user carries on doing other stuff while
+        # waiting
+        wait_until_window_focused
+    fi
+}
+
+store_current_desktop () {
+    local config_dir="$HOME/.config/fluxbox-focus-or-launch"
+    local desktop_file="$config_dir/previous-desktop.txt"
+    
+    # Create config directory if it doesn't exist
+    mkdir -p "$config_dir"
+    
+    # Get current desktop/workspace number
+    local current_desktop=$(xdotool get_desktop)
+    echo "$current_desktop" > "$desktop_file"
+    echo "Stored current desktop: $current_desktop"
+}
+
+restore_previous_desktop () {
+    local config_dir="$HOME/.config/fluxbox-focus-or-launch"
+    local desktop_file="$config_dir/previous-desktop.txt"
+    
+    if [ -f "$desktop_file" ]; then
+        local previous_desktop=$(cat "$desktop_file")
+        echo "Restoring previous desktop: $previous_desktop"
+        xdotool set_desktop "$previous_desktop"
+        rm "$desktop_file"
+    fi
+}
+
+window_is_focused () {
+    if [ -n "$class" ]; then
+        window_op=getwindowclassname
+    else
+        window_op=getwindowname
+    fi
+    window_name="$(xdotool getactivewindow $window_op 2>/dev/null)"
+    [[ "$window_name" =~ $window_pattern ]]
 }
 
 focus_window () {
