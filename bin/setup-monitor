@@ -130,17 +130,35 @@ set_panel_size () {
     xfconf-query -c xfce4-panel -p /panels/panel-$panel/size -s "$size" -t int
 }
 
-setup_panels_and_keyboard () {
-    set_panel_prop 1 ${screen_0_name}
+setup_panels () {
+    # Get primary monitor from libdpy cache (uses existing cache)
+    primary_output=$(~/lib/libdpy.py --find-xrandr-primary | jq -r '.name')
 
-    if [ -n "$screen_1_name" ]; then
-        set_panel_prop 2 ${screen_1_name}
-    fi
+    # Set panel 1 to primary output
+    set_panel_prop 1 "$primary_output"
 
-    if [ -n "$screen_2_name" ]; then
-        set_panel_prop 3 ${screen_2_name}
-    fi
+    # Collect all non-primary outputs in order
+    other_outputs=()
+    for screen_var in screen_0_name screen_1_name screen_2_name; do
+        if [ -n "${!screen_var}" ] && [ "${!screen_var}" != "$primary_output" ]; then
+            other_outputs+=("${!screen_var}")
+        fi
+    done
 
+    # Set remaining panels (2 and 3) to other outputs in numerical order
+    panel_num=2
+    for output in "${other_outputs[@]}"; do
+        if [ $panel_num -eq 2 ]; then
+            set_panel_prop 2 "$output"
+            panel_num=3
+        elif [ $panel_num -eq 3 ]; then
+            set_panel_prop 3 "$output"
+            break
+        fi
+    done
+}
+
+setup_keyboard () {
     if host-has-prop laptop; then
         if BenQ-connected; then
             # Connect to Kinesis Advantage 360 over Bluetooth
@@ -165,7 +183,8 @@ setup_panels_and_keyboard () {
 }
 
 main () {
-    setup_panels_and_keyboard
+    setup_panels
+    setup_keyboard
 
     sleep 1
 
