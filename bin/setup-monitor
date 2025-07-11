@@ -190,12 +190,18 @@ main () {
 
     fluxbox-reconfigure  # update ~/.fluxbox/keys
 
+    echo "Loading as-fonts via emacsclient ..."
     emacsclient -e '(load "as-fonts")'
+
+    echo "Fluxbox restart ..."
     fr
+
+    echo "Restarting xfce4-panel ..."
     xfce4-panel -r
 
     sleep 1
 
+    echo "Fluxbox layout ..."
     run-with-local-X-display ly
 }
 
