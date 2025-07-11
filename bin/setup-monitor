@@ -74,88 +74,8 @@ else
     ln -sf overlay.$localhost_nickname ~/.fluxbox/overlay
 fi
 
-# /panels/panel-$i/mode values
-#   0 horizontal
-#   1 vertical
-#   2 deskbar
-#
-# /panels/panel-$i/position values
-#
-#   x is centre of panel on virtual display (xrandr coords across all displays)
-#
-# One might think the below values correspond to this enum, but
-# apparently not:
-#
-# https://gitlab.xfce.org/xfce/xfce4-panel/-/blob/master/libxfce4panel/libxfce4panel-enums.h
-#
-# p values for panel position:
-#   0 not anchored to any edge
-
-# RIGHT:
-#    1 right, Y from y parameter
-#    2 right top
-#    3 right middle
-#    4 right bottom
-#
-# LEFT:
-#    5 left, Y from y parameter
-#    6 left top
-#    7 left middle
-#    8 left bottom <- we always want this one
-#
-# X CENTRE:
-#    9 centre top
-#   10 centre bottom
-#
-# X from x parameter
-#   11 floating x, top
-#   12 floating x, bottom
-
-# xfconf-query -c xfce4-panel -p /panels -lRv
-
-set_panel_prop () {
-    panel="$1" output="$2"
-    echo "Setting XFCE4 panel $panel to output $output"
-    xfconf-query -c xfce4-panel -p /panels/panel-$panel/position -s 'p=8;x=0;y=0' -t string
-    xfconf-query -c xfce4-panel -p /panels/panel-$panel/output-name -s "$output" -t string
-    xfconf-query -c xfce4-panel -p /panels/panel-$panel/length -s 100 -t int
-}
-
 set_dpi () {
     xfconf-query -c xsettings -p /Xft/DPI -s "$1" -t int
-}
-
-set_panel_size () {
-    panel="$1" size="$2"
-    xfconf-query -c xfce4-panel -p /panels/panel-$panel/size -s "$size" -t int
-}
-
-setup_panels () {
-    # Get primary monitor from libdpy cache (uses existing cache)
-    primary_output=$(~/lib/libdpy.py --find-xrandr-primary | jq -r '.name')
-
-    # Set panel 1 to primary output
-    set_panel_prop 1 "$primary_output"
-
-    # Collect all non-primary outputs in order
-    other_outputs=()
-    for screen_var in screen_0_name screen_1_name screen_2_name; do
-        if [ -n "${!screen_var}" ] && [ "${!screen_var}" != "$primary_output" ]; then
-            other_outputs+=("${!screen_var}")
-        fi
-    done
-
-    # Set remaining panels (2 and 3) to other outputs in numerical order
-    panel_num=2
-    for output in "${other_outputs[@]}"; do
-        if [ $panel_num -eq 2 ]; then
-            set_panel_prop 2 "$output"
-            panel_num=3
-        elif [ $panel_num -eq 3 ]; then
-            set_panel_prop 3 "$output"
-            break
-        fi
-    done
 }
 
 setup_keyboard () {
@@ -165,15 +85,9 @@ setup_keyboard () {
             adv &
 
             set_dpi 84
-
-            set_panel_size 1 40
-            set_panel_size 2 30
-            set_panel_size 3 28
         elif large-monitor-connected; then
             # Even though xrandr reports DPI as more like 160
             set_dpi 128
-            set_panel_size 1 40
-            set_panel_size 2 36
         else
             adv off &
 
@@ -183,7 +97,7 @@ setup_keyboard () {
 }
 
 main () {
-    setup_panels
+    setup-panels
     setup_keyboard
 
     sleep 1
