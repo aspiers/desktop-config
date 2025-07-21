@@ -60,5 +60,9 @@ COPYING
 \.autosync
 \.autocommit
 \.mypy_cache
-
-.cursor
+^/.cursor
+^/AGENTS.md
+^/CLAUDE.md
+^/GEMINI.md
+^/.prettier.*
+^/.editorconfig
