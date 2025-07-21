@@ -18,8 +18,10 @@ while [ -n "$1" ]; do
             xfwm=n
             shift
             ;;
+        *)
+            echo >&2 "FATAL: Unrecognised option: $1"
+            exit 1
     esac
-
 done
 
 if [ -z "$no_log_to_file" ]; then
