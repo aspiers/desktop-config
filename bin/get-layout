@@ -48,7 +48,7 @@ def layout_file(layout_name_suffix):
     sys.exit(0)
 
 
-def ensure_primary_set_py(find_by_attribute, search_value):
+def ensure_primary_set_by_prop(find_by_attribute, search_value):
     inxi_monitors = libdpy.get_inxi_monitors()
     desired_monitor_info = libdpy.find_monitor_by_attribute(find_by_attribute, search_value)
 
@@ -103,15 +103,16 @@ def main():
         if benq_bl3200_connected():
             debug_print(f"benq_bl3200_connected: True")
             if num_monitors == 2:
-                ensure_primary_set_py("model", "BenQ")
+                ensure_primary_set_by_prop("model", "BenQ")
                 layout_file("celtic+BenQ")
             elif num_monitors == 3:
-                ensure_primary_set_py("model", "BenQ")
+                ensure_primary_set_by_prop("model", "BenQ")
                 layout_file("celtic+BenQ+Dell")
 
-        elif libdpy.large_monitor_connected():
-            debug_print("large monitor connected")
-            ensure_primary_set_py("res", "3840x2160")
+        elif (large_monitor := libdpy.large_monitor_connected()):
+            debug_print(f"large monitor connected: {large_monitor['model']}")
+            monitor_res = large_monitor["res"]
+            ensure_primary_set_by_prop("res", monitor_res)
             layout_file("celtic+large")
 
         elif libdpy.monitors_connected() == 1:
@@ -127,7 +128,8 @@ def main():
     elif localhost_nickname == "ionian":
         if libdpy.monitors_connected() == 2:
             debug_print("ionian: 2 monitors connected")
-            ensure_primary_set_py("model", "BenQ") # Assuming "BenQ" is the desired primary
+            # Assuming "BenQ" is the desired primary
+            ensure_primary_set_by_prop("model", "BenQ")
             layout_file(localhost_nickname)
 
     elif localhost_nickname == "aegean":
