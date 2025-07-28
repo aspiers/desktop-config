@@ -216,9 +216,22 @@ def large_monitor_connected(use_cache=True):
     if monitors_connected(use_cache) < 2:
         return False
 
-    inxi = inxi_json_output(use_cache)
-    return (find_monitor_by_attribute("res", "3840x2160") or
-            find_monitor_by_attribute("res", "3440x1440"))
+    monitors = get_inxi_monitors(use_cache)
+    for monitor in monitors:
+        if monitor.get("Monitor") == "eDP-1":
+            continue
+        if "res" not in monitor:
+            continue
+
+        res = monitor["res"]
+        if "x" not in res:
+            continue
+
+        width = int(res.split("x")[0])
+        if width > 3000:
+            return monitor
+
+    return False
 
 
 def get_screen_geometries(use_cache=True):
