@@ -53,6 +53,11 @@
   [Dimensions] {90% 90%}
   [Position] (Center) {0 0}
 [end]
+[app] (role=ccmonitor)
+  [Iconhidden] {yes}
+  [Dimensions] {40% 50%}
+  [Position] (BottomRight) {50 30}
+[end]
 
 [app] (role=.* mail sync( daemon)?)
   [Dimensions]	{90% 40%}
