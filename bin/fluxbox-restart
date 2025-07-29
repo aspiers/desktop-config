@@ -7,6 +7,8 @@
 # NOTE! This relies on the XFCE session manager not immediately
 # automatically restarting xfwm4 after it's pkilled.
 
+me=$(basename $0)
+
 while [ -n "$1" ]; do
     case "$1" in
         -x)
@@ -33,8 +35,13 @@ fi
 INITIAL_SLEEP=0.5
 MAX_SLEEP=4
 
+debug () {
+    echo "\e[1;33m$*\e[0m"
+}
+
 info () {
     echo "\e[1;34m$*\e[0m"
+    notify-send -a "$me" -t 8000 "$*"
 }
 
 is_running () {
@@ -47,7 +54,7 @@ ensure_stopped () {
     local secs=$INITIAL_SLEEP
     local waited=0
     while is_running "$proc"; do
-        info "Waiting ${secs}s for $proc to stop running (waited ${waited}s, timeout ${timeout}s)"
+        debug "Waiting ${secs}s for $proc to stop running (waited ${waited}s, timeout ${timeout}s)"
         sleep $secs
         waited=$(echo "$waited + $secs" | bc -l)
         if (( $(echo "$waited >= $timeout" | bc -l) )); then
@@ -56,7 +63,7 @@ ensure_stopped () {
         fi
         if (( $(echo "$secs < $MAX_SLEEP" | bc -l) )); then
             secs=$(echo "$secs * 2" | bc)
-            info "Doubled sleep to $secs seconds"
+            debug "Doubled sleep to $secs seconds"
         fi
     done
 }
@@ -99,7 +106,7 @@ ensure_started () {
         fi
         if (( $(echo "$secs < $MAX_SLEEP" | bc -l) )); then
             secs=$(echo "$secs * 2" | bc)
-            info "Doubled sleep to $secs seconds"
+            debug "Doubled sleep to $secs seconds"
         fi
     done
 }
