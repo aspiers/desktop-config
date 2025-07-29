@@ -117,14 +117,14 @@ if is_running fluxbox; then
     if [ -z "$no_xfwm" ]; then
         info "Replacing fluxbox with xfwm4"
         ( xfwm4 & )
-        ensure_started xfwm4 20
+        ensure_started xfwm4 10
     fi
 fi
 
 if is_running xfwm4; then
     info "Stopping xfwm4"
     pkill xfwm4
-    ensure_stopped xfwm4 20
+    ensure_stopped xfwm4 5
 fi
 
 info "Starting fluxbox"
