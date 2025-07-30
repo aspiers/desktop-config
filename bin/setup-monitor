@@ -74,9 +74,6 @@ else
     ln -sf overlay.$localhost_nickname ~/.fluxbox/overlay
 fi
 
-set_dpi () {
-    xfconf-query -c xsettings -p /Xft/DPI -s "$1" -t int
-}
 
 setup_keyboard () {
     if host-has-prop laptop; then
@@ -84,14 +81,14 @@ setup_keyboard () {
             # Connect to Kinesis Advantage 360 over Bluetooth
             adv &
 
-            set_dpi 84
+            set-xfce4-dpi 84
         elif large-monitor-connected; then
             # Even though xrandr reports DPI as more like 160
-            set_dpi 128
+            set-xfce4-dpi 128
         else
             adv off &
 
-            set_dpi 128
+            set-xfce4-dpi 128
         fi
     fi
 }

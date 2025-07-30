@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set_dpi () {
+    xfconf-query -c xsettings -p /Xft/DPI -s "$1" -t int
+}
+
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 <dpi_value>" >&2
+    exit 1
+fi
+
+set_dpi "$1"
