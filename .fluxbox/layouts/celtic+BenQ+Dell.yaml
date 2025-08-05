@@ -1,3 +1,5 @@
+dpi: 84
+
 screens:
   -
     <INCLUDE screens/celtic-auxiliary>

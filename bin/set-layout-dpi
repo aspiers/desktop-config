@@ -1,0 +1,55 @@
+#!/bin/bash
+
+# Extract and set DPI from layout configuration
+# Usage: set-layout-dpi [layout_name]
+# If no layout_name is provided, get current layout using bin/get-layout
+
+if [ $# -eq 0 ]; then
+    echo -n "Getting current layout ... "
+    if ! layout_file=$( get-layout ); then
+        echo "failed"
+        exit 1
+    fi
+    layout=$(basename -s .yaml "$layout_file")
+    echo "$layout"
+elif [ $# -eq 1 ]; then
+    layout="$1"
+else
+    echo "Usage: $0 [layout_name]" >&2
+    echo "Example: $0 celtic+large" >&2
+    echo "If no layout_name is provided, current layout is detected automatically" >&2
+    exit 1
+fi
+layout_file="$HOME/.fluxbox/layouts/${layout}.yaml"
+
+if [ ! -f "$layout_file" ]; then
+    echo "Error: Layout file $layout_file not found" >&2
+    exit 1
+fi
+
+# Extract DPI setting from layout file
+dpi=$(grep -E '^[[:space:]]*dpi:' "$layout_file" | sed 's/.*dpi:[[:space:]]*//')
+
+if [ -n "$dpi" ]; then
+    echo "Setting DPI to $dpi for layout $layout"
+    set-xfce4-dpi "$dpi"
+else
+    # Fallback to hardcoded values for backward compatibility
+    echo "No DPI setting found in layout file, using fallback logic"
+    
+    . ~/lib/libhost.sh
+    if host-has-prop laptop; then
+        if BenQ-connected; then
+            echo "Setting DPI to 84 (BenQ connected)"
+            set-xfce4-dpi 84
+        elif large-monitor-connected; then
+            echo "Setting DPI to 128 (large monitor connected)"
+            set-xfce4-dpi 128
+        else
+            echo "Setting DPI to 128 (default laptop)"
+            set-xfce4-dpi 128
+        fi
+    else
+        echo "Non-laptop host, no DPI adjustment needed"
+    fi
+fi

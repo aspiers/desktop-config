@@ -80,15 +80,8 @@ setup_keyboard () {
         if BenQ-connected; then
             # Connect to Kinesis Advantage 360 over Bluetooth
             adv &
-
-            set-xfce4-dpi 84
-        elif large-monitor-connected; then
-            # Even though xrandr reports DPI as more like 160
-            set-xfce4-dpi 128
         else
             adv off &
-
-            set-xfce4-dpi 128
         fi
     fi
 }
@@ -96,6 +89,7 @@ setup_keyboard () {
 main () {
     setup-panels
     setup_keyboard
+    set-layout-dpi "$layout"
 
     sleep 1
 
