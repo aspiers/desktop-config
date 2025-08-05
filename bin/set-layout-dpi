@@ -4,39 +4,7 @@
 # Usage: set-layout-dpi [layout_name]
 # If no layout_name is provided, get current layout using bin/get-layout
 
-if [ $# -eq 0 ]; then
-    echo -n "Getting current layout ... "
-    if ! layout_file=$( get-layout ); then
-        echo "failed"
-        exit 1
-    fi
-    layout=$(basename -s .yaml "$layout_file")
-    echo "$layout"
-elif [ $# -eq 1 ]; then
-    layout="$1"
-else
-    echo "Usage: $0 [layout_name]" >&2
-    echo "Example: $0 celtic+large" >&2
-    echo "If no layout_name is provided, current layout is detected automatically" >&2
-    exit 1
-fi
-layout_file="$HOME/.fluxbox/layouts/${layout}.yaml"
-
-if [ ! -f "$layout_file" ]; then
-    echo "Error: Layout file $layout_file not found" >&2
-    exit 1
-fi
-
-# Extract DPI setting from layout file
-dpi=$(grep -E '^[[:space:]]*dpi:' "$layout_file" | sed 's/.*dpi:[[:space:]]*//')
-
-if [ -n "$dpi" ]; then
-    echo "Setting DPI to $dpi for layout $layout"
-    set-xfce4-dpi "$dpi"
-else
-    # Fallback to hardcoded values for backward compatibility
-    echo "No DPI setting found in layout file, using fallback logic"
-    
+fallback_dpi() {
     . ~/lib/libhost.sh
     if host-has-prop laptop; then
         if BenQ-connected; then
@@ -52,4 +20,62 @@ else
     else
         echo "Non-laptop host, no DPI adjustment needed"
     fi
-fi
+}
+
+main() {
+    if [ $# -eq 0 ]; then
+        echo -n "Getting current layout ... "
+        if ! layout_file=$( get-layout ); then
+            echo "failed"
+            exit 1
+        fi
+        layout=$(basename -s .yaml "$layout_file")
+        echo "$layout"
+    elif [ $# -eq 1 ]; then
+        layout="$1"
+    else
+        echo "Usage: $0 [layout_name]" >&2
+        echo "Example: $0 celtic+large" >&2
+        echo "If no layout_name is provided, current layout is detected automatically" >&2
+        exit 1
+    fi
+    layout_file="$HOME/.fluxbox/layouts/${layout}.yaml"
+
+    if [ ! -f "$layout_file" ]; then
+        echo "Error: Layout file $layout_file not found" >&2
+        exit 1
+    fi
+
+    # Extract DPI setting from layout file
+    dpi=$(grep -E '^[[:space:]]*dpi:' "$layout_file" | sed 's/.*dpi:[[:space:]]*//')
+
+    if [ -n "$dpi" ]; then
+        echo "Setting DPI to $dpi for layout $layout"
+        set-xfce4-dpi "$dpi"
+    else
+        echo "No DPI setting found in layout file, detecting from primary screen"
+
+        # Get DPI from primary screen using libdpy.py
+        if dpi_json=$(~/lib/libdpy.py --inxi-json 2>/dev/null); then
+            # Extract DPI from JSON output for primary screen
+            detected_dpi=$(
+                echo "$dpi_json" | \
+                jq -r '.[] | select(.pos | contains("primary")) | .dpi // empty' | \
+                head -n1
+            )
+
+            if [ -n "$detected_dpi" ] && [ "$detected_dpi" -gt 0 ]; then
+                echo "Detected DPI $detected_dpi from primary screen"
+                set-xfce4-dpi "$detected_dpi"
+            else
+                echo "Could not detect DPI from primary screen, using fallback logic"
+                fallback_dpi
+            fi
+        else
+            echo "Failed to get screen info, using fallback logic"
+            fallback_dpi
+        fi
+    fi
+}
+
+main "$@"
