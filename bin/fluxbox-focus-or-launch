@@ -104,10 +104,10 @@ main () {
 store_current_desktop () {
     local config_dir="$HOME/.config/fluxbox-focus-or-launch"
     local desktop_file="$config_dir/previous-desktop.txt"
-    
+
     # Create config directory if it doesn't exist
     mkdir -p "$config_dir"
-    
+
     # Get current desktop/workspace number
     local current_desktop=$(xdotool get_desktop)
     echo "$current_desktop" > "$desktop_file"
@@ -117,7 +117,7 @@ store_current_desktop () {
 restore_previous_desktop () {
     local config_dir="$HOME/.config/fluxbox-focus-or-launch"
     local desktop_file="$config_dir/previous-desktop.txt"
-    
+
     if [ -f "$desktop_file" ]; then
         local previous_desktop=$(cat "$desktop_file")
         echo "Restoring previous desktop: $previous_desktop"
