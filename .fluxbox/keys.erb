@@ -349,7 +349,7 @@ reorg: Mod4 l :If {Matches (Layer=Normal)} {MacroCmd {SetLayer Top} {<%= notify_
 # Mod4 9 :Tab 9
 
 # opening terminals
-Mod4 t :MacroCmd <%= keymode 'terminals', 't: terminal\nb: btop\nh: htop\nn: nethogs\ni: iotop\ng: iftop gateway\np: powertop' %>
+Mod4 t :MacroCmd <%= keymode 'terminals', 't: terminal\nb: btop\nh: htop\nn: nethogs\ni: iotop\ng: iftop gateway\np: powertop\nv: nvtop\na: amdgpu_top' %>
 terminals: q :MacroCmd <%= keymode_done 'terminals' %>
 terminals: t :MacroCmd {Exec xterm-window} <%= keymode_done 'terminals' %>
 terminals: Mod4 t :MacroCmd {Exec xterm-window} <%= keymode_done 'terminals' %>
@@ -360,7 +360,10 @@ terminals: h :MacroCmd {Exec top-term htop} <%= keymode_done 'terminals' %>
 terminals: n :MacroCmd {Exec top-term sudo nethogs `gw-dev`} <%= keymode_done 'terminals' %>
 terminals: i :MacroCmd {Exec top-term sudo iotop} <%= keymode_done 'terminals' %>
 terminals: g :MacroCmd {Exec top-term sudo iftop -i `gw-dev`} <%= keymode_done 'terminals' %>
-terminals: p :MacroCmd {Exec top-term sudo powertop} <%= keymode_done 'terminals' %>
+terminals: p :MacroCmd {Exec fluxbox-focus-or-launch --toggle 'sudo powertop' top-term sudo powertop} <%= keymode_done 'terminals' %>
+#terminals: p :MacroCmd {Exec top-term sudo powertop} <%= keymode_done 'terminals' %>
+terminals: a :MacroCmd {Exec fluxbox-focus-or-launch --toggle 'amdgpu_top' top-term amdgpu_top} <%= keymode_done 'terminals' %>
+terminals: v :MacroCmd {Exec fluxbox-focus-or-launch --toggle 'nvtop' top-term nvtop} <%= keymode_done 'terminals' %>
 
 # opening programs
 Control Mod4 b :Exec brave-browser
