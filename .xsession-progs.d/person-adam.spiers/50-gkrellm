@@ -9,6 +9,6 @@ case "$WINDOWMANAGER" in
         ;;
 esac
 
-if [ -z "$VNCDESKTOP" ]; then
+if false && [ -z "$VNCDESKTOP" ]; then
     run_unless_running gkrellm -geometry -0+0 </dev/null &
 fi
