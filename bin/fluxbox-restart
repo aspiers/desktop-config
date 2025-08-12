@@ -145,4 +145,4 @@ xdotool search \
         --class \
         --classname 'Wrapper-2.0' \
         getwindowpid |
-    xargs kill
+    xargs -r kill
