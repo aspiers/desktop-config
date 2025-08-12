@@ -129,7 +129,10 @@ def apply_sublayout(layout_file, sublayouts, args):
 def main():
     args = parse_args()
 
-    active_win_id = subprocess.check_output(['xdotool', 'getactivewindow']).rstrip()
+    try:
+        active_win_id = subprocess.check_output(['xdotool', 'getactivewindow']).rstrip()
+    except CalledProcessError:
+        active_win_id = None
 
     layout_file = liblayout.get_layout_file(args.layout, args.dir)
     layout_params, layout = liblayout.get_layout_params(layout_file)
@@ -146,7 +149,8 @@ def main():
         # pp(window_cmds)
         exec_window_cmds(window_cmds, args)
 
-    subprocess.call(['wmctrl', '-ia', active_win_id])
+    if active_win_id:
+        subprocess.call(['wmctrl', '-ia', active_win_id])
 
 
 if __name__ == "__main__":
