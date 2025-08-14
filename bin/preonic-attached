@@ -1,0 +1,4 @@
+#!/bin/bash
+
+#lsusb | grep -q 'Keyboardio Preonic'
+xinput list | grep -q 'Preonic'

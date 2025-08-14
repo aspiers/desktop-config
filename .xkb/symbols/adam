@@ -76,6 +76,15 @@ xkb_symbols "keyboardio-atreus" {
     key <AE04>  { [         4,   dollar,     EuroSign,   onequarter ] };
 };
 
+xkb_symbols "keyboardio-preonic" {
+    include "pc(pc105)"
+    include "us"
+    include "gb"
+    include "adam-common(volume-controls)"
+    key <AE03>  { [         3,   numbersign, sterling,   threesuperior ] };
+    key <AE04>  { [         4,   dollar,     EuroSign,   onequarter ] };
+};
+
 xkb_symbols "samsung-n150plus" {
     include "pc"
     include "us"
@@ -179,4 +188,3 @@ xkb_symbols "laptop" {
 //    include "adam-common(meta)"
 //    include "adam-common(control-modifier-map)"
 };
-

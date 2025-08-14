@@ -1,9 +1,8 @@
 #!/bin/bash
 
-if atreus-attached; then
+if atreus-attached || preonic-attached; then
     # Speed copper keyswitches have extremely low activation energy :-/
     xset r rate 250 50
 else
     xset r rate 200 50
 fi
-

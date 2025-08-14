@@ -56,6 +56,7 @@ Choose from one of the following keymaps:
  12) Kinesis Advantage 360
  13) ThinkPad X1 Extreme G2 hacked
  14) Keyboardio Atreus
+ 15) Keyboardio Preonic
 
 EOF
 #  7) Microsoft Natural 105-key
@@ -83,6 +84,7 @@ EOF
         12) keymap=kinesis-360    ;;
         13) keymap=thinkpad-x1-extreme-g2-hacked ;;
         14) keymap=atreus ;;
+        15) keymap=preonic ;;
 
         *)
             echo "Invalid choice!"
@@ -174,6 +176,9 @@ get_keymap_settings () {
             ;;
         atreus)
             xkb='-symbols adam(keyboardio-atreus)'
+            ;;
+        preonic)
+            xkb='-symbols adam(keyboardio-preonic)'
             ;;
         *)
             echo "Invalid keymap '$keymap'."
