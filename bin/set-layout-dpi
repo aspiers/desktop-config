@@ -56,13 +56,9 @@ main() {
         echo "No DPI setting found in layout file, detecting from primary screen"
 
         # Get DPI from primary screen using libdpy.py
-        if dpi_json=$(~/lib/libdpy.py --inxi-json 2>/dev/null); then
-            # Extract DPI from JSON output for primary screen
-            detected_dpi=$(
-                echo "$dpi_json" | \
-                jq -r '.[] | select(.pos | contains("primary")) | .dpi // empty' | \
-                head -n1
-            )
+        if primary_json=$(~/lib/libdpy.py --find-inxi-primary 2>/dev/null); then
+            # Extract DPI from JSON output
+            detected_dpi=$(echo "$primary_json" | jq -r '.dpi // empty')
 
             if [ -n "$detected_dpi" ] && [ "$detected_dpi" -gt 0 ]; then
                 echo "Detected DPI $detected_dpi from primary screen"
@@ -72,7 +68,7 @@ main() {
                 fallback_dpi
             fi
         else
-            echo "Failed to get screen info, using fallback logic"
+            echo "Failed to get primary screen info, using fallback logic"
             fallback_dpi
         fi
     fi
