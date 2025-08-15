@@ -43,6 +43,13 @@ set_dpi_for_layout() {
         return 1
     fi
 
+    local detected_model=$(echo "$primary_json" | jq -r '.model // empty')
+    if [ "$detected_model" = "LG (GoldStar) HDR 4K" ]; then
+        echo "Setting DPI to 128 for $detected_model"
+        set-xfce4-dpi 128
+        return 0
+    fi
+
     local detected_dpi=$(echo "$primary_json" | jq -r '.dpi // empty')
     if [ -z "$detected_dpi" ] || [ "$detected_dpi" -le 0 ]; then
         echo "Could not detect DPI from primary screen"
