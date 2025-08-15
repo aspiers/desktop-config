@@ -22,6 +22,38 @@ fallback_dpi() {
     fi
 }
 
+set_dpi_for_layout() {
+    local layout_file="$1"
+    local layout="$2"
+
+    # First try: DPI from layout file
+    local dpi=$(grep -E '^[[:space:]]*dpi:' "$layout_file" | sed 's/.*dpi:[[:space:]]*//')
+    if [ -n "$dpi" ]; then
+        echo "Setting DPI to $dpi for layout $layout"
+        set-xfce4-dpi "$dpi"
+        return 0
+    fi
+
+    echo "No DPI setting found in layout file, detecting from primary screen"
+
+    # Second try: DPI from primary screen
+    local primary_json
+    if ! primary_json=$(~/lib/libdpy.py --find-inxi-primary 2>/dev/null); then
+        echo "Failed to get primary screen info"
+        return 1
+    fi
+
+    local detected_dpi=$(echo "$primary_json" | jq -r '.dpi // empty')
+    if [ -z "$detected_dpi" ] || [ "$detected_dpi" -le 0 ]; then
+        echo "Could not detect DPI from primary screen"
+        return 1
+    fi
+
+    echo "Detected DPI $detected_dpi from primary screen"
+    set-xfce4-dpi "$detected_dpi"
+    return 0
+}
+
 main() {
     if [ $# -eq 0 ]; then
         echo -n "Getting current layout ... "
@@ -46,31 +78,9 @@ main() {
         exit 1
     fi
 
-    # Extract DPI setting from layout file
-    dpi=$(grep -E '^[[:space:]]*dpi:' "$layout_file" | sed 's/.*dpi:[[:space:]]*//')
-
-    if [ -n "$dpi" ]; then
-        echo "Setting DPI to $dpi for layout $layout"
-        set-xfce4-dpi "$dpi"
-    else
-        echo "No DPI setting found in layout file, detecting from primary screen"
-
-        # Get DPI from primary screen using libdpy.py
-        if primary_json=$(~/lib/libdpy.py --find-inxi-primary 2>/dev/null); then
-            # Extract DPI from JSON output
-            detected_dpi=$(echo "$primary_json" | jq -r '.dpi // empty')
-
-            if [ -n "$detected_dpi" ] && [ "$detected_dpi" -gt 0 ]; then
-                echo "Detected DPI $detected_dpi from primary screen"
-                set-xfce4-dpi "$detected_dpi"
-            else
-                echo "Could not detect DPI from primary screen, using fallback logic"
-                fallback_dpi
-            fi
-        else
-            echo "Failed to get primary screen info, using fallback logic"
-            fallback_dpi
-        fi
+    if ! set_dpi_for_layout "$layout_file" "$layout"; then
+        echo "Using fallback logic"
+        fallback_dpi
     fi
 }
 
