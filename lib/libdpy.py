@@ -344,6 +344,19 @@ def get_xrandr_primary_monitor(use_cache=False):
     return None
 
 
+def get_inxi_primary_monitor(use_cache=True):
+    """
+    Returns the primary monitor from inxi data, or None if not found.
+    Primary is indicated by 'primary' in the 'pos' field in inxi monitor data.
+    """
+    monitors = get_inxi_monitors(use_cache=use_cache)
+    for monitor in monitors:
+        pos = monitor.get('pos', '')
+        if 'primary' in pos:
+            return monitor
+    return None
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='Display information about XRandR screen geometries')
@@ -363,6 +376,9 @@ def main():
     parser.add_argument('--find-xrandr-primary',
                         action='store_true',
                         help='Output the primary monitor according to xrandr (not inxi) as JSON')
+    parser.add_argument('--find-inxi-primary',
+                        action='store_true',
+                        help='Output the primary monitor according to inxi as JSON')
     args = parser.parse_args()
 
     if args.find_xrandr_primary:
@@ -372,6 +388,15 @@ def main():
             sys.exit(0)
         else:
             sys.stderr.write("No primary monitor found in xrandr\n")
+            sys.exit(1)
+
+    if args.find_inxi_primary:
+        primary = get_inxi_primary_monitor(use_cache=args.use_cache)
+        if primary:
+            print(json.dumps(primary, indent=2))
+            sys.exit(0)
+        else:
+            sys.stderr.write("No primary monitor found in inxi data\n")
             sys.exit(1)
 
     if args.find_by_model or args.find_by_res:
