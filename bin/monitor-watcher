@@ -20,7 +20,7 @@ if ! which $SETUP >&/dev/null; then
 fi
 
 log=~/.log/udev-drm.log
-udevadm monitor -u -s drm | grep -v 'drm/card' > $log &
+udevadm monitor -u -s drm > $log &
 
 # Wait for udevadm to do first modification before proceeding.
 sleep 2
