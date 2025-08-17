@@ -349,7 +349,7 @@ reorg: Mod4 l :If {Matches (Layer=Normal)} {MacroCmd {SetLayer Top} {<%= notify_
 # Mod4 9 :Tab 9
 
 # opening terminals
-Mod4 t :MacroCmd <%= keymode 'terminals', 't: terminal\nb: btop\nh: htop\nn: nethogs\ni: iotop\ng: iftop gateway\np: powertop\nv: nvtop\na: amdgpu_top' %>
+Mod4 t :MacroCmd <%= keymode 'terminals', 't: terminal\nb: btop\nh: htop\nn: nethogs\ni: iotop\ng: iftop gateway\np: powertop\nv: nvtop\na: amdgpu_top\ns: lnav-system' %>
 terminals: q :MacroCmd <%= keymode_done 'terminals' %>
 terminals: t :MacroCmd {Exec xterm-window} <%= keymode_done 'terminals' %>
 terminals: Mod4 t :MacroCmd {Exec xterm-window} <%= keymode_done 'terminals' %>
@@ -364,6 +364,7 @@ terminals: p :MacroCmd {Exec fluxbox-focus-or-launch --toggle 'sudo powertop' to
 #terminals: p :MacroCmd {Exec top-term sudo powertop} <%= keymode_done 'terminals' %>
 terminals: a :MacroCmd {Exec fluxbox-focus-or-launch --toggle 'amdgpu_top' top-term amdgpu_top} <%= keymode_done 'terminals' %>
 terminals: v :MacroCmd {Exec fluxbox-focus-or-launch --toggle 'nvtop' top-term nvtop} <%= keymode_done 'terminals' %>
+terminals: s :MacroCmd {Exec fluxbox-focus-or-launch --toggle -r 'lnav-system' top-term lnav-system} <%= keymode_done 'terminals' %>
 
 # opening programs
 Control Mod4 b :Exec brave-browser
