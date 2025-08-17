@@ -8,6 +8,36 @@
 
 SETUP=$HOME/bin/setup-monitor
 
+# Function to wait for monitor resolutions to be detected
+wait_for_valid_layout() {
+    local timeout=30
+    local start_time=$(date +%s)
+
+    echo "Waiting for monitor resolutions to stabilize..."
+
+    while true; do
+        local current_time=$(date +%s)
+        local elapsed=$((current_time - start_time))
+
+        if [ $elapsed -ge $timeout ]; then
+            echo "Timeout after ${elapsed}s - proceeding anyway"
+            return 1
+        fi
+
+        # Clear cache and regenerate
+        $HOME/bin/clear-dpy-cache
+
+        # Try to get a valid layout
+        if $HOME/bin/get-layout > /dev/null 2>&1; then
+            echo "Valid layout detected after ${elapsed}s"
+            return 0
+        fi
+
+        echo "Retrying in 1s (${elapsed}/${timeout}s elapsed)..."
+        sleep 1
+    done
+}
+
 if ! which inotifywait >&/dev/null; then
     echo "ERROR: Couldn't find inotifywait; aborting." >&2
     echo "Try: sudo zypper in inotify-tools" >&2
@@ -35,8 +65,16 @@ while true; do
     # echo "Input device event detected for DISPLAY=$DISPLAY"
 
     inotifywait -q -e modify "$log"
-    echo "sleeping 2"
-    sleep 2
+
+    echo "sleeping 1s"
+    sleep 1
+
+    echo "Enabling any disabled monitors ..."
+    xrandr --auto
+    sleep 1
+
+    echo "Current xrandr config:"
+    xrandr | cat
 
     # Read old MD5 hash if it exists
     md5_file=~/.cache/libdpy/inxi-Gxx.monitors.json.md5
@@ -46,13 +84,10 @@ while true; do
     fi
     echo "MD5 of existing inxi monitor cache: ${old_md5:-(empty)}"
 
-    # Clear cache and regenerate
-    $HOME/bin/clear-dpy-cache
+    # Wait for valid monitor resolutions
+    wait_for_valid_layout
 
-    echo "Regenerating the inxi cache ..."
-    $HOME/lib/libdpy.py --inxi-json > /dev/null
-
-    # Calculate new MD5 hash
+    # Calculate new MD5 hash after layout stabilizes
     inxi_monitors_file=~/.cache/libdpy/inxi-Gxx.monitors.json
     if [ -f "$inxi_monitors_file" ]; then
         new_md5=$(md5sum "$inxi_monitors_file" | cut -d' ' -f1)
@@ -65,6 +100,7 @@ while true; do
     if [ "$old_md5" != "$new_md5" ]; then
         echo "Monitor configuration changed (MD5: ${old_md5:-(empty)} -> ${new_md5:-(empty)}), running setup"
         $SETUP
+        echo "$SETUP completed; exit code $?"
     else
         echo "Monitor configuration unchanged (MD5: ${new_md5:-(empty)}), skipping setup"
     fi

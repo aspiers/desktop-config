@@ -2,10 +2,6 @@
 
 #exec >& ~/.log/setup-monitor.log
 
-echo "Enabling any disabled monitors ..."
-xrandr --auto
-sleep 1
-
 echo -n "Getting layout ... "
 if ! layout=$( get-layout ); then
     exit 1

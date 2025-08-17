@@ -333,7 +333,7 @@ def find_monitor_by_attribute(attribute, value, use_cache=True):
     return None
 
 
-def get_xrandr_primary_monitor(use_cache=False):
+def get_xrandr_primary_monitor(use_cache=True):
     """
     Returns the primary monitor from xrandr (using cache if available), or None if not found.
     """
