@@ -13,6 +13,8 @@ windows:
 
   <INCLUDE common/terminal-windows>
 
+  <INCLUDE common/top-term-windows>
+
   <INCLUDE common/toucan>
 
   <INCLUDE common/side-projects>

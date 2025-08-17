@@ -17,6 +17,8 @@ windows:
 
   <INCLUDE common/terminal-windows>
 
+  <INCLUDE common/top-term-windows>
+
   <INCLUDE common/editor-windows>
 
   <INCLUDE common/toucan>
