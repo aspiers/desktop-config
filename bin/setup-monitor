@@ -6,8 +6,6 @@ echo "Enabling any disabled monitors ..."
 xrandr --auto
 sleep 1
 
-clear-dpy-cache
-
 echo -n "Getting layout ... "
 if ! layout=$( get-layout ); then
     exit 1
@@ -61,8 +59,7 @@ case "$layout" in
 esac
 
 # xrandr might have reordered the screens (since libdpy orders by
-# xoffset)
-clear-dpy-cache
+# xoffset) - cache should already be current from monitor-watcher
 eval $(~/lib/libdpy.py)
 
 . ~/lib/libhost.sh

@@ -38,5 +38,33 @@ while true; do
     logger sleeping 2
     sleep 2
 
-    $SETUP
+    # Read old MD5 hash if it exists
+    md5_file=~/.cache/libdpy/inxi-Gxx.monitors.json.md5
+    old_md5=""
+    if [ -f "$md5_file" ]; then
+        old_md5=$(cat "$md5_file")
+    fi
+
+    # Clear cache and regenerate
+    $HOME/bin/clear-dpy-cache
+
+    # Regenerate the inxi cache
+    $HOME/lib/libdpy.py --inxi-json > /dev/null
+
+    # Calculate new MD5 hash
+    inxi_monitors_file=~/.cache/libdpy/inxi-Gxx.monitors.json
+    if [ -f "$inxi_monitors_file" ]; then
+        new_md5=$(md5sum "$inxi_monitors_file" | cut -d' ' -f1)
+        echo "$new_md5" > "$md5_file"
+    else
+        new_md5=""
+    fi
+
+    # Only call setup if MD5 hashes differ
+    if [ "$old_md5" != "$new_md5" ]; then
+        logger "Monitor configuration changed (MD5: $old_md5 -> $new_md5), running setup"
+        $SETUP
+    else
+        logger "Monitor configuration unchanged (MD5: $new_md5), skipping setup"
+    fi
 done
