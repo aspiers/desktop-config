@@ -87,21 +87,22 @@ while true; do
     # Wait for valid monitor resolutions
     wait_for_valid_layout
 
-    # Calculate new MD5 hash after layout stabilizes
-    inxi_monitors_file=~/.cache/libdpy/inxi-Gxx.monitors.json
-    if [ -f "$inxi_monitors_file" ]; then
-        new_md5=$(md5sum "$inxi_monitors_file" | cut -d' ' -f1)
-        echo "$new_md5" > "$md5_file"
-    else
-        new_md5=""
+    # Ensure that inxi cache is populated (this will automatically
+    # create/update the md5 file too)
+    ~/lib/libdpy.py --inxi-json >/dev/null
+
+    new_md5=""
+    if [ -f "$md5_file" ]; then
+        new_md5=$(cat "$md5_file")
     fi
 
-    # Only call setup if MD5 hashes differ
-    if [ "$old_md5" != "$new_md5" ]; then
-        echo "Monitor configuration changed (MD5: ${old_md5:-(empty)} -> ${new_md5:-(empty)}), running setup"
+    if [ -z "$new_md5" ]; then
+        echo "ERROR: Failed to get MD5 hash for monitor configuration, skipping setup"
+    elif [ "$old_md5" != "$new_md5" ]; then
+        echo "Monitor configuration changed (MD5: ${old_md5:-(empty)} -> ${new_md5}), running setup"
         $SETUP
         echo "$SETUP completed; exit code $?"
     else
-        echo "Monitor configuration unchanged (MD5: ${new_md5:-(empty)}), skipping setup"
+        echo "Monitor configuration unchanged (MD5: ${new_md5}), skipping setup"
     fi
 done

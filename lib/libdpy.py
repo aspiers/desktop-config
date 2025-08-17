@@ -14,6 +14,7 @@ import os
 import json
 import time
 import argparse
+import hashlib
 
 # Global constants
 GLOBAL_CACHE_DIR = os.environ.get('XDG_CACHE_HOME') or os.path.expanduser("~/.cache")
@@ -38,9 +39,19 @@ class DisplayDataCache:
                 os.remove(cache_file)
                 # print(f"Removed {cache_file}", file=sys.stderr)
 
+            # Remove corresponding .md5 file
+            md5_file = cache_file + '.md5'
+            if os.path.exists(md5_file):
+                os.remove(md5_file)
+                # print(f"Removed {md5_file}", file=sys.stderr)
+
     def __init__(self):
         if self.cache_file is None:
             raise ValueError(f"cache_file must be set in {self.__class__.__name__}")
+
+    @property
+    def hash_cache_file(self):
+        return self.cache_file + '.md5'
 
     def builder(self, use_cache=True):
         """
@@ -68,6 +79,10 @@ class DisplayDataCache:
                 data_to_cache = data_to_cache.encode('utf-8')
             with open(self.cache_file, 'wb') as f:
                 f.write(data_to_cache)
+            md5_hash = hashlib.md5(data_to_cache).hexdigest()
+            with open(self.hash_cache_file, 'w') as f:
+                f.write(md5_hash)
+
         return self.cache_reader()
 
 
