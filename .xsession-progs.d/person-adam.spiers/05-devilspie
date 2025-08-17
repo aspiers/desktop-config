@@ -2,10 +2,12 @@
 
 . $ZDOTDIR/lib/libproc.sh
 
-if executable_p devilspie2; then
-  devilspie2 >& ~/.log/devilspie2-${HOST%%.*}.log &
-elif executable_p devilspie; then
-  devilspie -a >& ~/.log/devilspie-${HOST%%.*}.log &
-else
-  echo "Warning: no devilspie version available to run"
-fi
+# if executable_p devilspie2; then
+#   devilspie2 >& ~/.log/devilspie2-${HOST%%.*}.log &
+# elif executable_p devilspie; then
+#   devilspie -a >& ~/.log/devilspie-${HOST%%.*}.log &
+# else
+#   echo "Warning: no devilspie version available to run"
+# fi
+
+echo "Skipping devilspie in favour of fluxbox native controls"
