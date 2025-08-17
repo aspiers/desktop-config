@@ -135,7 +135,10 @@ if is_running xfwm4; then
 fi
 
 info "Starting fluxbox"
-nohup setsid fluxbox -log ~/.log/fluxbox.log </dev/null >& ~/.log/fluxbox.log &!
+# Use systemd-run to start fluxbox in its own transient scope,
+# completely isolating it from monitor-watcher's cgroup
+systemd-run --user --scope --unit=fluxbox-$$ \
+    fluxbox -log ~/.log/fluxbox.log </dev/null >&! ~/.log/fluxbox.log &
 
 # Kill annoying popup
 sleep 1
