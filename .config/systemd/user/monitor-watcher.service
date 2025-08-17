@@ -5,6 +5,7 @@ Restart=always
 NoNewPrivileges=true
 StandardOutput=journal
 StandardError=journal
+KillMode=process
 
 [Install]
 # WantedBy=default.target
