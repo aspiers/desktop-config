@@ -11,6 +11,19 @@ utilities for managing Linux desktop environments, primarily XFCE and
 Fluxbox. It contains desktop layout management, browser automation,
 system utilities, and task management integration.
 
+## Symlink-based installation mechanism
+
+**Important**: Files in this repository are installed to the home
+directory ~ via GNU Stow, which creates symlinks from ~ and certain
+sub-directories back to this repository.  For example:
+
+    lrwxrwxrwx 1 adam adam 38 Jul  9  2023 /home/adam/bin/get-layout -> ../.STOW/desktop-config/bin/get-layout*
+
+So when dealing with files that exist in both the repository (e.g.,
+`bin/get-layout`) and the home directory (e.g., `~/bin/get-layout`),
+default to operating on the repository files, to avoid having to ask
+for permission to read/write those files.
+
 ## Development Commands
 
 ### Testing
