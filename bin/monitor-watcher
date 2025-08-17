@@ -35,7 +35,7 @@ while true; do
     # echo "Input device event detected for DISPLAY=$DISPLAY"
 
     inotifywait -q -e modify "$log"
-    logger sleeping 2
+    echo "sleeping 2"
     sleep 2
 
     # Read old MD5 hash if it exists
@@ -44,11 +44,12 @@ while true; do
     if [ -f "$md5_file" ]; then
         old_md5=$(cat "$md5_file")
     fi
+    echo "MD5 of existing inxi monitor cache: ${old_md5:-(empty)}"
 
     # Clear cache and regenerate
     $HOME/bin/clear-dpy-cache
 
-    # Regenerate the inxi cache
+    echo "Regenerating the inxi cache ..."
     $HOME/lib/libdpy.py --inxi-json > /dev/null
 
     # Calculate new MD5 hash
@@ -62,9 +63,9 @@ while true; do
 
     # Only call setup if MD5 hashes differ
     if [ "$old_md5" != "$new_md5" ]; then
-        logger "Monitor configuration changed (MD5: $old_md5 -> $new_md5), running setup"
+        echo "Monitor configuration changed (MD5: ${old_md5:-(empty)} -> ${new_md5:-(empty)}), running setup"
         $SETUP
     else
-        logger "Monitor configuration unchanged (MD5: $new_md5), skipping setup"
+        echo "Monitor configuration unchanged (MD5: ${new_md5:-(empty)}), skipping setup"
     fi
 done
