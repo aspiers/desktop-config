@@ -22,10 +22,11 @@ Usage: $me [OPTIONS] WINDOW-PATTERN LAUNCH-CMD
 Options:
   -h, --help     Show this help and exit
   -c, --class    Match WINDOW-PATTERN against class rather than title
+  -r, --role     Match WINDOW-PATTERN against role rather than title
   -t, --toggle   If matching window is focused, minimize it; otherwise focus/launch
   -f, --focus    Focus the window after launching (if launched)
 
-WINDOW-PATTERN is a regexp matching the window title or class.
+WINDOW-PATTERN is a regexp matching the window title, class, or role.
 LAUNCH-CMD is a command for launching the program if it's not found.
 EOF
 
@@ -46,6 +47,10 @@ main () {
         case "$1" in
             -c|--class)
                 class=y
+                shift
+                ;;
+            -r|--role)
+                role=y
                 shift
                 ;;
             -t|--toggle)
@@ -126,19 +131,31 @@ restore_previous_desktop () {
     fi
 }
 
-window_is_focused () {
+get_active_window_attribute () {
+    local active_window
     if [ -n "$class" ]; then
-        window_op=getwindowclassname
+        xdotool getactivewindow getwindowclassname 2>/dev/null
+    elif [ -n "$role" ]; then
+        # For role, we need to use xprop to get the WM_WINDOW_ROLE property
+        active_window=$(xdotool getactivewindow 2>/dev/null)
+        if [ -n "$active_window" ]; then
+            xprop -id "$active_window" WM_WINDOW_ROLE 2>/dev/null | sed 's/.*= "\(.*\)"/\1/'
+        fi
     else
-        window_op=getwindowname
+        xdotool getactivewindow getwindowname 2>/dev/null
     fi
-    window_name="$(xdotool getactivewindow $window_op 2>/dev/null)"
-    [[ "$window_name" =~ $window_pattern ]]
+}
+
+window_is_focused () {
+    local window_attribute="${1:-$(get_active_window_attribute)}"
+    [[ "$window_attribute" =~ $window_pattern ]]
 }
 
 focus_window () {
     if [ -n "$class" ]; then
         fluxbox_pattern="(Class=$window_pattern)"
+    elif [ -n "$role" ]; then
+        fluxbox_pattern="(Role=$window_pattern)"
     else
         fluxbox_pattern="(Title=$window_pattern)"
     fi
@@ -149,17 +166,14 @@ focus_window () {
 }
 
 exit_if_window_focused () {
-    if [ -n "$class" ]; then
-        window_op=getwindowclassname
-    else
-        window_op=getwindowname
-    fi
-    window_name="$(xdotool getactivewindow $window_op)"
-    if [[ "$window_name" =~ $window_pattern ]]; then
-        echo "Focused window '$window_name' matches '$window_pattern'"
+    local window_attribute
+    window_attribute="$(get_active_window_attribute)"
+
+    if window_is_focused "$window_attribute"; then
+        echo "Focused window '$window_attribute' matches '$window_pattern'"
         exit 0
     fi
-    echo "Focused window '$window_name' doesn't match '$window_pattern'"
+    echo "Focused window '$window_attribute' doesn't match '$window_pattern'"
 }
 
 wait_until_window_focused () {
