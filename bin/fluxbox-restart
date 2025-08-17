@@ -135,7 +135,7 @@ if is_running xfwm4; then
 fi
 
 info "Starting fluxbox"
-nohup setsid fluxbox -log ~/.log/fluxbox.log >>& ~/.log/fluxbox.log &!
+nohup setsid fluxbox -log ~/.log/fluxbox.log </dev/null >& ~/.log/fluxbox.log &!
 
 # Kill annoying popup
 sleep 1
