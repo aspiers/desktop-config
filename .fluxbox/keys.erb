@@ -73,6 +73,11 @@ def delay(cmd, ms)
   %<Delay {#{cmd}} #{ms * 1000}>
 end
 
+def terminal_key(key, cmd)
+  %<terminals: #{key} :MacroCmd {Exec #{cmd}} > + keymode_done('terminals') + "\n" +
+  %<terminals: Mod4 #{key} :MacroCmd {Exec #{cmd}} > + keymode_done('terminals') + "\n"
+end
+
 def monitors_connected
   %x('monitors-connected').chomp
 end
@@ -351,20 +356,18 @@ reorg: Mod4 l :If {Matches (Layer=Normal)} {MacroCmd {SetLayer Top} {<%= notify_
 # opening terminals
 Mod4 t :MacroCmd <%= keymode 'terminals', 't: terminal\nb: btop\nh: htop\nn: nethogs\ni: iotop\ng: iftop gateway\np: powertop\nv: nvtop\na: amdgpu_top\ns: lnav-system' %>
 terminals: q :MacroCmd <%= keymode_done 'terminals' %>
-terminals: t :MacroCmd {Exec xterm-window} <%= keymode_done 'terminals' %>
-terminals: Mod4 t :MacroCmd {Exec xterm-window} <%= keymode_done 'terminals' %>
-terminals: b :MacroCmd {Exec fluxbox-focus-or-launch --toggle btop top-term btop} <%= keymode_done 'terminals' %>
+<%= terminal_key 't', 'xterm-window' %>
+<%= terminal_key 'b', %<fluxbox-focus-or-launch --toggle btop top-term btop> %>
 Mod4 grave :Exec fluxbox-focus-or-launch --toggle btop top-term btop
 Mod4 Shift grave :Exec fluxbox-focus-or-launch --toggle ccmonitor top-term ccmonitor
-terminals: h :MacroCmd {Exec top-term htop} <%= keymode_done 'terminals' %>
-terminals: n :MacroCmd {Exec top-term sudo nethogs `gw-dev`} <%= keymode_done 'terminals' %>
-terminals: i :MacroCmd {Exec top-term sudo iotop} <%= keymode_done 'terminals' %>
-terminals: g :MacroCmd {Exec top-term sudo iftop -i `gw-dev`} <%= keymode_done 'terminals' %>
-terminals: p :MacroCmd {Exec fluxbox-focus-or-launch --toggle 'sudo powertop' top-term sudo powertop} <%= keymode_done 'terminals' %>
-#terminals: p :MacroCmd {Exec top-term sudo powertop} <%= keymode_done 'terminals' %>
-terminals: a :MacroCmd {Exec fluxbox-focus-or-launch --toggle 'amdgpu_top' top-term amdgpu_top} <%= keymode_done 'terminals' %>
-terminals: v :MacroCmd {Exec fluxbox-focus-or-launch --toggle 'nvtop' top-term nvtop} <%= keymode_done 'terminals' %>
-terminals: s :MacroCmd {Exec fluxbox-focus-or-launch --toggle -r 'lnav-system' top-term lnav-system} <%= keymode_done 'terminals' %>
+<%= terminal_key 'h', %<fluxbox-focus-or-launch --toggle 'htop' top-term htop> %>
+<%= terminal_key 'n', %<fluxbox-focus-or-launch --toggle 'sudo nethogs' top-term sudo nethogs `gw-dev`> %>
+<%= terminal_key 'i', %<fluxbox-focus-or-launch --toggle 'sudo iotop' top-term sudo iotop> %>
+<%= terminal_key 'g', %<fluxbox-focus-or-launch --toggle 'sudo iftop .*' top-term sudo iftop -i `gw-dev`> %>
+<%= terminal_key 'p', %<fluxbox-focus-or-launch --toggle 'sudo powertop' top-term sudo powertop> %>
+<%= terminal_key 'a', %<fluxbox-focus-or-launch --toggle 'amdgpu_top' top-term amdgpu_top> %>
+<%= terminal_key 'v', %<fluxbox-focus-or-launch --toggle 'nvtop' top-term nvtop> %>
+<%= terminal_key 's', %<fluxbox-focus-or-launch --toggle -r 'lnav-system' top-term lnav-system> %>
 
 # opening programs
 Control Mod4 b :Exec brave-browser
