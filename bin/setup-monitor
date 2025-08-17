@@ -98,13 +98,13 @@ main () {
     echo "Fluxbox restart ..."
     fr
 
-    echo "Restarting xfce4-panel ..."
-    xfce4-panel -r
-
     sleep 1
 
     echo "Fluxbox layout ..."
     run-with-local-X-display ly
+
+    echo "Restarting xfce4-panel ..."
+    xfce4-panel -r
 }
 
 main
