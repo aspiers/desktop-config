@@ -1,0 +1,4 @@
+# standard-qaz: Common Q-A-Z key remapping
+grave = q
+capslock = a
+leftcontrol = z

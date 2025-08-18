@@ -1,0 +1,3 @@
+# laptop-left-mods: Standard laptop modifier key remapping
+leftalt = leftcontrol
+leftmeta = leftalt
