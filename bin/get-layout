@@ -120,7 +120,8 @@ def main():
             debug_print(f"single monitor, screens_data: {screens_data}")
             if screens_data: # Should be true if count is 1
                 output_name = screens_data[0]['name']
-                set_primary(output_name)
+                if screens_data[0].get('primary') != 'primary':
+                    set_primary(output_name)
                 layout_file(localhost_nickname)
             else:
                 fatal("Monitor count was 1 but failed to get screen data for primary setting.")
