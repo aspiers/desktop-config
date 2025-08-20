@@ -99,9 +99,11 @@ class XrandrJsonCache(DisplayDataCache):
     def builder(self, use_cache=True):
         xrandr = XrandrCache().get(use_cache)
         iterator = re.finditer(
-            r'^(?P<name>\S+) connected ((?P<primary>primary) )?(?P<width>\d+)x(?P<height>\d+)\+(?P<x_offset>\d+)\+(?P<y_offset>\d+) \(.+\) (?P<x_mm>\d+)mm x (?P<y_mm>\d+)mm',
+            r"^(?P<name>\S+) connected ((?P<primary>primary) )?"
+            r"(?P<width>\d+)x(?P<height>\d+)\+(?P<x_offset>\d+)\+(?P<y_offset>\d+) "
+            r"\(.+\) (?P<x_mm>\d+)mm x (?P<y_mm>\d+)mm",
             xrandr,
-            re.MULTILINE
+            re.MULTILINE,
         )
         screens = [m.groupdict() for m in iterator]
         if not screens:
@@ -151,8 +153,7 @@ class InxiJsonCache(DisplayDataCache):
 
     def builder(self, _use_cache):
         output = subprocess.check_output(
-            'inxi -c 0 --tty -Gxx --output json --output-file print',
-            shell=True
+            "inxi -c 0 --tty -Gxx --output json --output-file print", shell=True
         )
         # Parse the JSON and re-serialize with sorted keys for stable hashing
         data = json.loads(output)
@@ -377,26 +378,39 @@ def get_inxi_primary_monitor(use_cache=True):
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Display information about XRandR screen geometries')
-    parser.add_argument('--use-cache',
-                        action=argparse.BooleanOptionalAction,
-                        default=True,
-                        help='Use cached XRandR/inxi data if available')
-    parser.add_argument('--inxi-json',
-                        action='store_true',
-                        help='Output inxi monitor JSON instead of normal output')
-    parser.add_argument('--find-by-model',
-                        metavar='MODEL',
-                        help='Search for a monitor model containing MODEL and output its JSON data')
-    parser.add_argument('--find-by-res',
-                        metavar='RESOLUTION',
-                        help='Search for a monitor resolution containing RESOLUTION and output its JSON data')
-    parser.add_argument('--find-xrandr-primary',
-                        action='store_true',
-                        help='Output the primary monitor according to xrandr (not inxi) as JSON')
-    parser.add_argument('--find-inxi-primary',
-                        action='store_true',
-                        help='Output the primary monitor according to inxi as JSON')
+        description="Display information about XRandR screen geometries"
+    )
+    parser.add_argument(
+        "--use-cache",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Use cached XRandR/inxi data if available",
+    )
+    parser.add_argument(
+        "--inxi-json",
+        action="store_true",
+        help="Output inxi monitor JSON instead of normal output",
+    )
+    parser.add_argument(
+        "--find-by-model",
+        metavar="MODEL",
+        help="Search for a monitor model containing MODEL and output its JSON data",
+    )
+    parser.add_argument(
+        "--find-by-res",
+        metavar="RESOLUTION",
+        help="Search for monitor resolution containing RESOLUTION and output JSON data",
+    )
+    parser.add_argument(
+        "--find-xrandr-primary",
+        action="store_true",
+        help="Output the primary monitor according to xrandr (not inxi) as JSON",
+    )
+    parser.add_argument(
+        "--find-inxi-primary",
+        action="store_true",
+        help="Output the primary monitor according to inxi as JSON",
+    )
     args = parser.parse_args()
 
     if args.find_xrandr_primary:
@@ -436,7 +450,10 @@ def main():
             print(json.dumps(found_monitor, indent=2))
             sys.exit(0)
         else:
-            sys.stderr.write(f"Error: No monitor found with {search_attribute} containing '{search_value}'\n")
+            sys.stderr.write(
+                f"Error: No monitor found with {search_attribute} "
+                f"containing '{search_value}'\n"
+            )
             sys.exit(1)
 
     if args.inxi_json:
