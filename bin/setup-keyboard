@@ -7,7 +7,10 @@ read_localhost_nickname
 . "$ZDOTDIR/.Xdisplay.$localhost_nickname"
 
 apply_keymap () {
-    if model-01-attached; then
+    if pgrep -u root keyd; then
+        echo "keyd is running, using vanilla GB keymap"
+        keymap-menu gb
+    elif model-01-attached; then
         echo "Found Keyboardio Model 01 attached; using model01 keymap ..."
         keymap-menu model01
     elif atreus-attached; then

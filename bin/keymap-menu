@@ -42,6 +42,7 @@ get_interactive_keymap_choice () {
     cat <<EOF
 Choose from one of the following keymaps:
 
+  0) Standard US layout
   1) Standard GB layout
   2) Dell D620 hacked to suit Adam
   3) Dell D630 hacked to suit Adam
@@ -68,6 +69,7 @@ EOF
     unset keymap
 
     case "$choice" in
+        0) keymap=us              ;;
         1) keymap=gb              ;;
         2) keymap=d620-hacked     ;;
         3) keymap=d630-hacked     ;;
@@ -102,6 +104,10 @@ get_keymap_settings () {
     keymap="$1"
 
     case "$keymap" in
+        us)
+            xkb='-symbols pc+us'
+            #xmodmap=Dell-D630-normal
+            ;;
         gb)
             xkb='-symbols pc+us+gb'
             #xmodmap=Dell-D630-normal
