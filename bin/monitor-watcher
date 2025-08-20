@@ -83,6 +83,7 @@ while true; do
         old_md5=$(cat "$md5_file")
     fi
     echo "MD5 of existing inxi monitor cache: ${old_md5:-(empty)}"
+    cat ~/.cache/libdpy/inxi-Gxx.monitors.json
 
     # Wait for valid monitor resolutions
     wait_for_valid_layout
@@ -90,6 +91,7 @@ while true; do
     # Ensure that inxi cache is populated (this will automatically
     # create/update the md5 file too)
     ~/lib/libdpy.py --inxi-json >/dev/null
+    cat ~/.cache/libdpy/inxi-Gxx.monitors.json
 
     new_md5=""
     if [ -f "$md5_file" ]; then
