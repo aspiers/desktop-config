@@ -1,3 +1,12 @@
 # left-alpha-common: Common left-side alpha key remapping
-y = grave
-h = backslash
+[main]
+q = w
+w = e
+e = r
+r = t
+t = grave
+
+s = d
+d = f
+f = g
+g = backslash

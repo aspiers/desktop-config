@@ -1,0 +1,5 @@
+# kinesis-left-thumb-pad: Kinesis left thumb pad remapping
+delete = layer(alt)
+leftalt = delete
+home = layer(altgr)
+end = esc

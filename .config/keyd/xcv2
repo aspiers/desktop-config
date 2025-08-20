@@ -1,4 +1,6 @@
 # xcv2: X-C-V key remapping variant 2
+[main]
+102nd = x
 backslash = x
 z = c
 x = v
