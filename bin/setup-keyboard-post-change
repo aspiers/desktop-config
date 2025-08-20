@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# Script to run post-keyboard-change hooks
+# Extracted from keymap-menu for modularity
+
+usage() {
+    cat <<EOF >&2
+Usage: $0
+Runs all hooks found in .keymaps/post-change.d/
+EOF
+    exit "${1:-1}"
+}
+
+main() {
+    if [ "$1" = '-h' ] || [ "$1" = '--help' ]; then
+        usage 0
+    fi
+
+    [ $# -gt 0 ] && usage
+
+    . $ZDOTDIR/.shared_env
+    . $ZDOTDIR/.zsh/functions/enable_nullglob
+
+    for hook in $( . $ZDOT_FIND_HOOKS ".keymaps/post-change.d" ); do
+        echo "Running post-change hook $hook ..."
+        "$hook"
+    done
+}
+
+main "$@"
