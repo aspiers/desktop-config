@@ -131,7 +131,7 @@ class XrandrJsonCache(DisplayDataCache):
             "timestamp": time.time(),
             "screens": screens
         }
-        return json.dumps(cache_data, indent=2)
+        return json.dumps(cache_data, indent=2, sort_keys=True)
 
     def cache_reader(self):
         with open(self.cache_file, 'r') as f:
@@ -150,10 +150,13 @@ class InxiJsonCache(DisplayDataCache):
     cache_file = os.path.join(CACHE_DIR, "inxi-Gxx.json")
 
     def builder(self, _use_cache):
-        return subprocess.check_output(
+        output = subprocess.check_output(
             'inxi -c 0 --tty -Gxx --output json --output-file print',
             shell=True
         )
+        # Parse the JSON and re-serialize with sorted keys for stable hashing
+        data = json.loads(output)
+        return json.dumps(data, indent=2, sort_keys=True)
 
     def cache_reader(self):
         with open(self.cache_file, 'r') as f:
@@ -174,7 +177,7 @@ class InxiMonitorsCache(DisplayDataCache):
                 break
 
         if not graphics_list:
-            return json.dumps(monitors, indent=2)
+            return json.dumps(monitors, indent=2, sort_keys=True)
 
         for item in graphics_list:
             if not isinstance(item, dict):
@@ -189,7 +192,7 @@ class InxiMonitorsCache(DisplayDataCache):
             if is_monitor:
                 monitors.append(cleaned_item)
 
-        return json.dumps(monitors, indent=2)
+        return json.dumps(monitors, indent=2, sort_keys=True)
 
     def cache_reader(self):
         with open(self.cache_file, 'r') as f:
