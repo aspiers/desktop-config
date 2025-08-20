@@ -32,7 +32,7 @@ windows:
 
   <INCLUDE common/terminal-windows>
 
-  <INCLUDE common/top-term-windows>
+  <INCLUDE common/top-term-windows-secondary>
 
   <INCLUDE common/editor-windows>
 

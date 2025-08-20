@@ -17,7 +17,7 @@ windows:
 
   <INCLUDE common/terminal-windows>
 
-  <INCLUDE common/top-term-windows>
+  <INCLUDE common/top-term-windows-primary>
 
   <INCLUDE common/editor-windows>
 

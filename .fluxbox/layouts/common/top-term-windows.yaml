@@ -1,3 +1,0 @@
-- - (Role=btop|htop|sudo (powertop|nethogs|iotop|iftop)|nvtop|amdgpu_top|lnav-system)
-  - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 6} {MoveTo 0 0 Center} {ResizeTo 90% 90%}
-  - Iconhidden {yes}

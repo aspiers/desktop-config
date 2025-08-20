@@ -49,7 +49,7 @@
   [Position]	(Center)	{0 0}
 [end]
 [app] (role=btop|htop|sudo (powertop|nethogs|iotop|iftop)|nvtop|amdgpu_top|lnav-system)
-  [Iconhidden] {yes}
+#  [Iconhidden] {yes}
   [Dimensions] {90% 90%}
   [Position] (Center) {0 0}
   [Workspace]	{6}
