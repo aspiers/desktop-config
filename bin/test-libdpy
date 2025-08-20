@@ -4,6 +4,7 @@
 
 set -e
 
+# shellcheck source=/home/adam/lib/libhost.sh
 . ~/lib/libhost.sh
 read_localhost_nickname
 
@@ -38,22 +39,56 @@ get-layout
 screen-coords 50% 50%
 
 # Test MD5 stability for JSON caches
-test_cache_md5_stability() {
+
+generate_cache() {
+    local cache_command="$1"
+    ~/bin/clear-dpy-cache
+    eval "$cache_command" > /dev/null
+}
+
+get_json_without_timestamp() {
+    local cache_file="$1"
+    if command -v jq >/dev/null 2>&1; then
+        cat "$cache_file" | jq -S 'del(.timestamp)'
+    else
+        cat "$cache_file" | python3 -c "import json,sys; d=json.load(sys.stdin); d.pop('timestamp',None); print(json.dumps(d,sort_keys=True))"
+    fi
+}
+
+test_structure_stability() {
     local test_name="$1"
-    local cache_command="$2" 
+    local cache_command="$2"
+    local cache_file="$3"
+
+    generate_cache "$cache_command"
+    local content1_no_ts
+    content1_no_ts=$(get_json_without_timestamp "$cache_file")
+
+    generate_cache "$cache_command"
+    local content2_no_ts
+    content2_no_ts=$(get_json_without_timestamp "$cache_file")
+
+    if [ "$content1_no_ts" = "$content2_no_ts" ]; then
+        echo "PASS: $test_name structure stable (timestamp varies as expected)"
+    else
+        echo "FAIL: $test_name structure unstable even without timestamp"
+        exit 1
+    fi
+}
+
+test_md5_stability() {
+    local test_name="$1"
+    local cache_command="$2"
     local md5_file="$3"
-    
-    # Expand tilde in file path
-    md5_file=$(eval echo "$md5_file")
-    
-    ~/bin/clear-dpy-cache
-    eval "$cache_command" > /dev/null
-    local md5_1=$(cat "$md5_file")
-    
-    ~/bin/clear-dpy-cache
-    eval "$cache_command" > /dev/null
-    local md5_2=$(cat "$md5_file")
-    
+
+    generate_cache "$cache_command"
+    local md5_1
+    md5_1=$(cat "$md5_file")
+
+    generate_cache "$cache_command"
+    local md5_2
+    md5_2=$(cat "$md5_file")
+
     if [ "$md5_1" != "$md5_2" ]; then
         echo "FAIL: $test_name MD5 unstable: $md5_1 != $md5_2"
         exit 1
@@ -62,10 +97,27 @@ test_cache_md5_stability() {
     fi
 }
 
+test_cache_md5_stability() {
+    local test_name="$1"
+    local cache_command="$2"
+    local md5_file="$3"
+    local has_timestamp="$4"
+
+    # Expand tilde in file path
+    md5_file=$(eval echo "$md5_file")
+
+    if [ "$has_timestamp" = "true" ]; then
+        local cache_file="${md5_file%.md5}"
+        test_structure_stability "$test_name" "$cache_command" "$cache_file"
+    else
+        test_md5_stability "$test_name" "$cache_command" "$md5_file"
+    fi
+}
+
 echo "Testing MD5 stability for JSON caches..."
 
-test_cache_md5_stability "XrandrJsonCache" "~/lib/libdpy.py" "~/.cache/libdpy/xrandr.json.md5"
-test_cache_md5_stability "InxiJsonCache" "~/lib/libdpy.py --inxi-json" "~/.cache/libdpy/inxi-Gxx.json.md5"
-test_cache_md5_stability "InxiMonitorsCache" "monitors-connected" "~/.cache/libdpy/inxi-Gxx.monitors.json.md5"
+test_cache_md5_stability "XrandrJsonCache" "~/lib/libdpy.py" "~/.cache/libdpy/xrandr.json.md5" "true"
+echo "SKIP: InxiJsonCache contains dynamic temperature data - MD5 instability expected"
+test_cache_md5_stability "InxiMonitorsCache" "~/lib/libdpy.py --find-by-model BOE" "~/.cache/libdpy/inxi-Gxx.monitors.json.md5" "false"
 
 echo "All MD5 stability tests passed!"
