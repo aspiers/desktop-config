@@ -9,4 +9,5 @@ t = grave
 s = d
 d = f
 f = g
-g = backslash
+# 102nd seems to be \ on Framework GB keyboard
+g = 102nd

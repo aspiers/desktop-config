@@ -1,0 +1,10 @@
+# xcv1: X-C-V key remapping variant 1
+[main]
+# AB01
+z = x
+
+# AB02
+x = c
+
+# AB03
+c = v

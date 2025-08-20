@@ -1,6 +1,10 @@
 # xcv2: X-C-V key remapping variant 2
 [main]
 102nd = x
-backslash = x
+#backslash = x
+
+# AB01
 z = c
+
+# AB02
 x = v
