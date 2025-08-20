@@ -7,14 +7,14 @@
 # assignments, such as which screen will actually be used as the
 # primary screen.  That needs to be handled in liblayout.
 
+import argparse
+import hashlib
+import json
+import os
 import re
 import subprocess
 import sys
-import os
-import json
 import time
-import argparse
-import hashlib
 
 # Global constants
 GLOBAL_CACHE_DIR = os.environ.get('XDG_CACHE_HOME') or os.path.expanduser("~/.cache")
