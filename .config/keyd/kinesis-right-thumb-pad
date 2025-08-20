@@ -1,0 +1,3 @@
+#rightalt = layer(altgr)
+rightalt = compose
+rightcontrol = layer(meta)

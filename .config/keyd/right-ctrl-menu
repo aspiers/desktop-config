@@ -1,2 +1,3 @@
-# right-ctrl-menu: Right Control becomes Compose/Menu
+# This requires setxkbmap -option compose:menu for some reason;
+# see the us keymap in ~/bin/keymap-menu
 rightcontrol = compose

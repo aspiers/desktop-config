@@ -6,8 +6,9 @@ e = r
 r = t
 t = grave
 
+a = s
 s = d
 d = f
 f = g
 # 102nd seems to be \ on Framework GB keyboard
-g = 102nd
+g = \

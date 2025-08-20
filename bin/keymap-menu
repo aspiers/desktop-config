@@ -105,8 +105,9 @@ get_keymap_settings () {
 
     case "$keymap" in
         us)
-            xkb='-symbols pc+us'
-            #xmodmap=Dell-D630-normal
+            xkb='-option compose:menu -layout us'
+            #xkb='-symbols pc+us+compose(menu)'
+            #xkb='-symbols adam(us)'
             ;;
         gb)
             xkb='-symbols pc+us+gb'
@@ -214,6 +215,8 @@ apply_keymap_settings () {
 
         if [ -n "$xkb" ]; then
             echo "Applying setxkbmap $xkb to $DISPLAY ..."
+            # N.B. -option arguments don't work here; they can't
+            # be mixed with -symbols apparently.
             setxkbmap $xkb -print | \
                 xkbcomp -I$ZDOTDIR/.xkb - $DISPLAY 2>&1 | \
                 grep -Ev 'No symbols defined for'

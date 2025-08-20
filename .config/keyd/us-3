@@ -1,8 +1,5 @@
-# See minus-sterling-euro for details
-\ = macro(compose L -)
-
-[shift]
-\ = macro(compose E =)
+[Shift]
+3 = #
 
 # prevent any lines after an include of this file from
 # being accidentally put in the shift layer

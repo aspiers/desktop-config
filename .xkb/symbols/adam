@@ -1,3 +1,8 @@
+xkb_symbols "us" {
+    include "pc(pc105)"
+    include "us"
+};
+
 xkb_symbols "framework" {
     include "pc(pc105)"
     include "us"
