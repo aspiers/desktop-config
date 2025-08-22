@@ -336,6 +336,9 @@ reorg: 6 :MacroCmd {Exec ly --debug -s top-right} <%= keymode_done 'reorg' %>
 reorg: 7 :MacroCmd {Exec ly --debug -s bottom-left} <%= keymode_done 'reorg' %>
 reorg: 8 :MacroCmd {Exec ly --debug -s bottom-right} <%= keymode_done 'reorg' %>
 reorg: Shift 2 :MacroCmd {Exec ly --debug -s 2cols} <%= keymode_done 'reorg' %>
+# For some reason, running keyd breaks the above Shift 2 binding, so we also need
+# this one (just quotedbl by itself doesn't work):
+reorg: Shift quotedbl :MacroCmd {Exec ly --debug -s 2cols} <%= keymode_done 'reorg' %>
 reorg: Shift 5 :ResizeTo 1280 720 <%= keymode_done 'reorg' %>
 reorg: Shift semicolon :MacroCmd {Exec ly --debug -s 2rows} <%= keymode_done 'reorg' %>
 
