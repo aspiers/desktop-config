@@ -446,7 +446,7 @@ Control Mod4 c :Exec chrome-session-tabs 'calendar.google.com/calendar/u/1'
 Shift Mod4 r :Exec chrome-session-tabs 'app.reclaim.ai'
 
 # useful as a calculator
-Control Mod1 Mod4 n :Exec top-term node
+Control Mod1 Mod4 n :Exec fluxbox-focus-or-launch --toggle -r 'node' top-term --geometry 100x25 node
 
 #Mod4 e :MacroCmd {Exec wmctrl -x -a emacs} {<%= focus_active %>}
 Mod4 e  <%= next_unhidden "(Class=Emacs)" %>
