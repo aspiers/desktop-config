@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# TODO: try switching to https://github.com/phillipberndt/autorandr
+
 # See .xsession-progs.d/person-adam.spiers/01-window-manager and
 # .config/systemd/user/monitor-watcher.service for how this gets run.
 # (Nothing relevant in .cfg-post.d/desktop-config.)
