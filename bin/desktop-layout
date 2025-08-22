@@ -131,7 +131,7 @@ def main():
 
     try:
         active_win_id = subprocess.check_output(['xdotool', 'getactivewindow']).rstrip()
-    except CalledProcessError:
+    except subprocess.CalledProcessError:
         active_win_id = None
 
     layout_file = liblayout.get_layout_file(args.layout, args.dir)
