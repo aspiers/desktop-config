@@ -79,8 +79,8 @@ setup_panels () {
 
     if host-has-prop laptop; then
         if BenQ-connected; then
-            set_panel_size 1 40
-            set_panel_size 2 30
+            set_panel_size 1 30
+            set_panel_size 2 45
             set_panel_size 3 28
         elif large-monitor-connected; then
             set_panel_size 1 40
