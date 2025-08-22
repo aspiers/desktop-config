@@ -1,6 +1,6 @@
-[shift]
-2 = "
-' = @
+[Shift]
+# See minus-sterling-euro for details
+3 = macro(compose L -)
 
 # prevent any lines after an include of this file from
 # being accidentally put in the shift layer
