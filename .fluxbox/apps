@@ -52,7 +52,6 @@
 #  [Iconhidden] {yes}
   [Dimensions] {90% 90%}
   [Position] (Center) {0 0}
-  [Workspace]	{6}
 [end]
 [app] (role=ccmonitor)
   [Iconhidden] {yes}

@@ -76,8 +76,7 @@ main () {
 
     # Check if toggle mode and window is already focused
     if [ -n "$toggle" ] && window_is_focused; then
-        echo "Window is focused, minimizing..."
-        fluxbox-remote "Minimize"
+        hide_window
         restore_previous_desktop
         exit 0
     fi
@@ -85,6 +84,8 @@ main () {
     # In toggle mode, store current desktop before focusing/launching
     if [ -n "$toggle" ]; then
         store_current_desktop
+        # First try to fetch window from other workspaces if it exists
+        fetch_window
     fi
 
     focus_window
@@ -151,14 +152,32 @@ window_is_focused () {
     [[ "$window_attribute" =~ $window_pattern ]]
 }
 
-focus_window () {
+get_fluxbox_pattern () {
     if [ -n "$class" ]; then
-        fluxbox_pattern="(Class=$window_pattern)"
+        echo "(Class=$window_pattern)"
     elif [ -n "$role" ]; then
-        fluxbox_pattern="(Role=$window_pattern)"
+        echo "(Role=$window_pattern)"
     else
-        fluxbox_pattern="(Title=$window_pattern)"
+        echo "(Title=$window_pattern)"
     fi
+}
+
+fetch_window () {
+    local fluxbox_pattern=$(get_fluxbox_pattern)
+    echo "Fetching window matching $fluxbox_pattern to current workspace..."
+    cmd="MacroCmd {TakeToWorkspace [current]} {If {Matches (Stuck=no)} {Stick}}"
+    fluxbox-remote "ForEach {$cmd} {Matches $fluxbox_pattern}"
+}
+
+hide_window () {
+    local fluxbox_pattern=$(get_fluxbox_pattern)
+    echo "Hiding window matching $fluxbox_pattern..."
+    cmd="MacroCmd {If {Matches (Stuck=yes)} {Stick}} {SendToWorkspace 6} {Minimize}"
+    fluxbox-remote "ForEach {$cmd} {Matches $fluxbox_pattern}"
+}
+
+focus_window () {
+    local fluxbox_pattern=$(get_fluxbox_pattern)
     echo "NextWindow $fluxbox_pattern"
     fluxbox-remote "NextWindow $fluxbox_pattern"
     sleep 0.1
