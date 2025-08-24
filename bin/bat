@@ -12,6 +12,10 @@ if [ -z "$orig_bat" ]; then
     exit 1
 fi
 
+if [[ "$TERM" = *kitty* ]]; then
+    exec "$orig_bat" "$@"
+fi
+
 case "$(<~/.config/gnome-terminal-profile)" in
     *Bright*)
         light_or_dark=light
