@@ -1,0 +1,5 @@
+# Doesn't work in xfce4-terminal; see
+# https://gitlab.xfce.org/apps/xfce4-terminal/-/issues/375
+# We work around that with a bat wrapper.
+export BAT_THEME_LIGHT='Solarized (light)'
+export BAT_THEME_DARK='Solarized (dark)'

@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# Ugly workaround for https://gitlab.xfce.org/apps/xfce4-terminal/-/issues/375
+
+if ! orig_bat=$(which -a bat | head -2 | tail -1); then
+    echo >&2 "$0: Error while attempting to locate bat(1); aborting."
+    exit 1
+fi
+
+if [ -z "$orig_bat" ]; then
+    echo >&2 "$0: Failed to locate bat(1); aborting."
+    exit 1
+fi
+
+case "$(<~/.config/gnome-terminal-profile)" in
+    *Bright*)
+        light_or_dark=light
+        ;;
+    *)
+        light_or_dark=dark
+        ;;
+esac
+
+# Make sure the relevant BAT_THEME_{LIGHT,DARK} variable is set ...
+. ~/.shared_rc.d/bat
+
+# ... and that BAT_THEME doesn't override it
+unset BAT_THEME
+
+exec "$orig_bat" --theme=$light_or_dark "$@"
