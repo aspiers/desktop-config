@@ -161,8 +161,9 @@ get_fluxbox_pattern () {
 
 fetch_window () {
     local fluxbox_pattern=$(get_fluxbox_pattern)
+    local current_desktop=$(<"$DESKTOP_FILE")
     echo "Fetching window matching $fluxbox_pattern to current workspace..."
-    cmd="MacroCmd {TakeToWorkspace [current]} {If {Matches (Stuck=no)} {Stick}}"
+    cmd="MacroCmd {TakeToWorkspace $(( current_desktop + 1 ))} {If {Matches (Stuck=no)} {Stick}}"
     fluxbox-remote "ForEach {$cmd} {Matches $fluxbox_pattern}"
 }
 
