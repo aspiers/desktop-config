@@ -8,7 +8,7 @@ read_localhost_nickname
 
 apply_keymap () {
     if pgrep -u root keyd; then
-        echo "keyd is running, using vanilla GB keymap"
+        echo "keyd is running, using vanilla keymap"
         keymap-menu us
     elif model-01-attached; then
         echo "Found Keyboardio Model 01 attached; using model01 keymap ..."
