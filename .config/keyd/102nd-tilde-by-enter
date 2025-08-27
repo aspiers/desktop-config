@@ -1,0 +1,11 @@
+# 102nd is an alternate \, sometimes sent by the # key on
+# UK keyboards.
+
+102nd = #
+
+[shift]
+102nd = ~
+
+# prevent any lines after an include of this file from
+# being accidentally put in the shift layer
+[main]
