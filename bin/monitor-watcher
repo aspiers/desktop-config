@@ -10,6 +10,9 @@
 
 SETUP=$HOME/bin/setup-monitor
 
+. ~/lib/libhost.sh
+read_localhost_nickname
+
 # Function to wait for monitor resolutions to be detected
 wait_for_valid_layout() {
     local timeout=30
@@ -70,6 +73,10 @@ while true; do
 
     echo "sleeping 1s"
     sleep 1
+
+    display_conf="$HOME/.Xdisplay.$localhost_nickname"
+    echo "Loading $display_conf"
+    source "$display_conf"
 
     echo "Enabling any disabled monitors ..."
     xrandr --auto
