@@ -9,4 +9,5 @@ case "$WINDOWMANAGER" in
         ;;
 esac
 
-run_if_executable watchlogs-system-window >/dev/null &
+echo "Skipping watchlogs-system-window in favour of fluxbox key binding"
+#run_if_executable watchlogs-system-window >/dev/null &
