@@ -35,6 +35,7 @@ tiny_font_name="$font_name"
 small_font_name="$font_name"
 medium_font_name="$font_name"
 large_font_name="$font_name"
+emacs_font_height=130
 
 case "$localhost_nickname" in
     ionian)
