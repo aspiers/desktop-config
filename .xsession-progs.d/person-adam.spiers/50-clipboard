@@ -2,7 +2,7 @@
 
 . $ZDOTDIR/lib/libproc.sh
 
-if which clipit >&/dev/null; then
+if false && which clipit >&/dev/null; then
     run_unless_running clipit >& ~/.log/clipit.log &
 elif which parcellite >&/dev/null; then
     run_unless_running parcellite >& ~/.log/parcellite.log &
