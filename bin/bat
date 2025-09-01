@@ -16,8 +16,8 @@ if [[ "$TERM" = *kitty* ]]; then
     exec "$orig_bat" "$@"
 fi
 
-case "$(<~/.config/gnome-terminal-profile)" in
-    *Bright*)
+case "$(<~/.config/theme)" in
+    *light*)
         light_or_dark=light
         ;;
     *)
