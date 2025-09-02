@@ -3,3 +3,9 @@ delete = layer(alt)
 leftalt = delete
 home = layer(altgr)
 end = esc
+
+[meta]
+home = home
+end = end
+
+[main]
