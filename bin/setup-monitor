@@ -14,27 +14,30 @@ echo "$layout"
 # on config within the layout file.  The xrandr outputs should be discovered
 # dynamically based on model name.
 celtic_width=2880
+celtic_height=1920
+celtic_size="${celtic_width}x${celtic_height}"
 BenQ_width=2560
 
 eval $(~/lib/libdpy.py)
 
 case "$layout" in
     celtic)
-        : no xrandr needed
+        xrandr \
+            --output ${screen_0_name} --pos 0x0 --scale 1 --size $celtic_size --primary --auto
         ;;
     celtic+large)
         xrandr \
-            --output ${screen_0_name} --pos 0x0 --scale 1 --auto \
+            --output ${screen_0_name} --pos 0x0 --scale 1 --size $celtic_size --auto \
             --output ${screen_1_name} --pos ${celtic_width}x0 --scale 1 --primary --auto
         ;;
     celtic+BenQ)
         xrandr \
-            --output ${screen_0_name} --pos 0x0 --scale 1 --auto \
+            --output ${screen_0_name} --pos 0x0 --scale 1 --size $celtic_size --auto \
             --output ${screen_1_name} --pos ${celtic_width}x0 --scale 1 --primary --auto
         ;;
     celtic+BenQ+Dell)
         xrandr \
-            --output ${screen_0_name} --pos 0x0 --scale 1 --auto \
+            --output ${screen_0_name} --pos 0x0 --scale 1 --size $celtic_size --auto \
             --output ${screen_1_name} --pos ${celtic_width}x0 --scale 1 --primary --auto \
             --output ${screen_2_name} --pos $(( celtic_width + BenQ_width ))x0 --scale 1 --auto
         # Alternate setup where laptop screen is off
