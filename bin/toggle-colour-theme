@@ -31,6 +31,9 @@ notify-send -t 3000 "Switching to $new_theme theme"
 # Update the theme file
 echo "$new_theme" > "$THEME_FILE"
 
+# Ensure apps like Chrome honour the theme setting
+gsettings set org.gnome.desktop.interface color-scheme "prefer-$new_theme"
+
 xfce4-terminal-config "$terminal_profile"
 gnome-terminal-profile "$terminal_profile"
 
