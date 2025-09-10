@@ -219,7 +219,7 @@ apply_keymap_settings () {
             # be mixed with -symbols apparently.
             setxkbmap $xkb -print | \
                 xkbcomp -I$ZDOTDIR/.xkb - $DISPLAY 2>&1 | \
-                grep -Ev 'No symbols defined for'
+                grep -Ev 'No symbols defined for|Warning:.*(Key <I[0-9]+> not found|Could not resolve keysym XF86)|Symbols ignored'
         fi
     else
         echo "\$DISPLAY not set."
