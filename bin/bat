@@ -16,6 +16,7 @@ if [[ "$TERM" = *kitty* ]]; then
     exec "$orig_bat" "$@"
 fi
 
+# FIXME: this doesn't work over ssh
 case "$(<~/.config/theme)" in
     *light*)
         light_or_dark=light
