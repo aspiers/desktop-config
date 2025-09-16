@@ -104,6 +104,9 @@ main () {
 
     echo "Restarting xfce4-panel ..."
     xfce4-panel -r
+
+    pkill nm-applet
+    nm-applet >&~/.log/nm-applet.log &
 }
 
 main
