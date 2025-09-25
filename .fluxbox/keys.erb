@@ -460,7 +460,8 @@ Control Mod4 f :Exec chrome-session-fzf messenger.com
 
 Mod4 g :Exec fluxbox-focus-or-launch -c TelegramDesktop ~/software/telegram/Telegram
 Shift Mod4 g :Exec chrome-session-tabs https://meet.google.com/
-Control Mod4 g :Exec chrome-session-tabs https://app.gather.town/
+Control Mod4 g <%= next_unhidden "(Title=Google Meet.*)" %>
+#Control Mod4 g :Exec chrome-session-tabs https://app.gather.town/
 
 Mod4 h :Exec chrome-session-fzf 'https://github.com/ '
 
