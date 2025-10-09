@@ -112,8 +112,9 @@ def get_tab_info_for_fzf(windows):
                 'window_title': window['title'],
                 'window_index': win_index,
                 'index': tab['index'],
-                'tab_title': tab['title'],
-                'url': tab['url']
+                'tab_title': tab['title'] or tab['url'],
+                'url': tab['url'],
+                'group': tab.get('group', '')
             })
 
     # print(json.dumps(tabs, indent=4))
@@ -127,15 +128,20 @@ def get_tab_choices(windows):
         win_title = tab['window_userTitle']
         if not win_title:
             win_title = UNNAMED_WIN_PREFIX + str(tab['window_index'])
-        data = (win_title, tab['index'], tab['tab_title'], tab['url'])
-        choices.append((*data, "%s -~- %3d -~- %s | %s" % data))
+        if tab['group'] and tab['group'] != win_title:
+            fmt = "%s -~- %s -~- %3d -~- %s | %s"
+            data = (win_title, tab['group'], tab['index'], tab['tab_title'], tab['url'])
+        else:
+            fmt = "%s -~- %3d -~- %s | %s"
+            data = (win_title, tab['index'], tab['tab_title'], tab['url'])
+        choices.append((*data, fmt % data))
 
     # print(json.dumps(choices, indent=4))
     return choices
 
 
 def get_fzf_choice_strings(choices):
-    return [ data[4] for data in choices ]
+    return [ choice[-1] for choice in choices ]
 
 
 def choose_tab_through_fzf(windows, initial):
@@ -150,7 +156,7 @@ def choose_tab_through_fzf(windows, initial):
     if not choice:
         sys.exit(1)
 
-    m = re.match(r'(?P<window>.+) -~-\s+(?P<tabnum>\d+) -~- (?P<tabtitle>.+)', choice[0])
+    m = re.match(r'(?P<window>.+?)(?: -~-\s+(?P<group>.+?))? -~-\s+(?P<tabnum>\d+) -~- (?P<tabtitle>.+)', choice[0])
     if not m:
         die("fzf failed")
     d = m.groupdict()
