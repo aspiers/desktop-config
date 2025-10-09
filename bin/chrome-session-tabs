@@ -12,6 +12,8 @@ import sys
 import time
 from shutil import which
 
+import argparse
+
 from pyfzf.pyfzf import FzfPrompt
 
 
@@ -270,22 +272,24 @@ def main():
     # which we can then use to sort them by title:
     windows = sorted(raw_windows, key=lambda w: w.get('title') or 'Untitled window')
 
-    if len(sys.argv) < 2:
-        show_windows(windows)
-        return
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--fzf', action='store_true', help='Use fzf to select a tab')
+    parser.add_argument('substring', nargs='*', help='Substring to search for in tab titles/URLs')
+    args = parser.parse_args()
 
-    if sys.argv[1] == '--fzf':
-        run_fzf(windows, ' '.join(sys.argv[2:]))
-        return
-
-    substring = ' '.join(sys.argv[1:])
-    print("Searching for visible tab containing [%s]" % substring)
-    tab = find_tab(substring, tabs)
-    if tab:
-        report_tab_found(tab)
-        focus_by_tab(tab)
+    if args.fzf:
+        run_fzf(windows, ' '.join(args.substring))
+    elif args.substring:
+        substring = ' '.join(args.substring)
+        print("Searching for visible tab containing [%s]" % substring)
+        tab = find_tab(substring, tabs)
+        if tab:
+            report_tab_found(tab)
+            focus_by_tab(tab)
+        else:
+            die("No visible tab found.")
     else:
-        die("No visible tab found.")
+        show_windows(windows)
 
 
 main()
