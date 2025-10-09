@@ -123,17 +123,18 @@ def get_tab_info_for_fzf(windows):
 
 def get_tab_choices(windows):
     tabs = get_tab_info_for_fzf(windows)
+    # Compute max widths
+    max_win = max(len(tab['window_userTitle'] or UNNAMED_WIN_PREFIX + str(tab['window_index'])) for tab in tabs)
+    max_group = max(len(tab['group']) if tab['group'] and tab['group'] != (tab['window_userTitle'] or UNNAMED_WIN_PREFIX + str(tab['window_index'])) else 0 for tab in tabs)
+    max_title = max(len(tab['tab_title']) for tab in tabs)
     choices = []
     for tab in tabs:
         win_title = tab['window_userTitle']
         if not win_title:
             win_title = UNNAMED_WIN_PREFIX + str(tab['window_index'])
-        if tab['group'] and tab['group'] != win_title:
-            fmt = "%s -~- %s -~- %3d -~- %s | %s"
-            data = (win_title, tab['group'], tab['index'], tab['tab_title'], tab['url'])
-        else:
-            fmt = "%s -~- %3d -~- %s | %s"
-            data = (win_title, tab['index'], tab['tab_title'], tab['url'])
+        group_display = tab['group'] if tab['group'] and tab['group'] != win_title else ""
+        fmt = f"%-{max_win}s -~- %-{max_group}s -~- %3d -~- %-{max_title}s | %s"
+        data = (win_title, group_display, tab['index'], tab['tab_title'], tab['url'])
         choices.append((*data, fmt % data))
 
     # print(json.dumps(choices, indent=4))
@@ -160,7 +161,9 @@ def choose_tab_through_fzf(windows, initial):
     if not m:
         die("fzf failed")
     d = m.groupdict()
-    return d['window'], int(d['tabnum'])
+    window = d['window'].strip()
+    group = d['group'].strip() if d['group'] else None
+    return window, int(d['tabnum'])
 
 
 def run_fzf(windows, initial):
