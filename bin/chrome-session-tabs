@@ -128,14 +128,13 @@ def get_tab_choices(windows):
     # Compute max widths
     max_win = max(len(tab['window_userTitle'] or UNNAMED_WIN_PREFIX + str(tab['window_index'])) for tab in tabs)
     max_group = max(len(tab['group']) if tab['group'] and tab['group'] != (tab['window_userTitle'] or UNNAMED_WIN_PREFIX + str(tab['window_index'])) else 0 for tab in tabs)
-    max_title = max(len(tab['tab_title']) for tab in tabs)
     choices = []
     for tab in tabs:
         win_title = tab['window_userTitle']
         if not win_title:
             win_title = UNNAMED_WIN_PREFIX + str(tab['window_index'])
         group_display = tab['group'] if tab['group'] and tab['group'] != win_title else ""
-        fmt = f"%-{max_win}s / %-{max_group}s / %2d -~- %-{max_title}s | %s"
+        fmt = f"%-{max_win}s / %-{max_group}s / %2d -~- %s | %s"
         data = (win_title, group_display, tab['index'], tab['tab_title'], tab['url'])
         choices.append((*data, fmt % data))
 
