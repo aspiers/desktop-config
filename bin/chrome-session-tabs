@@ -17,7 +17,7 @@ from pyfzf.pyfzf import FzfPrompt
 
 DUMPER = 'chrome-session-dump'
 SESSION = os.path.expanduser('~/.config/google-chrome/Default/Sessions')
-UNNAMED_WIN_PREFIX = 'Window #'
+UNNAMED_WIN_PREFIX = 'Win #'
 
 
 def die(message):
@@ -133,7 +133,7 @@ def get_tab_choices(windows):
         if not win_title:
             win_title = UNNAMED_WIN_PREFIX + str(tab['window_index'])
         group_display = tab['group'] if tab['group'] and tab['group'] != win_title else ""
-        fmt = f"%-{max_win}s -~- %-{max_group}s -~- %3d -~- %-{max_title}s | %s"
+        fmt = f"%-{max_win}s / %-{max_group}s / %2d -~- %-{max_title}s | %s"
         data = (win_title, group_display, tab['index'], tab['tab_title'], tab['url'])
         choices.append((*data, fmt % data))
 
@@ -157,9 +157,9 @@ def choose_tab_through_fzf(windows, initial):
     if not choice:
         sys.exit(1)
 
-    m = re.match(r'(?P<window>.+?)(?: -~-\s+(?P<group>.+?))? -~-\s+(?P<tabnum>\d+) -~- (?P<tabtitle>.+)', choice[0])
+    m = re.match(r'(?P<window>.+?) +/ +(?P<group>.*?) +/ +(?P<tabnum>\d+) -~- (?P<tabtitle>.+)', choice[0])
     if not m:
-        die("fzf failed")
+        die("fzf failed to parse:\n%s" % choice[0])
     d = m.groupdict()
     window = d['window'].strip()
     group = d['group'].strip() if d['group'] else None
