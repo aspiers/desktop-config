@@ -14,7 +14,7 @@ if [ "$mode" = $me ] && [ -z "$*" ]; then
   here=`dirname $0`
   echo -n "Setting up bluetooth shortcuts in $here ..."
   cd "$here"
-  for mode in adv buds sony lift mx3s roll boom; do
+  for mode in adv buds sony lift mx3s mx4 roll boom; do
     if ! [ -e $mode ]; then
       ln -s $me $mode
       echo -n " $mode"
@@ -34,6 +34,7 @@ case "$mode" in
     sony) dev=80:99:E7:F0:B1:D3 ;;
     lift) dev=D1:B5:24:64:5E:82 ;;
     mx3s) dev=D8:35:48:AE:1C:67 ;;
+    mx4) dev=D6:84:03:DF:4A:0E ;;
     roll) dev=C0:28:8D:00:B8:36 ;;
     boom) dev=EC:81:93:28:55:2E ;;
     *)
