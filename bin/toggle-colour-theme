@@ -36,6 +36,7 @@ gsettings set org.gnome.desktop.interface color-scheme "prefer-$new_theme"
 
 xfce4-terminal-config "$terminal_profile"
 gnome-terminal-profile "$terminal_profile"
+echo "$terminal_profile" > ~/.config/gnome-terminal-profile
 
 echo "Setting XFCE theme to $xfce_theme"
 xfconf-query -c xsettings -p /Net/ThemeName -s "$xfce_theme"
