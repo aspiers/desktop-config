@@ -18,6 +18,10 @@ while true; do
             title="$2"
             shift 2
             ;;
+        --large)
+            font_size=large
+            shift
+            ;;
         --)
             shift
             break
@@ -35,6 +39,10 @@ cmd="${1:-top}"
 [ -n "$1" ] && shift
 
 #urxvt-256color -fn $small_font -geometry $geometry -e "$cmd" "$@"
+if [ "$font_size" = "large" ]; then
+    profile=large-${theme:-Dark}
+fi
+
 gnome-terminal \
     --profile=$profile \
     --geometry $geometry \
