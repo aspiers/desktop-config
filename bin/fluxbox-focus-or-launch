@@ -100,7 +100,7 @@ main () {
     # for the security reasons mentioned in the fluxbox-remote(1) man
     # page.  So we have to launch programs ourselves.
     echo "Launching $* ..."
-    nohup "$@" </dev/null >&/dev/null &
+    nohup "$@" </dev/null &
 
     if [ -n "$focus_after_launch" ]; then
         # N.B. this can steal focus unexpectedly if launching takes
