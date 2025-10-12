@@ -4,11 +4,11 @@
 
 #exec urxvt-256color -fn $large_font -title 'Chrome fzf' -e chrome-session-tabs --fzf "$@"
 theme=$(<~/.config/gnome-terminal-profile)
-profile=large-${theme:-Dark}
 
 if false; then
     gnome-terminal \
-        --profile=$profile \
+        --profile=${theme:-Dark} \
+        --zoom $large_font_gnome_zoom_from_medium \
         --role 'Chrome fzf' \
         --title 'Chrome fzf' \
         -- \

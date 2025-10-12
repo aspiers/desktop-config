@@ -6,7 +6,7 @@ unset COLUMNS
 
 geometry=140x60
 theme=$(<~/.config/gnome-terminal-profile)
-profile=top-term-${theme:-Dark}
+profile=${theme:-Dark}
 
 while true; do
     case "$1" in
@@ -20,6 +20,10 @@ while true; do
             ;;
         --large)
             font_size=large
+            shift
+            ;;
+        --xl)
+            font_size=xl
             shift
             ;;
         --)
@@ -39,12 +43,25 @@ cmd="${1:-top}"
 [ -n "$1" ] && shift
 
 #urxvt-256color -fn $small_font -geometry $geometry -e "$cmd" "$@"
-if [ "$font_size" = "large" ]; then
-    profile=large-${theme:-Dark}
-fi
+zoom_option=""
+case "$font_size" in
+    "")
+        # Default: small font from medium base
+        zoom_option="--zoom $small_font_gnome_zoom_from_medium"
+        ;;
+    large)
+        # Large font from medium base
+        zoom_option="--zoom $large_font_gnome_zoom_from_medium"
+        ;;
+    xl)
+        # XL font from medium base
+        zoom_option="--zoom $xl_font_gnome_zoom_from_medium"
+        ;;
+esac
 
 gnome-terminal \
     --profile=$profile \
+    $zoom_option \
     --geometry $geometry \
     --role "$role" \
     --title "$title" \

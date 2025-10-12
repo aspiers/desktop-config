@@ -13,6 +13,12 @@
 #   small_font_gnome
 #   medium_font_gnome
 #   large_font_gnome
+#
+# And zoom factors for gnome-terminal (relative to medium_font for unified profiles):
+#
+#   small_font_gnome_zoom_from_medium
+#   large_font_gnome_zoom_from_medium
+#   xl_font_gnome_zoom_from_medium
 
 . $ZDOTDIR/lib/libhost.sh
 # eval $( $ZDOTDIR/lib/libdpy.py )
@@ -46,6 +52,7 @@ case "$localhost_nickname" in
         medium_font_tk="$tk_font_name 10"
         medium_font_tk_mono="{$tk_mono_font_name} 10"
         large_font="xft:$large_font_name:size=16"
+        xl_font="xft:$xl_font_name:size=20"
         ;;
     celtic)
         # 285mm x 190mm according grep mm /var/log/Xorg.0.log
@@ -60,6 +67,7 @@ case "$localhost_nickname" in
             medium_font_tk="$tk_font_name 9"
             medium_font_tk_mono="{$tk_mono_font_name} 9"
             large_font="xft:$large_font_name:size=16"
+            xl_font="xft:$xl_font_name:size=20"
         else
             #tiny_font="smoothansi"
             tiny_font="xft:$tiny_font_name:size=12"
@@ -69,6 +77,7 @@ case "$localhost_nickname" in
             medium_font_tk="$tk_font_name 14"
             medium_font_tk_mono="{$tk_mono_font_name} 14"
             large_font="xft:$large_font_name:size=20"
+            xl_font="xft:$xl_font_name:size=24"
         fi
         ;;
     aegean)
@@ -81,6 +90,7 @@ case "$localhost_nickname" in
         medium_font_tk="$tk_font_name 9"
         medium_font_tk_mono="{$tk_mono_font_name} 9"
         large_font="xft:$large_font_name:size=16"
+        xl_font="xft:$xl_font_name:size=20"
         ;;
     *)
         echo >&2 "libfonts: unsupported host $localhost_nickname"
@@ -101,3 +111,15 @@ medium_font_gnome="${medium_font#xft:}"
 medium_font_gnome="${medium_font_gnome/:size=/ }"
 large_font_gnome="${large_font#xft:}"
 large_font_gnome="${large_font_gnome/:size=/ }"
+xl_font_gnome="${xl_font#xft:}"
+xl_font_gnome="${xl_font_gnome/:size=/ }"
+
+# Calculate zoom factors for gnome-terminal (relative to medium_font for unified profiles)
+medium_font_size=$(echo "$medium_font_gnome" | sed 's/.* \([0-9]\+\)$/\1/')
+small_font_size=$(echo "$small_font_gnome" | sed 's/.* \([0-9]\+\)$/\1/')
+large_font_size=$(echo "$large_font_gnome" | sed 's/.* \([0-9]\+\)$/\1/')
+xl_font_size=$(echo "$xl_font_gnome" | sed 's/.* \([0-9]\+\)$/\1/')
+
+small_font_gnome_zoom_from_medium=$(echo "scale=3; $small_font_size / $medium_font_size" | bc)
+large_font_gnome_zoom_from_medium=$(echo "scale=3; $large_font_size / $medium_font_size" | bc)
+xl_font_gnome_zoom_from_medium=$(echo "scale=3; $xl_font_size / $medium_font_size" | bc)
