@@ -48,7 +48,7 @@
 [app] (role=mutt.*)
   [Position]	(Center)	{0 0}
 [end]
-[app] (role=btop|htop|sudo (powertop|nethogs|iotop|iftop)|nvtop|amdgpu_top|lnav-system|bluetuith.*)
+[app] (role=btop|htop|sudo (powertop|nethogs|iotop|iftop)|nvtop|amdgpu_top|lnav-system|bluetuith.*|rxx)
 #  [Iconhidden] {yes}
   [Dimensions] {90% 90%}
   [Position] (Center) {0 0}
