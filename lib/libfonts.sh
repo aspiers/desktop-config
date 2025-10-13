@@ -6,6 +6,7 @@
 #   small_font: for top-term and similar
 #   medium_font: for terminals (and maybe emacs)
 #   large_font: for modal dialogs like chrome-session-fzf
+#   xl_font: for minimal TUIs like bluetuith
 #
 # Also derives these variables from the above, so that
 # gnome-terminal-config can use them:
@@ -47,10 +48,10 @@ case "$localhost_nickname" in
     ionian)
         # 2560x1440 (92dpi) + 1920x1080 (93dpi)
         tiny_font="smoothansi"
-        small_font="xft:$small_font_name:size=8"
-        medium_font="xft:$medium_font_name:size=10"
-        medium_font_tk="$tk_font_name 10"
-        medium_font_tk_mono="{$tk_mono_font_name} 10"
+        small_font="xft:$small_font_name:size=11"
+        medium_font="xft:$medium_font_name:size=12"
+        medium_font_tk="$tk_font_name 12"
+        medium_font_tk_mono="{$tk_mono_font_name} 12"
         large_font="xft:$large_font_name:size=16"
         xl_font="xft:$xl_font_name:size=20"
         ;;
