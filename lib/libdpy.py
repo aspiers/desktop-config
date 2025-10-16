@@ -189,6 +189,8 @@ class InxiMonitorsCache(DisplayDataCache):
                 if key.endswith("#Monitor"):
                     is_monitor = True
                 cleaned_key = re.sub(r'^\d+#\d+#\d+#', '', key)
+                if cleaned_key == 'note':
+                    continue
                 cleaned_item[cleaned_key] = value
             if is_monitor:
                 monitors.append(cleaned_item)
