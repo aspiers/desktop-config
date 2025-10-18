@@ -1,11 +1,11 @@
 {
   "selected_tab": 0,
   "window_geometry": [
-    786,
+    750,
     593
   ],
   "zoom": 100,
-  "force_clipboard": false,
+  "force_clipboard": true,
   "EmojiTab": {
     "Skin": {
       "light skin tone": 0,
