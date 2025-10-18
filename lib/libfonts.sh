@@ -42,18 +42,19 @@ tiny_font_name="$font_name"
 small_font_name="$font_name"
 medium_font_name="$font_name"
 large_font_name="$font_name"
+xl_font_name="$font_name"
 emacs_font_height=130
 
 case "$localhost_nickname" in
     ionian)
         # 2560x1440 (92dpi) + 1920x1080 (93dpi)
         tiny_font="smoothansi"
-        small_font="xft:$small_font_name:size=11"
-        medium_font="xft:$medium_font_name:size=12"
+        small_font="xft:${small_font_name}:size=11"
+        medium_font="xft:${medium_font_name}:size=12"
         medium_font_tk="$tk_font_name 12"
-        medium_font_tk_mono="{$tk_mono_font_name} 12"
-        large_font="xft:$large_font_name:size=16"
-        xl_font="xft:$xl_font_name:size=20"
+        medium_font_tk_mono="$tk_mono_font_name 12"
+        large_font="xft:${large_font_name}:size=16"
+        xl_font="xft:${xl_font_name}:size=20"
         ;;
     celtic)
         # 285mm x 190mm according grep mm /var/log/Xorg.0.log
@@ -61,37 +62,37 @@ case "$localhost_nickname" in
         # old matte display 2256x1504 (193x167 dpi)
         if large-monitor-connected; then
             tiny_font="smoothansi"
-            #tiny_font="xft:$tiny_font_name:size=8"
-            small_font="xft:$small_font_name:size=12"
+            #tiny_font="xft:${tiny_font_name}:size=8"
+            small_font="xft:${small_font_name}:size=12"
             #small_font="10x20"
-            medium_font="xft:$medium_font_name:size=14"
+            medium_font="xft:${medium_font_name}:size=14"
             medium_font_tk="$tk_font_name 9"
             medium_font_tk_mono="{$tk_mono_font_name} 9"
-            large_font="xft:$large_font_name:size=16"
-            xl_font="xft:$xl_font_name:size=20"
+            large_font="xft:${large_font_name}:size=16"
+            xl_font="xft:${xl_font_name}:size=20"
         else
             #tiny_font="smoothansi"
-            tiny_font="xft:$tiny_font_name:size=12"
-            small_font="xft:$small_font_name:size=12"
+            tiny_font="xft:${tiny_font_name}:size=12"
+            small_font="xft:${small_font_name}:size=12"
             #small_font="10x20"
-            medium_font="xft:$medium_font_name:size=14"
+            medium_font="xft:${medium_font_name}:size=14"
             medium_font_tk="$tk_font_name 14"
             medium_font_tk_mono="{$tk_mono_font_name} 14"
-            large_font="xft:$large_font_name:size=20"
-            xl_font="xft:$xl_font_name:size=24"
+            large_font="xft:${large_font_name}:size=20"
+            xl_font="xft:${xl_font_name}:size=24"
         fi
         ;;
     aegean)
         # 3840x2160 (383dpi)
-        tiny_font="xft:$tiny_font_name:size=5"
+        tiny_font="xft:${tiny_font_name}:size=5"
         #small_font="-misc-hack-medium-r-normal--0-0-0-0-m-0-iso8859-15"
         #small_font="10x20"
-        small_font="xft:$small_font_name:size=10"
-        medium_font="xft:$medium_font_name:size=12"
+        small_font="xft:${small_font_name}:size=10"
+        medium_font="xft:${medium_font_name}:size=12"
         medium_font_tk="$tk_font_name 9"
         medium_font_tk_mono="{$tk_mono_font_name} 9"
-        large_font="xft:$large_font_name:size=16"
-        xl_font="xft:$xl_font_name:size=20"
+        large_font="xft:${large_font_name}:size=16"
+        xl_font="xft:${xl_font_name}:size=20"
         ;;
     *)
         echo >&2 "libfonts: unsupported host $localhost_nickname"
@@ -116,6 +117,7 @@ xl_font_gnome="${xl_font#xft:}"
 xl_font_gnome="${xl_font_gnome/:size=/ }"
 
 # Calculate zoom factors for gnome-terminal (relative to medium_font for unified profiles)
+tiny_font_size=$(echo "$tiny_font_gnome" | sed 's/.* \([0-9]\+\)$/\1/')
 medium_font_size=$(echo "$medium_font_gnome" | sed 's/.* \([0-9]\+\)$/\1/')
 small_font_size=$(echo "$small_font_gnome" | sed 's/.* \([0-9]\+\)$/\1/')
 large_font_size=$(echo "$large_font_gnome" | sed 's/.* \([0-9]\+\)$/\1/')
