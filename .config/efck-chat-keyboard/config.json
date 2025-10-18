@@ -1,0 +1,31 @@
+{
+  "selected_tab": 0,
+  "window_geometry": [
+    786,
+    593
+  ],
+  "zoom": 100,
+  "force_clipboard": false,
+  "EmojiTab": {
+    "Skin": {
+      "light skin tone": 0,
+      "medium-light skin tone": 0,
+      "medium skin tone": 1,
+      "medium-dark skin tone": 0,
+      "dark skin tone": 0
+    },
+    "Hair": {
+      "red hair": 0,
+      "curly hair": 0,
+      "white hair": 0,
+      "bald": 1,
+      "blond": 0
+    },
+    "Gender": {
+      "person": 1,
+      "man": 1,
+      "woman": 0
+    }
+  },
+  "GifsTab": {}
+}
