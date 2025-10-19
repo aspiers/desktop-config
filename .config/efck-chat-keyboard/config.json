@@ -1,5 +1,5 @@
 {
-  "selected_tab": 0,
+  "selected_tab": 1,
   "window_geometry": [
     750,
     593
@@ -27,5 +27,6 @@
       "woman": 0
     }
   },
-  "GifsTab": {}
+  "GifsTab": {},
+  "FRecentTab": {}
 }
