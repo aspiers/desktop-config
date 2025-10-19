@@ -1,0 +1,7 @@
+configuration {
+    font: "SauceCodePro Nerd Font 26";
+}
+
+* {
+    width: 80%;
+}
