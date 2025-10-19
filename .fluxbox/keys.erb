@@ -109,7 +109,8 @@ Shift Mod1 Mouse5 :MacroCmd {Raise} {TakeToNextWorkspace}
 Mod4 Return :RootMenu
 Control Mod4 Return :WorkspaceMenu
 Shift Mod4 Return :WindowMenu
-Mod1 Mod4 Return :ClientMenu
+#Mod1 Mod4 Return :ClientMenu
+Mod1 Mod4 Return :Exec rofi -show window
 Mod4 j :CustomMenu ~/.fluxbox/jumpmenu
 Mod4 o :CustomMenu ~/.fluxbox/org-menu
 
