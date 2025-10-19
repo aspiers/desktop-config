@@ -25,3 +25,4 @@ node_modules/
 # Task files
 tasks.json
 tasks/
+/.config/efck-chat-keyboard/recent_emojis.json
