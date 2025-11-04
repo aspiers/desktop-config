@@ -502,6 +502,11 @@ Mod4 bracketright :MacroCmd {Exec wpvol set 2%+} {Delay {Exec wpvol unmute} 1000
 Mod4 bracketleft :Exec wpvol set 2%-
 Mod4 0 :Exec wpvol toggle
 
+Shift Mod4 bracketleft :Exec brightnessctl set 5%-
+Shift Mod4 bracketright :Exec brightnessctl set +5%
+Control Mod4 bracketleft :Exec brightnessctl set 5%-
+Control Mod4 bracketright :Exec brightnessctl set +5%
+
 # exit fluxbox
 Control Mod1 Mod4 Shift e :Exit
 
