@@ -41,14 +41,14 @@
 
     [separator]
 
-    [nop] (Panther PIM)
-    [exec] (pc: Panther Google calendar) {chrome-session-tabs 'calendar.google.com/calendar/u/2'}
-    [exec] (pm: Panther mail) {chrome-session-tabs 'mail.google.com/mail/u/2'}
-    [exec] (ps: sync Panther mail) {top-term sync-Panther-mail}
-    [exec] (pt: Panther TODO) {switch-emacs-eval ~/lib/emacs/shortcuts/org-jump-Panther-todo.el}
-    [exec] (pk: Panther capture) {switch-emacs-eval ~/lib/emacs/shortcuts/org-capture-Panther.el}
-    [exec] (pd: Panther diary) {switch-emacs-eval ~/lib/emacs/shortcuts/org-jump-Panther-diary.el}
-    [exec] (pg: Panther gtd-timer) {urxvt -fn smoothansi -geometry 90x15-0-0 -e sh -c "gtd-timer ~/mail/Panther/offlineimap/INBOX; sleep 60"}
+    [nop] (Hypercerts PIM)
+    [exec] (hc: Hypercerts Google calendar) {chrome-session-tabs 'calendar.google.com/calendar/u/2'}
+    [exec] (hm: Hypercerts mail) {chrome-session-tabs 'mail.google.com/mail/u/2'}
+    [exec] (hs: sync Hypercerts mail) {top-term sync-Hypercerts-mail}
+    [exec] (ht: Hypercerts TODO) {switch-emacs-eval ~/lib/emacs/shortcuts/org-jump-Hypercerts-todo.el}
+    [exec] (hk: Hypercerts capture) {switch-emacs-eval ~/lib/emacs/shortcuts/org-capture-Hypercerts.el}
+    [exec] (hd: Hypercerts diary) {switch-emacs-eval ~/lib/emacs/shortcuts/org-jump-Hypercerts-diary.el}
+    [exec] (hg: Hypercerts gtd-timer) {urxvt -fn smoothansi -geometry 90x15-0-0 -e sh -c "gtd-timer ~/mail/Hypercerts/offlineimap/INBOX; sleep 60"}
 
 [endencoding]
 [end]
