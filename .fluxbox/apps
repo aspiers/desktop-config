@@ -55,7 +55,7 @@
 [end]
 [app] (role=ccmonitor)
   [Iconhidden] {yes}
-  [Dimensions] {40% 50%}
+  [Dimensions] {50% 50%}
   [Position] (BottomRight) {50 30}
 [end]
 
