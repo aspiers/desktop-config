@@ -53,13 +53,13 @@ def ensure_primary_set_by_prop(find_by_attribute, search_value):
     desired_monitor_info = libdpy.find_monitor_by_attribute(find_by_attribute, search_value)
 
     if not desired_monitor_info:
-        sys.stderr.write(f"Info: Monitor not found via inxi: {find_by_attribute}='{search_value}'.\n")
+        debug_print(f"Monitor not found via inxi: {find_by_attribute}='{search_value}'")
         return
 
     desired_output_name = (desired_monitor_info.get('mapped') or
                            desired_monitor_info.get('Monitor'))
     if not desired_output_name:
-        sys.stderr.write(f"Info: Monitor {desired_monitor_info.get('model', 'Unknown')} found but has no 'mapped' or 'Monitor' in inxi data.\n")
+        debug_print(f"Monitor {desired_monitor_info.get('model', 'Unknown')} found but has no 'mapped' or 'Monitor' in inxi data")
         return
 
     current_primary_info = libdpy.get_xrandr_primary_monitor()
@@ -109,11 +109,11 @@ def main():
                 ensure_primary_set_by_prop("model", "BenQ")
                 layout_file("celtic+BenQ+Dell")
 
-        elif (large_monitor := libdpy.large_monitor_connected()):
-            debug_print(f"large monitor connected: {large_monitor['model']}")
-            monitor_res = large_monitor["res"]
+        elif (external_monitor := libdpy.external_monitor_connected()):
+            debug_print(f"external monitor connected: {external_monitor['model']}")
+            monitor_res = external_monitor["res"]
             ensure_primary_set_by_prop("res", monitor_res)
-            layout_file("celtic+large")
+            layout_file("celtic+external")
 
         elif libdpy.monitors_connected() == 1:
             screens_data = libdpy.get_xrandr_screen_geometries()

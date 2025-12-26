@@ -49,6 +49,7 @@ set_panel_prop () {
 
 set_panel_size () {
     panel="$1" size="$2"
+    echo "Setting xfce4-panel $panel to $size"
     xfconf-query -c xfce4-panel -p /panels/panel-$panel/size -s "$size" -t int
 }
 
@@ -82,9 +83,22 @@ setup_panels () {
             set_panel_size 1 30
             set_panel_size 2 45
             set_panel_size 3 28
-        elif large-monitor-connected; then
-            set_panel_size 1 40
-            set_panel_size 2 36
+        else
+            # Calculate panel size based on DPI
+            local scale_factor=$(~/lib/libdpy.py --calculate-ui-scale)
+            local base_panel_size=24
+            local panel_size=$(printf "%.0f" $(echo "$base_panel_size * $scale_factor" | bc))
+
+            # Clamp to reasonable range
+            [ "$panel_size" -lt 24 ] && panel_size=24
+            [ "$panel_size" -gt 40 ] && panel_size=40
+
+            set_panel_size 1 "$panel_size"
+
+            # Only set panel 2 size if external monitor connected
+            if [ "${#other_outputs[@]}" -gt 0 ]; then
+                set_panel_size 2 36
+            fi
         fi
     fi
 }

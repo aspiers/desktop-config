@@ -7,62 +7,99 @@
 fallback_dpi() {
     . ~/lib/libhost.sh
     if host-has-prop laptop; then
-        if BenQ-connected; then
-            echo "Setting DPI to 84 (BenQ connected)"
-            set-xfce4-dpi 84
-        elif large-monitor-connected; then
-            echo "Setting DPI to 128 (large monitor connected)"
-            set-xfce4-dpi 128
-        else
-            echo "Setting DPI to 128 (default laptop)"
-            set-xfce4-dpi 128
+        # Get monitor properties for calculation
+        local monitor_json=$(~/lib/libdpy.py --find-inxi-primary 2>/dev/null)
+
+        if [ -n "$monitor_json" ]; then
+            local width=$(echo "$monitor_json" | jq -r '.res // empty' | cut -d'x' -f1)
+            if [ -n "$width" ] && [ "$width" -gt 0 ]; then
+                # Calculate DPI from resolution: 96 * (width / 2560)
+                local scaled_dpi=$(( 96 * width / 2560 ))
+                echo "Calculated DPI $scaled_dpi from resolution ${width}px"
+                set-xfce4-dpi "$scaled_dpi"
+                return
+            fi
         fi
+
+        echo "Could not detect monitor, using default DPI 128 for laptop"
+        set-xfce4-dpi 128
     else
         echo "Non-laptop host, no DPI adjustment needed"
     fi
+}
+
+try_dpi_from_layout_file() {
+    local layout_file="$1"
+    local dpi=$(grep -E '^[[:space:]]*dpi:' "$layout_file" | sed 's/.*dpi:[[:space:]]*//')
+    if [ -n "$dpi" ]; then
+        echo "Setting DPI to $dpi from layout file"
+        set-xfce4-dpi "$dpi"
+        return 0
+    fi
+    return 1
+}
+
+try_dpi_from_model_override() {
+    local model="$1"
+    case "$model" in
+        "LG (GoldStar) HDR 4K"|"AOC U28G2G6B")
+            echo "Setting DPI to 128 for known monitor: $model"
+            set-xfce4-dpi 128
+            return 0
+            ;;
+        "BenQ BL3200")
+            echo "Setting DPI to 84 for BenQ"
+            set-xfce4-dpi 84
+            return 0
+            ;;
+    esac
+    return 1
+}
+
+try_dpi_from_physical_size() {
+    local dpi="$1"
+    if [ -n "$dpi" ] && [ "$dpi" -gt 0 ]; then
+        echo "Auto-detected DPI $dpi from monitor physical size"
+        set-xfce4-dpi "$dpi"
+        return 0
+    fi
+    return 1
+}
+
+try_dpi_from_resolution() {
+    local width="$1"
+    if [ -n "$width" ] && [ "$width" -gt 0 ]; then
+        local scaled_dpi=$(( 96 * width / 2560 ))
+        echo "Calculated DPI $scaled_dpi from resolution ${width}px"
+        set-xfce4-dpi "$scaled_dpi"
+        return 0
+    fi
+    return 1
 }
 
 set_dpi_for_layout() {
     local layout_file="$1"
     local layout="$2"
 
-    # First try: DPI from layout file
-    local dpi=$(grep -E '^[[:space:]]*dpi:' "$layout_file" | sed 's/.*dpi:[[:space:]]*//')
-    if [ -n "$dpi" ]; then
-        echo "Setting DPI to $dpi for layout $layout"
-        set-xfce4-dpi "$dpi"
-        return 0
-    fi
+    # Try layout file first
+    try_dpi_from_layout_file "$layout_file" && return 0
 
     echo "No DPI setting found in layout file, detecting from primary screen"
 
-    # Second try: DPI from primary screen
-    local primary_json
-    if ! primary_json=$(~/lib/libdpy.py --find-inxi-primary 2>/dev/null); then
+    # Get monitor properties
+    local props_json
+    if ! props_json=$(~/lib/libdpy.py --get-monitor-properties 2>/dev/null); then
         echo "Failed to get primary screen info"
         return 1
     fi
 
-    local detected_model=$(echo "$primary_json" | jq -r '.model // empty')
-    case "$detected_model" in
-        "LG (GoldStar) HDR 4K")
-            ;&
-        "AOC U28G2G6B")
-            echo "Setting DPI to 128 for $detected_model"
-            set-xfce4-dpi 128
-            return 0
-            ;;
-    esac
+    # Try each method in order
+    try_dpi_from_model_override "$(echo "$props_json" | jq -r '.model // empty')" && return 0
+    try_dpi_from_physical_size "$(echo "$props_json" | jq -r '.dpi // empty')" && return 0
+    try_dpi_from_resolution "$(echo "$props_json" | jq -r '.width_px // empty')" && return 0
 
-    local detected_dpi=$(echo "$primary_json" | jq -r '.dpi // empty')
-    if [ -z "$detected_dpi" ] || [ "$detected_dpi" -le 0 ]; then
-        echo "Could not detect DPI from primary screen"
-        return 1
-    fi
-
-    echo "Detected DPI $detected_dpi from primary screen"
-    set-xfce4-dpi "$detected_dpi"
-    return 0
+    echo "Could not detect DPI from primary screen"
+    return 1
 }
 
 main() {

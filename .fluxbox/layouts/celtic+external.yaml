@@ -1,13 +1,13 @@
 screens:
   -
-    # fluxbox treats primary as head 1, and we are setting the large
+    # fluxbox treats primary as head 1, and we are setting the external
     # display as the primary head (see bin/get-layout)
     head: 2
     <INCLUDE screens/celtic-auxiliary>
     assignment: secondary
-    right: large
+    right: external
   -
-    name: large
+    name: external
     head: 1  # see above
     assignment: primary
     left: celtic

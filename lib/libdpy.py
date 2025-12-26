@@ -255,6 +255,119 @@ def large_monitor_connected(use_cache=True):
     return False
 
 
+def external_monitor_connected(use_cache=True):
+    """
+    Returns first external (non-laptop) monitor found, or False.
+    Unlike large_monitor_connected(), this returns any external monitor
+    regardless of size.
+    Falls back to xrandr data if inxi doesn't detect the external monitor.
+    """
+    if monitors_connected(use_cache) < 2:
+        return False
+
+    # First try inxi data
+    monitors = get_inxi_monitors(use_cache)
+    for monitor in monitors:
+        if monitor.get("Monitor") == "eDP-1":
+            continue
+        if "res" in monitor:
+            return monitor
+
+    # Fallback to xrandr if inxi didn't find external monitor
+    screens = get_xrandr_screen_geometries(use_cache)
+    for screen in screens:
+        # Skip laptop display (eDP)
+        if screen.get('name', '').startswith('eDP'):
+            continue
+        # Return a minimal dict with resolution info
+        if screen.get('width') and screen.get('height'):
+            return {
+                'Monitor': screen.get('name'),
+                'res': f"{screen['width']}x{screen['height']}",
+                'model': 'Unknown',
+                'mapped': screen.get('name')
+            }
+
+    return False
+
+
+def get_monitor_properties(monitor_info, use_cache=True):
+    """
+    Extract useful properties from monitor dict and calculate DPI.
+    Returns dict with: width_px, height_px, width_mm, height_mm, dpi, model
+    Falls back gracefully if physical dimensions not available.
+    """
+    if not monitor_info:
+        return None
+
+    props = {
+        'model': monitor_info.get('model', 'Unknown')
+    }
+
+    # Extract resolution in pixels
+    res = monitor_info.get('res', '')
+    if 'x' in res:
+        parts = res.split('x')
+        props['width_px'] = int(parts[0])
+        props['height_px'] = int(parts[1])
+    else:
+        props['width_px'] = 0
+        props['height_px'] = 0
+
+    # Try to get physical dimensions from xrandr
+    # Need to match this monitor with xrandr data
+    xrandr_screens = get_xrandr_screen_geometries(use_cache)
+    monitor_name = monitor_info.get('mapped') or monitor_info.get('Monitor')
+
+    props['width_mm'] = 0
+    props['height_mm'] = 0
+    props['dpi'] = 0
+
+    if monitor_name:
+        for screen in xrandr_screens:
+            if screen.get('name') == monitor_name:
+                props['width_mm'] = screen.get('x_mm', 0)
+                props['height_mm'] = screen.get('y_mm', 0)
+
+                # Calculate DPI from physical dimensions if available
+                if props['width_mm'] > 0 and props['width_px'] > 0:
+                    # DPI = pixels / (mm / 25.4)
+                    props['dpi'] = int(props['width_px'] / (props['width_mm'] / 25.4))
+                break
+
+    return props
+
+
+def calculate_ui_scale_factor(monitor_info=None, reference_dpi=96, use_cache=True):
+    """
+    Calculate UI scaling factor based on monitor DPI.
+    Returns float: 1.0 for 96dpi, 1.33 for 128dpi, etc.
+
+    If monitor_info is None, uses the primary monitor.
+    If monitor_info is a dict from inxi, extracts DPI from it.
+    """
+    if monitor_info is None:
+        # Get primary monitor
+        monitor_info = get_inxi_primary_monitor(use_cache)
+        if not monitor_info:
+            return 1.0
+
+    props = get_monitor_properties(monitor_info, use_cache)
+    if not props:
+        return 1.0
+
+    # Use calculated DPI if available
+    if props['dpi'] > 0:
+        return props['dpi'] / reference_dpi
+
+    # Fallback: estimate from resolution
+    # 3840 → ~1.5, 2560 → 1.0, 1920 → ~0.75
+    if props['width_px'] > 0:
+        return props['width_px'] / 2560.0
+
+    return 1.0
+
+
 def get_screen_geometries(use_cache=True):
     dpy = extract_xdpyinfo_geometry(use_cache)
     screens = get_xrandr_screen_geometries(use_cache)
@@ -369,6 +482,7 @@ def get_inxi_primary_monitor(use_cache=True):
     """
     Returns the primary monitor from inxi data, or None if not found.
     Primary is indicated by 'primary' in the 'pos' field in inxi monitor data.
+    Falls back to xrandr primary if inxi doesn't have it.
     """
     monitors = get_inxi_monitors(use_cache=use_cache)
     for monitor in monitors:
@@ -413,6 +527,19 @@ def main():
         action="store_true",
         help="Output the primary monitor according to inxi as JSON",
     )
+    parser.add_argument(
+        "--get-monitor-properties",
+        action="store_true",
+        help="Get properties (resolution, DPI, etc.) of primary monitor as JSON",
+    )
+    parser.add_argument(
+        "--calculate-ui-scale",
+        metavar="REFERENCE_DPI",
+        type=int,
+        nargs='?',
+        const=96,
+        help="Calculate UI scale factor for primary monitor (default reference: 96 DPI)",
+    )
     args = parser.parse_args()
 
     if args.find_xrandr_primary:
@@ -432,6 +559,29 @@ def main():
         else:
             sys.stderr.write("No primary monitor found in inxi data\n")
             sys.exit(1)
+
+    if args.get_monitor_properties:
+        primary = get_inxi_primary_monitor(use_cache=args.use_cache)
+        if primary:
+            props = get_monitor_properties(primary, use_cache=args.use_cache)
+            if props:
+                print(json.dumps(props, indent=2))
+                sys.exit(0)
+            else:
+                sys.stderr.write("Could not extract monitor properties\n")
+                sys.exit(1)
+        else:
+            sys.stderr.write("No primary monitor found\n")
+            sys.exit(1)
+
+    if args.calculate_ui_scale is not None:
+        scale = calculate_ui_scale_factor(
+            monitor_info=None,
+            reference_dpi=args.calculate_ui_scale,
+            use_cache=args.use_cache
+        )
+        print(f"{scale:.4f}")
+        sys.exit(0)
 
     if args.find_by_model or args.find_by_res:
         found_monitor = None

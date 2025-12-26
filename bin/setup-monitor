@@ -25,7 +25,7 @@ case "$layout" in
         xrandr \
             --output ${screen_0_name} --pos 0x0 --scale 1 --size $celtic_size --primary --auto
         ;;
-    celtic+large)
+    celtic+external)
         xrandr \
             --output ${screen_0_name} --pos 0x0 --scale 1 --size $celtic_size --auto \
             --output ${screen_1_name} --pos ${celtic_width}x0 --scale 1 --primary --auto
@@ -64,12 +64,39 @@ eval $(~/lib/libdpy.py)
 . ~/lib/libhost.sh
 read_localhost_nickname
 
-if [ -e ~/.fluxbox/overlay.$layout ]; then
-    ln -sf overlay.$layout ~/.fluxbox/overlay
-else
-    ln -sf overlay.$localhost_nickname ~/.fluxbox/overlay
-fi
+setup_overlay() {
+    local layout="$1"
 
+    # Highest priority: layout-specific overlay
+    if [ -e ~/.fluxbox/overlay.$layout ]; then
+        ln -sf overlay.$layout ~/.fluxbox/overlay
+        return
+    fi
+
+    # Second priority: host-specific overlay
+    if [ -e ~/.fluxbox/overlay.$localhost_nickname ]; then
+        ln -sf overlay.$localhost_nickname ~/.fluxbox/overlay
+        return
+    fi
+
+    # Fallback: generate dynamically based on DPI
+    echo "Generating dynamic overlay"
+    local scale_factor=$(~/lib/libdpy.py --calculate-ui-scale)
+    local base_font=10
+    local title_font=$(printf "%.0f" $(echo "$base_font * $scale_factor" | bc))
+    local menu_font=$(printf "%.0f" $(echo "($base_font + 1) * $scale_factor" | bc))
+
+    cat > ~/.fluxbox/overlay <<EOF
+window.borderWidth:               1
+window.handleWidth:               8
+window.font:                      sans-${title_font}:bold
+window.title.height:              $(( 24 + (title_font - 10) * 2 ))
+menu.title.font:                  sans-${title_font}:bold
+menu.frame.font:                  sans-${menu_font}
+menu.titleHeight:                 $(( 20 + (title_font - 10) * 2 ))
+menu.itemHeight:                  10
+EOF
+}
 
 setup_keyboard () {
     if host-has-prop laptop; then
@@ -83,6 +110,7 @@ setup_keyboard () {
 }
 
 main () {
+    setup_overlay "$layout"
     setup-panels
     setup_keyboard
     set-layout-dpi "$layout"
