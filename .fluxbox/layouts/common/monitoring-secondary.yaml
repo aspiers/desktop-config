@@ -1,0 +1,5 @@
+<INCLUDE common/gkrellm-secondary>
+
+- - (Title=lnav-system)
+  - <stick>
+  - MacroCmd {<s_secondary_SetHead>} {ResizeTo <s_secondary_active_width_pc> <s_secondary_logs_height_pc>} {MoveTo 0 <s_secondary_panel_height> BottomLeft} {SetAlpha 50}

@@ -6,23 +6,25 @@ screens:
     <INCLUDE screens/celtic-auxiliary>
     assignment: secondary
     right: external
+    gkrellm_width: &GKRELLM_WIDTH 92
+    right_margin: *GKRELLM_WIDTH
+    logs_height_pc: 15
   -
     name: external
     head: 1  # see above
     assignment: primary
     left: celtic
-    left_margin: 200
-    gkrellm_width: &GKRELLM_WIDTH 92
-    right_margin: *GKRELLM_WIDTH
+    left_margin: 2%
+    right_margin: 2%
     panel_height: 35
-    logs_height_pc: 15
-    cols_1_2_margin: 50
-    col1_width_pc_of_active: 50
-    col2_width_pc_of_active: 40
+    logs_height_pc: 5
+    cols_1_2_margin: 1%
+    col1_width_pc_of_active: 56
+    col2_width_pc_of_active: 43
     single_width_pc_of_active: 80
 
 windows:
-  <INCLUDE common/monitoring-full-width>
+  <INCLUDE common/monitoring-secondary>
 
   <INCLUDE common/terminal-windows>
 
