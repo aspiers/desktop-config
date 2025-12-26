@@ -129,6 +129,8 @@ def get_layout_params(layout_file, use_cache=False):
 
         s['logs_height'] = int(s['logs_height_pc'] * s['height'] / 100)
 
+        s['active_left'] = s['left_margin']
+        s['active_top'] = s['top_margin']
         s['active_width'] = s['width'] - s['left_margin'] - s['right_margin']
         s['active_height'] = s['height'] - s['top_margin'] - s['panel_height'] - s['logs_height']
         s['active_width_pc'] = percent(s['active_width'], s['width'])
