@@ -18,6 +18,7 @@
   [Sticky]	{yes}
   [Hidden]	{yes}
   [Alpha]	{50}
+  [Deco]	{NONE}
 [end]
 [app] (role=.*Workrave.*)
   [Layer]	{2}
