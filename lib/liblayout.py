@@ -46,6 +46,24 @@ def percent(x, y):
     return round(x / y * 100)
 
 
+def parse_value(value, reference):
+    """
+    Parse a value that can be either pixels (int) or percentage (string with %).
+    Returns the pixel value.
+
+    Args:
+        value: Either an int (pixels) or string ending with '%'
+        reference: The reference value for percentage calculations (e.g., screen width)
+
+    Returns:
+        Integer pixel value
+    """
+    if isinstance(value, str) and value.endswith('%'):
+        percentage = float(value[:-1])
+        return int(percentage * reference / 100)
+    return int(value)
+
+
 def process_includes(content, indent=''):
     return re.sub(
         r'^([ \t]*)<INCLUDE\s+(.+?)>',
@@ -119,13 +137,15 @@ def get_layout_params(layout_file, use_cache=False):
 
         s.update(screen_layout)
 
-        s.setdefault('left_margin', 0)
-        s.setdefault('right_margin', 0)
-        s.setdefault('top_margin', 0)
-        s.setdefault('bottom_margin', 0)
+        # Parse margins - can be pixels (int) or percentage (string with %)
+        for margin in ['left_margin', 'right_margin']:
+            s[margin] = parse_value(s.get(margin, 0), s['width'])
 
-        s.setdefault('cols_1_2_margin', 0)
-        s.setdefault('rows_1_2_margin', 0)
+        for margin in ['top_margin', 'bottom_margin']:
+            s[margin] = parse_value(s.get(margin, 0), s['height'])
+
+        s['cols_1_2_margin'] = parse_value(s.get('cols_1_2_margin', 0), s['width'])
+        s['rows_1_2_margin'] = parse_value(s.get('rows_1_2_margin', 0), s['height'])
 
         s['logs_height'] = int(s['logs_height_pc'] * s['height'] / 100)
 
