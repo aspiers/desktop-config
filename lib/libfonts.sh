@@ -60,27 +60,39 @@ case "$localhost_nickname" in
         # 285mm x 190mm according grep mm /var/log/Xorg.0.log
         # new hi-res display 2880x1920 (256x256 dpi)
         # old matte display 2256x1504 (193x167 dpi)
-        if large-monitor-connected; then
+
+        # Calculate font sizes based on DPI scale factor
+        scale_factor=$($ZDOTDIR/lib/libdpy.py --calculate-ui-scale)
+
+        # Base sizes at 1.0 scale (96 DPI)
+        base_tiny=8
+        base_small=12
+        base_medium=14
+        base_large=20
+        base_xl=24
+        base_tk=14
+
+        # Scale and round to nearest integer
+        tiny_size=$(printf "%.0f" $(echo "$base_tiny * $scale_factor" | bc))
+        small_size=$(printf "%.0f" $(echo "$base_small * $scale_factor" | bc))
+        medium_size=$(printf "%.0f" $(echo "$base_medium * $scale_factor" | bc))
+        large_size=$(printf "%.0f" $(echo "$base_large * $scale_factor" | bc))
+        xl_size=$(printf "%.0f" $(echo "$base_xl * $scale_factor" | bc))
+        tk_size=$(printf "%.0f" $(echo "$base_tk * $scale_factor" | bc))
+
+        # For very high DPI (laptop only), use smoothansi for tiny font
+        if [ $(echo "$scale_factor > 2.0" | bc) -eq 1 ]; then
             tiny_font="smoothansi"
-            #tiny_font="xft:${tiny_font_name}:size=8"
-            small_font="xft:${small_font_name}:size=12"
-            #small_font="10x20"
-            medium_font="xft:${medium_font_name}:size=14"
-            medium_font_tk="$tk_font_name 9"
-            medium_font_tk_mono="{$tk_mono_font_name} 9"
-            large_font="xft:${large_font_name}:size=16"
-            xl_font="xft:${xl_font_name}:size=20"
         else
-            #tiny_font="smoothansi"
-            tiny_font="xft:${tiny_font_name}:size=12"
-            small_font="xft:${small_font_name}:size=12"
-            #small_font="10x20"
-            medium_font="xft:${medium_font_name}:size=14"
-            medium_font_tk="$tk_font_name 14"
-            medium_font_tk_mono="{$tk_mono_font_name} 14"
-            large_font="xft:${large_font_name}:size=20"
-            xl_font="xft:${xl_font_name}:size=24"
+            tiny_font="xft:${tiny_font_name}:size=${tiny_size}"
         fi
+
+        small_font="xft:${small_font_name}:size=${small_size}"
+        medium_font="xft:${medium_font_name}:size=${medium_size}"
+        medium_font_tk="$tk_font_name $tk_size"
+        medium_font_tk_mono="{$tk_mono_font_name} $tk_size"
+        large_font="xft:${large_font_name}:size=${large_size}"
+        xl_font="xft:${xl_font_name}:size=${xl_size}"
         ;;
     aegean)
         # 3840x2160 (383dpi)
