@@ -17,7 +17,7 @@ if [[ "$TERM" = *kitty* ]]; then
 fi
 
 # FIXME: this doesn't work over ssh
-case "$(<~/.config/theme)" in
+case "$(<$ZDOTDIR/.config/theme)" in
     *light*)
         light_or_dark=light
         ;;
@@ -27,7 +27,7 @@ case "$(<~/.config/theme)" in
 esac
 
 # Make sure the relevant BAT_THEME_{LIGHT,DARK} variable is set ...
-. ~/.shared_rc.d/bat
+. $ZDOTDIR/.shared_rc.d/bat
 
 # ... and that BAT_THEME doesn't override it
 unset BAT_THEME
