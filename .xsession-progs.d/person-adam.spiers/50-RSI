@@ -4,6 +4,5 @@
 
 if grep -q main-console $ZDOTDIR/.localhost-props; then
     #run_if_executable ~/bin/xwrits >~/.log/xwrits.log &
-    run_if_executable workrave >~/.log/workrave.log &
+    #run_if_executable workrave >~/.log/workrave.log &
 fi
-
