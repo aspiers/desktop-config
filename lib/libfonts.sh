@@ -138,3 +138,21 @@ xl_font_size=$(echo "$xl_font_gnome" | sed 's/.* \([0-9]\+\)$/\1/')
 small_font_gnome_zoom_from_medium=$(echo "scale=3; $small_font_size / $medium_font_size" | bc)
 large_font_gnome_zoom_from_medium=$(echo "scale=3; $large_font_size / $medium_font_size" | bc)
 xl_font_gnome_zoom_from_medium=$(echo "scale=3; $xl_font_size / $medium_font_size" | bc)
+
+# Output all variables if script is executed directly (not sourced)
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+        echo "tiny_font=$tiny_font"
+        echo "small_font=$small_font"
+        echo "medium_font=$medium_font"
+        echo "medium_font_tk=$medium_font_tk"
+        echo "medium_font_tk_mono=$medium_font_tk_mono"
+        echo "large_font=$large_font"
+        echo "xl_font=$xl_font"
+        echo "small_font_gnome=$small_font_gnome"
+        echo "medium_font_gnome=$medium_font_gnome"
+        echo "large_font_gnome=$large_font_gnome"
+        echo "xl_font_gnome=$xl_font_gnome"
+        echo "small_font_gnome_zoom_from_medium=$small_font_gnome_zoom_from_medium"
+        echo "large_font_gnome_zoom_from_medium=$large_font_gnome_zoom_from_medium"
+        echo "xl_font_gnome_zoom_from_medium=$xl_font_gnome_zoom_from_medium"
+fi
