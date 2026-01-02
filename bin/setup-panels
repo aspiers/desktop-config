@@ -86,7 +86,7 @@ setup_panels () {
         else
             # Calculate panel size based on DPI
             local scale_factor=$(~/lib/libdpy.py --calculate-ui-scale)
-            local base_panel_size=24
+            local base_panel_size=36
             local panel_size=$(printf "%.0f" $(echo "$base_panel_size * $scale_factor" | bc))
 
             # Clamp to reasonable range
