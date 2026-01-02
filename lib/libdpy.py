@@ -19,8 +19,14 @@ import time
 # Global constants
 GLOBAL_CACHE_DIR = os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache")
 CACHE_DIR = os.path.join(GLOBAL_CACHE_DIR, "libdpy")
+DEBUG = False
 
 os.makedirs(CACHE_DIR, exist_ok=True)
+
+
+def debug(msg):
+    if DEBUG:
+        print("[DEBUG] %s" % msg, file=sys.stderr)
 
 
 class DisplayDataCache:
@@ -342,25 +348,56 @@ def calculate_ui_scale_factor(monitor_info=None, reference_dpi=96, use_cache=Tru
     If monitor_info is None, uses the primary monitor.
     If monitor_info is a dict from inxi, extracts DPI from it.
     """
+    debug(
+        "calculate_ui_scale_factor called: monitor_info=%s, reference_dpi=%d, use_cache=%s"
+        % (monitor_info, reference_dpi, use_cache)
+    )
+
     if monitor_info is None:
         # Get primary monitor
+        debug("Getting primary monitor from inxi...")
         monitor_info = get_inxi_primary_monitor(use_cache)
         if not monitor_info:
+            debug("No primary monitor found, returning 1.0")
             return 1.0
+        debug("Primary monitor: %s" % monitor_info.get("model", "unknown"))
 
     props = get_monitor_properties(monitor_info, use_cache)
     if not props:
+        debug("Could not get monitor properties, returning 1.0")
         return 1.0
 
+    debug(
+        "Monitor properties: dpi=%s, width_px=%s, height_px=%s, width_mm=%s, height_mm=%s"
+        % (
+            props.get("dpi"),
+            props.get("width_px"),
+            props.get("height_px"),
+            props.get("width_mm"),
+            props.get("height_mm"),
+        )
+    )
+
     # Use calculated DPI if available
-    if props['dpi'] > 0:
-        return props['dpi'] / reference_dpi
+    if props["dpi"] > 0:
+        scale = props["dpi"] / reference_dpi
+        debug(
+            "Using DPI-based calculation: %s / %d = %s"
+            % (props["dpi"], reference_dpi, scale)
+        )
+        return scale
 
     # Fallback: estimate from resolution
     # 3840 → ~1.5, 2560 → 1.0, 1920 → ~0.75
-    if props['width_px'] > 0:
-        return props['width_px'] / 2560.0
+    if props["width_px"] > 0:
+        scale = props["width_px"] / 2560.0
+        debug(
+            "Using resolution-based fallback: %s / 2560.0 = %s"
+            % (props["width_px"], scale)
+        )
+        return scale
 
+    debug("No DPI or width available, returning 1.0")
     return 1.0
 
 
@@ -502,6 +539,11 @@ def main():
         help="Use cached XRandR/inxi data if available",
     )
     parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Enable debug output",
+    )
+    parser.add_argument(
         "--inxi-json",
         action="store_true",
         help="Output inxi monitor JSON instead of normal output",
@@ -540,6 +582,9 @@ def main():
         help="Calculate UI scale factor for primary monitor (default reference: 96 DPI)",
     )
     args = parser.parse_args()
+
+    global DEBUG
+    DEBUG = args.debug
 
     if args.find_xrandr_primary:
         primary = get_xrandr_primary_monitor(use_cache=args.use_cache)
