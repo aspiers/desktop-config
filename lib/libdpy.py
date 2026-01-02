@@ -340,14 +340,34 @@ def get_monitor_properties(monitor_info, use_cache=True):
     return props
 
 
-def calculate_ui_scale_factor(monitor_info=None, reference_dpi=96, use_cache=True):
+def calculate_ui_scale_factor(monitor_info=None, reference_dpi=None, use_cache=True):
     """
-    Calculate UI scaling factor based on monitor DPI.
-    Returns float: 1.0 for 96dpi, 1.33 for 128dpi, etc.
+    Calculate UI scaling factor based on monitor DPI relative to system DPI.
+    Returns float: 1.0 if system DPI matches physical DPI, >1.0 if physical DPI > system.
 
     If monitor_info is None, uses the primary monitor.
     If monitor_info is a dict from inxi, extracts DPI from it.
+    If reference_dpi is None, reads current system DPI from xfconf-query (XFCE4),
+    or falls back to 96.
     """
+    # Try to read system DPI from XFCE4 config if not specified
+    if reference_dpi is None:
+        try:
+            result = (
+                subprocess.check_output(
+                    ["xfconf-query", "-c", "xsettings", "-p", "/Xft/DPI"],
+                    stderr=subprocess.DEVNULL,
+                )
+                .decode("utf8")
+                .strip()
+            )
+            if result:
+                reference_dpi = int(result)
+                debug("Using system DPI from xfconf: %d" % reference_dpi)
+        except (subprocess.CalledProcessError, FileNotFoundError, ValueError):
+            reference_dpi = 96
+            debug("Could not read system DPI, using fallback: %d" % reference_dpi)
+
     debug(
         "calculate_ui_scale_factor called: monitor_info=%s, reference_dpi=%d, use_cache=%s"
         % (monitor_info, reference_dpi, use_cache)
@@ -578,8 +598,9 @@ def main():
         metavar="REFERENCE_DPI",
         type=int,
         nargs="?",
-        const=96,
-        help="Calculate UI scale factor for primary monitor (default reference: 96 DPI)",
+        const=-1,
+        default=None,
+        help="Calculate UI scale factor for primary monitor (auto-detects reference DPI from XFCE4)",
     )
     args = parser.parse_args()
 
@@ -618,10 +639,12 @@ def main():
             sys.stderr.write("No primary monitor found\n")
             sys.exit(1)
 
-    if args.calculate_ui_scale is not None:
+    scale_arg = args.calculate_ui_scale
+    if scale_arg is not None:
+        ref_dpi = scale_arg if scale_arg != -1 else None
         scale = calculate_ui_scale_factor(
             monitor_info=None,
-            reference_dpi=args.calculate_ui_scale,
+            reference_dpi=ref_dpi,
             use_cache=args.use_cache,
         )
         print(f"{scale:.4f}")
