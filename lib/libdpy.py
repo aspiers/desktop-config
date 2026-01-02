@@ -17,7 +17,7 @@ import sys
 import time
 
 # Global constants
-GLOBAL_CACHE_DIR = os.environ.get('XDG_CACHE_HOME') or os.path.expanduser("~/.cache")
+GLOBAL_CACHE_DIR = os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache")
 CACHE_DIR = os.path.join(GLOBAL_CACHE_DIR, "libdpy")
 
 os.makedirs(CACHE_DIR, exist_ok=True)
@@ -29,7 +29,7 @@ class DisplayDataCache:
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
-        if getattr(cls, 'cache_file', None) is not None:
+        if getattr(cls, "cache_file", None) is not None:
             DisplayDataCache.CACHE_FILES[cls.__name__] = cls.cache_file
 
     @classmethod
@@ -40,7 +40,7 @@ class DisplayDataCache:
                 # print(f"Removed {cache_file}", file=sys.stderr)
 
             # Remove corresponding .md5 file
-            md5_file = cache_file + '.md5'
+            md5_file = cache_file + ".md5"
             if os.path.exists(md5_file):
                 os.remove(md5_file)
                 # print(f"Removed {md5_file}", file=sys.stderr)
@@ -51,7 +51,7 @@ class DisplayDataCache:
 
     @property
     def hash_cache_file(self):
-        return self.cache_file + '.md5'
+        return self.cache_file + ".md5"
 
     def builder(self, use_cache=True):
         """
@@ -67,7 +67,7 @@ class DisplayDataCache:
         """
         Override in subclass to provide logic for reading cached data.
         """
-        with open(self.cache_file, 'rb') as f:
+        with open(self.cache_file, "rb") as f:
             data = f.read()
             return data.decode()
 
@@ -76,11 +76,11 @@ class DisplayDataCache:
         if not use_cache or not os.path.exists(self.cache_file):
             data_to_cache = self.builder(use_cache)
             if isinstance(data_to_cache, str):
-                data_to_cache = data_to_cache.encode('utf-8')
-            with open(self.cache_file, 'wb') as f:
+                data_to_cache = data_to_cache.encode("utf-8")
+            with open(self.cache_file, "wb") as f:
                 f.write(data_to_cache)
             md5_hash = hashlib.md5(data_to_cache).hexdigest()
-            with open(self.hash_cache_file, 'w') as f:
+            with open(self.hash_cache_file, "w") as f:
                 f.write(md5_hash)
 
         return self.cache_reader()
@@ -90,7 +90,7 @@ class XrandrCache(DisplayDataCache):
     cache_file = os.path.join(CACHE_DIR, "xrandr.out")
 
     def builder(self, _use_cache):
-        return subprocess.check_output('xrandr')
+        return subprocess.check_output("xrandr")
 
 
 class XrandrJsonCache(DisplayDataCache):
@@ -111,32 +111,29 @@ class XrandrJsonCache(DisplayDataCache):
             sys.stderr.write(xrandr)
             sys.exit(1)
 
-        screens.sort(key = lambda x: int(x['x_offset']))
+        screens.sort(key=lambda x: int(x["x_offset"]))
         for i, screen in enumerate(screens):
             for k, v in screen.items():
                 if v:
-                    if re.match(r'\d+', v):
+                    if re.match(r"\d+", v):
                         screen[k] = int(v)
                 else:
                     # primary can be None
-                    screen[k] = ''
+                    screen[k] = ""
 
-            screen['num'] = i
-            screen['right'] = screen['x_offset'] + screen['width']
+            screen["num"] = i
+            screen["right"] = screen["x_offset"] + screen["width"]
 
         # Note: There's a difference between "primary" as listed by xrandr
         # and a primary assignment in liblayout.  If the wrong (or no)
         # screen is configured as primary at the xrandr level, then it
         # could be auto-detected by comparing these two.
 
-        cache_data = {
-            "timestamp": time.time(),
-            "screens": screens
-        }
+        cache_data = {"timestamp": time.time(), "screens": screens}
         return json.dumps(cache_data, indent=2, sort_keys=True)
 
     def cache_reader(self):
-        with open(self.cache_file, 'r') as f:
+        with open(self.cache_file, "r") as f:
             cache_data = json.load(f)
             return cache_data["screens"]
 
@@ -145,7 +142,7 @@ class XdpyinfoCache(DisplayDataCache):
     cache_file = os.path.join(CACHE_DIR, "xdpyinfo.out")
 
     def builder(self, _use_cache):
-        return subprocess.check_output('xdpyinfo')
+        return subprocess.check_output("xdpyinfo")
 
 
 class InxiJsonCache(DisplayDataCache):
@@ -160,7 +157,7 @@ class InxiJsonCache(DisplayDataCache):
         return json.dumps(data, indent=2, sort_keys=True)
 
     def cache_reader(self):
-        with open(self.cache_file, 'r') as f:
+        with open(self.cache_file, "r") as f:
             return json.load(f)
 
 
@@ -188,8 +185,8 @@ class InxiMonitorsCache(DisplayDataCache):
             for key, value in item.items():
                 if key.endswith("#Monitor"):
                     is_monitor = True
-                cleaned_key = re.sub(r'^\d+#\d+#\d+#', '', key)
-                if cleaned_key == 'note':
+                cleaned_key = re.sub(r"^\d+#\d+#\d+#", "", key)
+                if cleaned_key == "note":
                     continue
                 cleaned_item[cleaned_key] = value
             if is_monitor:
@@ -198,11 +195,12 @@ class InxiMonitorsCache(DisplayDataCache):
         return json.dumps(monitors, indent=2, sort_keys=True)
 
     def cache_reader(self):
-        with open(self.cache_file, 'r') as f:
+        with open(self.cache_file, "r") as f:
             return json.load(f)
 
 
 # Wrappers for external use
+
 
 def clear_cache():
     DisplayDataCache.clear_cache()
@@ -230,7 +228,7 @@ def get_inxi_monitors(use_cache=True):
 
 def monitors_connected(use_cache=True):
     xrandr = xrandr_output(use_cache)
-    return len(re.findall(r'\bconnected\b', xrandr))
+    return len(re.findall(r"\bconnected\b", xrandr))
 
 
 def large_monitor_connected(use_cache=True):
@@ -277,15 +275,15 @@ def external_monitor_connected(use_cache=True):
     screens = get_xrandr_screen_geometries(use_cache)
     for screen in screens:
         # Skip laptop display (eDP)
-        if screen.get('name', '').startswith('eDP'):
+        if screen.get("name", "").startswith("eDP"):
             continue
         # Return a minimal dict with resolution info
-        if screen.get('width') and screen.get('height'):
+        if screen.get("width") and screen.get("height"):
             return {
-                'Monitor': screen.get('name'),
-                'res': f"{screen['width']}x{screen['height']}",
-                'model': 'Unknown',
-                'mapped': screen.get('name')
+                "Monitor": screen.get("name"),
+                "res": f"{screen['width']}x{screen['height']}",
+                "model": "Unknown",
+                "mapped": screen.get("name"),
             }
 
     return False
@@ -300,39 +298,37 @@ def get_monitor_properties(monitor_info, use_cache=True):
     if not monitor_info:
         return None
 
-    props = {
-        'model': monitor_info.get('model', 'Unknown')
-    }
+    props = {"model": monitor_info.get("model", "Unknown")}
 
     # Extract resolution in pixels
-    res = monitor_info.get('res', '')
-    if 'x' in res:
-        parts = res.split('x')
-        props['width_px'] = int(parts[0])
-        props['height_px'] = int(parts[1])
+    res = monitor_info.get("res", "")
+    if "x" in res:
+        parts = res.split("x")
+        props["width_px"] = int(parts[0])
+        props["height_px"] = int(parts[1])
     else:
-        props['width_px'] = 0
-        props['height_px'] = 0
+        props["width_px"] = 0
+        props["height_px"] = 0
 
     # Try to get physical dimensions from xrandr
     # Need to match this monitor with xrandr data
     xrandr_screens = get_xrandr_screen_geometries(use_cache)
-    monitor_name = monitor_info.get('mapped') or monitor_info.get('Monitor')
+    monitor_name = monitor_info.get("mapped") or monitor_info.get("Monitor")
 
-    props['width_mm'] = 0
-    props['height_mm'] = 0
-    props['dpi'] = 0
+    props["width_mm"] = 0
+    props["height_mm"] = 0
+    props["dpi"] = 0
 
     if monitor_name:
         for screen in xrandr_screens:
-            if screen.get('name') == monitor_name:
-                props['width_mm'] = screen.get('x_mm', 0)
-                props['height_mm'] = screen.get('y_mm', 0)
+            if screen.get("name") == monitor_name:
+                props["width_mm"] = screen.get("x_mm", 0)
+                props["height_mm"] = screen.get("y_mm", 0)
 
                 # Calculate DPI from physical dimensions if available
-                if props['width_mm'] > 0 and props['width_px'] > 0:
+                if props["width_mm"] > 0 and props["width_px"] > 0:
                     # DPI = pixels / (mm / 25.4)
-                    props['dpi'] = int(props['width_px'] / (props['width_mm'] / 25.4))
+                    props["dpi"] = int(props["width_px"] / (props["width_mm"] / 25.4))
                 break
 
     return props
@@ -377,10 +373,10 @@ def get_screen_geometries(use_cache=True):
 def extract_xdpyinfo_geometry(use_cache=True):
     dpy = xdpyinfo_output(use_cache)
     m = re.search(
-        r'^\s*dimensions:\s+(?P<dpy_width>\d+)x(?P<dpy_height>\d+) pixels\s+' +
-        r'\((?P<dpy_x_mm>\d+)x(?P<dpy_y_mm>\d+) millimeters\)',
+        r"^\s*dimensions:\s+(?P<dpy_width>\d+)x(?P<dpy_height>\d+) pixels\s+"
+        + r"\((?P<dpy_x_mm>\d+)x(?P<dpy_y_mm>\d+) millimeters\)",
         dpy,
-        re.MULTILINE
+        re.MULTILINE,
     )
     if not m:
         sys.stderr.write("Couldn't extract display size from xrandr\n")
@@ -392,8 +388,8 @@ def extract_xdpyinfo_geometry(use_cache=True):
 
     # Note that the physical dimensions in mm here are not guaranteed
     # accurate and actually depend on the software dpi setting.
-    d['dpy_x_dpi'] = round(d['dpy_width'] / d['dpy_x_mm'] * 25.4)
-    d['dpy_y_dpi'] = round(d['dpy_height'] / d['dpy_y_mm'] * 25.4)
+    d["dpy_x_dpi"] = round(d["dpy_width"] / d["dpy_x_mm"] * 25.4)
+    d["dpy_y_dpi"] = round(d["dpy_height"] / d["dpy_y_mm"] * 25.4)
 
     return d
 
@@ -405,10 +401,10 @@ def show_xrandr_display_geometry(dpy):
 
 def show_xrandr_screen_geometries(screens):
     for i, screen in enumerate(screens):
-        screen['x_dpi'] = round(int(screen['width']) / int(screen['x_mm']) * 25.4, 2)
-        screen['y_dpi'] = round(int(screen['height']) / int(screen['y_mm']) * 25.4, 2)
+        screen["x_dpi"] = round(int(screen["width"]) / int(screen["x_mm"]) * 25.4, 2)
+        screen["y_dpi"] = round(int(screen["height"]) / int(screen["y_mm"]) * 25.4, 2)
         for k, v in screen.items():
-            if k in ('primary', 'assignment'):
+            if k in ("primary", "assignment"):
                 continue
             print("screen_%d_%s=%s" % (i, k, v))
 
@@ -416,15 +412,17 @@ def show_xrandr_screen_geometries(screens):
 
 
 def get_mouse_location_info():
-    location_info = subprocess.check_output(
-        ['xdotool', 'getmouselocation', '--shell']
-    ).decode('utf8').split('\n')
+    location_info = (
+        subprocess.check_output(["xdotool", "getmouselocation", "--shell"])
+        .decode("utf8")
+        .split("\n")
+    )
 
     info = {}
     for line in location_info:
         if not line:
             continue
-        k, v = line.split('=')
+        k, v = line.split("=")
         info[k] = int(v)
 
     return info
@@ -434,8 +432,7 @@ def get_mouse_location_info():
 def get_screen(x, use_cache=True):
     screens = get_xrandr_screen_geometries(use_cache)
     for i, screen in enumerate(screens):
-        if (x >= screen['x_offset'] and
-            x <= screen['right']):
+        if x >= screen["x_offset"] and x <= screen["right"]:
             return screen
 
     raise RuntimeError("Failed to find xrandr screen for x=%d" % x)
@@ -443,7 +440,7 @@ def get_screen(x, use_cache=True):
 
 def get_current_screen_info(use_cache=True):
     info = get_mouse_location_info()
-    return get_screen(info['X'], use_cache)
+    return get_screen(info["X"], use_cache)
 
 
 def find_monitor_by_attribute(attribute, value, use_cache=True):
@@ -460,9 +457,11 @@ def find_monitor_by_attribute(attribute, value, use_cache=True):
     """
     search_value = value.lower()
     for monitor in get_inxi_monitors(use_cache=use_cache):
-        if (attribute in monitor and
-            isinstance(monitor[attribute], str) and
-            search_value in monitor[attribute].lower()):
+        if (
+            attribute in monitor
+            and isinstance(monitor[attribute], str)
+            and search_value in monitor[attribute].lower()
+        ):
             return monitor
     return None
 
@@ -473,7 +472,7 @@ def get_xrandr_primary_monitor(use_cache=True):
     """
     screens = get_xrandr_screen_geometries(use_cache)
     for screen in screens:
-        if screen.get('primary') == 'primary':
+        if screen.get("primary") == "primary":
             return screen
     return None
 
@@ -486,8 +485,8 @@ def get_inxi_primary_monitor(use_cache=True):
     """
     monitors = get_inxi_monitors(use_cache=use_cache)
     for monitor in monitors:
-        pos = monitor.get('pos', '')
-        if 'primary' in pos:
+        pos = monitor.get("pos", "")
+        if "primary" in pos:
             return monitor
     return None
 
@@ -536,7 +535,7 @@ def main():
         "--calculate-ui-scale",
         metavar="REFERENCE_DPI",
         type=int,
-        nargs='?',
+        nargs="?",
         const=96,
         help="Calculate UI scale factor for primary monitor (default reference: 96 DPI)",
     )
@@ -578,7 +577,7 @@ def main():
         scale = calculate_ui_scale_factor(
             monitor_info=None,
             reference_dpi=args.calculate_ui_scale,
-            use_cache=args.use_cache
+            use_cache=args.use_cache,
         )
         print(f"{scale:.4f}")
         sys.exit(0)
@@ -589,10 +588,10 @@ def main():
         search_value = None
 
         if args.find_by_model:
-            search_attribute = 'model'
+            search_attribute = "model"
             search_value = args.find_by_model
         elif args.find_by_res:
-            search_attribute = 'res'
+            search_attribute = "res"
             search_value = args.find_by_res
 
         if search_attribute and search_value:
