@@ -11,7 +11,8 @@ if [ -z "$medium_font_gnome" ]; then
 fi
 
 list () {
-   xfconf-query -l -R -c xfce4-terminal -v | \
+    echo "Current settings:"
+    xfconf-query -l -R -c xfce4-terminal -v | \
        perl -pe 's! {2,}(\S.*)$! '\'\$1\''!; s!^/!    pset !'
 }
 
