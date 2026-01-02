@@ -7,6 +7,8 @@ if [ -z "$medium_font_gnome" ]; then
     exit 1
 fi
 
+echo "Using medium font: $medium_font_gnome"
+
 # Common profile settings
 common_profile_settings="bold-color-same-as-fg=false
 bold-is-bright=true
