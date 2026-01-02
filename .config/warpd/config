@@ -15,6 +15,8 @@ hint_bgcolor: #1c1c1edd
 hint_fgcolor: #ff4444ff
 
 grid_activation_key: G
+# Can't get this working at all:
+#screen_activation_key: C-s
 grid_size: 2
 cursor_size: 9
 # grid_border_size: 4
