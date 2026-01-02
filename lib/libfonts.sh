@@ -63,22 +63,40 @@ case "$localhost_nickname" in
 
         # Calculate font sizes based on DPI scale factor
         scale_factor=$($ZDOTDIR/lib/libdpy.py --calculate-ui-scale)
+        #scale_factor=1
 
-        # Base sizes at 1.0 scale (96 DPI)
+        # Base sizes at 1.0 scale
         base_tiny=8
-        base_small=12
-        base_medium=14
-        base_large=20
-        base_xl=24
-        base_tk=14
+        base_small=10
+        base_medium_tk=9
+        base_medium=12
+        base_large=16
+        base_xl=22
+
+        # LG HDR 4k in Level 39 is 3840x2160 600x340mm (162x161 dpi)
+        # original target sizes for large-monitor-connected:
+        # tiny: 8
+        # small: 12
+        # medium: 14
+        # medium_font_tk="$tk_font_name 9"
+        # large: 16
+        # xl: 20
+
+        # original target sizes for celtic only (layout DPI 128):
+        # tiny: 12
+        # small: 12
+        # medium: 14
+        # medium_font_tk="$tk_font_name 14"
+        # large: 20
+        # xl: 24
 
         # Scale and round to nearest integer
         tiny_size=$(printf "%.0f" $(echo "$base_tiny * $scale_factor" | bc))
         small_size=$(printf "%.0f" $(echo "$base_small * $scale_factor" | bc))
         medium_size=$(printf "%.0f" $(echo "$base_medium * $scale_factor" | bc))
+        medium_tk_size=$(printf "%.0f" $(echo "$base_medium_tk * $scale_factor" | bc))
         large_size=$(printf "%.0f" $(echo "$base_large * $scale_factor" | bc))
         xl_size=$(printf "%.0f" $(echo "$base_xl * $scale_factor" | bc))
-        tk_size=$(printf "%.0f" $(echo "$base_tk * $scale_factor" | bc))
 
         # For very high DPI (laptop only), use smoothansi for tiny font
         if [ $(echo "$scale_factor > 2.0" | bc) -eq 1 ]; then
@@ -89,8 +107,8 @@ case "$localhost_nickname" in
 
         small_font="xft:${small_font_name}:size=${small_size}"
         medium_font="xft:${medium_font_name}:size=${medium_size}"
-        medium_font_tk="$tk_font_name $tk_size"
-        medium_font_tk_mono="{$tk_mono_font_name} $tk_size"
+        medium_font_tk="$tk_font_name $medium_tk_size"
+        medium_font_tk_mono="{$tk_mono_font_name} $medium_tk_size"
         large_font="xft:${large_font_name}:size=${large_size}"
         xl_font="xft:${xl_font_name}:size=${xl_size}"
         ;;
@@ -141,18 +159,22 @@ xl_font_gnome_zoom_from_medium=$(echo "scale=3; $xl_font_size / $medium_font_siz
 
 # Output all variables if script is executed directly (not sourced)
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-        echo "tiny_font=$tiny_font"
-        echo "small_font=$small_font"
-        echo "medium_font=$medium_font"
-        echo "medium_font_tk=$medium_font_tk"
-        echo "medium_font_tk_mono=$medium_font_tk_mono"
-        echo "large_font=$large_font"
-        echo "xl_font=$xl_font"
-        echo "small_font_gnome=$small_font_gnome"
-        echo "medium_font_gnome=$medium_font_gnome"
-        echo "large_font_gnome=$large_font_gnome"
-        echo "xl_font_gnome=$xl_font_gnome"
-        echo "small_font_gnome_zoom_from_medium=$small_font_gnome_zoom_from_medium"
-        echo "large_font_gnome_zoom_from_medium=$large_font_gnome_zoom_from_medium"
-        echo "xl_font_gnome_zoom_from_medium=$xl_font_gnome_zoom_from_medium"
+    cat <<EOF
+tiny_font=$tiny_font
+small_font=$small_font
+medium_font=$medium_font
+medium_font_tk=$medium_font_tk
+medium_font_tk_mono=$medium_font_tk_mono
+large_font=$large_font
+xl_font=$xl_font
+
+small_font_gnome=$small_font_gnome
+medium_font_gnome=$medium_font_gnome
+large_font_gnome=$large_font_gnome
+xl_font_gnome=$xl_font_gnome
+
+small_font_gnome_zoom_from_medium=$small_font_gnome_zoom_from_medium
+large_font_gnome_zoom_from_medium=$large_font_gnome_zoom_from_medium
+xl_font_gnome_zoom_from_medium=$xl_font_gnome_zoom_from_medium
+EOF
 fi
