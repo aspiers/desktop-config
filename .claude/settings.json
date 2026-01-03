@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./bin/clear-dpy-cache)",
+      "Bash(./bin/get-layout:*)",
+      "Bash(./bin/test-libdpy:*)",
+      "Bash(./bin/rofi-mail)",
+      "Bash(./lib/libdpy.py:*)",
+      "Bash(bluetoothctl:*)",
+      "Bash(cat:*)",
+      "Bash(flake8:*)",
+      "Bash(fr)",
+      "Bash(fuser:*)",
+      "Bash(ghostty:*)",
+      "Bash(hcitool con:*)",
+      "Bash(isort:*)",
+      "Bash(journalctl:*)",
+      "Bash(lsmod:*)",
+      "Bash(lsof:*)",
+      "Bash(pgrep:*)",
+      "Bash(powerprofilesctl:*)",
+      "Bash(ps:*)",
+      "Bash(pstree:*)",
+      "Bash(rofi:*)",
+      "Bash(shellcheck:*)",
+      "Bash(sudo fuser:*)",
+      "Bash(sudo lsof:*)",
+      "Bash(sudo powertop:*)",
+      "Bash(sudo rfkill unblock:*)",
+      "Bash(sudo zypper info:*)",
+      "Bash(systemctl:*)",
+      "Bash(timeout:*)",
+      "Bash(turbostat:*)",
+      "Bash(wpctl status:*)",
+      "Bash(xrandr:*)",
+      "Read(/etc/wireplumber/**)",
+      "Read(/sys/**)",
+      "Read(/tmp/**)"
+    ],
+    "deny": []
+  }
+}
