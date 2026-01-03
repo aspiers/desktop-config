@@ -38,6 +38,37 @@ def read_layout_file(layout_name_or_path, dir=os.path.expanduser('~/.fluxbox/lay
         return f.read()
 
 
+def count_layout_screens(layout_name_or_path, dir=os.path.expanduser('~/.fluxbox/layouts')):
+    """
+    Count the number of screens defined in a layout file.
+
+    Args:
+        layout_name_or_path: Layout name (without .yaml) or full path
+        dir: Directory containing layout files (default: ~/.fluxbox/layouts)
+
+    Returns:
+        Integer count of screens defined in the layout's screens section
+
+    Raises:
+        FileNotFoundError: If layout file doesn't exist
+        yaml.YAMLError: If YAML is malformed
+        KeyError: If layout file doesn't have a 'screens' section
+    """
+    layout_file = get_layout_file(layout_name_or_path, dir)
+    with open(layout_file) as f:
+        content = f.read()
+        content = process_includes(content)
+        try:
+            layout = yaml.safe_load(content)
+        except yaml.YAMLError as e:
+            die(f"YAML parsing error in {layout_file}: {e}")
+
+    if 'screens' not in layout:
+        die(f"Layout file {layout_file} has no 'screens' section")
+
+    return len(layout['screens'])
+
+
 def get_sublayout_file():
     return os.path.expanduser('~/.fluxbox/sublayouts.yaml')
 
@@ -255,8 +286,19 @@ def get_adjacent_screen(direction, layout_name_or_path=None, use_cache=False):
 
 
 def main():
-    exe, layout_name, *_rest = sys.argv
-    layout_file = get_layout_file(layout_name)
+    if len(sys.argv) < 2:
+        # No layout specified, use bin/get-layout to determine it
+        import subprocess
+        bin_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'bin')
+        get_layout_script = os.path.join(bin_dir, 'get-layout')
+        try:
+            result = subprocess.run([get_layout_script], capture_output=True, text=True, check=True)
+            layout_file = result.stdout.strip()
+        except subprocess.CalledProcessError as e:
+            die(f"Failed to get layout from {get_layout_script}: {e.stderr}")
+    else:
+        exe, layout_name, *_rest = sys.argv
+        layout_file = get_layout_file(layout_name)
     screens, layout = get_layout_params(layout_file)
     print(json.dumps({'screens': screens, 'layout': layout}, indent=2))
 
