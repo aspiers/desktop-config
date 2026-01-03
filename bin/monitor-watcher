@@ -13,6 +13,32 @@ SETUP=$HOME/bin/setup-monitor
 . ~/lib/libhost.sh
 read_localhost_nickname
 
+# Get and validate layout against current xrandr state
+# Returns 0 on success, 1 on failure
+# Prints the validated layout file path to stdout on success
+get_and_validate_layout() {
+    local layout
+
+    # Try to get layout
+    if ! layout=$( $HOME/bin/get-layout 2>&1 ); then
+        echo "ERROR: Failed to get layout" >&2
+        return 1
+    fi
+
+    echo "Layout $layout detected" >&2
+
+    # Validate layout against current xrandr state (checks screen count matches)
+    if ~/lib/liblayout.py "$layout" >/dev/null 2>&1; then
+        echo "Layout $layout validated" >&2
+        echo "$layout"  # Output to stdout for capture
+        return 0
+    fi
+
+    echo "ERROR: Layout '$layout' validation failed" >&2
+    echo "This usually means there's still some screens connected but inactive" >&2
+    return 1
+}
+
 # Function to wait for monitor resolutions to be detected
 wait_for_valid_layout() {
     local timeout=30
@@ -29,12 +55,11 @@ wait_for_valid_layout() {
             return 1
         fi
 
-        # Clear cache and regenerate
+        # Clear cache so it will be immediately regenerated
         $HOME/bin/clear-dpy-cache
 
-        # Try to get a valid layout
-        if $HOME/bin/get-layout > /dev/null 2>&1; then
-            echo "Valid layout detected after ${elapsed}s"
+        if layout=$(get_and_validate_layout); then
+            echo "Layout ready after ${elapsed}s: $layout"
             return 0
         fi
 
