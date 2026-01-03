@@ -6,6 +6,7 @@
       "Bash(./bin/test-libdpy:*)",
       "Bash(./bin/rofi-mail)",
       "Bash(./lib/libdpy.py:*)",
+      "Bash(./lib/liblayout.py:*)",
       "Bash(bluetoothctl:*)",
       "Bash(cat:*)",
       "Bash(flake8:*)",
