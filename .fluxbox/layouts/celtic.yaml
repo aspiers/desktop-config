@@ -4,7 +4,8 @@ screens:
   -
     head: 1
     name: celtic
-    gkrellm_width: &GKRELLM_WIDTH 92
+    # gkrellm_width: &GKRELLM_WIDTH 92
+    gkrellm_width: &GKRELLM_WIDTH 0
     panel_height: 35
     logs_height_pc: 0
     right_margin: 0

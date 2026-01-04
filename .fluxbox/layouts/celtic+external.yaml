@@ -6,7 +6,8 @@ screens:
     <INCLUDE screens/celtic-auxiliary>
     assignment: secondary
     right: external
-    gkrellm_width: &GKRELLM_WIDTH 92
+    # gkrellm_width: &GKRELLM_WIDTH 92
+    gkrellm_width: &GKRELLM_WIDTH 0
     right_margin: *GKRELLM_WIDTH
     logs_height_pc: 15
   -
