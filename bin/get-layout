@@ -81,7 +81,10 @@ def set_primary(desired_output_name):
 
 def benq_bl3200_connected():
     inxi_monitors = libdpy.get_inxi_monitors()
-    return libdpy.find_monitor_by_attribute('model', 'BenQ BL3200')
+    monitor = libdpy.find_monitor_by_attribute('model', 'BenQ BL3200')
+    if monitor:
+        return monitor
+    return libdpy.find_monitor_by_attribute('res', '2560x1440')
 
 
 def main():
