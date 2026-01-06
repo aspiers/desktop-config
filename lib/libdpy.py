@@ -275,6 +275,9 @@ def external_monitor_connected(use_cache=True):
         if monitor.get("Monitor") == "eDP-1":
             continue
         if "res" in monitor:
+            # Ensure model key exists for callers
+            if "model" not in monitor:
+                monitor["model"] = monitor.get("Monitor", "Unknown")
             return monitor
 
     # Fallback to xrandr if inxi didn't find external monitor
