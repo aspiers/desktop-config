@@ -1,0 +1,115 @@
+#!/usr/bin/env python3
+"""
+Set session manager restart style for a client via D-Bus.
+Usage: set-xfwm4-restart-style [program] [never|if-running|immediately]
+       program defaults to xfwm4, style defaults to never
+"""
+
+import sys
+import os
+
+os.environ['DISPLAY'] = ':0'
+
+import gi
+gi.require_version('GLib', '2.0')
+from gi.repository import GLib, GObject
+
+import dbus
+import dbus.service
+import dbus.mainloop.glib
+
+SM_RESTART_STYLES = {
+    'never': 3,
+    'if-running': 0,
+    'immediately': 2,
+}
+
+SM_RESTART_STYLE_HINT = 'RestartStyleHint'
+
+def get_session_manager():
+    bus = dbus.SessionBus()
+    proxy = bus.get_object('org.xfce.SessionManager', '/org/xfce/SessionManager')
+    return dbus.Interface(proxy, 'org.xfce.Session.Manager')
+
+def get_client_proxies(manager):
+    try:
+        return manager.ListClients()
+    except dbus.DBusException as e:
+        print(f"Error listing clients: {e}")
+        return []
+
+def get_client(bus, object_path):
+    try:
+        proxy = bus.get_object('org.xfce.SessionManager', object_path)
+        return dbus.Interface(proxy, 'org.xfce.Session.Client')
+    except dbus.DBusException:
+        return None
+
+def get_all_sm_properties(client):
+    try:
+        return client.GetAllSmProperties()
+    except dbus.DBusException as e:
+        print(f"Error getting properties: {e}")
+        return {}
+
+def set_restart_style(client, style):
+    try:
+        properties = dbus.Dictionary({SM_RESTART_STYLE_HINT: dbus.Byte(style)}, signature='sv')
+        client.SetSmProperties(properties)
+        return True
+    except dbus.DBusException as e:
+        print(f"Error setting restart style: {e}")
+        return False
+
+def find_client(bus, manager, program):
+    """Find client by program name (substring match)."""
+    for client_path in get_client_proxies(manager):
+        client = get_client(bus, client_path)
+        if client:
+            props = get_all_sm_properties(client)
+            prog = props.get('Program', '')
+            if prog and program in prog:
+                return client, props
+    return None, {}
+
+def main():
+    program = 'xfwm4' if len(sys.argv) < 2 else sys.argv[1].lower()
+    style_name = 'never' if len(sys.argv) < 3 else sys.argv[2].lower()
+
+    if style_name not in SM_RESTART_STYLES:
+        print(f"Unknown style: {style_name}")
+        print(f"Valid styles: {', '.join(SM_RESTART_STYLES.keys())}")
+        sys.exit(1)
+
+    style_value = SM_RESTART_STYLES[style_name]
+
+    print(f"Setting restart style for '{program}' to '{style_name}' ({style_value})...")
+
+    try:
+        dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+        manager = get_session_manager()
+        bus = dbus.SessionBus()
+
+        client, props = find_client(bus, manager, program)
+
+        if not client:
+            print(f"Could not find client matching '{program}'!")
+            sys.exit(1)
+
+        prog = props.get('Program', '')
+        current_style = props.get('RestartStyleHint', '?')
+        print(f"Found client: {prog}")
+        print(f"Current restart style: {current_style}")
+
+        if set_restart_style(client, style_value):
+            print(f"Successfully set restart style to {style_value}")
+        else:
+            print("Failed to set restart style")
+            sys.exit(1)
+
+    except dbus.DBusException as e:
+        print(f"D-Bus error: {e}")
+        sys.exit(1)
+
+if __name__ == '__main__':
+    main()
