@@ -21,7 +21,7 @@ BenQ_width=2560
 eval $(~/lib/libdpy.py)
 
 # Validate layout against current xrandr state (checks screen count matches)
-if ! ~/lib/liblayout.py "$layout" >/dev/null; then
+if ! ~/lib/liblayout.py --check-screen-counts "$layout" >/dev/null; then
     echo "ERROR: Layout '$layout' validation failed" >&2
     echo "This usually means 'xrandr --auto' hasn't been run to activate all connected monitors" >&2
     echo "Run 'xrandr --auto' and clear the libdpy cache, or check monitor-watcher logs" >&2

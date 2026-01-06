@@ -14,6 +14,7 @@ import sys
 import json
 import re
 import yaml
+import argparse
 
 import libdpy
 
@@ -128,7 +129,7 @@ def get_include_content(include_file, parent_indent=""):
 #
 #   - windows, which is an array of [window_matcher, *layout_cmds]
 #     arrays
-def get_layout_params(layout_file, use_cache=False):
+def get_layout_params(layout_file, use_cache=False, screens_only=False):
     with open(layout_file) as f:
         content = f.read()
         content = process_includes(content)
@@ -162,17 +163,18 @@ def get_layout_params(layout_file, use_cache=False):
 
         assignment = screen_layout.get("assignment")
 
-        if assignment == "primary" and not s["primary"]:
-            die(
-                f"Screen {screen_layout['name']} was assigned as primary "
-                "by layout but not by xrandr"
-            )
+        if not screens_only:
+            if assignment == "primary" and not s["primary"]:
+                die(
+                    f"Screen {screen_layout['name']} was assigned as primary "
+                    "by layout but not by xrandr"
+                )
 
-        if not assignment and s["primary"]:
-            die(
-                f"Screen {screen_layout['name']} was assigned as primary "
-                "by xrandr but not by layout"
-            )
+            if not assignment and s["primary"]:
+                die(
+                    f"Screen {screen_layout['name']} was assigned as primary "
+                    "by xrandr but not by layout"
+                )
 
         s.update(screen_layout)
 
@@ -314,8 +316,22 @@ def get_adjacent_screen(direction, layout_name_or_path=None, use_cache=False):
 
 
 def main():
-    if len(sys.argv) < 2:
-        # No layout specified, use bin/get-layout to determine it
+    parser = argparse.ArgumentParser(description="Parse and validate layout files")
+    parser.add_argument(
+        "--check-screen-counts",
+        action="store_true",
+        help="Only validate screen count matches, skip primary screen checks",
+    )
+    parser.add_argument(
+        "layout_name",
+        nargs="?",
+        help="Layout name (without .yaml) or path",
+    )
+    args = parser.parse_args()
+
+    screens_only = args.check_screen_counts
+
+    if not args.layout_name:
         import subprocess
 
         bin_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "bin")
@@ -328,9 +344,9 @@ def main():
         except subprocess.CalledProcessError as e:
             die(f"Failed to get layout from {get_layout_script}: {e.stderr}")
     else:
-        exe, layout_name, *_rest = sys.argv
-        layout_file = get_layout_file(layout_name)
-    screens, layout = get_layout_params(layout_file)
+        layout_file = get_layout_file(args.layout_name)
+
+    screens, layout = get_layout_params(layout_file, screens_only=screens_only)
     print(json.dumps({"screens": screens, "layout": layout}, indent=2))
 
 
