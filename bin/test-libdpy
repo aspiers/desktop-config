@@ -33,7 +33,8 @@ fi
 ~/lib/libdpy.py --find-xrandr-primary
 
 monitors-connected
-monitor-models-connected
+./bin/connected-monitor-props
+./bin/connected-monitor-props res
 current-screen-info
 get-layout
 screen-coords 50% 50%
