@@ -65,11 +65,12 @@ case "$localhost_nickname" in
         scale_factor=$($ZDOTDIR/lib/libdpy.py --calculate-ui-scale)
         #scale_factor=1
 
-        # Base sizes at 1.0 scale
+        # Base sizes at 1.0 scale.  These must work on celtic
+        # with no monitors connected.
         base_tiny=8
         base_small=10
-        base_medium_tk=9
-        base_medium=12
+        base_medium_tk=12
+        base_medium=14
         base_large=16
         base_xl=22
 
