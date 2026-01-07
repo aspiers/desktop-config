@@ -44,6 +44,7 @@ get_and_validate_layout() {
 wait_for_valid_layout() {
     local timeout=30
     local start_time=$(date +%s)
+    local retries=0
 
     echo "Waiting for monitor resolutions to stabilize..."
 
@@ -62,6 +63,12 @@ wait_for_valid_layout() {
         if layout=$(get_and_validate_layout); then
             echo "Layout ready after ${elapsed}s: $layout"
             return 0
+        fi
+
+        retries=$((retries + 1))
+        if [ $((retries % 5)) -eq 0 ]; then
+            echo "Running xrandr --auto after ${retries} retries..."
+            xrandr --auto
         fi
 
         echo "Retrying in 1s (${elapsed}/${timeout}s elapsed)..."
