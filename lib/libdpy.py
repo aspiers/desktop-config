@@ -205,6 +205,82 @@ class InxiMonitorsCache(DisplayDataCache):
             return json.load(f)
 
 
+class HwinfoMonitorJsonCache(DisplayDataCache):
+    cache_file = os.path.join(CACHE_DIR, "hwinfo-monitor.json")
+
+    def builder(self, _use_cache):
+        output = subprocess.check_output(["hwinfo", "--monitor"], text=True)
+        monitors = []
+        current_monitor = None
+
+        for line in output.split("\n"):
+            line = line.rstrip()
+
+            # Start of new monitor block
+            if re.match(r"^\d+: ", line):
+                if current_monitor:
+                    monitors.append(current_monitor)
+                current_monitor = {}
+                continue
+
+            if current_monitor is None:
+                continue
+
+            # Parse key-value pairs with indentation
+            match = re.match(r"^  (\w[\w\s]*?):\s*(.+)$", line)
+            if match:
+                key = match.group(1).strip()
+                value = match.group(2).strip()
+
+                # Remove quotes from string values
+                if value.startswith('"') and value.endswith('"'):
+                    value = value[1:-1]
+
+                # Handle special keys
+                if key == "Model":
+                    current_monitor["model"] = value
+                elif key == "Vendor":
+                    # Parse vendor format: BNQ or DEL "DELL"
+                    vendor_match = re.match(r'^(\S+)(?:\s+"(.+)")?$', value)
+                    if vendor_match:
+                        current_monitor["vendor_code"] = vendor_match.group(1)
+                        if vendor_match.group(2):
+                            current_monitor["vendor"] = vendor_match.group(2)
+                elif key == "Serial ID":
+                    current_monitor["serial"] = value
+                elif key == "Size":
+                    # Parse "527x296 mm"
+                    size_match = re.match(r"(\d+)x(\d+) mm", value)
+                    if size_match:
+                        current_monitor["size_mm"] = {
+                            "width": int(size_match.group(1)),
+                            "height": int(size_match.group(2))
+                        }
+                elif key == "Year of Manufacture":
+                    current_monitor["year"] = int(value)
+                elif key == "Week of Manufacture":
+                    current_monitor["week"] = int(value)
+                elif key == "Resolution":
+                    # Collect all resolutions
+                    if "resolutions" not in current_monitor:
+                        current_monitor["resolutions"] = []
+                    current_monitor["resolutions"].append(value)
+                elif key == "Hardware Class":
+                    current_monitor["hardware_class"] = value
+                elif key == "Unique ID":
+                    current_monitor["unique_id"] = value
+
+        # Add the last monitor
+        if current_monitor:
+            monitors.append(current_monitor)
+
+        return json.dumps(monitors, indent=2, sort_keys=True)
+
+    def cache_reader(self):
+        with open(self.cache_file, "r") as f:
+            return json.load(f)
+
+
 # Wrappers for external use
 
 
@@ -230,6 +306,10 @@ def get_xrandr_screen_geometries(use_cache=True):
 
 def get_inxi_monitors(use_cache=True):
     return InxiMonitorsCache().get(use_cache=use_cache)
+
+
+def get_hwinfo_monitors(use_cache=True):
+    return HwinfoMonitorJsonCache().get(use_cache=use_cache)
 
 
 def monitors_connected(use_cache=True):
@@ -572,6 +652,11 @@ def main():
         help="Output inxi monitor JSON instead of normal output",
     )
     parser.add_argument(
+        "--hwinfo-json",
+        action="store_true",
+        help="Output hwinfo monitor JSON instead of normal output",
+    )
+    parser.add_argument(
         "--find-by-model",
         metavar="MODEL",
         help="Search for a monitor model containing MODEL and output its JSON data",
@@ -682,6 +767,12 @@ def main():
         inxi_monitors = get_inxi_monitors(use_cache=args.use_cache)
         if inxi_monitors:
             print(json.dumps(inxi_monitors, indent=2))
+        sys.exit(0)
+
+    if args.hwinfo_json:
+        hwinfo_monitors = get_hwinfo_monitors(use_cache=args.use_cache)
+        if hwinfo_monitors:
+            print(json.dumps(hwinfo_monitors, indent=2))
         sys.exit(0)
 
     (dpy, screens) = get_screen_geometries(use_cache=args.use_cache)
