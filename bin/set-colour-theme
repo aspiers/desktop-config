@@ -1,0 +1,113 @@
+#!/bin/bash
+
+# NOTE: was previously using ~/.config/gnome-terminal-profile
+# but now we're toggling multiple themes so need a generic
+# light/dark state not just for gnome-terminal-profile.
+THEME_FILE=~/.config/theme
+
+usage() {
+    echo "Usage: $0 [--toggle | --restore | light | dark]" >&2
+    exit 1
+}
+
+initialize_theme_file() {
+    if [[ ! -f "$THEME_FILE" ]]; then
+        echo "dark" > "$THEME_FILE"
+    fi
+}
+
+get_current_theme() {
+    cat "$THEME_FILE"
+}
+
+determine_new_theme() {
+    local old_theme="$1"
+    local action="${2:-}"
+
+    case "$action" in
+        --toggle)
+            if [[ "$old_theme" == "light" ]]; then
+                echo "dark"
+            else
+                echo "light"
+            fi
+            ;;
+        --restore)
+            echo "$old_theme"
+            ;;
+        light)
+            echo "light"
+            ;;
+        dark)
+            echo "dark"
+            ;;
+        *)
+            usage
+            ;;
+    esac
+}
+
+get_theme_config() {
+    local theme="$1"
+
+    if [[ "$theme" == "light" ]]; then
+        terminal_profile="Bright"
+        xfce_theme="Greybird-geeko"
+    else
+        terminal_profile="Dark"
+        xfce_theme="Greybird-geeko-dark"
+    fi
+}
+
+apply_theme() {
+    local theme="$1"
+    local terminal_profile="$2"
+    local xfce_theme="$3"
+
+    echo "$theme" > "$THEME_FILE"
+
+    gsettings set org.gnome.desktop.interface color-scheme "prefer-$theme"
+
+    xfce4-terminal-config "$terminal_profile"
+    gnome-terminal-profile "$terminal_profile"
+    echo "$terminal_profile" > ~/.config/gnome-terminal-profile
+
+    echo "Setting XFCE theme to $xfce_theme"
+    xfconf-query -c xsettings -p /Net/ThemeName -s "$xfce_theme"
+
+    echo "Setting emacs theme to $theme"
+    emacsclient -e "(as-set-theme \"$theme\")"
+}
+
+main() {
+    local action="${1:-}"
+
+    initialize_theme_file
+
+    local old_theme
+    old_theme=$(get_current_theme)
+
+    local new_theme
+    new_theme=$(determine_new_theme "$old_theme" "$action")
+
+    if [[ "$new_theme" == "$old_theme" && "$action" != "--restore" ]]; then
+        echo "Theme is already $new_theme"
+        exit 0
+    fi
+
+    if [[ "$action" == "--restore" ]]; then
+        echo "Restoring $new_theme theme"
+        notify-send -t 3000 "Restoring $new_theme theme"
+    else
+        echo "Switching from ${old_theme:-undefined} to $new_theme theme"
+        notify-send -t 3000 "Switching to $new_theme theme"
+    fi
+
+    local terminal_profile
+    local xfce_theme
+    get_theme_config "$new_theme"
+
+    apply_theme "$new_theme" "$terminal_profile" "$xfce_theme"
+}
+
+main "$@"

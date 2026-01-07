@@ -360,7 +360,7 @@ reorg: Mod4 l :If {Matches (Layer=Normal)} {MacroCmd {SetLayer Top} {<%= notify_
 Mod4 t :MacroCmd <%= keymode 'terminals', 't: terminal\nb: btop\nh: htop\nn: nethogs\ni: iotop\ng: iftop gateway\np: powertop\nv: nvtop\na: amdgpu_top\ns: lnav-system\nT: toggle light/dark' %>
 terminals: q :MacroCmd <%= keymode_done 'terminals' %>
 <%= terminal_key 't', 'xterm-window' %>
-<%= terminal_key 'Shift t', 'toggle-colour-theme' %>
+<%= terminal_key 'Shift t', 'set-colour-theme --toggle' %>
 <%= terminal_key 'b', %<fluxbox-focus-or-launch --toggle btop top-term btop> %>
 Mod4 grave :Exec fluxbox-focus-or-launch --toggle btop top-term btop
 Mod4 Shift grave :Exec fluxbox-focus-or-launch --toggle ccmonitor top-term ccmonitor
