@@ -28,13 +28,14 @@ get_and_validate_layout() {
     echo "Layout $layout detected" >&2
 
     # Validate layout against current xrandr state (checks screen count matches)
-    if ~/lib/liblayout.py "$layout" >/dev/null 2>&1; then
+    if validation=$( ~/lib/liblayout.py "$layout" 2>&1 ); then
         echo "Layout $layout validated" >&2
         echo "$layout"  # Output to stdout for capture
         return 0
     fi
 
-    echo "ERROR: Layout '$layout' validation failed" >&2
+    echo "ERROR: Layout '$layout' validation failed:" >&2
+    echo "$validation" >&2
     echo "This usually means there's still some screens connected but inactive" >&2
     return 1
 }
