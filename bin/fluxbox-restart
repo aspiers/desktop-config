@@ -105,6 +105,7 @@ main () {
 
     if is_running xfwm4; then
         set-session-restart-style xfwm4 never
+        sleep 1
         info "Stopping xfwm4"
         pkill xfwm4
         ensure_stopped xfwm4 5
