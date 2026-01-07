@@ -1,34 +1,5 @@
 #!/bin/zsh
 
-# Needed to fix corrupted xfce4-panel which happens after display
-# reconfiguration.  Solution is to switch back to xfwm4 for a second,
-# then back to fluxbox.
-
-me=$(basename $0)
-
-while [ -n "$1" ]; do
-    case "$1" in
-        -x)
-            set -x
-            shift
-            no_log_to_file=true
-            ;;
-        -n|--no-xfwm*)
-            xfwm=n
-            shift
-            ;;
-        *)
-            echo >&2 "FATAL: Unrecognised option: $1"
-            exit 1
-    esac
-done
-
-if [ -z "$no_log_to_file" ]; then
-    exec >&~/.log/fluxbox-restart.log
-fi
-
-: $0 pid is $$
-
 INITIAL_SLEEP=0.5
 MAX_SLEEP=4
 
@@ -108,42 +79,49 @@ ensure_started () {
     done
 }
 
-if [ -n "$SSH_CONNECTION" ]; then
-    # This can break stuff launched from the fluxbox menus which
-    # relies on get-connection-type, e.g. switch-feed-emacs
-    echo >&2 "\$SSH_CONNECTION is set to $SSH_CONNECTION; cowardly aborting."
-    exit 1
-fi
+main () {
+    me=$(basename $0)
 
-if is_running fluxbox; then
-    ensure_fluxbox_stopped
+    : $0 pid is $$
 
-    if [ -z "$no_xfwm" ]; then
-        info "Replacing fluxbox with xfwm4"
-        ( xfwm4 & )
-        ensure_started xfwm4 10
+    if [ -n "$SSH_CONNECTION" ]; then
+        echo >&2 "\$SSH_CONNECTION is set to $SSH_CONNECTION; cowardly aborting."
+        exit 1
     fi
-fi
 
-if is_running xfwm4; then
-    set-session-restart-style xfwm4 never
-    info "Stopping xfwm4"
-    pkill xfwm4
-    ensure_stopped xfwm4 5
-fi
+    # Needed to fix corrupted xfce4-panel which happens after display
+    # reconfiguration.  Solution is to switch back to xfwm4 for a
+    # second, then back to fluxbox.
 
-info "Starting fluxbox"
-# Use systemd-run to start fluxbox in its own transient scope,
-# completely isolating it from monitor-watcher's cgroup
-systemd-run --user --scope --unit=fluxbox-$$ \
-    fluxbox -log ~/.log/fluxbox.log </dev/null >&! ~/.log/fluxbox.log &
+    if is_running fluxbox; then
+        ensure_fluxbox_stopped
 
-# Kill annoying popup
-sleep 1
-xdotool search \
-        --onlyvisible \
-        --screen 0 \
-        --class \
-        --classname 'Wrapper-2.0' \
-        getwindowpid |
-    xargs -r kill
+        if [ -z "$no_xfwm" ]; then
+            info "Replacing fluxbox with xfwm4"
+            ( xfwm4 & )
+            ensure_started xfwm4 10
+        fi
+    fi
+
+    if is_running xfwm4; then
+        set-session-restart-style xfwm4 never
+        info "Stopping xfwm4"
+        pkill xfwm4
+        ensure_stopped xfwm4 5
+    fi
+
+    info "Starting fluxbox"
+    systemd-run --user --scope --unit=fluxbox-$$ \
+        fluxbox -log ~/.log/fluxbox.log </dev/null >&! ~/.log/fluxbox.log &
+
+    sleep 1
+    xdotool search \
+            --onlyvisible \
+            --screen 0 \
+            --class \
+            --classname 'Wrapper-2.0' \
+            getwindowpid |
+        xargs -r kill
+}
+
+main "$@"
