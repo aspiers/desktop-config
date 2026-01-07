@@ -79,7 +79,7 @@
 [app] (class=Code|Cursor)
   [Head]	{1}
   [Position]	(Top)	{0 0}
-  [Dimensions]	{90% 90%}
+  [Dimensions]	{100% 98%}
   # This doesn't work :-(
   [FocusNewWindow]	{yes}
 [end]
