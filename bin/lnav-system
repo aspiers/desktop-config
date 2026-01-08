@@ -3,6 +3,6 @@
 lnavf \
     ~/.xsession-*errors* \
     ~/.Xclients-*errors*(N) \
-    ~/.log/*.log \
+    ~/.log/*.log~*/discord.log \
     <(jcf --since="2 days ago") \
     -f $0.filters
