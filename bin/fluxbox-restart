@@ -7,13 +7,17 @@ debug () {
     echo "\e[1;33m$*\e[0m"
 }
 
+error () {
+    echo "\e[1;31mERROR: $*\e[0m" >&2
+}
+
 info () {
     echo "\e[1;34m$*\e[0m"
     notify-send -a "$me" -t 8000 "$*"
 }
 
 is_running () {
-    pgrep -lx "$1" >/dev/null
+    pgrep -x "$1" >/dev/null
 }
 
 ensure_stopped () {
@@ -21,12 +25,12 @@ ensure_stopped () {
     local timeout="${2:-20}"
     local secs=$INITIAL_SLEEP
     local waited=0
-    while is_running "$proc"; do
-        debug "Waiting ${secs}s for $proc to stop running (waited ${waited}s, timeout ${timeout}s)"
+    while pid=$( is_running "$proc" ); do
+        debug "Waiting ${secs}s for $proc (pid $pid) to stop running (waited ${waited}s, timeout ${timeout}s)"
         sleep $secs
         waited=$(echo "$waited + $secs" | bc -l)
         if (( $(echo "$waited >= $timeout" | bc -l) )); then
-            echo "ERROR: Timeout waiting for $proc to stop (waited $waited >= $timeout seconds)" >&2
+            error "Timeout waiting for $proc to stop (waited $waited >= $timeout seconds)"
             return 1
         fi
         if (( $(echo "$secs < $MAX_SLEEP" | bc -l) )); then
@@ -55,7 +59,7 @@ ensure_fluxbox_stopped () {
         return 0
     fi
 
-    echo "ERROR: Failed to stop fluxbox via multiple methods" >&2
+    error "Failed to stop fluxbox via multiple methods"
     exit 1
 }
 
@@ -64,12 +68,12 @@ ensure_started () {
     local timeout="${2:-20}"
     local secs=$INITIAL_SLEEP
     local waited=0
-    while ! is_running "$proc"; do
+    while ! pid=$( is_running "$proc" ); do
         info "Waiting ${secs}s for $proc to start (waited ${waited}s, timeout ${timeout}s)"
         sleep $secs
         waited=$(echo "$waited + $secs" | bc -l)
         if (( $(echo "$waited >= $timeout" | bc -l) )); then
-            echo "ERROR: Timeout waiting for $proc to start (waited $waited >= $timeout seconds)" >&2
+            error "Timeout waiting for $proc to start (waited $waited >= $timeout seconds)"
             exit 1
         fi
         if (( $(echo "$secs < $MAX_SLEEP" | bc -l) )); then
@@ -77,6 +81,7 @@ ensure_started () {
             debug "Doubled sleep to $secs seconds"
         fi
     done
+    info "$proc started (pid $$)"
 }
 
 main () {
@@ -85,7 +90,7 @@ main () {
     : $0 pid is $$
 
     if [ -n "$SSH_CONNECTION" ]; then
-        echo >&2 "\$SSH_CONNECTION is set to $SSH_CONNECTION; cowardly aborting."
+        error "\$SSH_CONNECTION is set to $SSH_CONNECTION; cowardly aborting."
         exit 1
     fi
 
@@ -98,12 +103,13 @@ main () {
 
         if [ -z "$no_xfwm" ]; then
             info "Replacing fluxbox with xfwm4"
-            ( xfwm4 & )
+            ( xfwm4 >& ~/.log/fluxbox-restart-xfwm4.log & )
             ensure_started xfwm4 10
         fi
     fi
 
     if is_running xfwm4; then
+        sleep 1
         set-session-restart-style xfwm4 never
         sleep 1
         info "Stopping xfwm4"
