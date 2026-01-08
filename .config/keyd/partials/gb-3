@@ -1,3 +1,6 @@
+[control+shift]
+3 = macro(compose E =)
+
 [shift]
 # See minus-sterling-euro for details
 3 = macro(compose L -)
