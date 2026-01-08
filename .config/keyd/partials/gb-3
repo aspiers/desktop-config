@@ -1,4 +1,4 @@
-[Shift]
+[shift]
 # See minus-sterling-euro for details
 3 = macro(compose L -)
 
