@@ -1,0 +1,323 @@
+#!/usr/bin/env -S uv run --script
+# -*- mode: python-ts -*-
+#
+# /// script
+# dependencies = ["sh"]
+# ///
+
+
+"""
+Watches for audio device changes and auto-selects the best sink and source.
+
+Priority order (highest to lowest):
+  1. USB audio devices
+  2. Bluetooth devices
+  3. HDMI/DisplayPort
+  4. Built-in analog/audio
+
+Watches /dev/snd for device creation and removal events via inotify.
+
+Usage:
+    audio-device-watcher [--dry-run] [--once]
+"""
+
+import argparse
+import asyncio
+import re
+import sys
+import time
+from sh import inotifywait, wpctl
+
+SINK_PRIORITIES = [
+    (r"sony|wh-1000|xm[0-9]|headphones|airpods|bose|skullcandy|jabra", 100),
+    (r"usb|kt_usb|audioengine|fiio|schiit|chord|apogee|focusrite|motu", 90),
+    (r"bluetooth", 85),
+    (r"hdmi|displayport|dp-\d", 50),
+    (r"analog|stereo|speaker", 30),
+    (r"radeon|hd audio|audio controller", 10),
+]
+
+SOURCE_PRIORITIES = [
+    (r"usb|gomic|apogee|focusrite|motu|shure|sennheiser|blue|rode|audio-technica", 100),
+    (r"sony|airpods|earbuds|pixel buds", 90),
+    (r"bluetooth", 85),
+    (r"webcam|camera|c920|kiyo", 50),
+    (r"digital mic|internal mic|built-in", 20),
+    (r"hd audio|audio controller", 10),
+]
+
+
+def get_sinks():
+    """Return list of (id, name) tuples for all available sinks."""
+    output = wpctl("status", _err_to_out=True)
+    in_sinks_section = False
+    sinks = []
+    for line in output.split("\n"):
+        if line.strip().startswith("├─ Sinks:") or line.strip().startswith("└─ Sinks:"):
+            in_sinks_section = True
+            continue
+        if in_sinks_section:
+            if line.strip().startswith("├─") or line.strip().startswith("└─"):
+                break
+            match = re.match(r"[│ ]*\*?[ ]*(\d+)\.\s+(.+)\s+\[vol:", line)
+            if match:
+                sinks.append((match.group(1), match.group(2).strip()))
+    return sinks
+
+
+def get_current_default():
+    """Return the ID of the current default sink."""
+    output = wpctl("status", _err_to_out=True)
+    in_sinks_section = False
+    for line in output.split("\n"):
+        if line.strip().startswith("├─ Sinks:") or line.strip().startswith("└─ Sinks:"):
+            in_sinks_section = True
+            continue
+        if in_sinks_section:
+            if line.strip().startswith("├─") or line.strip().startswith("└─"):
+                break
+            match = re.match(r"[│ ]*\*[ ]*(\d+)\.", line)
+            if match:
+                return match.group(1)
+    return None
+
+
+def score_sink(sink_name):
+    """Return priority score for a sink based on its name."""
+    sink_lower = sink_name.lower()
+    for pattern, score in SINK_PRIORITIES:
+        if re.search(pattern, sink_lower, re.IGNORECASE):
+            return score
+    return 0
+
+
+def select_best_sink(sinks):
+    """Select the highest-priority sink from available sinks."""
+    best = None
+    best_score = -1
+    for sink_id, sink_name in sinks:
+        score = score_sink(sink_name)
+        if score > best_score:
+            best_score = score
+            best = sink_id
+    return best
+
+
+def switch_to_best_sink(dry_run=False):
+    """Switch to the best available sink if different from current."""
+    sinks = get_sinks()
+    if not sinks:
+        return False
+
+    current = get_current_default()
+    best = select_best_sink(sinks)
+
+    current_name = next((n for i, n in sinks if i == current), "unknown")
+    best_name = next((n for i, n in sinks if i == best), "unknown")
+
+    if dry_run:
+        current_score = score_sink(current_name)
+        best_score = score_sink(best_name)
+        if best != current:
+            print(
+                f"[DRY-RUN] Sink: would switch from {current_name} ({current}) (score={current_score}) to {best_name} ({best}) (score={best_score})"
+            )
+        else:
+            print(f"[DRY-RUN] Sink: using {best_name} ({best}) (score={best_score})")
+        return True
+
+    if best and best != current:
+        wpctl("set-default", best)
+        print(f"Sink: switched from {current_name} ({current}) to {best_name} ({best})")
+        return True
+    elif best == current:
+        print(f"Sink: using {best_name} ({best})")
+        return False
+    return False
+
+
+def get_sources():
+    """Return list of (id, name) tuples for all available sources."""
+    output = wpctl("status", _err_to_out=True)
+    in_sources_section = False
+    sources = []
+    for line in output.split("\n"):
+        if line.strip().startswith("├─ Sources:") or line.strip().startswith(
+            "└─ Sources:"
+        ):
+            in_sources_section = True
+            continue
+        if in_sources_section:
+            if line.strip().startswith("├─") or line.strip().startswith("└─"):
+                break
+            match = re.match(r"[│ ]*\*?[ ]*(\d+)\.\s+(.+)\s+\[vol:", line)
+            if match:
+                sources.append((match.group(1), match.group(2).strip()))
+    return sources
+
+
+def get_current_default_source():
+    """Return the ID of the current default source."""
+    output = wpctl("status", _err_to_out=True)
+    in_sources_section = False
+    for line in output.split("\n"):
+        if line.strip().startswith("├─ Sources:") or line.strip().startswith(
+            "└─ Sources:"
+        ):
+            in_sources_section = True
+            continue
+        if in_sources_section:
+            if line.strip().startswith("├─") or line.strip().startswith("└─"):
+                break
+            match = re.match(r"[│ ]*\*[ ]*(\d+)\.", line)
+            if match:
+                return match.group(1)
+    return None
+
+
+def score_source(source_name):
+    """Return priority score for a source based on its name."""
+    source_lower = source_name.lower()
+    for pattern, score in SOURCE_PRIORITIES:
+        if re.search(pattern, source_lower, re.IGNORECASE):
+            return score
+    return 0
+
+
+def select_best_source(sources):
+    """Select the highest-priority source from available sources."""
+    best = None
+    best_score = -1
+    for source_id, source_name in sources:
+        score = score_source(source_name)
+        if score > best_score:
+            best_score = score
+            best = source_id
+    return best
+
+
+def switch_to_best_source(dry_run=False):
+    """Switch to the best available source if different from current."""
+    sources = get_sources()
+    if not sources:
+        return False
+
+    current = get_current_default_source()
+    best = select_best_source(sources)
+
+    current_name = next((n for i, n in sources if i == current), "unknown")
+    best_name = next((n for i, n in sources if i == best), "unknown")
+
+    if dry_run:
+        current_score = score_source(current_name)
+        best_score = score_source(best_name)
+        if best != current:
+            print(
+                f"[DRY-RUN] Source: would switch from {current_name} ({current}) (score={current_score}) to {best_name} ({best}) (score={best_score})"
+            )
+        else:
+            print(f"[DRY-RUN] Source: using {best_name} ({best}) (score={best_score})")
+        return True
+
+    if best and best != current:
+        wpctl("set-default", best)
+        print(f"Source: switched from {current_name} ({current}) to {best_name} ({best})")
+        return True
+    elif best == current:
+        print(f"Source: using {best_name} ({best})")
+        return False
+    return False
+
+
+def switch_to_best(dry_run=False):
+    """Switch to best available sink and source."""
+    sink_changed = switch_to_best_sink(dry_run)
+    source_changed = switch_to_best_source(dry_run)
+    return sink_changed or source_changed
+
+
+async def watch_usb_events():
+    """Watch /dev/snd for USB audio device changes."""
+    process = await asyncio.create_subprocess_exec(
+        "inotifywait", "-q", "-m", "-e", "CREATE", "-e", "DELETE", "/dev/snd/",
+        exclude=r"[^pcm].*$",
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.DEVNULL,
+    )
+
+    async for line in process.stdout:
+        yield f"USB: {line.decode().strip()}"
+
+
+async def watch_bluetooth_events():
+    """Watch for Bluetooth device connections via D-Bus."""
+    import subprocess
+
+    process = await asyncio.create_subprocess_exec(
+        "gdbus", "monitor", "--session", "--dest", "org.bluez",
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.DEVNULL,
+    )
+
+    async for line in process.stdout:
+        yield f"BT: {line.decode().strip()}"
+
+
+async def watch_devices():
+    """Watch for both USB and Bluetooth audio device changes."""
+    print("Watching for audio device changes (USB + Bluetooth)...")
+
+    queue = asyncio.Queue()
+
+    async def producer(async_gen, label):
+        async for event in async_gen:
+            await queue.put((label, event))
+
+    usb_task = asyncio.create_task(producer(watch_usb_events(), "USB"))
+    bt_task = asyncio.create_task(producer(watch_bluetooth_events(), "BT"))
+
+    try:
+        while True:
+            label, event = await queue.get()
+            print(f"Event: {label}: {event}")
+            switch_to_best()
+            time.sleep(0.3)
+    except asyncio.CancelledError:
+        usb_task.cancel()
+        bt_task.cancel()
+        await asyncio.gather(usb_task, bt_task, return_exceptions=True)
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Watch for audio device changes and auto-select best sink and source"
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show what would be done without making changes",
+    )
+    parser.add_argument(
+        "--once",
+        action="store_true",
+        help="Configure once and exit (no monitoring loop)",
+    )
+    args = parser.parse_args()
+
+    if args.dry_run:
+        print("Running in dry-run mode...")
+        switch_to_best(dry_run=True)
+        sys.exit(0)
+
+    if args.once:
+        switch_to_best()
+        sys.exit(0)
+
+    try:
+        asyncio.run(watch_devices())
+    except KeyboardInterrupt:
+        print("\nStopping audio device watcher.")
+
+
+if __name__ == "__main__":
+    main()
