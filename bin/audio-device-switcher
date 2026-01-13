@@ -38,9 +38,10 @@ SINK_PRIORITIES = [
 ]
 
 SOURCE_PRIORITIES = [
-    (r"usb|gomic|apogee|focusrite|motu|shure|sennheiser|blue|rode|audio-technica", 100),
-    (r"sony|airpods|earbuds|pixel buds", 90),
-    (r"bluetooth", 85),
+    (r"Wireless Microphone", 100),
+    (r"usb|gomic|apogee|focusrite|motu|shure|sennheiser|blue|rode|audio-technica", 90),
+    (r"sony|airpods|earbuds|pixel buds", 80),
+    (r"bluetooth", 75),
     (r"webcam|camera|c920|kiyo", 50),
     (r"digital mic|internal mic|built-in", 20),
     (r"hd audio|audio controller", 10),
