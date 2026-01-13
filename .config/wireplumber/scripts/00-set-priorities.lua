@@ -68,6 +68,18 @@ local function get_best_device(device_type)
     return best, best_priority
 end
 
+local function notify(title, message)
+    os.execute(string.format("notify-send '%s' '%s' 2>/dev/null", title, message))
+end
+
+local function notify_switch(device_type, old_name, new_name)
+    if old_name and new_name and old_name ~= new_name then
+        notify("Audio Switched", string.format("%s: %s → %s", device_type, old_name, new_name))
+    elseif new_name then
+        notify("Audio Selected", string.format("%s: %s", device_type, new_name))
+    end
+end
+
 local function switch_stream_to_node(stream, target_node)
     if not target_node then return end
 
@@ -82,6 +94,7 @@ local function switch_stream_to_node(stream, target_node)
 end
 
 local function reevaluate_and_switch()
+    local old_sink = get_best_device("Audio/Sink")
     print("[event] Re-evaluating audio device selection...")
 
     local best_sink, sink_priority = get_best_device("Audio/Sink")
@@ -103,6 +116,13 @@ local function reevaluate_and_switch()
         for _, stream in ipairs(streams) do
             switch_stream_to_node(stream, best_sink)
         end
+    end
+
+    if best_sink then
+        notify_switch("Sink", nil, best_sink.properties["node.name"])
+    end
+    if best_source then
+        notify_switch("Source", nil, best_source.properties["node.name"])
     end
 end
 
@@ -141,11 +161,15 @@ main()
 
 -- Hook into device changes for automatic switching
 core:connect("device-added", function(device)
-    print(string.format("[hook] Device added: %s", device.properties["device.name"] or "unknown"))
+    local device_name = device.properties["device.name"] or device.properties["device.description"] or "unknown"
+    print(string.format("[hook] Device added: %s", device_name))
+    notify("Audio Device Connected", device_name)
     reevaluate_and_switch()
 end)
 
 core:connect("device-removed", function(device)
-    print(string.format("[hook] Device removed: %s", device.properties["device.name"] or "unknown"))
+    local device_name = device.properties["device.name"] or device.properties["device.description"] or "unknown"
+    print(string.format("[hook] Device removed: %s", device_name))
+    notify("Audio Device Disconnected", device_name)
     reevaluate_and_switch()
 end)
