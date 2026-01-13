@@ -18,7 +18,7 @@ Priority order (highest to lowest):
 Watches /dev/snd for device creation and removal events via inotify.
 
 Usage:
-    audio-device-watcher [--dry-run] [--once]
+    audio-device-watcher [--dry-run] [--watch]
 """
 
 import argparse
@@ -299,9 +299,9 @@ def main():
         help="Show what would be done without making changes",
     )
     parser.add_argument(
-        "--once",
+        "--watch",
         action="store_true",
-        help="Configure once and exit (no monitoring loop)",
+        help="Run in watch mode (continuous monitoring)",
     )
     args = parser.parse_args()
 
@@ -310,14 +310,13 @@ def main():
         switch_to_best(dry_run=True)
         sys.exit(0)
 
-    if args.once:
+    if args.watch:
+        try:
+            asyncio.run(watch_devices())
+        except KeyboardInterrupt:
+            print("\nStopping audio device watcher.")
+    else:
         switch_to_best()
-        sys.exit(0)
-
-    try:
-        asyncio.run(watch_devices())
-    except KeyboardInterrupt:
-        print("\nStopping audio device watcher.")
 
 
 if __name__ == "__main__":
