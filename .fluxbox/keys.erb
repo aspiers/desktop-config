@@ -342,7 +342,7 @@ reorg: Shift quotedbl :MacroCmd {Exec ly --debug -s 2cols} <%= keymode_done 'reo
 reorg: Shift 5 :ResizeTo 1280 720 <%= keymode_done 'reorg' %>
 reorg: Shift semicolon :MacroCmd {Exec ly --debug -s 2rows} <%= keymode_done 'reorg' %>
 
-reorg: space :Raise
+reorg: space :MacroCmd {Raise} <%= keymode_done 'reorg' %>
 reorg: Mod4 l :If {Matches (Layer=Normal)} {MacroCmd {SetLayer Top} {<%= notify_transient 'set to top layer', 'layer' %>}} {MacroCmd {SetLayer Normal} {<%= notify_transient 'set to normal layer', 'layer'  %>}}
 
 # go to a specific tab in the current window
