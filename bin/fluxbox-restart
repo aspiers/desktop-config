@@ -1,6 +1,6 @@
 #!/bin/zsh
 
-INITIAL_SLEEP=0.5
+INITIAL_SLEEP=0.2
 MAX_SLEEP=4
 
 debug () {
