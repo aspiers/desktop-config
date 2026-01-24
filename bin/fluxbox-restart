@@ -84,6 +84,31 @@ ensure_started () {
     info "$proc started (pid $$)"
 }
 
+retry_with_backoff () {
+    local initial_sleep=0.2
+    local max_wait=5
+    local secs=$initial_sleep
+    local waited=0
+    local success=0
+
+    while (( $(echo "$waited < $max_wait" | bc -l) )); do
+        if "$@"; then
+            success=1
+            break
+        fi
+        debug "Command failed: $*, retrying in ${secs}s (waited ${waited}s)"
+        sleep $secs
+        waited=$(echo "$waited + $secs" | bc -l)
+        secs=$(echo "$secs * 2" | bc -l)
+    done
+
+    if (( ! success )); then
+        error "Command failed after ${waited}s: $*"
+        return 1
+    fi
+    return 0
+}
+
 main () {
     me=$(basename $0)
 
@@ -109,9 +134,9 @@ main () {
     fi
 
     if is_running xfwm4; then
-        sleep 1
-        set-session-restart-style xfwm4 never
-        sleep 1
+        if ! retry_with_backoff set-session-restart-style xfwm4 never; then
+            error "Proceeding despite set-session-restart-style failure"
+        fi
         info "Stopping xfwm4"
         pkill xfwm4
         ensure_stopped xfwm4 5
