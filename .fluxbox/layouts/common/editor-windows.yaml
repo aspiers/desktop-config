@@ -3,3 +3,4 @@
 
 - - (class=Cursor|Code)
   - MacroCmd {<s_primary_SetHead>} {MoveTo <s_primary_full_left> <s_primary_full_top>} {ResizeTo <s_primary_full_width> <s_primary_full_height>}
+  - <unstick>
