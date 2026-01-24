@@ -115,8 +115,16 @@ def main():
         elif (external_monitor := libdpy.external_monitor_connected()):
             debug_print(f"external monitor connected: {external_monitor['model']}")
             monitor_res = external_monitor["res"]
-            ensure_primary_set_by_prop("res", monitor_res)
-            layout_file("celtic+external")
+            # Parse width from resolution (format: "WIDTHxHEIGHT")
+            width = int(monitor_res.split("x")[0])
+            debug_print(f"external monitor resolution: {monitor_res}, width: {width}")
+            # Only set external monitor as primary if width > 2000px
+            if width > 2000:
+                ensure_primary_set_by_prop("res", monitor_res)
+                layout_file("celtic+external")
+            else:
+                # Small external monitor - keep laptop as primary
+                layout_file("celtic+external-secondary")
 
         elif libdpy.monitors_connected() == 1:
             screens_data = libdpy.get_xrandr_screen_geometries()

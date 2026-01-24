@@ -1,0 +1,48 @@
+screens:
+  -
+    # Celtic laptop remains primary
+    head: 1
+    <INCLUDE screens/celtic-primary>
+    assignment: primary
+    right: external
+  -
+    # External monitor is secondary (not primary)
+    name: external
+    head: 2
+    assignment: secondary
+    left: celtic
+    left_margin: 0%
+    right_margin: 0%
+    panel_height: 35
+    logs_height_pc: 0
+    cols_1_2_margin: 0%
+    col1_width_pc_of_active: 56
+    col2_width_pc_of_active: 44
+    single_width_pc_of_active: 100
+
+windows:
+  <INCLUDE common/monitoring-full-width>
+
+  <INCLUDE common/terminal-windows>
+
+  <INCLUDE common/top-term-windows-primary>
+
+  <INCLUDE common/editor-windows>
+
+  <INCLUDE common/toucan>
+
+  <INCLUDE common/side-projects>
+
+  <INCLUDE common/browser-multi>
+
+  <INCLUDE common/firefox>
+
+  <INCLUDE common/notion>
+
+  <INCLUDE common/gitk>
+
+  <INCLUDE common/communication>
+
+  <INCLUDE common/system-tools-secondary>
+
+  <INCLUDE common/chrysalis-multi>

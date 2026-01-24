@@ -44,6 +44,11 @@ setup_xrandr() {
                 --output ${screen_0_name} --pos 0x0 --scale 1 --size $celtic_size --auto \
                 --output ${screen_1_name} --pos ${celtic_width}x0 --scale 1 --primary --auto
             ;;
+        celtic+external-secondary)
+            xrandr \
+                --output ${screen_0_name} --pos 0x0 --scale 1 --size $celtic_size --primary --auto \
+                --output ${screen_1_name} --pos ${celtic_width}x0 --scale 1 --auto
+            ;;
         celtic+BenQ)
             xrandr \
                 --output ${screen_0_name} --pos 0x0 --scale 1 --size $celtic_size --auto \
