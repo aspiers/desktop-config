@@ -26,9 +26,13 @@ set -euo pipefail
 
 DEBUG_LOG=~/.log/rofi-wifi-debug.log
 
+# shellcheck source=../lib/librofi.sh
+source "$(dirname "$0")/../lib/librofi.sh"
+
 # When called directly (not by rofi script mode), launch rofi
 if [[ -z "${ROFI_RETV:-}" ]]; then
     exec rofi -show wifi -modes "wifi:$0" \
+        -theme-str "$ROFI_THEME_STR" \
         -theme-str 'window {width: 1400px;}' \
         -theme-str 'listview {lines: 20;}' \
         -theme-str 'message textbox {font: "SauceCodePro Nerd Font 16";}' \
@@ -58,18 +62,17 @@ run_notify_bg() {
     fi
 }
 
-# Pango colour for signal strength, matching nmcli thresholds:
-# green (>=80), yellow (60-79), magenta/purple (<60), red (<40)
+# Pango colour for signal strength, using colours from librofi.sh
 signal_colour() {
     local signal=$1
     if (( signal >= 80 )); then
-        echo "#4CAF50"  # green
+        echo "$ROFI_COLOUR_GREEN"
     elif (( signal >= 60 )); then
-        echo "#FFC107"  # amber/yellow
+        echo "$ROFI_COLOUR_YELLOW"
     elif (( signal >= 40 )); then
-        echo "#9C27B0"  # purple/magenta
+        echo "$ROFI_COLOUR_MAUVE"
     else
-        echo "#F44336"  # red for very weak
+        echo "$ROFI_COLOUR_RED"
     fi
 }
 
@@ -250,9 +253,11 @@ show_network_list() {
         fi
 
         # Format: [*] BARS SIGNAL%  SSID  CH  SECURITY
+        # Only the signal indicator is coloured; the rest inherits rofi's
+        # text-color so that selected rows maintain good contrast.
         local display
-        display=$(printf '<span foreground="%s">%s%s %3d%%  %-28s ch%-3s %s</span>' \
-            "$colour" "$in_use_marker" "$bars" "$signal" \
+        display=$(printf '%s<span foreground="%s">%s %3d%%</span>  %-28s ch%-3s %s' \
+            "$in_use_marker" "$colour" "$bars" "$signal" \
             "$escaped_ssid" "$chan" "$escaped_security")
 
         echo -en "${display}\0info\x1f${ssid}\x1ficon\x1f${icon}\n"
