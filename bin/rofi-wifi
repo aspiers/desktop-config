@@ -1,0 +1,324 @@
+#!/bin/bash
+#
+# Interactive Wi-Fi network selector using rofi script mode.
+#
+# Displays available Wi-Fi networks with signal-strength colours
+# (matching nmcli's colour scheme).
+#
+# Selecting a network connects to it (or disconnects if already active).
+#
+# Hotkeys:
+#   Enter  - connect to selected (or disconnect if active)
+#   Alt+r  - rescan networks
+#   Alt+d  - disconnect from current network
+#   Alt+f  - forget (delete) saved profile for selected network
+#   Alt+e  - edit selected network in nm-connection-editor
+#
+# Usage:
+#   rofi-wifi
+#
+# Environment variables set by rofi script mode:
+#   ROFI_RETV  - 0=initial, 1=selected, 2=custom entry, 10-28=hotkey
+#   ROFI_INFO  - the info field of the selected row
+#   ROFI_DATA  - persistent data between invocations
+
+set -euo pipefail
+
+DEBUG_LOG=~/.log/rofi-wifi-debug.log
+
+# When called directly (not by rofi script mode), launch rofi
+if [[ -z "${ROFI_RETV:-}" ]]; then
+    exec rofi -show wifi -modes "wifi:$0" \
+        -theme-str 'window {width: 1400px;}' \
+        -theme-str 'listview {lines: 20;}' \
+        -theme-str 'message textbox {font: "SauceCodePro Nerd Font 16";}' \
+        -kb-move-word-forward "" \
+        -kb-custom-1 "Alt+r" \
+        -kb-custom-2 "Alt+d" \
+        -kb-custom-3 "Alt+f" \
+        -kb-custom-4 "Alt+e"
+fi
+
+# Debug logging
+exec 2>>"$DEBUG_LOG"
+echo "=== $(date) ===" >&2
+echo "ROFI_RETV=$ROFI_RETV ROFI_INFO=${ROFI_INFO:-} ROFI_DATA=${ROFI_DATA:-}" >&2
+
+# --- Helpers ---
+
+# Run a command in the background, sending a notification on success or failure.
+# Usage: run_notify_bg "success msg" "failure msg" cmd [args...]
+run_notify_bg() {
+    local success_msg="$1" failure_msg="$2"
+    shift 2
+    if "$@" >/dev/null 2>&1; then
+        notify-send -t 5000 "Wi-Fi" "$success_msg"
+    else
+        notify-send -t 5000 -u critical "Wi-Fi" "$failure_msg"
+    fi
+}
+
+# Pango colour for signal strength, matching nmcli thresholds:
+# green (>=80), yellow (60-79), magenta/purple (<60), red (<40)
+signal_colour() {
+    local signal=$1
+    if (( signal >= 80 )); then
+        echo "#4CAF50"  # green
+    elif (( signal >= 60 )); then
+        echo "#FFC107"  # amber/yellow
+    elif (( signal >= 40 )); then
+        echo "#9C27B0"  # purple/magenta
+    else
+        echo "#F44336"  # red for very weak
+    fi
+}
+
+# Escape text for Pango markup
+pango_escape() {
+    local s="$1"
+    s="${s//&/&amp;}"
+    s="${s//</&lt;}"
+    s="${s//>/&gt;}"
+    s="${s//\"/&quot;}"
+    s="${s//\'/&apos;}"
+    echo "$s"
+}
+
+# Icon name based on signal strength
+wifi_icon() {
+    local signal=$1
+    if (( signal >= 75 )); then
+        echo "network-wireless-connected-100"
+    elif (( signal >= 50 )); then
+        echo "network-wireless-connected-75"
+    elif (( signal >= 25 )); then
+        echo "network-wireless-connected-50"
+    else
+        echo "network-wireless-connected-25"
+    fi
+}
+
+# Signal strength bar characters matching nmcli's display
+signal_bars() {
+    local signal=$1
+    if (( signal >= 80 )); then
+        echo "▂▄▆█"
+    elif (( signal >= 60 )); then
+        echo "▂▄▆_"
+    elif (( signal >= 40 )); then
+        echo "▂▄__"
+    else
+        echo "▂___"
+    fi
+}
+
+# Currently active wifi SSID (from scan results, not connection name)
+active_ssid() {
+    nmcli -t -f SSID,IN-USE d wifi list 2>/dev/null \
+        | awk -F: '$NF == "*" {print substr($0, 1, length($0)-2); exit}'
+}
+
+# Check if an SSID has a saved connection profile
+has_saved_profile() {
+    local ssid="$1"
+    nmcli -t -f NAME,TYPE c show 2>/dev/null \
+        | grep -qF "${ssid}:802-11-wireless"
+}
+
+# Find the connection profile name for an SSID
+# (profile name may differ from SSID, e.g. "MyNet 1" vs "MyNet")
+connection_name_for_ssid() {
+    local ssid="$1"
+    nmcli -t -f NAME,TYPE c show 2>/dev/null \
+        | awk -F: -v ssid="$ssid" \
+            '$2 == "802-11-wireless" && index($1, ssid) == 1 {print $1; exit}'
+}
+
+# Find the UUID of a saved connection profile for an SSID
+connection_uuid_for_ssid() {
+    local ssid="$1"
+    nmcli -t -f NAME,UUID,TYPE c show 2>/dev/null \
+        | awk -F: -v ssid="$ssid" \
+            '$3 == "802-11-wireless" && index($1, ssid) == 1 {print $2; exit}'
+}
+
+# Connect to a network
+do_connect() {
+    local ssid="$1"
+    echo "Connecting to: $ssid" >&2
+    if has_saved_profile "$ssid"; then
+        local conn_name
+        conn_name=$(connection_name_for_ssid "$ssid")
+        run_notify_bg "Connected to $ssid" "Failed to connect to $ssid" \
+            nmcli c up "$conn_name" &
+    else
+        run_notify_bg "Connected to $ssid" "Failed to connect to $ssid" \
+            nmcli d wifi connect "$ssid" &
+    fi
+}
+
+# Disconnect from a network
+do_disconnect() {
+    local ssid="$1"
+    echo "Disconnecting from: $ssid" >&2
+    local conn_name
+    conn_name=$(connection_name_for_ssid "$ssid")
+    run_notify_bg "Disconnected from $ssid" "Failed to disconnect from $ssid" \
+        nmcli c down "$conn_name" &
+}
+
+# Forget a saved network profile
+do_forget() {
+    local ssid="$1"
+    echo "Forgetting: $ssid" >&2
+    if ! has_saved_profile "$ssid"; then
+        notify-send -t 5000 -u critical "Wi-Fi" "No saved profile for $ssid" &
+        return
+    fi
+    local conn_name
+    conn_name=$(connection_name_for_ssid "$ssid")
+    run_notify_bg "Forgot network $ssid" "Failed to forget $ssid" \
+        nmcli c delete "$conn_name" &
+}
+
+# Edit a saved network profile in nm-connection-editor
+do_edit() {
+    local ssid="$1"
+    echo "Editing: $ssid" >&2
+    if ! has_saved_profile "$ssid"; then
+        notify-send -t 5000 -u critical "Wi-Fi" "No saved profile for $ssid" &
+        return
+    fi
+    local uuid
+    uuid=$(connection_uuid_for_ssid "$ssid")
+    nm-connection-editor --edit="$uuid" &
+}
+
+# --- List available Wi-Fi networks ---
+show_network_list() {
+    echo -en "\0prompt\x1fWi-Fi  \n"
+    echo -en "\0markup-rows\x1ftrue\n"
+    echo -en "\0no-custom\x1ftrue\n"
+    echo -en "\0use-hot-keys\x1ftrue\n"
+    echo -en "\0message\x1f<i>Enter</i>: connect/disconnect   <i>Alt+d</i>: disconnect   <i>Alt+r</i>: rescan   <i>Alt+f</i>: forget   <i>Alt+e</i>: edit\n"
+
+    local current_ssid
+    current_ssid=$(active_ssid)
+
+    # Read nmcli terse output; deduplicate by SSID (keep strongest signal).
+    # Avoid BSSID field since its colons conflict with nmcli's : separator.
+    declare -A seen_ssids
+    while IFS=: read -r ssid signal security _in_use chan; do
+        # Skip hidden networks (empty SSID)
+        [[ -z "$ssid" ]] && continue
+
+        # Deduplicate: keep the entry with strongest signal per SSID
+        if [[ -n "${seen_ssids[$ssid]:-}" ]]; then
+            local prev_signal="${seen_ssids[$ssid]%%:*}"
+            (( signal <= prev_signal )) && continue
+        fi
+        seen_ssids[$ssid]="${signal}:${security}:${chan}"
+    done < <(nmcli -t -f SSID,SIGNAL,SECURITY,IN-USE,CHAN d wifi list 2>/dev/null)
+
+    # Sort by signal strength descending
+    local sorted
+    sorted=$(
+        for ssid in "${!seen_ssids[@]}"; do
+            echo "${seen_ssids[$ssid]%%:*}|${ssid}|${seen_ssids[$ssid]}"
+        done | sort -t'|' -k1 -rn
+    )
+
+    while IFS='|' read -r _sort_signal ssid data; do
+        [[ -z "$ssid" ]] && continue
+        local signal="${data%%:*}"
+        local rest="${data#*:}"
+        local security="${rest%%:*}"
+        local chan="${rest##*:}"
+        local colour bars icon
+        colour=$(signal_colour "$signal")
+        icon=$(wifi_icon "$signal")
+        bars=$(signal_bars "$signal")
+
+        local escaped_ssid escaped_security
+        escaped_ssid=$(pango_escape "$ssid")
+        escaped_security=$(pango_escape "$security")
+
+        local in_use_marker="  "
+        if [[ "$ssid" == "$current_ssid" ]]; then
+            in_use_marker="<b>*</b> "
+            icon="network-wireless-connected-100"
+        fi
+
+        # Format: [*] BARS SIGNAL%  SSID  CH  SECURITY
+        local display
+        display=$(printf '<span foreground="%s">%s%s %3d%%  %-28s ch%-3s %s</span>' \
+            "$colour" "$in_use_marker" "$bars" "$signal" \
+            "$escaped_ssid" "$chan" "$escaped_security")
+
+        echo -en "${display}\0info\x1f${ssid}\x1ficon\x1f${icon}\n"
+    done <<< "$sorted"
+}
+
+# Extract SSID from the info field of the selected row
+selected_ssid() {
+    echo "${ROFI_INFO:-}"
+}
+
+# --- Main entry point (called by rofi script mode) ---
+case "${ROFI_RETV:-0}" in
+    0)
+        show_network_list
+        ;;
+    1)
+        # Enter: connect or disconnect
+        ssid=$(selected_ssid)
+        if [[ -z "$ssid" ]]; then
+            show_network_list
+            exit 0
+        fi
+        current=$(active_ssid)
+        if [[ "$ssid" == "$current" ]]; then
+            do_disconnect "$ssid"
+        else
+            do_connect "$ssid"
+        fi
+        exit 0
+        ;;
+    10)
+        # Alt+r: rescan
+        echo "Hotkey: rescan" >&2
+        nmcli d wifi rescan 2>/dev/null || true
+        show_network_list
+        ;;
+    11)
+        # Alt+d: disconnect current
+        echo "Hotkey: disconnect" >&2
+        current=$(active_ssid)
+        if [[ -n "$current" ]]; then
+            do_disconnect "$current"
+        fi
+        exit 0
+        ;;
+    12)
+        # Alt+f: forget selected
+        echo "Hotkey: forget" >&2
+        ssid=$(selected_ssid)
+        if [[ -n "$ssid" ]]; then
+            do_forget "$ssid"
+        fi
+        exit 0
+        ;;
+    13)
+        # Alt+e: edit selected
+        echo "Hotkey: edit" >&2
+        ssid=$(selected_ssid)
+        if [[ -n "$ssid" ]]; then
+            do_edit "$ssid"
+        fi
+        exit 0
+        ;;
+    *)
+        echo "Unhandled ROFI_RETV=$ROFI_RETV" >&2
+        show_network_list
+        ;;
+esac
