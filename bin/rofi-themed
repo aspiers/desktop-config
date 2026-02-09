@@ -1,0 +1,14 @@
+#!/bin/bash
+#
+# Themed rofi wrapper.  Sources librofi.sh and passes the Catppuccin
+# theme to rofi, forwarding all other arguments.
+#
+# Usage:
+#   rofi-themed -show drun
+#   rofi-themed -show window
+#   rofi-themed [any rofi args ...]
+
+# shellcheck source=../lib/librofi.sh
+source "$(dirname "$0")/../lib/librofi.sh"
+
+exec rofi -theme-str "$ROFI_THEME_STR" "$@"

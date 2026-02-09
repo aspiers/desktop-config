@@ -31,8 +31,7 @@ source "$(dirname "$0")/../lib/librofi.sh"
 
 # When called directly (not by rofi script mode), launch rofi
 if [[ -z "${ROFI_RETV:-}" ]]; then
-    exec rofi -show wifi -modes "wifi:$0" \
-        -theme-str "$ROFI_THEME_STR" \
+    exec rofi-themed -show wifi -modes "wifi:$0" \
         -theme-str 'window {width: 1400px;}' \
         -theme-str 'listview {lines: 20;}' \
         -theme-str 'message textbox {font: "SauceCodePro Nerd Font 16";}' \
