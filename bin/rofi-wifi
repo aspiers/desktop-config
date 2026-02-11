@@ -49,16 +49,20 @@ echo "ROFI_RETV=$ROFI_RETV ROFI_INFO=${ROFI_INFO:-} ROFI_DATA=${ROFI_DATA:-}" >&
 
 # --- Helpers ---
 
-# Run a command in the background, sending a notification on success or failure.
-# Usage: run_notify_bg "success msg" "failure msg" cmd [args...]
-run_notify_bg() {
+# Replace the current process with a command, sending a notification
+# on success or failure.  Using exec ensures rofi's child process is
+# replaced, allowing rofi to close immediately.
+# Usage: exec_notify "success msg" "failure msg" cmd [args...]
+exec_notify() {
     local success_msg="$1" failure_msg="$2"
     shift 2
-    if "$@" >/dev/null 2>&1; then
-        notify-send -t 5000 "Wi-Fi" "$success_msg"
-    else
-        notify-send -t 5000 -u critical "Wi-Fi" "$failure_msg"
-    fi
+    exec bash -c '
+        if "$@" >/dev/null 2>&1; then
+            notify-send -t 5000 "Wi-Fi" "$1"
+        else
+            notify-send -t 5000 -u critical "Wi-Fi" "$2"
+        fi
+    ' _ "$success_msg" "$failure_msg" "$@"
 }
 
 # Pango colour for signal strength, using colours from librofi.sh
@@ -151,11 +155,12 @@ do_connect() {
     if has_saved_profile "$ssid"; then
         local conn_name
         conn_name=$(connection_name_for_ssid "$ssid")
-        run_notify_bg "Connected to $ssid" "Failed to connect to $ssid" \
-            nmcli c up "$conn_name" &
+        exec_notify "Connected to $ssid" "Failed to connect to $ssid" \
+            nmcli c up "$conn_name"
     else
-        run_notify_bg "Connected to $ssid" "Failed to connect to $ssid" \
-            nmcli d wifi connect "$ssid" &
+        # private yes => user-only connection, no root password needed
+        exec_notify "Connected to $ssid" "Failed to connect to $ssid" \
+            nmcli d wifi connect "$ssid" private yes
     fi
 }
 
@@ -165,8 +170,8 @@ do_disconnect() {
     echo "Disconnecting from: $ssid" >&2
     local conn_name
     conn_name=$(connection_name_for_ssid "$ssid")
-    run_notify_bg "Disconnected from $ssid" "Failed to disconnect from $ssid" \
-        nmcli c down "$conn_name" &
+    exec_notify "Disconnected from $ssid" "Failed to disconnect from $ssid" \
+        nmcli c down "$conn_name"
 }
 
 # Forget a saved network profile
@@ -174,13 +179,12 @@ do_forget() {
     local ssid="$1"
     echo "Forgetting: $ssid" >&2
     if ! has_saved_profile "$ssid"; then
-        notify-send -t 5000 -u critical "Wi-Fi" "No saved profile for $ssid" &
-        return
+        exec notify-send -t 5000 -u critical "Wi-Fi" "No saved profile for $ssid"
     fi
     local conn_name
     conn_name=$(connection_name_for_ssid "$ssid")
-    run_notify_bg "Forgot network $ssid" "Failed to forget $ssid" \
-        nmcli c delete "$conn_name" &
+    exec_notify "Forgot network $ssid" "Failed to forget $ssid" \
+        nmcli c delete "$conn_name"
 }
 
 # Edit a saved network profile in nm-connection-editor
@@ -188,12 +192,11 @@ do_edit() {
     local ssid="$1"
     echo "Editing: $ssid" >&2
     if ! has_saved_profile "$ssid"; then
-        notify-send -t 5000 -u critical "Wi-Fi" "No saved profile for $ssid" &
-        return
+        exec notify-send -t 5000 -u critical "Wi-Fi" "No saved profile for $ssid"
     fi
     local uuid
     uuid=$(connection_uuid_for_ssid "$ssid")
-    nm-connection-editor --edit="$uuid" &
+    exec nm-connection-editor --edit="$uuid"
 }
 
 # --- List available Wi-Fi networks ---
