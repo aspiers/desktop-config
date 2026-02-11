@@ -98,6 +98,16 @@ read -r -d '' ROFI_THEME_STR <<-RASI || true
     sel-bg:    ${ROFI_COLOUR_SEL_BG};
     sel-fg:    ${ROFI_COLOUR_SEL_FG};
     border-cl: ${ROFI_COLOUR_BORDER};
+
+    /* Override default theme variables so inherited rules also use
+       Catppuccin colours (e.g. textbox { text-color: var(foreground) }) */
+    foreground:       @fg;
+    background:       @bg;
+    lightfg:          @fg;
+    lightbg:          @bg-alt;
+    separatorcolor:   @border-cl;
+    blue:             @accent;
+    red:              @urgent;
 }
 window {
     background-color: @bg;
