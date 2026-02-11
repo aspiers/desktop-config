@@ -157,11 +157,17 @@ connection_uuid_for_ssid() {
 # Always use "nmcli d wifi connect" rather than "nmcli c up" so that
 # NetworkManager handles profile matching for the current device
 # (avoids stale interface-name mismatches in saved profiles).
+# For new networks, "private yes" creates a user-only profile (no root needed).
 do_connect() {
     local ssid="$1"
     echo "Connecting to: $ssid" >&2
-    run_detached_notify "Connected to $ssid" "Failed to connect to $ssid" \
-        nmcli d wifi connect "$ssid" private yes
+    if has_saved_profile "$ssid"; then
+        run_detached_notify "Connected to $ssid" "Failed to connect to $ssid" \
+            nmcli d wifi connect "$ssid"
+    else
+        run_detached_notify "Connected to $ssid" "Failed to connect to $ssid" \
+            nmcli d wifi connect "$ssid" private yes
+    fi
 }
 
 # Disconnect from a network
