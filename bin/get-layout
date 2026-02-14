@@ -105,10 +105,10 @@ def main():
 
         if benq_bl3200_connected():
             debug_print(f"benq_bl3200_connected: True")
-            if num_monitors == 2:
-                ensure_primary_set_by_prop("model", "BenQ")
-                layout_file("celtic+BenQ")
-            elif num_monitors == 3:
+            # if num_monitors == 2:
+            #     ensure_primary_set_by_prop("model", "BenQ")
+            #     layout_file("celtic+BenQ")
+            if num_monitors == 3:
                 ensure_primary_set_by_prop("model", "BenQ")
                 layout_file("celtic+BenQ+Dell")
 
