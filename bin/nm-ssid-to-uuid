@@ -1,0 +1,29 @@
+#!/bin/bash
+#
+# Given a Wi-Fi SSID, print the UUID of its saved NetworkManager
+# connection profile.  Matches the connection name exactly.
+#
+# Usage:
+#   nm-ssid-to-uuid <SSID>
+
+set -euo pipefail
+
+if [[ $# -ne 1 ]]; then
+    echo "Usage: ${0##*/} <SSID>" >&2
+    exit 1
+fi
+
+ssid="$1"
+
+uuid=$(
+    nmcli -t -f NAME,UUID,TYPE c show 2>/dev/null \
+        | awk -F: -v ssid="$ssid" \
+            '$3 == "802-11-wireless" && $1 == ssid {print $2; exit}'
+)
+
+if [[ -z "$uuid" ]]; then
+    echo "${0##*/}: no saved profile for SSID '$ssid'" >&2
+    exit 1
+fi
+
+echo "$uuid"

@@ -137,33 +137,30 @@ has_saved_profile() {
 }
 
 # Find the connection profile name for an SSID
-# (profile name may differ from SSID, e.g. "MyNet 1" vs "MyNet")
 connection_name_for_ssid() {
     local ssid="$1"
     nmcli -t -f NAME,TYPE c show 2>/dev/null \
         | awk -F: -v ssid="$ssid" \
-            '$2 == "802-11-wireless" && index($1, ssid) == 1 {print $1; exit}'
-}
-
-# Find the UUID of a saved connection profile for an SSID
-connection_uuid_for_ssid() {
-    local ssid="$1"
-    nmcli -t -f NAME,UUID,TYPE c show 2>/dev/null \
-        | awk -F: -v ssid="$ssid" \
-            '$3 == "802-11-wireless" && index($1, ssid) == 1 {print $2; exit}'
+            '$2 == "802-11-wireless" && $1 == ssid {print $1; exit}'
 }
 
 # Connect to a network.
-# Always use "nmcli d wifi connect" rather than "nmcli c up" so that
-# NetworkManager handles profile matching for the current device
-# (avoids stale interface-name mismatches in saved profiles).
-# For new networks, "private yes" creates a user-only profile (no root needed).
+# For saved profiles, use "nmcli c up" to activate the existing profile
+# (which already has secrets stored).  "nmcli d wifi connect" would create
+# a duplicate profile without secrets, causing a password prompt.
+# Clear any stale interface-name first, since the wifi device name can
+# change across kernel/hardware updates (e.g. wlp166s0 -> wlp192s0).
+# For new networks, use "nmcli d wifi connect" with "private yes" to
+# create a user-only profile (no root/polkit needed).
 do_connect() {
     local ssid="$1"
     echo "Connecting to: $ssid" >&2
     if has_saved_profile "$ssid"; then
+        local conn_name
+        conn_name=$(connection_name_for_ssid "$ssid")
+        nmcli c modify "$conn_name" connection.interface-name "" 2>/dev/null || true
         run_detached_notify "Connected to $ssid" "Failed to connect to $ssid" \
-            nmcli d wifi connect "$ssid"
+            nmcli c up "$conn_name"
     else
         run_detached_notify "Connected to $ssid" "Failed to connect to $ssid" \
             nmcli d wifi connect "$ssid" private yes
@@ -203,7 +200,7 @@ do_edit() {
         return
     fi
     local uuid
-    uuid=$(connection_uuid_for_ssid "$ssid")
+    uuid=$(nm-ssid-to-uuid "$ssid")
     run_detached nm-connection-editor --edit="$uuid"
 }
 
