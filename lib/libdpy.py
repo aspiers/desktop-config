@@ -257,7 +257,7 @@ class HwinfoMonitorJsonCache(DisplayDataCache):
                     if size_match:
                         current_monitor["size_mm"] = {
                             "width": int(size_match.group(1)),
-                            "height": int(size_match.group(2))
+                            "height": int(size_match.group(2)),
                         }
                 elif key == "Year of Manufacture":
                     current_monitor["year"] = int(value)
@@ -634,7 +634,83 @@ def get_inxi_primary_monitor(use_cache=True):
     return None
 
 
-def main():
+def _print_json_or_die(data, error_msg):
+    """Print data as JSON and exit 0, or print error to stderr and exit 1."""
+    if data:
+        print(json.dumps(data, indent=2))
+        sys.exit(0)
+    else:
+        sys.stderr.write(error_msg + "\n")
+        sys.exit(1)
+
+
+def _cmd_find_primary(source, use_cache):
+    """Handle --find-xrandr-primary and --find-inxi-primary."""
+    if source == "xrandr":
+        primary = get_xrandr_primary_monitor(use_cache=use_cache)
+        label = "xrandr"
+    else:
+        primary = get_inxi_primary_monitor(use_cache=use_cache)
+        label = "inxi data"
+
+    _print_json_or_die(primary, f"No primary monitor found in {label}")
+
+
+def _cmd_monitor_properties(use_cache):
+    """Handle --get-monitor-properties."""
+    primary = get_inxi_primary_monitor(use_cache=use_cache)
+    if not primary:
+        sys.stderr.write("No primary monitor found\n")
+        sys.exit(1)
+
+    props = get_monitor_properties(primary, use_cache=use_cache)
+    _print_json_or_die(props, "Could not extract monitor properties")
+
+
+def _cmd_calculate_ui_scale(scale_arg, use_cache):
+    """Handle --calculate-ui-scale."""
+    ref_dpi = scale_arg if scale_arg != -1 else None
+    scale = calculate_ui_scale_factor(
+        monitor_info=None,
+        reference_dpi=ref_dpi,
+        use_cache=use_cache,
+    )
+    print(f"{scale:.4f}")
+    sys.exit(0)
+
+
+def _cmd_find_by_attribute(args):
+    """Handle --find-by-model and --find-by-res."""
+    if args.find_by_model:
+        search_attribute = "model"
+        search_value = args.find_by_model
+    else:
+        search_attribute = "res"
+        search_value = args.find_by_res
+
+    found_monitor = find_monitor_by_attribute(search_attribute, search_value)
+    _print_json_or_die(
+        found_monitor,
+        f"Error: No monitor found with {search_attribute} containing '{search_value}'",
+    )
+
+
+def _cmd_json_dump(getter, use_cache):
+    """Handle --inxi-json and --hwinfo-json."""
+    data = getter(use_cache=use_cache)
+    if data:
+        print(json.dumps(data, indent=2))
+    sys.exit(0)
+
+
+def _cmd_default(use_cache):
+    """Default action: show xrandr display and screen geometries."""
+    (dpy, screens) = get_screen_geometries(use_cache=use_cache)
+    show_xrandr_display_geometry(dpy)
+    show_xrandr_screen_geometries(screens)
+
+
+def _parse_args():
     parser = argparse.ArgumentParser(
         description="Display information about XRandR screen geometries"
     )
@@ -693,101 +769,31 @@ def main():
         default=None,
         help="Calculate UI scale factor for primary monitor (auto-detects reference DPI from XFCE4)",
     )
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def main():
+    args = _parse_args()
 
     global DEBUG
     DEBUG = args.debug
 
     if args.find_xrandr_primary:
-        primary = get_xrandr_primary_monitor(use_cache=args.use_cache)
-        if primary:
-            print(json.dumps(primary, indent=2))
-            sys.exit(0)
-        else:
-            sys.stderr.write("No primary monitor found in xrandr\n")
-            sys.exit(1)
-
-    if args.find_inxi_primary:
-        primary = get_inxi_primary_monitor(use_cache=args.use_cache)
-        if primary:
-            print(json.dumps(primary, indent=2))
-            sys.exit(0)
-        else:
-            sys.stderr.write("No primary monitor found in inxi data\n")
-            sys.exit(1)
-
-    if args.get_monitor_properties:
-        primary = get_inxi_primary_monitor(use_cache=args.use_cache)
-        if primary:
-            props = get_monitor_properties(primary, use_cache=args.use_cache)
-            if props:
-                print(json.dumps(props, indent=2))
-                sys.exit(0)
-            else:
-                sys.stderr.write("Could not extract monitor properties\n")
-                sys.exit(1)
-        else:
-            sys.stderr.write("No primary monitor found\n")
-            sys.exit(1)
-
-    scale_arg = args.calculate_ui_scale
-    if scale_arg is not None:
-        ref_dpi = scale_arg if scale_arg != -1 else None
-        scale = calculate_ui_scale_factor(
-            monitor_info=None,
-            reference_dpi=ref_dpi,
-            use_cache=args.use_cache,
-        )
-        print(f"{scale:.4f}")
-        sys.exit(0)
-
-    if args.find_by_model or args.find_by_res:
-        found_monitor = None
-        search_attribute = None
-        search_value = None
-
-        if args.find_by_model:
-            search_attribute = "model"
-            search_value = args.find_by_model
-        elif args.find_by_res:
-            search_attribute = "res"
-            search_value = args.find_by_res
-
-        if search_attribute and search_value:
-            found_monitor = find_monitor_by_attribute(search_attribute, search_value)
-
-        if found_monitor:
-            print(json.dumps(found_monitor, indent=2))
-            sys.exit(0)
-        else:
-            sys.stderr.write(
-                f"Error: No monitor found with {search_attribute} "
-                f"containing '{search_value}'\n"
-            )
-            sys.exit(1)
-
-    if args.inxi_json:
-        inxi_monitors = get_inxi_monitors(use_cache=args.use_cache)
-        if inxi_monitors:
-            print(json.dumps(inxi_monitors, indent=2))
-        sys.exit(0)
-
-    if args.hwinfo_json:
-        hwinfo_monitors = get_hwinfo_monitors(use_cache=args.use_cache)
-        if hwinfo_monitors:
-            print(json.dumps(hwinfo_monitors, indent=2))
-        sys.exit(0)
-
-    (dpy, screens) = get_screen_geometries(use_cache=args.use_cache)
-
-    show_xrandr_display_geometry(dpy)
-    show_xrandr_screen_geometries(screens)
-
-    # Example usage of the new function
-    # inxi_monitors = extract_inxi_monitors()
-    # if inxi_monitors:
-    #     print("\nInxi Monitor Information:")
-    #     print(json.dumps(inxi_monitors, indent=2))
+        _cmd_find_primary("xrandr", args.use_cache)
+    elif args.find_inxi_primary:
+        _cmd_find_primary("inxi", args.use_cache)
+    elif args.get_monitor_properties:
+        _cmd_monitor_properties(args.use_cache)
+    elif args.calculate_ui_scale is not None:
+        _cmd_calculate_ui_scale(args.calculate_ui_scale, args.use_cache)
+    elif args.find_by_model or args.find_by_res:
+        _cmd_find_by_attribute(args)
+    elif args.inxi_json:
+        _cmd_json_dump(get_inxi_monitors, args.use_cache)
+    elif args.hwinfo_json:
+        _cmd_json_dump(get_hwinfo_monitors, args.use_cache)
+    else:
+        _cmd_default(args.use_cache)
 
 
 if __name__ == "__main__":
