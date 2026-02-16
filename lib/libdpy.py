@@ -7,6 +7,8 @@
 # assignments, such as which screen will actually be used as the
 # primary screen.  That needs to be handled in liblayout.
 
+from __future__ import annotations
+
 import argparse
 import hashlib
 import json
@@ -15,6 +17,7 @@ import re
 import subprocess
 import sys
 import time
+from typing import Any
 
 # Global constants
 GLOBAL_CACHE_DIR = os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache")
@@ -30,12 +33,12 @@ def debug(msg):
 
 
 class DisplayDataCache:
-    CACHE_FILES = {}
-    cache_file = None  # Should be set in subclass
+    CACHE_FILES: dict[str, str] = {}
+    cache_file: str = ""  # Must be set to a path in subclass
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
-        if getattr(cls, "cache_file", None) is not None:
+        if cls.cache_file:
             DisplayDataCache.CACHE_FILES[cls.__name__] = cls.cache_file
 
     @classmethod
@@ -52,7 +55,7 @@ class DisplayDataCache:
                 # print(f"Removed {md5_file}", file=sys.stderr)
 
     def __init__(self):
-        if self.cache_file is None:
+        if not self.cache_file:
             raise ValueError(f"cache_file must be set in {self.__class__.__name__}")
 
     @property
@@ -69,7 +72,7 @@ class DisplayDataCache:
         """
         raise NotImplementedError
 
-    def cache_reader(self):
+    def cache_reader(self) -> Any:
         """
         Override in subclass to provide logic for reading cached data.
         """
@@ -77,7 +80,7 @@ class DisplayDataCache:
             data = f.read()
             return data.decode()
 
-    def get(self, use_cache=True):
+    def get(self, use_cache=True) -> Any:
         # print(f"{self.__class__}.get(use_cache={use_cache})")
         if not use_cache or not os.path.exists(self.cache_file):
             data_to_cache = self.builder(use_cache)
@@ -95,7 +98,7 @@ class DisplayDataCache:
 class XrandrCache(DisplayDataCache):
     cache_file = os.path.join(CACHE_DIR, "xrandr.out")
 
-    def builder(self, _use_cache):
+    def builder(self, use_cache=True):
         return subprocess.check_output("xrandr")
 
 
@@ -147,14 +150,14 @@ class XrandrJsonCache(DisplayDataCache):
 class XdpyinfoCache(DisplayDataCache):
     cache_file = os.path.join(CACHE_DIR, "xdpyinfo.out")
 
-    def builder(self, _use_cache):
+    def builder(self, use_cache=True):
         return subprocess.check_output("xdpyinfo")
 
 
 class InxiJsonCache(DisplayDataCache):
     cache_file = os.path.join(CACHE_DIR, "inxi-Gxx.json")
 
-    def builder(self, _use_cache):
+    def builder(self, use_cache=True):
         output = subprocess.check_output(
             "inxi -c 0 --tty -Gxx --output json --output-file print", shell=True
         )
@@ -211,7 +214,7 @@ class InxiMonitorsCache(DisplayDataCache):
 class HwinfoMonitorJsonCache(DisplayDataCache):
     cache_file = os.path.join(CACHE_DIR, "hwinfo-monitor.json")
 
-    def builder(self, _use_cache):
+    def builder(self, use_cache=True):
         output = subprocess.check_output(["hwinfo", "--monitor"], text=True)
         monitors = []
         current_monitor = None
