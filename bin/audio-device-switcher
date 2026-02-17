@@ -18,7 +18,7 @@ Priority order (highest to lowest):
 Watches /dev/snd for device creation and removal events via inotify.
 
 Usage:
-    audio-device-watcher [--dry-run] [--watch]
+    audio-device-switcher [--dry-run] [--watch] [--debug]
 """
 
 import argparse
@@ -27,6 +27,13 @@ import re
 import sys
 import time
 from sh import inotifywait, wpctl
+
+DEBUG = False
+
+
+def debug(msg):
+    if DEBUG:
+        print(f"[DEBUG] {msg}", file=sys.stderr)
 
 SINK_PRIORITIES = [
     (r"sony|wh-1000|xm[0-9]|headphones|airpods|bose|skullcandy|jabra", 100),
@@ -43,7 +50,8 @@ SOURCE_PRIORITIES = [
     (r"sony|airpods|earbuds|pixel buds", 80),
     (r"bluetooth", 75),
     (r"webcam|camera|c920|kiyo", 50),
-    (r"digital mic|internal mic|built-in", 20),
+    (r"internal (stereo )?mic|built-in", 30),
+    (r"digital mic", 20),
     (r"hd audio|audio controller", 10),
 ]
 
@@ -98,9 +106,11 @@ def select_best_sink(sinks):
     best_score = -1
     for sink_id, sink_name in sinks:
         score = score_sink(sink_name)
+        debug(f"Sink {sink_id} '{sink_name}' score={score}")
         if score > best_score:
             best_score = score
             best = sink_id
+    debug(f"Best sink: {best} (score={best_score})")
     return best
 
 
@@ -191,9 +201,11 @@ def select_best_source(sources):
     best_score = -1
     for source_id, source_name in sources:
         score = score_source(source_name)
+        debug(f"Source {source_id} '{source_name}' score={score}")
         if score > best_score:
             best_score = score
             best = source_id
+    debug(f"Best source: {best} (score={best_score})")
     return best
 
 
@@ -303,7 +315,15 @@ def main():
         action="store_true",
         help="Run in watch mode (continuous monitoring)",
     )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Show debug output for device selection scoring",
+    )
     args = parser.parse_args()
+
+    global DEBUG
+    DEBUG = args.debug
 
     if args.dry_run:
         print("Running in dry-run mode...")
