@@ -30,7 +30,9 @@
 #     # exit 1
 # fi
 
-if which xfce4-terminal >/dev/null 2>&1; then
+if which kitty >/dev/null 2>&1; then
+    kitty "$@"
+elif which xfce4-terminal >/dev/null 2>&1; then
     xfce4-terminal "$@"
 elif which gnome-terminal >/dev/null 2>&1; then
     theme=$(<~/.config/gnome-terminal-profile)

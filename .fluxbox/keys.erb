@@ -424,7 +424,7 @@ Mod4 9 :MacroCmd {Exec xdotool keyup Super_R} {Exec warpd --click 3}
 # pattern, but it seems these days the instance name is org.gnome.Terminal.
 # Not clear when that changed or why.
 #Mod4 x :MacroCmd {Exec wmctrl -x -a xfce4-terminal} {<%= focus_active %>}
-Mod4 x <%= next_unhidden "(Role=(xfce4|gnome)-terminal-.*) (Head=1) (workspace=0)" %>
+Mod4 x <%= next_unhidden "(Class=(Xfce4|Gnome)-terminal|kitty) (Head=1) (workspace=0)" %>
 Control Mod4 x :Exec rmx-window
 
 Mod4 a :Exec chrome-session-fzf 't3.chat | poe.com | chat.deepseek.com | claude.ai | chatgpt.com | gemini.google.com'
