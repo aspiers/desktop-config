@@ -1,0 +1,99 @@
+#!/bin/bash
+#
+# Switch kitty terminal theme.
+#
+# Usage: kitty-theme-config [dark|Dark|light|Light|Bright]
+#
+# Without arguments, lists current theme.
+# With a theme name, switches to that theme by:
+#   1. Copying the appropriate theme conf to current-theme.conf
+#   2. Live-updating all running kitty instances via remote control
+#
+# Called from set-colour-theme as part of the theme switching pipeline.
+
+KITTY_CONF_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/kitty"
+
+# Theme files are stowed from the repo alongside kitty.conf
+REPO_KITTY_DIR="$(dirname "$(readlink -f "$KITTY_CONF_DIR/kitty.conf")" 2>/dev/null)"
+if [[ -z "$REPO_KITTY_DIR" || ! -d "$REPO_KITTY_DIR" ]]; then
+    # Fallback if kitty.conf isn't a symlink
+    REPO_KITTY_DIR="$KITTY_CONF_DIR"
+fi
+
+get_theme_file() {
+    local theme="$1"
+    case "$theme" in
+        dark|Dark)
+            echo "$REPO_KITTY_DIR/dark-theme.conf"
+            ;;
+        light|Light|Bright)
+            echo "$REPO_KITTY_DIR/light-theme.conf"
+            ;;
+        *)
+            echo >&2 "Unrecognised theme '$theme'"
+            echo >&2 "Usage: $0 [dark|Dark|light|Light|Bright]"
+            return 1
+            ;;
+    esac
+}
+
+show_current() {
+    local current="$KITTY_CONF_DIR/current-theme.conf"
+    if [[ -f "$current" ]]; then
+        echo "Current kitty theme:"
+        head -1 "$current"
+    else
+        echo "No current kitty theme set"
+    fi
+}
+
+# Send a remote control command to all running kitty instances.
+# kitty.conf sets listen_on to unix:/tmp/kitty-{kitty_pid}, so each
+# instance gets its own socket. When called from outside kitty (e.g.
+# a window manager keybinding), KITTY_LISTEN_ON is not set and
+# `kitty @` with no --to falls back to the controlling terminal
+# which won't work. So we iterate over all sockets explicitly.
+kitty_remote_all() {
+    local found=0
+    for sock in /tmp/kitty-*; do
+        [[ -S "$sock" ]] || continue
+        if kitty @ --to "unix:$sock" "$@" 2>/dev/null; then
+            found=1
+        fi
+    done
+    return $(( found == 0 ))
+}
+
+set_theme() {
+    local theme="$1"
+    local theme_file
+    theme_file=$(get_theme_file "$theme") || return 1
+
+    if [[ ! -f "$theme_file" ]]; then
+        echo >&2 "Theme file not found: $theme_file"
+        return 1
+    fi
+
+    # Update the current-theme.conf file for new kitty instances
+    cp "$theme_file" "$KITTY_CONF_DIR/current-theme.conf"
+    echo "Kitty theme set to $theme (from $theme_file)"
+
+    # Live-update all running kitty instances via their sockets
+    if command -v kitty >/dev/null 2>&1; then
+        if kitty_remote_all set-colors --all --configured "$theme_file"; then
+            echo "Live-updated running kitty instances"
+        else
+            echo "No running kitty instances to update"
+        fi
+    fi
+}
+
+main() {
+    if [[ -z "$1" ]]; then
+        show_current
+    else
+        set_theme "$1"
+    fi
+}
+
+main "$@"

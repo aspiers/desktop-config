@@ -70,6 +70,7 @@ apply_theme() {
 
     xfce4-terminal-config "$terminal_profile"
     gnome-terminal-profile "$terminal_profile"
+    kitty-theme-config "$terminal_profile"
     echo "$terminal_profile" > ~/.config/gnome-terminal-profile
 
     echo "Setting XFCE theme to $xfce_theme"
