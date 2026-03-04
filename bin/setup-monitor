@@ -75,6 +75,10 @@ setup_xrandr() {
             exit 1
             ;;
     esac
+
+    # xrandr state changed; invalidate stale cache so subsequent
+    # commands (e.g. setup-panels) see the correct primary.
+    clear-dpy-cache
 }
 
 refresh_display_cache() {

@@ -19,16 +19,17 @@ read_localhost_nickname
 get_and_validate_layout() {
     local layout
 
-    # Try to get layout
-    if ! layout=$( $HOME/bin/get-layout 2>&1 ); then
+    # Try to get layout (stderr goes to journald for debugging)
+    if ! layout=$( $HOME/bin/get-layout --debug ); then
         echo "ERROR: Failed to get layout" >&2
         return 1
     fi
 
     echo "Layout $layout detected" >&2
 
-    # Validate layout against current xrandr state (checks screen count matches)
-    if validation=$( ~/lib/liblayout.py "$layout" 2>&1 ); then
+    # Validate layout against current xrandr state (only check screen counts;
+    # primary assignment is done later by setup-monitor)
+    if validation=$( ~/lib/liblayout.py --check-screen-counts "$layout" 2>&1 ); then
         echo "Layout $layout validated" >&2
         echo "$layout"  # Output to stdout for capture
         return 0

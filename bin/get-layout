@@ -53,30 +53,32 @@ def ensure_primary_set_by_prop(find_by_attribute, search_value):
     desired_monitor_info = libdpy.find_monitor_by_attribute(find_by_attribute, search_value)
 
     if not desired_monitor_info:
-        debug_print(f"Monitor not found via inxi: {find_by_attribute}='{search_value}'")
+        print(f"WARNING: Monitor not found via inxi: {find_by_attribute}='{search_value}'; "
+              f"cannot set primary", file=sys.stderr)
         return
 
     desired_output_name = (desired_monitor_info.get('mapped') or
                            desired_monitor_info.get('Monitor'))
     if not desired_output_name:
-        debug_print(f"Monitor {desired_monitor_info.get('model', 'Unknown')} found but has no 'mapped' or 'Monitor' in inxi data")
+        print(f"WARNING: Monitor {desired_monitor_info.get('model', 'Unknown')} found but has "
+              f"no 'mapped' or 'Monitor' in inxi data; cannot set primary", file=sys.stderr)
         return
 
     current_primary_info = libdpy.get_xrandr_primary_monitor()
     current_primary_name = current_primary_info.get('name') if current_primary_info else None
 
     if current_primary_name == desired_output_name:
-        # print(f"{desired_output_name} is already primary (according to xrandr)", file=sys.stderr)
+        debug_print(f"{desired_output_name} is already primary (according to xrandr)")
         return
 
     set_primary(desired_output_name)
 
 
 def set_primary(desired_output_name):
-    # print(f"Attempting to set {desired_output_name} as primary...", file=sys.stderr)
+    debug_print(f"Setting {desired_output_name} as primary...")
     subprocess.run(['xrandr', '--output', desired_output_name, '--primary'], check=True, capture_output=True, text=True)
     libdpy.clear_cache()
-    # print(f"Successfully set {desired_output_name} as primary.", file=sys.stderr)
+    debug_print(f"Successfully set {desired_output_name} as primary.")
 
 
 def benq_bl3200_connected():
