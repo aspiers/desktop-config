@@ -49,7 +49,7 @@ def layout_file(layout_name_suffix):
 
 
 def ensure_primary_set_by_prop(find_by_attribute, search_value):
-    inxi_monitors = libdpy.get_inxi_monitors()
+    inxi_monitors = libdpy.get_hybrid_monitors()
     desired_monitor_info = libdpy.find_monitor_by_attribute(find_by_attribute, search_value)
 
     if not desired_monitor_info:
@@ -82,7 +82,7 @@ def set_primary(desired_output_name):
 
 
 def benq_bl3200_connected():
-    inxi_monitors = libdpy.get_inxi_monitors()
+    inxi_monitors = libdpy.get_hybrid_monitors()
     monitor = libdpy.find_monitor_by_attribute('model', 'BenQ BL3200')
     if monitor:
         return monitor

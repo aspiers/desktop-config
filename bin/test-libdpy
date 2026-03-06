@@ -119,6 +119,6 @@ echo "Testing MD5 stability for JSON caches..."
 
 test_cache_md5_stability "XrandrJsonCache" "~/lib/libdpy.py" "~/.cache/libdpy/xrandr.json.md5" "true"
 echo "SKIP: InxiJsonCache contains dynamic temperature data - MD5 instability expected"
-test_cache_md5_stability "InxiMonitorsCache" "~/lib/libdpy.py --find-by-model BOE" "~/.cache/libdpy/inxi-Gxx.monitors.json.md5" "false"
+test_cache_md5_stability "HwinfoMonitorJsonCache" "~/lib/libdpy.py --find-by-model BOE" "~/.cache/libdpy/hwinfo-monitor.json.md5" "false"
 
 echo "All MD5 stability tests passed!"

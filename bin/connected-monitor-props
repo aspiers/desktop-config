@@ -19,7 +19,7 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
-inxi_monitors = libdpy.get_inxi_monitors()
+inxi_monitors = libdpy.get_hybrid_monitors()
 for monitor in inxi_monitors:
     value = monitor.get(args.property)
     if value:

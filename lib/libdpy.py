@@ -318,6 +318,152 @@ def get_hwinfo_monitors(use_cache=True):
     return HwinfoMonitorJsonCache().get(use_cache=use_cache)
 
 
+def extract_edid_serial_from_xrandr(use_cache=True):
+    """
+    Extract EDID serial numbers from xrandr --props output.
+    Returns dict: {output_name: serial_string}
+    """
+    xrandr_output_text = subprocess.check_output(["xrandr", "--props"], text=True)
+
+    # Split by connected outputs
+    blocks = re.split(r"^(\S+) connected", xrandr_output_text, flags=re.MULTILINE)
+
+    serials = {}
+    for i in range(1, len(blocks), 2):
+        output_name = blocks[i]
+        content = blocks[i + 1]
+
+        # Extract EDID hex
+        edid_match = re.search(r"EDID:\s*\n((?:\t\t[0-9a-f]+\n)+)", content)
+        if not edid_match:
+            continue
+
+        edid_hex = edid_match.group(1).replace("\t", "").replace("\n", "")
+
+        try:
+            edid_bytes = bytes.fromhex(edid_hex)
+
+            # Look for serial descriptor (tag 0xFF) in descriptor blocks
+            # Descriptor blocks at offsets: 54, 72, 90, 108 (each 18 bytes)
+            for offset in [54, 72, 90, 108]:
+                if len(edid_bytes) <= offset + 18:
+                    continue
+
+                # Check for display descriptor (first 2 bytes == 0x00, byte 3 == 0x00)
+                if edid_bytes[offset : offset + 3] == b"\x00\x00\x00":
+                    tag = edid_bytes[offset + 3]
+
+                    if tag == 0xFF:  # Serial number string descriptor
+                        serial = (
+                            edid_bytes[offset + 5 : offset + 18]
+                            .decode("ascii", errors="ignore")
+                            .strip()
+                        )
+                        if serial and serial != "\x00":
+                            serials[output_name] = serial
+                            break
+
+        except Exception as e:
+            debug(f"Failed to parse EDID for {output_name}: {e}")
+            continue
+
+    return serials
+
+
+def get_hybrid_monitors(use_cache=True):
+    """
+    Get monitors using hwinfo (preferred) with EDID serial matching to xrandr,
+    falling back to inxi if hwinfo is unavailable.
+
+    Returns list of monitor dicts compatible with inxi format, with fields:
+    - model: from hwinfo
+    - Monitor: xrandr output name (e.g., "DisplayPort-9")
+    - res: current resolution
+    - mapped: output name
+    - serial: EDID serial
+    - vendor: from hwinfo (if available)
+    """
+    try:
+        hwinfo_monitors = get_hwinfo_monitors(use_cache)
+        if not hwinfo_monitors:
+            raise RuntimeError("hwinfo returned no monitors")
+
+        xrandr_screens = get_xrandr_screen_geometries(use_cache)
+        edid_serials = extract_edid_serial_from_xrandr(use_cache)
+
+        # Build lookup: serial -> xrandr screen
+        xr_by_serial = {}
+        for screen in xrandr_screens:
+            serial = edid_serials.get(screen["name"])
+            if serial:
+                xr_by_serial[serial] = screen
+
+        matched = []
+        used_screens = set()
+
+        for hw_mon in hwinfo_monitors:
+            hw_serial = hw_mon.get("serial", "")
+
+            # Match by EDID serial (primary method)
+            if hw_serial and hw_serial != "0" and hw_serial in xr_by_serial:
+                xr_screen = xr_by_serial[hw_serial]
+                used_screens.add(xr_screen["name"])
+
+                matched.append(
+                    {
+                        "model": hw_mon["model"],
+                        "Monitor": xr_screen["name"],
+                        "res": f"{xr_screen['width']}x{xr_screen['height']}",
+                        "mapped": xr_screen["name"],
+                        "serial": hw_serial,
+                        "vendor": hw_mon.get("vendor"),
+                    }
+                )
+                continue
+
+            # Special case: laptop display (serial="0")
+            if hw_serial == "0":
+                for xr_screen in xrandr_screens:
+                    if xr_screen["name"].startswith("eDP"):
+                        used_screens.add(xr_screen["name"])
+                        matched.append(
+                            {
+                                "model": hw_mon["model"],
+                                "Monitor": xr_screen["name"],
+                                "res": f"{xr_screen['width']}x{xr_screen['height']}",
+                                "mapped": xr_screen["name"],
+                                "serial": hw_serial,
+                            }
+                        )
+                        break
+                continue
+
+            # No reliable match found for this hwinfo monitor
+            debug(
+                f"Could not match hwinfo monitor {hw_mon.get('model', '?')} "
+                f"(serial={hw_serial!r}) to any xrandr output"
+            )
+
+        # Add any unmatched xrandr screens
+        for xr_screen in xrandr_screens:
+            if xr_screen["name"] not in used_screens:
+                matched.append(
+                    {
+                        "model": "Unknown",
+                        "Monitor": xr_screen["name"],
+                        "res": f"{xr_screen['width']}x{xr_screen['height']}",
+                        "mapped": xr_screen["name"],
+                        "serial": edid_serials.get(xr_screen["name"], "unknown"),
+                    }
+                )
+
+        return matched
+
+    except Exception as e:
+        debug(f"hwinfo hybrid detection failed, falling back to inxi: {e}")
+        return get_inxi_monitors(use_cache)
+
+
 def monitors_connected(use_cache=True):
     xrandr = xrandr_output(use_cache)
     return len(re.findall(r"\bconnected\b", xrandr))
@@ -327,7 +473,7 @@ def large_monitor_connected(use_cache=True):
     if monitors_connected(use_cache) < 2:
         return False
 
-    monitors = get_inxi_monitors(use_cache)
+    monitors = get_hybrid_monitors(use_cache)
     for monitor in monitors:
         if monitor.get("Monitor") == "eDP-1":
             continue
@@ -350,36 +496,19 @@ def external_monitor_connected(use_cache=True):
     Returns first external (non-laptop) monitor found, or False.
     Unlike large_monitor_connected(), this returns any external monitor
     regardless of size.
-    Falls back to xrandr data if inxi doesn't detect the external monitor.
     """
     if monitors_connected(use_cache) < 2:
         return False
 
-    # First try inxi data
-    monitors = get_inxi_monitors(use_cache)
+    monitors = get_hybrid_monitors(use_cache)
     for monitor in monitors:
         if monitor.get("Monitor") == "eDP-1":
             continue
-        if "res" in monitor:
-            # Ensure model key exists for callers
-            if "model" not in monitor:
-                monitor["model"] = monitor.get("Monitor", "Unknown")
-            return monitor
-
-    # Fallback to xrandr if inxi didn't find external monitor
-    screens = get_xrandr_screen_geometries(use_cache)
-    for screen in screens:
-        # Skip laptop display (eDP)
-        if screen.get("name", "").startswith("eDP"):
+        mapped = monitor.get("mapped", "")
+        if mapped.startswith("eDP"):
             continue
-        # Return a minimal dict with resolution info
-        if screen.get("width") and screen.get("height"):
-            return {
-                "Monitor": screen.get("name"),
-                "res": f"{screen['width']}x{screen['height']}",
-                "model": "Unknown",
-                "mapped": screen.get("name"),
-            }
+        if "res" in monitor:
+            return monitor
 
     return False
 
@@ -602,7 +731,7 @@ def find_monitor_by_attribute(attribute, value, use_cache=True):
         The matching monitor dictionary, or None if not found.
     """
     search_value = value.lower()
-    for monitor in get_inxi_monitors(use_cache=use_cache):
+    for monitor in get_hybrid_monitors(use_cache=use_cache):
         if (
             attribute in monitor
             and isinstance(monitor[attribute], str)
@@ -625,14 +754,18 @@ def get_xrandr_primary_monitor(use_cache=True):
 
 def get_inxi_primary_monitor(use_cache=True):
     """
-    Returns the primary monitor from inxi data, or None if not found.
-    Primary is indicated by 'primary' in the 'pos' field in inxi monitor data.
-    Falls back to xrandr primary if inxi doesn't have it.
+    Returns the primary monitor, or None if not found.
+    Uses hybrid detection (hwinfo+xrandr), matching against xrandr's
+    primary output.
     """
-    monitors = get_inxi_monitors(use_cache=use_cache)
+    xrandr_primary = get_xrandr_primary_monitor(use_cache=use_cache)
+    if not xrandr_primary:
+        return None
+
+    primary_name = xrandr_primary.get("name")
+    monitors = get_hybrid_monitors(use_cache=use_cache)
     for monitor in monitors:
-        pos = monitor.get("pos", "")
-        if "primary" in pos:
+        if monitor.get("mapped") == primary_name:
             return monitor
     return None
 
