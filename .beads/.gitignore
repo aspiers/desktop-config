@@ -12,6 +12,7 @@ dolt/
 daemon.log
 *.pid
 daemon-error
+dolt-server.activity
 bd.sock
 
 # Audit logs (local interaction history)
