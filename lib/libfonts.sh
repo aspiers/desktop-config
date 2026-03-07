@@ -30,6 +30,22 @@
 
 read_localhost_nickname
 
+# Check if layout file specifies a manual ui_scale to override dynamic calculation
+get_layout_ui_scale() {
+    local layout_file
+    layout_file=$(get-layout)
+    if [[ -f "$layout_file" ]]; then
+        local scale
+        scale=$(grep -E '^[[:space:]]*ui_scale:' "$layout_file" | sed 's/.*ui_scale:[[:space:]]*//')
+        if [[ -n "$scale" ]]; then
+            echo "$scale"
+            return 0
+        fi
+    fi
+    return 1
+}
+
+scale_factor=1
 # font_name="Monospace"
 font_name="Hack Nerd Font"
 # font_name="Maple Mono NF"
@@ -61,8 +77,13 @@ case "$localhost_nickname" in
         # new hi-res display 2880x1920 (256x256 dpi)
         # old matte display 2256x1504 (193x167 dpi)
 
-        # Calculate font sizes based on DPI scale factor
-        scale_factor=$($ZDOTDIR/lib/libdpy.py --calculate-ui-scale)
+        # Check for manual ui_scale in layout file first
+        if ui_scale=$(get_layout_ui_scale); then
+            scale_factor="$ui_scale"
+        else
+            # Calculate font sizes based on DPI scale factor
+            scale_factor=$($ZDOTDIR/lib/libdpy.py --calculate-ui-scale)
+        fi
         #scale_factor=1
 
         # Base sizes at 1.0 scale.  These must work on celtic
@@ -161,6 +182,7 @@ xl_font_gnome_zoom_from_medium=$(echo "scale=3; $xl_font_size / $medium_font_siz
 # Output all variables if script is executed directly (not sourced)
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     cat <<EOF
+scale_factor=$scale_factor
 tiny_font=$tiny_font
 small_font=$small_font
 medium_font=$medium_font

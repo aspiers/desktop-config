@@ -1,6 +1,6 @@
 #!/bin/bash
 # Called via geninclude from kitty.conf to output font settings.
-# Sources libfonts.sh to get per-host font name and size.
+# Just sources libfonts.sh which handles all font scaling logic including ui_scale.
 
 . "$ZDOTDIR/lib/libfonts.sh" 2>/dev/null
 
