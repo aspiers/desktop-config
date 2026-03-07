@@ -6,9 +6,9 @@
 *.db-shm
 
 # Daemon runtime files
-daemon.lock
+*.lock
 daemon.log
-daemon.pid
+*.pid
 daemon-error
 bd.sock
 
