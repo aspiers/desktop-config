@@ -34,7 +34,13 @@
 [app] (name=gnome-terminal-server|xfce4-terminal) (role=gnome-terminal-window-.*|xfce4-terminal-.*)
   [Head]	{1}
   [Position]	(TopLeft)	{0 0}
-  [Dimensions]	{50% 90%}
+  [Dimensions]	{55% 98%}
+[end]
+
+[app] (name=kitty)
+  [Head]	{1}
+  [Position]	(TopLeft)	{0 0}
+  [Dimensions]	{55% 98%}
 [end]
 
 # Weirdly gnome-terminal --title=foo cannot be reliably matched by
