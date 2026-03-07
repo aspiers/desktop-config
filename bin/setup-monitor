@@ -141,6 +141,7 @@ main () {
     setup-panels
     setup_keyboard
     set-layout-dpi "$layout"
+    setup-terminals
 
     sleep 1
 

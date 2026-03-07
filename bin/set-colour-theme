@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# NOTE: was previously using ~/.config/gnome-terminal-profile
-# but now we're toggling multiple themes so need a generic
-# light/dark state not just for gnome-terminal-profile.
+# Theme switching for terminals, emacs, and XFCE.
+# Calls setup-terminals for terminal colors, handles emacs/XFCE directly.
+
 THEME_FILE=~/.config/theme
 
 usage() {
@@ -66,16 +66,17 @@ apply_theme() {
 
     echo "$theme" > "$THEME_FILE"
 
+    # GNOME color scheme
     gsettings set org.gnome.desktop.interface color-scheme "prefer-$theme"
 
-    xfce4-terminal-config "$terminal_profile"
-    gnome-terminal-profile "$terminal_profile"
-    kitty-theme-config "$terminal_profile"
-    echo "$terminal_profile" > ~/.config/gnome-terminal-profile
+    # Terminal colors
+    setup-terminals "$terminal_profile"
 
+    # XFCE GTK theme
     echo "Setting XFCE theme to $xfce_theme"
     xfconf-query -c xsettings -p /Net/ThemeName -s "$xfce_theme"
 
+    # Emacs theme
     echo "Setting emacs theme to $theme"
     emacsclient -e "(as-set-theme \"$theme\")"
 }

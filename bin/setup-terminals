@@ -1,0 +1,39 @@
+#!/bin/bash
+
+# Terminal setup - called from setup-monitor, at login, and from set-colour-theme.
+# Handles BOTH font initialization AND theme application for all terminals.
+#
+# Usage: setup-terminals [dark|Dark|light|Light|Bright]
+
+. $ZDOTDIR/lib/libhost.sh
+
+# Get theme from argument or from file
+if [[ -n "$1" ]]; then
+    theme="$1"
+else
+    theme=$(cat ~/.config/theme 2>/dev/null || echo "dark")
+fi
+
+if [[ "$theme" == "light" ]]; then
+    gnome_terminal_profile="Bright"
+else
+    gnome_terminal_profile="Dark"
+fi
+
+echo "Running gnome-terminal-config ..."
+gnome-terminal-config
+
+echo gnome-terminal-profile "$gnome_terminal_profile"
+gnome-terminal-profile "$gnome_terminal_profile"
+echo "$gnome_terminal_profile" > ~/.config/gnome-terminal-profile
+
+div
+
+echo "Running xfce4-terminal-config $theme ..."
+# Apply theme (this also sets fonts via set_common)
+xfce4-terminal-config "$theme"
+
+div
+
+echo "Running kitty-theme-config $theme ..."
+kitty-theme-config "$theme"
