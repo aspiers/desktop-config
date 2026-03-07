@@ -1,3 +1,5 @@
+dolt/
+
 # SQLite databases
 *.db
 *.db?*
