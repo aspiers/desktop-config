@@ -64,6 +64,18 @@ kitty_remote_all() {
     return $(( found == 0 ))
 }
 
+get_border_colors() {
+    local theme="$1"
+    case "$theme" in
+        dark|Dark)
+            echo "active_border_color=#00bfff inactive_border_color=#000000"
+            ;;
+        light|Light|Bright)
+            echo "active_border_color=#0099ff inactive_border_color=#ffffff"
+            ;;
+    esac
+}
+
 set_theme() {
     local theme="$1"
     local theme_file
@@ -85,6 +97,9 @@ set_theme() {
         else
             echo "No running kitty instances to update"
         fi
+        # Set border colors to match the theme
+        read -r -a border_colors <<< "$(get_border_colors "$theme")"
+        kitty_remote_all set-colors --all --configured "${border_colors[@]}" 2>/dev/null || true
     fi
 }
 
