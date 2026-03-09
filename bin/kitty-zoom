@@ -1,0 +1,65 @@
+#!/bin/bash
+# Zoom kitty font in/out while preserving the current number of rows and columns.
+# Usage: kitty-zoom [+|-]STEP
+#   e.g. kitty-zoom +1.0   (zoom in)
+#        kitty-zoom -1.0   (zoom out)
+#
+# Intended to be invoked via kitty key bindings:
+#   map ctrl+shift+alt+equal launch --type=background kitty-zoom +1.0
+#   map ctrl+shift+alt+minus launch --type=background kitty-zoom -1.0
+
+set -euo pipefail
+
+step="${1:?Usage: kitty-zoom [+|-]STEP}"
+
+# When invoked via launch --type=background there is no TTY, so kitty @
+# cannot auto-detect the socket. Walk up the process tree to find the kitty
+# parent PID and derive the socket path from it.
+find_kitty_socket() {
+    local pid=$PPID
+    while [[ $pid -gt 1 ]]; do
+        local comm
+        comm=$(cat /proc/$pid/comm 2>/dev/null) || break
+        if [[ "$comm" == "kitty" ]]; then
+            echo "unix:/tmp/kitty-$pid"
+            return 0
+        fi
+        pid=$(awk '{print $4}' /proc/$pid/stat 2>/dev/null) || break
+    done
+    return 1
+}
+
+socket=$(find_kitty_socket) || { echo "kitty-zoom: could not find kitty socket" >&2; exit 1; }
+rc() { kitty @ --to "$socket" "$@"; }
+
+# Get current dimensions and X11 window ID of the focused OS window
+read -r cols rows xwid < <(
+    rc ls | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+for os_win in data:
+    if os_win.get('is_focused'):
+        for tab in os_win.get('tabs', []):
+            if tab.get('is_focused'):
+                for w in tab.get('windows', []):
+                    if w.get('is_focused'):
+                        print(w['columns'], w['lines'], os_win.get('platform_window_id', ''))
+                        sys.exit(0)
+# Fallback: first window
+for os_win in data:
+    for tab in os_win.get('tabs', []):
+        for w in tab.get('windows', []):
+            print(w['columns'], w['lines'], os_win.get('platform_window_id', ''))
+            sys.exit(0)
+"
+)
+
+# Change the font size (use -- to avoid negative values being parsed as flags)
+rc set-font-size --all -- "$step"
+
+# Restore the window dimensions in cells
+rc resize-os-window --unit=cells --width="$cols" --height="$rows"
+
+# Raise the window to prompt Fluxbox to redraw the border area, which
+# otherwise leaves ghost artifacts from the old window border position.
+[[ -n "$xwid" ]] && xdotool windowraise "$xwid"
