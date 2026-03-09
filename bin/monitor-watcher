@@ -77,6 +77,10 @@ wait_for_valid_layout() {
     done
 }
 
+populate_inxi_cache () {
+    ~/lib/libdpy.py --inxi-json >/dev/null
+}
+
 if ! which inotifywait >&/dev/null; then
     echo "ERROR: Couldn't find inotifywait; aborting." >&2
     echo "Try: sudo zypper in inotify-tools" >&2
@@ -133,7 +137,7 @@ while true; do
 
     # Ensure that inxi cache is populated (this will automatically
     # create/update the md5 file too)
-    ~/lib/libdpy.py --inxi-json >/dev/null
+    populate_inxi_cache
     cat ~/.cache/libdpy/inxi-Gxx.monitors.json
 
     new_md5=""
@@ -147,6 +151,13 @@ while true; do
         echo "Monitor configuration changed (MD5: ${old_md5:-(empty)} -> ${new_md5}), running setup"
         $SETUP
         echo "$SETUP completed; exit code $?"
+        if ! [ -f "$md5_file" ]; then
+            echo >&2 "WARNING: $SETUP did not populate $md5_file for md5 hashing next time; populating now ..."
+            populate_inxi_cache
+            if ! [ -f "$md5_file" ]; then
+                echo >&2 "ERROR: Fallback population failed; giving up :-("
+            fi
+        fi
     else
         echo "Monitor configuration unchanged (MD5: ${new_md5}), skipping setup"
     fi
