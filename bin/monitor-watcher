@@ -81,29 +81,28 @@ populate_inxi_cache () {
     ~/lib/libdpy.py --inxi-json >/dev/null
 }
 
-if ! which inotifywait >&/dev/null; then
-    echo "ERROR: Couldn't find inotifywait; aborting." >&2
-    echo "Try: sudo zypper in inotify-tools" >&2
-    exit 1
-fi
+check_deps () {
+    if ! which inotifywait >&/dev/null; then
+        echo "ERROR: Couldn't find inotifywait; aborting." >&2
+        echo "Try: sudo zypper in inotify-tools" >&2
+        exit 1
+    fi
 
-if ! which $SETUP >&/dev/null; then
-    echo "ERROR: Couldn't find $SETUP; aborting." >&2
-    exit 1
-fi
+    if ! which $SETUP >&/dev/null; then
+        echo "ERROR: Couldn't find $SETUP; aborting." >&2
+        exit 1
+    fi
+}
 
-log=~/.log/udev-drm.log
-udevadm monitor -u -s drm > $log &
+start_udev_monitor () {
+    log=~/.log/udev-drm.log
+    udevadm monitor -u -s drm > $log &
 
-# Wait for udevadm to do first modification before proceeding.
-sleep 2
+    # Wait for udevadm to do first modification before proceeding.
+    sleep 2
+}
 
-# N.B. We can't use entr(1) because that relies on the file
-# being closed after update, which udevadm monitor won't do:
-# https://github.com/eradman/entr/issues/114
-
-# FIXME: debounce this
-while true; do
+prepare_display () {
     # inotifywait -q /dev/input/by-path
     # echo "Input device event detected for DISPLAY=$DISPLAY"
 
@@ -131,7 +130,9 @@ while true; do
     fi
     echo "MD5 of existing inxi monitor cache: ${old_md5:-(empty)}"
     cat ~/.cache/libdpy/inxi-Gxx.monitors.json
+}
 
+check_and_run_setup () {
     # Wait for valid monitor resolutions
     wait_for_valid_layout
 
@@ -161,4 +162,25 @@ while true; do
     else
         echo "Monitor configuration unchanged (MD5: ${new_md5}), skipping setup"
     fi
-done
+}
+
+handle_drm_event () {
+    prepare_display
+    check_and_run_setup
+}
+
+main () {
+    check_deps
+    start_udev_monitor
+
+    # N.B. We can't use entr(1) because that relies on the file
+    # being closed after update, which udevadm monitor won't do:
+    # https://github.com/eradman/entr/issues/114
+
+    # FIXME: debounce this
+    while true; do
+        handle_drm_event
+    done
+}
+
+main
