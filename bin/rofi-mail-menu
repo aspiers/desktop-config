@@ -1,0 +1,64 @@
+#!/bin/bash
+#
+# Rofi-based mail menu, replacing the fluxbox mail key mode.
+#
+# Presents all personal/Toucan/Hypercerts mail actions in a rofi menu
+# and executes the selected action directly.
+#
+# Invoked from the fluxbox keys file:
+#   Mod4 m :Exec rofi-mail-menu
+
+# shellcheck source=../lib/librofi.sh
+source "$(dirname "$0")/../lib/librofi.sh"
+
+declare -A ACTIONS
+declare -a ORDER
+
+# Email addresses (fully hex-encoded to avoid plain-text exposure to crawlers)
+PERSONAL=$'\x61\x64\x61\x6d\x2e\x73\x70\x69\x65\x72\x73\x40\x67\x6d\x61\x69\x6c\x2e\x63\x6f\x6d'
+TOUCAN=$'\x61\x64\x61\x6d\x40\x74\x6f\x75\x63\x61\x6e\x2e\x65\x61\x72\x74\x68'
+HC=$'\x61\x64\x61\x6d\x40\x68\x79\x70\x65\x72\x63\x65\x72\x74\x73\x2e\x6f\x72\x67'
+
+add() {
+    local label="$1"
+    local cmd="$2"
+    ORDER+=("$label")
+    ACTIONS["$label"]="$cmd"
+}
+
+# Personal
+add "m: personal mutt"          "fluxbox-mutt-term m"
+add "g: personal gmail"         "chrome-session-tabs 'mail.google.com/mail/u/0'"
+add "s: personal Superhuman"    "chrome-session-tabs 'mail.superhuman.com/$PERSONAL'"
+add "c: personal gtd-timer"     "urxvt -fn smoothansi -geometry 90x15-0-0 -e sh -c \"gtd-timer -c 'nmp count tag:inbox'; sleep 60\""
+add "l: personal mail sync log" "fluxbox-focus-or-launch --toggle --role 'personal mail sync daemon' top-term --title 'personal mail sync daemon' ujlu personal-mail-sync"
+add ".: sync personal mail now" "sync-personal-mail-now"
+add ",: sync personal mail"     "top-term --title 'personal mail sync' sync-personal-mail --wait-for-key"
+
+# Toucan
+add "tm: Toucan mutt"           "fluxbox-mutt-term mt"
+add "tg: Toucan gmail"          "chrome-session-tabs 'mail.google.com/mail/u/3'"
+add "ts: Toucan Superhuman"     "chrome-session-tabs 'mail.superhuman.com/$TOUCAN'"
+add "tc: Toucan gtd-timer"      "urxvt -fn smoothansi -geometry 90x15-0-0 -e sh -c \"gtd-timer -c 'nmt count tag:inbox'; sleep 60\""
+add "tl: Toucan mail sync log"  "fluxbox-focus-or-launch --toggle --role 'Toucan mail sync daemon' top-term --title 'Toucan mail sync daemon' ujlu Toucan-mail-sync"
+add "t.: sync Toucan mail now"  "sync-Toucan-mail-now"
+add "t,: sync Toucan mail"      "top-term --title 'Toucan mail sync' sync-Toucan-mail --wait-for-key"
+
+# Hypercerts
+add "hm: Hypercerts gmail"          "chrome-session-tabs 'mail.google.com/mail/u/1'"
+add "hc: Hypercerts gtd-timer"      "urxvt -fn smoothansi -geometry 90x15-0-0 -e sh -c \"gtd-timer ~/mail/Hypercerts/offlineimap/INBOX; sleep 60\""
+add "hl: Hypercerts mail sync log"  "fluxbox-focus-or-launch --toggle --role 'Hypercerts mail sync daemon' top-term --title 'Hypercerts mail sync daemon' ujlu Hypercerts-mail-sync"
+add "h.: sync Hypercerts mail now"  "sync-Hypercerts-mail-now"
+add "h,: sync Hypercerts mail"      "top-term --title 'Hypercerts mail sync' sync-Hypercerts-mail --wait-for-key"
+
+chosen=$(printf '%s\n' "${ORDER[@]}" | rofi -dmenu -p "mail" \
+    -theme-str "$ROFI_THEME_STR" \
+    -theme-str 'window {width: 1400px;}' \
+    -theme-str 'listview {lines: 20;}')
+
+[[ -z "$chosen" ]] && exit 0
+
+cmd="${ACTIONS[$chosen]}"
+[[ -z "$cmd" ]] && exit 1
+
+eval "$cmd"

@@ -1,0 +1,66 @@
+#!/bin/bash
+#
+# Rofi-based org/PIM menu, replacing the fluxbox org-menu.
+#
+# Presents org/diary/PIM actions across personal, Toucan, and Hypercerts
+# in a rofi menu and executes the selected action directly.
+# Mail-specific actions (sync, mutt, etc.) are in rofi-mail-menu instead.
+
+# shellcheck source=../lib/librofi.sh
+source "$(dirname "$0")/../lib/librofi.sh"
+
+# Parallel arrays: LABELS[i] is displayed, CMDS[i] is executed.
+# Empty CMDS[i] means a separator (not executable).
+LABELS=()
+CMDS=()
+
+add() { LABELS+=("$1"); CMDS+=("$2"); }
+sep() { LABELS+=("────────────────────────────────────────"); CMDS+=(""); }
+
+# Org / diary
+add "a: Agenda"                  "switch-emacs-eval '(org-agenda)'"
+add "b: Daily review"            "switch-emacs-eval ~/lib/emacs/shortcuts/org-agenda-daily-review.el"
+add "7: Weekly review"           "switch-emacs-eval ~/lib/emacs/shortcuts/org-agenda-weekly-review.el"
+add "e: Add event to Google Calendar"       "urxvt -e sh -c 'while true; do rlwrap gca; div; done'"
+add "k: Capture"                 "switch-emacs-eval '(org-capture)'"
+add "j: Jump to clock"           "switch-emacs-eval '(org-clock-goto)'"
+add "n: Anytype"                 "fluxbox-focus-or-launch -c anytype anytype"
+
+# Personal PIM
+add "2: personal TODO"           "switch-emacs-eval ~/lib/emacs/shortcuts/org-jump-personal-todo.el"
+add "d: personal diary"          "switch-emacs-eval ~/lib/emacs/shortcuts/org-jump-personal-diary.el"
+
+sep
+
+# Toucan PIM
+add "tc: Toucan Google Calendar"            "chrome-session-tabs 'calendar.google.com/calendar/u/3'"
+add "tt: Toucan TODO"            "switch-emacs-eval '(as-find-Toucan-todo)'"
+add "tk: Toucan capture"         "switch-emacs-eval ~/lib/emacs/shortcuts/org-capture-Toucan.el"
+add "tl: Toucan Linear"          "chrome-session-tabs 'linear.app'"
+add "td: Toucan diary"           "switch-emacs-eval ~/lib/emacs/shortcuts/org-jump-Toucan-diary.el"
+
+sep
+
+# Hypercerts PIM
+add "hc: Hypercerts Google Calendar"        "chrome-session-tabs 'calendar.google.com/calendar/u/1'"
+add "ht: Hypercerts TODO"        "switch-emacs-eval ~/lib/emacs/shortcuts/org-jump-Hypercerts-todo.el"
+add "hk: Hypercerts capture"     "switch-emacs-eval ~/lib/emacs/shortcuts/org-capture-Hypercerts.el"
+add "hd: Hypercerts diary"       "switch-emacs-eval ~/lib/emacs/shortcuts/org-jump-Hypercerts-diary.el"
+
+chosen=$(printf '%s\n' "${LABELS[@]}" | rofi -dmenu -p "org" \
+    -theme-str "$ROFI_THEME_STR" \
+    -theme-str 'window {width: 1400px;}' \
+    -theme-str 'listview {lines: 20;}')
+
+[[ -z "$chosen" ]] && exit 0
+
+# Find the index of the chosen label and execute its command
+for i in "${!LABELS[@]}"; do
+    if [[ "${LABELS[$i]}" == "$chosen" ]]; then
+        cmd="${CMDS[$i]}"
+        # Separator lines have no command — ignore
+        [[ -z "$cmd" ]] && exit 0
+        eval "$cmd"
+        exit 0
+    fi
+done
