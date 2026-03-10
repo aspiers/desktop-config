@@ -47,7 +47,7 @@ add "ht: Hypercerts TODO"        "switch-emacs-eval ~/lib/emacs/shortcuts/org-ju
 add "hk: Hypercerts capture"     "switch-emacs-eval ~/lib/emacs/shortcuts/org-capture-Hypercerts.el"
 add "hd: Hypercerts diary"       "switch-emacs-eval ~/lib/emacs/shortcuts/org-jump-Hypercerts-diary.el"
 
-chosen=$(printf '%s\n' "${LABELS[@]}" | rofi -dmenu -p "org" \
+chosen=$(printf '%s\n' "${LABELS[@]}" | rofi -dmenu -i -p "org" \
     -theme-str "$ROFI_THEME_STR" \
     -theme-str 'window {width: 1400px;}' \
     -theme-str 'listview {lines: 20;}')

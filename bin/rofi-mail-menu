@@ -51,7 +51,7 @@ add "hl: Hypercerts mail sync log"  "fluxbox-focus-or-launch --toggle --role 'Hy
 add "h.: sync Hypercerts mail now"  "sync-Hypercerts-mail-now"
 add "h,: sync Hypercerts mail"      "top-term --title 'Hypercerts mail sync' sync-Hypercerts-mail --wait-for-key"
 
-chosen=$(printf '%s\n' "${ORDER[@]}" | rofi -dmenu -p "mail" \
+chosen=$(printf '%s\n' "${ORDER[@]}" | rofi -dmenu -i -p "mail" \
     -theme-str "$ROFI_THEME_STR" \
     -theme-str 'window {width: 1400px;}' \
     -theme-str 'listview {lines: 20;}')
