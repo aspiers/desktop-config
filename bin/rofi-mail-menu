@@ -25,6 +25,7 @@ add() {
     ORDER+=("$label")
     ACTIONS["$label"]="$cmd"
 }
+sep() { ORDER+=("────────────────────────────────────────"); }
 
 # Personal
 add "m: personal mutt"          "fluxbox-mutt-term m"
@@ -35,6 +36,8 @@ add "l: personal mail sync log" "fluxbox-focus-or-launch --toggle --role 'person
 add ".: sync personal mail now" "sync-personal-mail-now"
 add ",: sync personal mail"     "top-term --title 'personal mail sync' sync-personal-mail --wait-for-key"
 
+sep
+
 # Toucan
 add "tm: Toucan mutt"           "fluxbox-mutt-term mt"
 add "tg: Toucan gmail"          "chrome-session-tabs 'mail.google.com/mail/u/3'"
@@ -43,6 +46,8 @@ add "tc: Toucan gtd-timer"      "urxvt -fn smoothansi -geometry 90x15-0-0 -e sh 
 add "tl: Toucan mail sync log"  "fluxbox-focus-or-launch --toggle --role 'Toucan mail sync daemon' top-term --title 'Toucan mail sync daemon' ujlu Toucan-mail-sync"
 add "t.: sync Toucan mail now"  "sync-Toucan-mail-now"
 add "t,: sync Toucan mail"      "top-term --title 'Toucan mail sync' sync-Toucan-mail --wait-for-key"
+
+sep
 
 # Hypercerts
 add "hm: Hypercerts gmail"          "chrome-session-tabs 'mail.google.com/mail/u/1'"
