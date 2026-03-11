@@ -28,6 +28,7 @@ add "p: powertop"           "fluxbox-focus-or-launch --toggle 'sudo powertop' to
 add "v: nvtop"              "fluxbox-focus-or-launch --toggle 'nvtop' top-term nvtop"
 add "a: amdgpu_top"         "fluxbox-focus-or-launch --toggle 'amdgpu_top' top-term amdgpu_top"
 add "s: lnav-system"        "fluxbox-focus-or-launch --toggle -r 'lnav-system' top-term lnav-system"
+add "o: btop on ovh"        "fluxbox-focus-or-launch --toggle -r 'ovh btop' top-term --title 'ovh btop' zsh -c 'dsa; mosh ovh btop'"
 add "x: rxx"                "run-with-local-X-display top-term rxx"
 
 chosen=$(printf '%s\n' "${LABELS[@]}" | rofi_prefix_filter | rofi -dmenu -p "terminal" \
@@ -35,7 +36,7 @@ chosen=$(printf '%s\n' "${LABELS[@]}" | rofi_prefix_filter | rofi -dmenu -p "ter
     -auto-select \
     -theme-str "$ROFI_THEME_STR" \
     -theme-str 'window {width: 800px;}' \
-    -theme-str 'listview {lines: 12;}')
+    -theme-str 'listview {lines: 13;}')
 
 [[ -z "$chosen" ]] && exit 0
 
