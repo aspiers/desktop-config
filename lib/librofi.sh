@@ -42,46 +42,62 @@
 #     ROFI_COLOUR_MAUVE
 #     ROFI_COLOUR_RED
 
+# rofi_prefix_filter: transform lines so rofi matches only on the text before
+# the first ':' rather than the full label.  Reads from stdin, writes to stdout.
+#
+# Uses rofi's extended dmenu row option: "original\0display\x1fdisplay_text\n"
+# where 'original' is used for filtering and returned on selection, and
+# 'display_text' is shown in the list.  The prefix (before ':') becomes the
+# filter/return value; the full label is shown as the display string.
+#
+# Callers must look up actions by prefix, not by full label.
+rofi_prefix_filter() {
+    while IFS= read -r line; do
+        prefix="${line%%:*}"
+        printf '%s\0display\x1f%s\n' "$prefix" "$line"
+    done
+}
+
 ROFI_THEME_FILE=~/.config/theme
 ROFI_THEME=$(cat "$ROFI_THEME_FILE" 2>/dev/null || echo "dark")
 
 # Colour values from https://github.com/catppuccin/rofi
 if [[ "$ROFI_THEME" == "light" ]]; then
-        # Catppuccin Latte
-        ROFI_COLOUR_BG="#eff1f5"     # Base
-        ROFI_COLOUR_BG_ALT="#e6e9ef" # Mantle
-        ROFI_COLOUR_FG="#4c4f69"     # Text
-        ROFI_COLOUR_FG_ALT="#6c6f85" # Subtext0
-        ROFI_COLOUR_ACCENT="#1e66f5" # Blue
-        ROFI_COLOUR_BORDER="#7287fd" # Lavender
-        ROFI_COLOUR_SEL_BG="#1e66f5" # Blue
-        ROFI_COLOUR_SEL_FG="#eff1f5" # Base (light text on blue)
-        ROFI_COLOUR_URGENT="#d20f39" # Red
-        ROFI_COLOUR_MSG_FG="#5c5f77" # Subtext1
+    # Catppuccin Latte
+    ROFI_COLOUR_BG="#eff1f5"     # Base
+    ROFI_COLOUR_BG_ALT="#e6e9ef" # Mantle
+    ROFI_COLOUR_FG="#4c4f69"     # Text
+    ROFI_COLOUR_FG_ALT="#6c6f85" # Subtext0
+    ROFI_COLOUR_ACCENT="#1e66f5" # Blue
+    ROFI_COLOUR_BORDER="#7287fd" # Lavender
+    ROFI_COLOUR_SEL_BG="#1e66f5" # Blue
+    ROFI_COLOUR_SEL_FG="#eff1f5" # Base (light text on blue)
+    ROFI_COLOUR_URGENT="#d20f39" # Red
+    ROFI_COLOUR_MSG_FG="#5c5f77" # Subtext1
 
-        # Semantic signal colours (dark on light bg)
-        ROFI_COLOUR_GREEN="#40a02b"  # Green
-        ROFI_COLOUR_YELLOW="#df8e1d" # Yellow
-        ROFI_COLOUR_MAUVE="#8839ef"  # Mauve
-        ROFI_COLOUR_RED="#d20f39"    # Red
+    # Semantic signal colours (dark on light bg)
+    ROFI_COLOUR_GREEN="#40a02b"  # Green
+    ROFI_COLOUR_YELLOW="#df8e1d" # Yellow
+    ROFI_COLOUR_MAUVE="#8839ef"  # Mauve
+    ROFI_COLOUR_RED="#d20f39"    # Red
 else
-        # Catppuccin Mocha
-        ROFI_COLOUR_BG="#1e1e2e"     # Base
-        ROFI_COLOUR_BG_ALT="#181825" # Mantle
-        ROFI_COLOUR_FG="#cdd6f4"     # Text
-        ROFI_COLOUR_FG_ALT="#a6adc8" # Subtext0
-        ROFI_COLOUR_ACCENT="#89b4fa" # Blue
-        ROFI_COLOUR_BORDER="#b4befe" # Lavender
-        ROFI_COLOUR_SEL_BG="#89b4fa" # Blue
-        ROFI_COLOUR_SEL_FG="#1e1e2e" # Base (dark text on blue)
-        ROFI_COLOUR_URGENT="#f38ba8" # Red
-        ROFI_COLOUR_MSG_FG="#bac2de" # Subtext1
+    # Catppuccin Mocha
+    ROFI_COLOUR_BG="#1e1e2e"     # Base
+    ROFI_COLOUR_BG_ALT="#181825" # Mantle
+    ROFI_COLOUR_FG="#cdd6f4"     # Text
+    ROFI_COLOUR_FG_ALT="#a6adc8" # Subtext0
+    ROFI_COLOUR_ACCENT="#89b4fa" # Blue
+    ROFI_COLOUR_BORDER="#b4befe" # Lavender
+    ROFI_COLOUR_SEL_BG="#89b4fa" # Blue
+    ROFI_COLOUR_SEL_FG="#1e1e2e" # Base (dark text on blue)
+    ROFI_COLOUR_URGENT="#f38ba8" # Red
+    ROFI_COLOUR_MSG_FG="#bac2de" # Subtext1
 
-        # Semantic signal colours (bright on dark bg)
-        ROFI_COLOUR_GREEN="#a6e3a1"  # Green
-        ROFI_COLOUR_YELLOW="#f9e2af" # Yellow
-        ROFI_COLOUR_MAUVE="#cba6f7"  # Mauve
-        ROFI_COLOUR_RED="#f38ba8"    # Red
+    # Semantic signal colours (bright on dark bg)
+    ROFI_COLOUR_GREEN="#a6e3a1"  # Green
+    ROFI_COLOUR_YELLOW="#f9e2af" # Yellow
+    ROFI_COLOUR_MAUVE="#cba6f7"  # Mauve
+    ROFI_COLOUR_RED="#f38ba8"    # Red
 fi
 
 # Build a reusable rofi theme string.

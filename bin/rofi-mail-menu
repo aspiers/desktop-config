@@ -51,14 +51,23 @@ add "hl: Hypercerts mail sync log"  "fluxbox-focus-or-launch --toggle --role 'Hy
 add "h.: sync Hypercerts mail now"  "sync-Hypercerts-mail-now"
 add "h,: sync Hypercerts mail"      "top-term --title 'Hypercerts mail sync' sync-Hypercerts-mail --wait-for-key"
 
-chosen=$(printf '%s\n' "${ORDER[@]}" | rofi -dmenu -i -p "mail" \
+chosen=$(printf '%s\n' "${ORDER[@]}" | rofi_prefix_filter | rofi -dmenu -i -p "mail" \
+    -matching prefix \
+    -auto-select \
     -theme-str "$ROFI_THEME_STR" \
     -theme-str 'window {width: 1400px;}' \
     -theme-str 'listview {lines: 20;}')
 
 [[ -z "$chosen" ]] && exit 0
 
-cmd="${ACTIONS[$chosen]}"
+# rofi_prefix_filter returns the prefix (text before ':'), so find the matching
+# full label to look up the action.
+for label in "${ORDER[@]}"; do
+    if [[ "${label%%:*}" == "$chosen" ]]; then
+        cmd="${ACTIONS[$label]}"
+        break
+    fi
+done
 [[ -z "$cmd" ]] && exit 1
 
 eval "$cmd"
