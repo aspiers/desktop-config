@@ -47,17 +47,13 @@ add "ht: Hypercerts TODO"        "switch-emacs-eval ~/lib/emacs/shortcuts/org-ju
 add "hk: Hypercerts capture"     "switch-emacs-eval ~/lib/emacs/shortcuts/org-capture-Hypercerts.el"
 add "hd: Hypercerts diary"       "switch-emacs-eval ~/lib/emacs/shortcuts/org-jump-Hypercerts-diary.el"
 
-chosen=$(printf '%s\n' "${LABELS[@]}" | rofi_prefix_filter | rofi -dmenu -i -p "org" \
-    -matching prefix \
-    -auto-select \
+chosen=$(printf '%s\n' "${LABELS[@]}" | rofi_dmenu_prefix -i -p "org" \
     -theme-str "$ROFI_THEME_STR" \
     -theme-str 'window {width: 1400px;}' \
     -theme-str 'listview {lines: 20;}')
 
 [[ -z "$chosen" ]] && exit 0
 
-# rofi_prefix_filter returns the prefix (text before ':'), so match against
-# the prefix of each label rather than the full label.
 for i in "${!LABELS[@]}"; do
     if [[ "${LABELS[$i]%%:*}" == "$chosen" ]]; then
         cmd="${CMDS[$i]}"

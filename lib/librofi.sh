@@ -42,20 +42,25 @@
 #     ROFI_COLOUR_MAUVE
 #     ROFI_COLOUR_RED
 
-# rofi_prefix_filter: transform lines so rofi matches only on the text before
-# the first ':' rather than the full label.  Reads from stdin, writes to stdout.
+# rofi_dmenu_prefix: show a rofi dmenu that matches only on the prefix (text
+# before the first ':') of each label.  Reads labels from stdin, one per line.
+# Remaining arguments are passed through to rofi.
 #
-# Uses rofi's extended dmenu row option: "original\0display\x1fdisplay_text\n"
-# where 'original' is used for filtering and returned on selection, and
-# 'display_text' is shown in the list.  The prefix (before ':') becomes the
-# filter/return value; the full label is shown as the display string.
+# Uses rofi's extended dmenu protocol: stores the prefix as the filter key and
+# the full label as the display string.  rofi's -matching prefix mode anchors
+# the user's typed input to the start of the stored filter key, so typing 'm'
+# matches 'm: ...' but not 'tm: ...'.  -auto-select fires when only one entry
+# remains.
 #
-# Callers must look up actions by prefix, not by full label.
-rofi_prefix_filter() {
+# All prefixes must be alphanumeric; -matching prefix silently drops entries
+# whose stored key starts with non-alphanumeric characters.
+#
+# Returns the prefix of the selected entry; callers look up actions by prefix.
+rofi_dmenu_prefix() {
     while IFS= read -r line; do
-        prefix="${line%%:*}"
+        local prefix="${line%%:*}"
         printf '%s\0display\x1f%s\n' "$prefix" "$line"
-    done
+    done | rofi -dmenu "$@" -matching prefix -auto-select
 }
 
 ROFI_THEME_FILE=~/.config/theme

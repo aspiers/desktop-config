@@ -33,8 +33,8 @@ add "g: personal gmail"         "chrome-session-tabs 'mail.google.com/mail/u/0'"
 add "s: personal Superhuman"    "chrome-session-tabs 'mail.superhuman.com/$PERSONAL'"
 add "c: personal gtd-timer"     "urxvt -fn smoothansi -geometry 90x15-0-0 -e sh -c \"gtd-timer -c 'nmp count tag:inbox'; sleep 60\""
 add "l: personal mail sync log" "fluxbox-focus-or-launch --toggle --role 'personal mail sync daemon' top-term --title 'personal mail sync daemon' ujlu personal-mail-sync"
-add ".: sync personal mail now" "sync-personal-mail-now"
-add ",: sync personal mail"     "top-term --title 'personal mail sync' sync-personal-mail --wait-for-key"
+add "n: sync personal mail now"  "sync-personal-mail-now"
+add "w: watch syncing personal mail"     "top-term --title 'personal mail sync' sync-personal-mail --wait-for-key"
 
 sep
 
@@ -44,29 +44,26 @@ add "tg: Toucan gmail"          "chrome-session-tabs 'mail.google.com/mail/u/3'"
 add "ts: Toucan Superhuman"     "chrome-session-tabs 'mail.superhuman.com/$TOUCAN'"
 add "tc: Toucan gtd-timer"      "urxvt -fn smoothansi -geometry 90x15-0-0 -e sh -c \"gtd-timer -c 'nmt count tag:inbox'; sleep 60\""
 add "tl: Toucan mail sync log"  "fluxbox-focus-or-launch --toggle --role 'Toucan mail sync daemon' top-term --title 'Toucan mail sync daemon' ujlu Toucan-mail-sync"
-add "t.: sync Toucan mail now"  "sync-Toucan-mail-now"
-add "t,: sync Toucan mail"      "top-term --title 'Toucan mail sync' sync-Toucan-mail --wait-for-key"
+add "tn: sync Toucan mail now"  "sync-Toucan-mail-now"
+add "tw: watch syncing Toucan mail"      "top-term --title 'Toucan mail sync' sync-Toucan-mail --wait-for-key"
 
 sep
 
 # Hypercerts
-add "hm: Hypercerts gmail"          "chrome-session-tabs 'mail.google.com/mail/u/1'"
+add "hg: Hypercerts gmail"          "chrome-session-tabs 'mail.google.com/mail/u/1'"
+add "hs: Hypercerts Superhuman"     "chrome-session-tabs 'mail.superhuman.com/$HC'"
 add "hc: Hypercerts gtd-timer"      "urxvt -fn smoothansi -geometry 90x15-0-0 -e sh -c \"gtd-timer ~/mail/Hypercerts/offlineimap/INBOX; sleep 60\""
 add "hl: Hypercerts mail sync log"  "fluxbox-focus-or-launch --toggle --role 'Hypercerts mail sync daemon' top-term --title 'Hypercerts mail sync daemon' ujlu Hypercerts-mail-sync"
-add "h.: sync Hypercerts mail now"  "sync-Hypercerts-mail-now"
-add "h,: sync Hypercerts mail"      "top-term --title 'Hypercerts mail sync' sync-Hypercerts-mail --wait-for-key"
+add "hn: sync Hypercerts mail now"  "sync-Hypercerts-mail-now"
+add "hw: watch syncing Hypercerts mail"      "top-term --title 'Hypercerts mail sync' sync-Hypercerts-mail --wait-for-key"
 
-chosen=$(printf '%s\n' "${ORDER[@]}" | rofi_prefix_filter | rofi -dmenu -i -p "mail" \
-    -matching prefix \
-    -auto-select \
+chosen=$(printf '%s\n' "${ORDER[@]}" | rofi_dmenu_prefix -i -p "mail" \
     -theme-str "$ROFI_THEME_STR" \
     -theme-str 'window {width: 1400px;}' \
     -theme-str 'listview {lines: 20;}')
 
 [[ -z "$chosen" ]] && exit 0
 
-# rofi_prefix_filter returns the prefix (text before ':'), so find the matching
-# full label to look up the action.
 for label in "${ORDER[@]}"; do
     if [[ "${label%%:*}" == "$chosen" ]]; then
         cmd="${ACTIONS[$label]}"
