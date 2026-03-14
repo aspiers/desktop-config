@@ -468,6 +468,12 @@ Control Mod1 Mod4 Shift e :Exit
 <%= prefix %>Mod1 Mod4 comma :If {Matches (Stuck=no)} {MacroCmd {Raise} {TakeToPrevWorkspace}} {MacroCmd {Stick} {Raise} {TakeToPrevWorkspace}}
 <%= prefix %>Mod1 Mod4 period :If {Matches (Stuck=no)} {MacroCmd {Raise} {TakeToNextWorkspace}} {MacroCmd {Stick} {Raise} {TakeToNextWorkspace}}
 
+# send the current window to the next/previous head, and follow it
+<% if monitors_connected.to_i > 1 %>
+<%= prefix %>Mod1 Shift Mod4 period :MacroCmd {SendToNextHead} {Exec screen-navigation --move right --use-xrandr-cache}
+<%= prefix %>Mod1 Shift Mod4 comma :MacroCmd {SendToPrevHead} {Exec screen-navigation --move left --use-xrandr-cache}
+<% end %>
+
 # change to a specific workspace
 <%= prefix %>Mod4 1 :Workspace 1
 <%= prefix %>Mod4 2 :Workspace 2
