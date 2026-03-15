@@ -471,8 +471,8 @@ Control Mod1 Mod4 Shift e :Exit
 
 # send the current window to the next/previous head, and follow it
 <% if monitors_connected.to_i > 1 %>
-<%= prefix %>Mod1 Shift Mod4 period :MacroCmd {SendToNextHead} {Exec screen-navigation --move right --use-xrandr-cache}
-<%= prefix %>Mod1 Shift Mod4 comma :MacroCmd {SendToPrevHead} {Exec screen-navigation --move left --use-xrandr-cache}
+<%= prefix %>Mod1 Shift Mod4 period :Exec screen-navigation --move-window right
+<%= prefix %>Mod1 Shift Mod4 comma :Exec screen-navigation --move-window left
 <% end %>
 
 # change to a specific workspace

@@ -5,10 +5,24 @@ import json
 import os
 import subprocess
 import sys
+import time
 
 sys.path.append(os.getenv('HOME') + '/lib')
 
+import libdpy
 import liblayout
+
+
+def get_active_window_geometry():
+    """Return (window_id, x, y, width, height) for the active window."""
+    out = subprocess.check_output(
+        ['xdotool', 'getactivewindow', 'getwindowgeometry', '--shell']
+    ).decode()
+    vals = {}
+    for line in out.splitlines():
+        k, _, v = line.partition('=')
+        vals[k] = int(v)
+    return vals['WINDOW'], vals['X'], vals['Y'], vals['WIDTH'], vals['HEIGHT']
 
 
 def move_to_adjacent_screen(adjacent_screen):
@@ -18,12 +32,86 @@ def move_to_adjacent_screen(adjacent_screen):
     # subprocess.run(['focus-active-window'], check=True)
 
 
+def move_window_to_adjacent_screen(adjacent_screen, debug=False):
+    logfile = os.path.expanduser("~/.log/screen-navigation-move-window.log")
+    def dbg(msg):
+        line = f"DEBUG: {msg}\n"
+        if debug:
+            sys.stderr.write(line)
+        with open(logfile, 'a') as f:
+            f.write(line)
+
+    set_head_cmd = adjacent_screen.get('SetHead')
+    if not set_head_cmd:
+        sys.stderr.write("Error: No SetHead value available for adjacent screen\n")
+        sys.exit(1)
+
+    # Get current window geometry and current head geometry before moving
+    win_id, win_x, win_y, win_w, win_h = get_active_window_geometry()
+    dbg(f"active window: id={win_id} x={win_x} y={win_y} w={win_w} h={win_h}")
+
+    # Determine source screen from window position, not mouse position,
+    # since the mouse may be on a different screen when the key is pressed
+    win_cx = win_x + win_w / 2
+    src = libdpy.get_screen(int(win_cx), use_cache=True)
+    dbg(f"source screen: {src['name']} x_offset={src['x_offset']} y_offset={src['y_offset']} w={src['width']} h={src['height']}")
+
+    # Calculate window centre as a fraction of the source screen
+    win_cy = win_y + win_h / 2
+    frac_x = (win_cx - src['x_offset']) / src['width']
+    frac_y = (win_cy - src['y_offset']) / src['height']
+    dbg(f"window centre: ({win_cx}, {win_cy}), fractions: ({frac_x:.3f}, {frac_y:.3f})")
+
+    # Move the window to the new head
+    dbg(f"running: fluxbox-remote '{set_head_cmd}'")
+    subprocess.run(['fluxbox-remote', set_head_cmd], check=True)
+
+    # Wait for Fluxbox to finish repositioning the window after SetHead
+    # by polling until the position changes from pre-SetHead position
+    deadline = time.monotonic() + 2.0
+    post_x, post_y = win_x, win_y
+    while time.monotonic() < deadline:
+        _, post_x, post_y, _, _ = get_active_window_geometry()
+        if post_x != win_x or post_y != win_y:
+            break
+        time.sleep(0.02)
+    dbg(f"window position after SetHead: x={post_x} y={post_y}")
+
+    # Reposition: place window so its centre is at the same relative position
+    # on the destination screen, clamped so the window stays within bounds
+    dst = adjacent_screen
+    dbg(f"dest screen: {dst['name']} x_offset={dst['x_offset']} y_offset={dst['y_offset']} w={dst['width']} h={dst['height']}")
+    new_cx = dst['x_offset'] + frac_x * dst['width']
+    new_cy = dst['y_offset'] + frac_y * dst['height']
+    new_x = int(new_cx - win_w / 2)
+    new_y = int(new_cy - win_h / 2)
+    dbg(f"target position: x={new_x} y={new_y}")
+    dbg(f"running: xdotool windowmove {win_id} {new_x} {new_y}")
+    subprocess.run(
+        ['xdotool', 'windowmove', str(win_id), str(new_x), str(new_y)],
+        check=True
+    )
+
+    # Verify window position after windowmove
+    _, final_x, final_y, _, _ = get_active_window_geometry()
+    dbg(f"window position after windowmove: x={final_x} y={final_y}")
+
+    # Warp mouse to the centre of the moved window
+    dbg(f"warping mouse to ({int(new_cx)}, {int(new_cy)})")
+    subprocess.run(
+        ['xdotool', 'mousemove', str(int(new_cx)), str(int(new_cy))],
+        check=True
+    )
+
+
 def main():
     parser = argparse.ArgumentParser(description='Get the adjacent screen (left or right) from the current screen')
     parser.add_argument('direction', choices=['left', 'right'], help='Direction to look for adjacent screen')
     parser.add_argument('--layout', '-l', dest='layout', help='Layout name or path (default: use get-layout script)')
     parser.add_argument('--json', '-j', action='store_true', help='Output in JSON format')
-    parser.add_argument('--move', '-m', action='store_true', help='Output SetHead command for moving to the screen')
+    parser.add_argument('--move', '-m', action='store_true', help='Move mouse cursor to the adjacent screen')
+    parser.add_argument('--move-window', '-w', action='store_true', help='Move current window to the adjacent screen')
+    parser.add_argument('--debug', '-d', action='store_true', help='Print debug info to stderr')
     parser.add_argument('--use-xrandr-cache', '-c', action='store_true', help='Use cached XRandr data if available')
     parser.add_argument('--format', '-f',
                         choices=['name', 'assignment', 'head', 'num', 'width', 'height', 'x_offset', 'y_offset', 'full'],
@@ -43,9 +131,24 @@ def main():
             sys.stderr.write("Error: Could not determine layout. Please specify with --layout\n")
             sys.exit(1)
 
+    # When moving a window, determine the current screen from the window's
+    # position rather than the mouse, as they may differ
+    current_x = None
+    if args.move_window:
+        try:
+            _, win_x, _, win_w, _ = get_active_window_geometry()
+            current_x = win_x + win_w / 2
+        except Exception as e:
+            sys.stderr.write(f"Error getting window geometry: {str(e)}\n")
+            sys.exit(1)
+
     # Get the adjacent screen
     try:
-        adjacent_screen = liblayout.get_adjacent_screen(args.direction, layout_file, use_cache=args.use_xrandr_cache)
+        adjacent_screen = liblayout.get_adjacent_screen(
+            args.direction, layout_file,
+            use_cache=args.use_xrandr_cache,
+            current_x=current_x,
+        )
     except Exception as e:
         sys.stderr.write(f"Error: {str(e)}\n")
         sys.exit(1)
@@ -57,6 +160,10 @@ def main():
     # Output the result
     if args.move:
         move_to_adjacent_screen(adjacent_screen)
+        return
+
+    if args.move_window:
+        move_window_to_adjacent_screen(adjacent_screen, debug=args.debug)
         return
 
     if args.json:

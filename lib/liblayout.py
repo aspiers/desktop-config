@@ -263,7 +263,9 @@ def get_layout_params(layout_file, use_cache=False, screens_only=False):
     return screens, layout
 
 
-def get_adjacent_screen(direction, layout_name_or_path=None, use_cache=False):
+def get_adjacent_screen(
+    direction, layout_name_or_path=None, use_cache=False, current_x=None
+):
     """
     Get the screen to the left or right of the current screen.
 
@@ -271,6 +273,8 @@ def get_adjacent_screen(direction, layout_name_or_path=None, use_cache=False):
         direction (str): Either 'left' or 'right' to specify which adjacent screen to find
         layout_name_or_path (str, optional): Layout name or path to use. If None, will need to be determined.
         use_cache (bool, optional): Whether to use cached XRandr data if available. Default is False.
+        current_x (int, optional): X coordinate to use for determining the current screen.
+            If None, uses the mouse position.
 
     Returns:
         dict: The adjacent screen information or None if not found
@@ -278,8 +282,11 @@ def get_adjacent_screen(direction, layout_name_or_path=None, use_cache=False):
     if direction not in ("left", "right"):
         raise ValueError("Direction must be either 'left' or 'right'")
 
-    # Get current screen where mouse is located
-    current_screen = libdpy.get_current_screen_info(use_cache=use_cache)
+    # Determine current screen from given x coordinate or fall back to mouse position
+    if current_x is not None:
+        current_screen = libdpy.get_screen(int(current_x), use_cache=use_cache)
+    else:
+        current_screen = libdpy.get_current_screen_info(use_cache=use_cache)
 
     # We need to have a layout file to look up the mapping
     if not layout_name_or_path:
