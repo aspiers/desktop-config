@@ -12,6 +12,8 @@ sys.path.append(os.getenv('HOME') + '/lib')
 import libdpy
 import liblayout
 
+EDGE_THRESHOLD = 0.10
+
 
 def get_active_window_geometry():
     """Return (window_id, x, y, width, height) for the active window."""
@@ -32,8 +34,60 @@ def move_to_adjacent_screen(adjacent_screen):
     # subprocess.run(['focus-active-window'], check=True)
 
 
-def move_window_to_adjacent_screen(adjacent_screen, debug=False):
+def axis_alignment(win_near, win_size, screen_near, screen_size):
+    """
+    Determine how to align a window along one axis when moving to a new screen.
+
+    If the window's near edge is within EDGE_THRESHOLD of the screen's near edge,
+    align by the near edge. If the far edge is within EDGE_THRESHOLD of the
+    screen's far edge, align by the far edge. Otherwise align by centre.
+
+    Returns (mode, frac) where mode is 'near', 'far', or 'centre' and frac is
+    the proportional gap to preserve.
+    """
+    screen_far = screen_near + screen_size
+    win_far = win_near + win_size
+
+    near_gap = win_near - screen_near
+    far_gap = screen_far - win_far
+
+    if near_gap / screen_size <= EDGE_THRESHOLD:
+        return 'near', near_gap / screen_size
+    elif far_gap / screen_size <= EDGE_THRESHOLD:
+        return 'far', far_gap / screen_size
+    else:
+        win_centre = win_near + win_size / 2
+        return 'centre', (win_centre - screen_near) / screen_size
+
+
+def apply_alignment(mode, frac, screen_near, screen_size, win_size):
+    """
+    Calculate the window's new near-edge position on the destination screen,
+    given the alignment mode and fraction from axis_alignment().
+    """
+    if mode == 'near':
+        return int(screen_near + frac * screen_size)
+    elif mode == 'far':
+        return int(screen_near + screen_size - frac * screen_size - win_size)
+    else:  # centre
+        new_centre = screen_near + frac * screen_size
+        return int(new_centre - win_size / 2)
+
+
+def wait_for_sethead(win_x, win_y, timeout=2.0):
+    """Poll until the active window moves from its pre-SetHead position."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        _, post_x, post_y, _, _ = get_active_window_geometry()
+        if post_x != win_x or post_y != win_y:
+            return post_x, post_y
+        time.sleep(0.02)
+    return win_x, win_y
+
+
+def make_logger(debug):
     logfile = os.path.expanduser("~/.log/screen-navigation-move-window.log")
+
     def dbg(msg):
         line = f"DEBUG: {msg}\n"
         if debug:
@@ -41,67 +95,84 @@ def move_window_to_adjacent_screen(adjacent_screen, debug=False):
         with open(logfile, 'a') as f:
             f.write(line)
 
-    set_head_cmd = adjacent_screen.get('SetHead')
-    if not set_head_cmd:
-        sys.stderr.write("Error: No SetHead value available for adjacent screen\n")
-        sys.exit(1)
+    return dbg
 
-    # Get current window geometry and current head geometry before moving
-    win_id, win_x, win_y, win_w, win_h = get_active_window_geometry()
-    dbg(f"active window: id={win_id} x={win_x} y={win_y} w={win_w} h={win_h}")
 
-    # Determine source screen from window position, not mouse position,
-    # since the mouse may be on a different screen when the key is pressed
-    win_cx = win_x + win_w / 2
-    src = libdpy.get_screen(int(win_cx), use_cache=True)
-    dbg(f"source screen: {src['name']} x_offset={src['x_offset']} y_offset={src['y_offset']} w={src['width']} h={src['height']}")
+def compute_target_position(win_x, win_y, win_w, win_h, src, dst, dbg):
+    """Calculate where the window should be placed on the destination screen."""
+    x_mode, frac_x = axis_alignment(win_x, win_w, src['x_offset'], src['width'])
+    y_mode, frac_y = axis_alignment(win_y, win_h, src['y_offset'], src['height'])
+    dbg(f"x_mode={x_mode} frac_x={frac_x:.3f}, y_mode={y_mode} frac_y={frac_y:.3f}")
 
-    # Calculate window centre as a fraction of the source screen
-    win_cy = win_y + win_h / 2
-    frac_x = (win_cx - src['x_offset']) / src['width']
-    frac_y = (win_cy - src['y_offset']) / src['height']
-    dbg(f"window centre: ({win_cx}, {win_cy}), fractions: ({frac_x:.3f}, {frac_y:.3f})")
-
-    # Move the window to the new head
-    dbg(f"running: fluxbox-remote '{set_head_cmd}'")
-    subprocess.run(['fluxbox-remote', set_head_cmd], check=True)
-
-    # Wait for Fluxbox to finish repositioning the window after SetHead
-    # by polling until the position changes from pre-SetHead position
-    deadline = time.monotonic() + 2.0
-    post_x, post_y = win_x, win_y
-    while time.monotonic() < deadline:
-        _, post_x, post_y, _, _ = get_active_window_geometry()
-        if post_x != win_x or post_y != win_y:
-            break
-        time.sleep(0.02)
-    dbg(f"window position after SetHead: x={post_x} y={post_y}")
-
-    # Reposition: place window so its centre is at the same relative position
-    # on the destination screen, clamped so the window stays within bounds
-    dst = adjacent_screen
-    dbg(f"dest screen: {dst['name']} x_offset={dst['x_offset']} y_offset={dst['y_offset']} w={dst['width']} h={dst['height']}")
-    new_cx = dst['x_offset'] + frac_x * dst['width']
-    new_cy = dst['y_offset'] + frac_y * dst['height']
-    new_x = int(new_cx - win_w / 2)
-    new_y = int(new_cy - win_h / 2)
+    new_x = apply_alignment(x_mode, frac_x, dst['x_offset'], dst['width'], win_w)
+    new_y = apply_alignment(y_mode, frac_y, dst['y_offset'], dst['height'], win_h)
     dbg(f"target position: x={new_x} y={new_y}")
+    return new_x, new_y
+
+
+def reposition_window(win_id, win_x, win_y, new_x, new_y, dbg):
+    """Issue SetHead, wait for Fluxbox to settle, then move window."""
     dbg(f"running: xdotool windowmove {win_id} {new_x} {new_y}")
     subprocess.run(
         ['xdotool', 'windowmove', str(win_id), str(new_x), str(new_y)],
         check=True
     )
-
-    # Verify window position after windowmove
     _, final_x, final_y, _, _ = get_active_window_geometry()
     dbg(f"window position after windowmove: x={final_x} y={final_y}")
 
-    # Warp mouse to the centre of the moved window
-    dbg(f"warping mouse to ({int(new_cx)}, {int(new_cy)})")
-    subprocess.run(
-        ['xdotool', 'mousemove', str(int(new_cx)), str(int(new_cy))],
-        check=True
-    )
+
+def warp_mouse_to_window_centre(new_x, new_y, win_w, win_h, dbg):
+    cx, cy = int(new_x + win_w / 2), int(new_y + win_h / 2)
+    dbg(f"warping mouse to ({cx}, {cy})")
+    subprocess.run(['xdotool', 'mousemove', str(cx), str(cy)], check=True)
+
+
+def move_window_to_adjacent_screen(adjacent_screen, debug=False):
+    dbg = make_logger(debug)
+
+    set_head_cmd = adjacent_screen.get('SetHead')
+    if not set_head_cmd:
+        sys.stderr.write("Error: No SetHead value available for adjacent screen\n")
+        sys.exit(1)
+
+    win_id, win_x, win_y, win_w, win_h = get_active_window_geometry()
+    dbg(f"active window: id={win_id} x={win_x} y={win_y} w={win_w} h={win_h}")
+
+    src = libdpy.get_screen(int(win_x + win_w / 2), use_cache=True)
+    dbg(f"source screen: {src['name']} x_offset={src['x_offset']} y_offset={src['y_offset']} w={src['width']} h={src['height']}")
+
+    new_x, new_y = compute_target_position(win_x, win_y, win_w, win_h, src, adjacent_screen, dbg)
+
+    dbg(f"running: fluxbox-remote '{set_head_cmd}'")
+    subprocess.run(['fluxbox-remote', set_head_cmd], check=True)
+
+    post_x, post_y = wait_for_sethead(win_x, win_y)
+    dbg(f"window position after SetHead: x={post_x} y={post_y}")
+
+    reposition_window(win_id, win_x, win_y, new_x, new_y, dbg)
+    warp_mouse_to_window_centre(new_x, new_y, win_w, win_h, dbg)
+
+
+def get_layout_file(args):
+    if args.layout:
+        return args.layout
+    try:
+        layout = subprocess.check_output(
+            [os.path.join(os.path.dirname(os.path.realpath(__file__)), 'get-layout')]
+        ).decode().strip()
+        return layout
+    except (subprocess.SubprocessError, FileNotFoundError):
+        sys.stderr.write("Error: Could not determine layout. Please specify with --layout\n")
+        sys.exit(1)
+
+
+def get_window_centre_x():
+    try:
+        _, win_x, _, win_w, _ = get_active_window_geometry()
+        return win_x + win_w / 2
+    except Exception as e:
+        sys.stderr.write(f"Error getting window geometry: {str(e)}\n")
+        sys.exit(1)
 
 
 def main():
@@ -119,30 +190,12 @@ def main():
                         help='Output format (default: name)')
     args = parser.parse_args()
 
-    # Get the layout file to use
-    layout_file = args.layout
-    if not layout_file:
-        # Try to get layout from the get-layout script
-        try:
-            import subprocess
-            layout = subprocess.check_output([os.path.join(os.path.dirname(os.path.realpath(__file__)), 'get-layout')]).decode().strip()
-            layout_file = layout
-        except (subprocess.SubprocessError, FileNotFoundError):
-            sys.stderr.write("Error: Could not determine layout. Please specify with --layout\n")
-            sys.exit(1)
+    layout_file = get_layout_file(args)
 
-    # When moving a window, determine the current screen from the window's
-    # position rather than the mouse, as they may differ
-    current_x = None
-    if args.move_window:
-        try:
-            _, win_x, _, win_w, _ = get_active_window_geometry()
-            current_x = win_x + win_w / 2
-        except Exception as e:
-            sys.stderr.write(f"Error getting window geometry: {str(e)}\n")
-            sys.exit(1)
+    # When moving a window, use its centre to determine the current screen
+    # rather than the mouse position, as they may differ
+    current_x = get_window_centre_x() if args.move_window else None
 
-    # Get the adjacent screen
     try:
         adjacent_screen = liblayout.get_adjacent_screen(
             args.direction, layout_file,
@@ -157,7 +210,6 @@ def main():
         sys.stderr.write(f"No {args.direction} screen found from current position\n")
         sys.exit(1)
 
-    # Output the result
     if args.move:
         move_to_adjacent_screen(adjacent_screen)
         return
@@ -173,19 +225,18 @@ def main():
     if args.format == 'full':
         for key, value in adjacent_screen.items():
             print(f"{key}={value}")
+        return
+
+    if args.format in adjacent_screen:
+        print(adjacent_screen[args.format])
+    elif args.format == 'name' and 'assignment' in adjacent_screen:
+        print(adjacent_screen['assignment'])
+    elif args.format == 'assignment' and 'name' in adjacent_screen:
+        print(adjacent_screen['name'])
     else:
-        # Try to get the requested attribute
-        if args.format in adjacent_screen:
-            print(adjacent_screen[args.format])
-        else:
-            # If the requested attribute isn't available, try some fallbacks
-            if args.format == 'name' and 'assignment' in adjacent_screen:
-                print(adjacent_screen['assignment'])
-            elif args.format == 'assignment' and 'name' in adjacent_screen:
-                print(adjacent_screen['name'])
-            else:
-                sys.stderr.write(f"Error: Attribute '{args.format}' not found in screen data\n")
-                sys.exit(1)
+        sys.stderr.write(f"Error: Attribute '{args.format}' not found in screen data\n")
+        sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
