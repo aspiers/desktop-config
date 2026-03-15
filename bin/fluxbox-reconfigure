@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if ~/.cfg-post.d/desktop-config; then
+if fluxbox-gen-config; then
     fluxbox-remote Reconfigure
     # Annoyingly this doesn't force a reload of style overlay settings :-(
     # fluxbox-remote ReloadStyle

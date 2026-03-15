@@ -1,0 +1,30 @@
+#!/bin/bash
+#
+# Generate ~/.fluxbox/keys from .fluxbox/keys.erb, prepending an
+# auto-generated warning so that the output file is clearly not for
+# manual editing.
+
+SELF=$(realpath "$0")
+TEMPLATE=$(realpath "$(dirname "$0")/../.fluxbox/keys.erb")
+KEYS=~/.fluxbox/keys
+
+mkdir -p ~/.fluxbox
+
+warning() {
+    cat <<EOF
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# WARNING: This file is auto-generated. DO NOT EDIT IT MANUALLY.
+# Edit the template instead:
+#   $TEMPLATE
+# Then regenerate by running:
+#   $SELF
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+EOF
+}
+
+if { warning; erb "$TEMPLATE"; } > "$KEYS"; then
+    echo "Generated $KEYS"
+else
+    rm -f "$KEYS"
+    exit 1
+fi

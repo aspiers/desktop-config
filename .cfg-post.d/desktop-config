@@ -8,13 +8,8 @@ mkdir -p ~/.log
 
 touch ~/.synergy-{client,server,domain}-name
 
-here=$(dirname $0)
-mkdir -p ~/.fluxbox
-keys=~/.fluxbox/keys
-
-if erb $here/../.fluxbox/keys.erb > $keys; then
-    echo "Generated $keys"
-else
+here=$(dirname "$(realpath "$0")")
+if ! "$here/../bin/fluxbox-gen-config"; then
     exit 1
 fi
 
