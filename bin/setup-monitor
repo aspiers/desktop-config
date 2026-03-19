@@ -82,7 +82,8 @@ setup_xrandr() {
 }
 
 refresh_display_cache() {
-    eval $(~/lib/libdpy.py --inxi-json)
+    ~/lib/libdpy.py --inxi-json
+    eval $(~/lib/libdpy.py)
 }
 
 setup_overlay() {
