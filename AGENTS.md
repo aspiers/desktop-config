@@ -46,6 +46,10 @@ Run scripts using relative paths rather than via `~`, like this:
 # Deploy configuration (creates symlinks to home directory)
 stow .
 
+# Fluxbox key bindings: ALWAYS use this to render .fluxbox/keys.erb,
+# never call `erb` directly
+./bin/fluxbox-gen-config
+
 # Main desktop management
 ./bin/desktop-layout [options] layout_name    # Apply desktop layouts
 ./bin/setup-monitor                           # Auto-configure monitors
