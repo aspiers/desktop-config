@@ -127,6 +127,41 @@ def warp_mouse_to_window_centre(new_x, new_y, win_w, win_h, dbg):
     subprocess.run(['xdotool', 'mousemove', str(cx), str(cy)], check=True)
 
 
+def is_window_sticky(win_id):
+    """Return True if the window has _NET_WM_STATE_STICKY set."""
+    out = subprocess.check_output(
+        ['xprop', '-id', str(win_id), '_NET_WM_STATE']
+    ).decode()
+    return '_NET_WM_STATE_STICKY' in out
+
+
+def adjust_sticky_for_head(win_id, src, dst, dbg):
+    """
+    Stick the window when moving away from primary; unstick when returning to
+    primary.  Uses wmctrl with the window ID directly to avoid focus races
+    that affect fluxbox-remote StickWindow.
+    """
+    src_primary = bool(src.get('primary'))
+    dst_primary = bool(dst.get('primary'))
+
+    if src_primary == dst_primary:
+        dbg("src and dst have same primary status; not changing sticky state")
+        return
+
+    want_sticky = not dst_primary
+    currently_sticky = is_window_sticky(win_id)
+    dbg(f"src_primary={src_primary} dst_primary={dst_primary} "
+        f"want_sticky={want_sticky} currently_sticky={currently_sticky}")
+
+    if want_sticky != currently_sticky:
+        action = 'add' if want_sticky else 'remove'
+        dbg(f"running: wmctrl -i -r {win_id} -b {action},sticky")
+        subprocess.run(
+            ['wmctrl', '-i', '-r', str(win_id), '-b', f'{action},sticky'],
+            check=True
+        )
+
+
 def move_window_to_adjacent_screen(adjacent_screen, debug=False):
     dbg = make_logger(debug)
 
@@ -150,6 +185,7 @@ def move_window_to_adjacent_screen(adjacent_screen, debug=False):
     dbg(f"window position after SetHead: x={post_x} y={post_y}")
 
     reposition_window(win_id, win_x, win_y, new_x, new_y, dbg)
+    adjust_sticky_for_head(win_id, src, adjacent_screen, dbg)
     warp_mouse_to_window_centre(new_x, new_y, win_w, win_h, dbg)
 
 
