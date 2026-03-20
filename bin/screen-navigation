@@ -12,9 +12,6 @@ sys.path.append(os.getenv('HOME') + '/lib')
 import libdpy
 import liblayout
 
-EDGE_THRESHOLD = 0.10
-
-
 def get_active_window_geometry():
     """Return (window_id, x, y, width, height) for the active window."""
     out = subprocess.check_output(
@@ -32,46 +29,6 @@ def move_to_adjacent_screen(adjacent_screen):
     y = int(adjacent_screen['y_offset'] + (adjacent_screen['height'] / 2))
     subprocess.run(['xdotool', 'mousemove', str(x), str(y)], check=True)
     # subprocess.run(['focus-active-window'], check=True)
-
-
-def axis_alignment(win_near, win_size, screen_near, screen_size):
-    """
-    Determine how to align a window along one axis when moving to a new screen.
-
-    If the window's near edge is within EDGE_THRESHOLD of the screen's near edge,
-    align by the near edge. If the far edge is within EDGE_THRESHOLD of the
-    screen's far edge, align by the far edge. Otherwise align by centre.
-
-    Returns (mode, frac) where mode is 'near', 'far', or 'centre' and frac is
-    the proportional gap to preserve.
-    """
-    screen_far = screen_near + screen_size
-    win_far = win_near + win_size
-
-    near_gap = win_near - screen_near
-    far_gap = screen_far - win_far
-
-    if near_gap / screen_size <= EDGE_THRESHOLD:
-        return 'near', near_gap / screen_size
-    elif far_gap / screen_size <= EDGE_THRESHOLD:
-        return 'far', far_gap / screen_size
-    else:
-        win_centre = win_near + win_size / 2
-        return 'centre', (win_centre - screen_near) / screen_size
-
-
-def apply_alignment(mode, frac, screen_near, screen_size, win_size):
-    """
-    Calculate the window's new near-edge position on the destination screen,
-    given the alignment mode and fraction from axis_alignment().
-    """
-    if mode == 'near':
-        return int(screen_near + frac * screen_size)
-    elif mode == 'far':
-        return int(screen_near + screen_size - frac * screen_size - win_size)
-    else:  # centre
-        new_centre = screen_near + frac * screen_size
-        return int(new_centre - win_size / 2)
 
 
 def wait_for_sethead(win_x, win_y, timeout=2.0):
@@ -98,27 +55,43 @@ def make_logger(debug):
     return dbg
 
 
-def compute_target_position(win_x, win_y, win_w, win_h, src, dst, dbg):
-    """Calculate where the window should be placed on the destination screen."""
-    x_mode, frac_x = axis_alignment(win_x, win_w, src['x_offset'], src['width'])
-    y_mode, frac_y = axis_alignment(win_y, win_h, src['y_offset'], src['height'])
-    dbg(f"x_mode={x_mode} frac_x={frac_x:.3f}, y_mode={y_mode} frac_y={frac_y:.3f}")
+def compute_target_geometry(win_x, win_y, win_w, win_h, src, dst, dbg):
+    """
+    Calculate where the window should be placed on the destination screen.
 
-    new_x = apply_alignment(x_mode, frac_x, dst['x_offset'], dst['width'], win_w)
-    new_y = apply_alignment(y_mode, frac_y, dst['y_offset'], dst['height'], win_h)
-    dbg(f"target position: x={new_x} y={new_y}")
-    return new_x, new_y
+    All four edges are mapped proportionally: each edge's position as a
+    fraction of the source screen dimension is preserved on the destination.
+    This means both position and size scale with the destination screen.
+    """
+    left_frac   = (win_x - src['x_offset']) / src['width']
+    top_frac    = (win_y - src['y_offset']) / src['height']
+    right_frac  = (win_x + win_w - src['x_offset']) / src['width']
+    bottom_frac = (win_y + win_h - src['y_offset']) / src['height']
+    dbg(f"left={left_frac:.3f} right={right_frac:.3f} "
+        f"top={top_frac:.3f} bottom={bottom_frac:.3f}")
+
+    new_x = int(dst['x_offset'] + left_frac  * dst['width'])
+    new_y = int(dst['y_offset'] + top_frac   * dst['height'])
+    new_w = int((right_frac  - left_frac)  * dst['width'])
+    new_h = int((bottom_frac - top_frac)   * dst['height'])
+    dbg(f"target geometry: x={new_x} y={new_y} w={new_w} h={new_h}")
+    return new_x, new_y, new_w, new_h
 
 
-def reposition_window(win_id, win_x, win_y, new_x, new_y, dbg):
-    """Issue SetHead, wait for Fluxbox to settle, then move window."""
+def reposition_window(win_id, win_x, win_y, new_x, new_y, new_w, new_h, dbg):
+    """Move and resize the window to its target geometry."""
     dbg(f"running: xdotool windowmove {win_id} {new_x} {new_y}")
     subprocess.run(
         ['xdotool', 'windowmove', str(win_id), str(new_x), str(new_y)],
         check=True
     )
+    dbg(f"running: xdotool windowsize {win_id} {new_w} {new_h}")
+    subprocess.run(
+        ['xdotool', 'windowsize', str(win_id), str(new_w), str(new_h)],
+        check=True
+    )
     _, final_x, final_y, _, _ = get_active_window_geometry()
-    dbg(f"window position after windowmove: x={final_x} y={final_y}")
+    dbg(f"window position after reposition: x={final_x} y={final_y}")
 
 
 def warp_mouse_to_window_centre(new_x, new_y, win_w, win_h, dbg):
@@ -176,7 +149,7 @@ def move_window_to_adjacent_screen(adjacent_screen, debug=False):
     src = libdpy.get_screen(int(win_x + win_w / 2), use_cache=True)
     dbg(f"source screen: {src['name']} x_offset={src['x_offset']} y_offset={src['y_offset']} w={src['width']} h={src['height']}")
 
-    new_x, new_y = compute_target_position(win_x, win_y, win_w, win_h, src, adjacent_screen, dbg)
+    new_x, new_y, new_w, new_h = compute_target_geometry(win_x, win_y, win_w, win_h, src, adjacent_screen, dbg)
 
     dbg(f"running: fluxbox-remote '{set_head_cmd}'")
     subprocess.run(['fluxbox-remote', set_head_cmd], check=True)
@@ -184,9 +157,9 @@ def move_window_to_adjacent_screen(adjacent_screen, debug=False):
     post_x, post_y = wait_for_sethead(win_x, win_y)
     dbg(f"window position after SetHead: x={post_x} y={post_y}")
 
-    reposition_window(win_id, win_x, win_y, new_x, new_y, dbg)
+    reposition_window(win_id, win_x, win_y, new_x, new_y, new_w, new_h, dbg)
     adjust_sticky_for_head(win_id, src, adjacent_screen, dbg)
-    warp_mouse_to_window_centre(new_x, new_y, win_w, win_h, dbg)
+    warp_mouse_to_window_centre(new_x, new_y, new_w, new_h, dbg)
 
 
 def get_layout_file(args):
