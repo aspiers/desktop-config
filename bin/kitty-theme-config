@@ -76,6 +76,22 @@ get_border_colors() {
     esac
 }
 
+set_font_size() {
+    # Source libfonts.sh to get the current medium_font_size (which
+    # respects the active layout's ui_scale / DPI).
+    local font_size
+    font_size=$(
+        . "$ZDOTDIR/lib/libfonts.sh" 2>/dev/null
+        echo "$medium_font_size"
+    )
+    if [[ -z "$font_size" ]]; then
+        echo >&2 "kitty-theme-config: could not determine font size from libfonts.sh"
+        return 1
+    fi
+    echo "Setting kitty font size to $font_size"
+    kitty_remote_all set-font-size --all "$font_size" 2>/dev/null || true
+}
+
 set_theme() {
     local theme="$1"
     local theme_file
@@ -100,6 +116,9 @@ set_theme() {
         # Set border colors to match the theme
         read -r -a border_colors <<< "$(get_border_colors "$theme")"
         kitty_remote_all set-colors --all --configured "${border_colors[@]}" 2>/dev/null || true
+
+        # Update font size to match the current layout/DPI
+        set_font_size
     fi
 }
 
