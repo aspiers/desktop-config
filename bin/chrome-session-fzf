@@ -12,11 +12,11 @@ if false; then
         --role 'Chrome fzf' \
         --title 'Chrome fzf' \
         -- \
-        chrome-session-tabs --fzf "$@"
+        chrome-session-fzf-inside-window "$@"
 else
     xfce4-terminal \
         --font "$large_font_gnome" \
         --role 'Chrome fzf' \
         --title 'Chrome fzf' \
-        -x chrome-session-tabs --fzf "$@"
+        -x chrome-session-fzf-inside-window "$@"
 fi
