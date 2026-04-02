@@ -43,8 +43,11 @@ Run scripts using relative paths rather than via `~`, like this:
 ### Key Commands
 
 ```bash
-# Deploy configuration (creates symlinks to home directory)
-stow .
+# Deploy configuration (creates symlinks to home directory).
+# Use `mr stow` if mr (myrepos) is installed (typical for Adam),
+# otherwise `stow -t ~ .` from within the repo.
+# Do NOT use bare `stow .` - it stows into the wrong target.
+mr stow
 
 # Fluxbox key bindings: ALWAYS use this to render .fluxbox/keys.erb,
 # never call `erb` directly
