@@ -29,7 +29,7 @@ add "v: nvtop"              "fluxbox-focus-or-launch --toggle 'nvtop' top-term n
 add "a: amdgpu_top"         "fluxbox-focus-or-launch --toggle 'amdgpu_top' top-term amdgpu_top"
 add "s: lnav-system"        "fluxbox-focus-or-launch --toggle -r 'lnav-system' top-term lnav-system"
 add "x: rxx"                "run-with-local-X-display top-term rxx"
-add "ot: ovh terminal"      "fluxbox-focus-or-launch --toggle -r 'ovh' xterm-window --title 'ovh' zsh -c 'dsa; mosh ovh'"
+add "ot: ovh terminal"      "fluxbox-focus-or-launch --toggle -r 'ovh' xterm-window --title 'ovh' zsh -c 'dsa; et-client -p 2024 ovh -c \"tmux attach\"'"
 add "o\`: btop on ovh"      "fluxbox-focus-or-launch --toggle -r 'ovh btop' top-term --title 'ovh btop' zsh -c 'dsa; mosh ovh btop'"
 
 chosen=$(printf '%s\n' "${LABELS[@]}" | rofi_dmenu_prefix -p "terminal" \
