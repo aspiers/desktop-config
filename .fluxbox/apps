@@ -122,6 +122,11 @@
   [Sticky]	{yes}
 [end]
 
+[app] (name=pavucontrol)
+  [Position]	(TopRight)	{5% 5%}
+  [Dimensions]	{50% 90%}
+[end]
+
 [app] (name=eog)
   [Deco] {NORMAL}
 [end]
