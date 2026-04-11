@@ -15,6 +15,7 @@ import libdpy
 
 
 debug = False
+state_mode = False
 
 
 def debug_print(msg):
@@ -23,6 +24,9 @@ def debug_print(msg):
 
 
 def fatal(msg):
+    if state_mode:
+        print(f"error\t{msg}")
+        sys.exit(0)
     sys.stderr.write(f"ERROR: {msg}\n")
     sys.exit(1)
 
@@ -43,12 +47,25 @@ def get_localhost_nickname():
 
 
 def layout_file(layout_name_suffix):
-    # print(f"Using {layout_name_suffix} layout in {os.path.expanduser('~/.fluxbox/layouts')}", file=sys.stderr)
-    print(os.path.join(os.path.expanduser('~/.fluxbox/layouts'), f"{layout_name_suffix}.yaml"))
+    layout = os.path.join(os.path.expanduser('~/.fluxbox/layouts'), f"{layout_name_suffix}.yaml")
+    if state_mode:
+        print(f"ready\t{layout}")
+    else:
+        print(layout)
     sys.exit(0)
 
 
+def wait_reason(reason):
+    if state_mode:
+        print(f"wait\t{reason}")
+        sys.exit(0)
+    fatal(reason)
+
+
 def ensure_primary_set_by_prop(find_by_attribute, search_value):
+    if state_mode:
+        return
+
     inxi_monitors = libdpy.get_hybrid_monitors()
     desired_monitor_info = libdpy.find_monitor_by_attribute(find_by_attribute, search_value)
 
@@ -75,6 +92,9 @@ def ensure_primary_set_by_prop(find_by_attribute, search_value):
 
 
 def set_primary(desired_output_name):
+    if state_mode:
+        return
+
     debug_print(f"Setting {desired_output_name} as primary...")
     subprocess.run(['xrandr', '--output', desired_output_name, '--primary'], check=True, capture_output=True, text=True)
     libdpy.clear_cache()
@@ -90,11 +110,13 @@ def benq_bl3200_connected():
 
 
 def main():
-    global debug
+    global debug, state_mode
     parser = argparse.ArgumentParser(description="Get monitor layout.")
     parser.add_argument('--debug', action='store_true', help='Enable debug output')
+    parser.add_argument('--state', action='store_true', help='Print machine-readable state instead of only the layout path')
     args = parser.parse_args()
     debug = args.debug
+    state_mode = args.state
 
     localhost_nickname = get_localhost_nickname()
     debug_print(f"localhost_nickname: {localhost_nickname}")
@@ -113,6 +135,9 @@ def main():
             if num_monitors == 3:
                 ensure_primary_set_by_prop("model", "BenQ")
                 layout_file("celtic+BenQ+Dell")
+            wait_reason(
+                "BenQ detected on celtic but waiting for full dock topology before applying layout"
+            )
 
         elif (external_monitor := libdpy.external_monitor_connected()):
             debug_print(f"external monitor connected: {external_monitor['model']}")

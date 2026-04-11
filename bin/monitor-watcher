@@ -9,87 +9,249 @@
 # See also the other *-watcher services.
 
 SETUP=$HOME/bin/setup-monitor
+GET_LAYOUT=$HOME/bin/get-layout
+SETTLE_SECONDS=3
+RECONCILE_TIMEOUT=30
+POLL_INTERVAL=1
+STOP_GRACE_SECONDS=5
 
+# shellcheck source=/home/adam/lib/libhost.sh
 . ~/lib/libhost.sh
+localhost_nickname=""
 read_localhost_nickname
 
-# Get and validate layout against current xrandr state
-# Returns 0 on success, 1 on failure
-# Prints the validated layout file path to stdout on success
-get_and_validate_layout() {
-    local layout
-
-    # Try to get layout (stderr goes to journald for debugging)
-    if ! layout=$( $HOME/bin/get-layout --debug ); then
-        echo "ERROR: Failed to get layout" >&2
-        return 1
-    fi
-
-    echo "Layout $layout detected" >&2
-
-    # Validate layout against current xrandr state (only check screen counts;
-    # primary assignment is done later by setup-monitor)
-    if validation=$( ~/lib/liblayout.py --check-screen-counts "$layout" 2>&1 ); then
-        echo "Layout $layout validated" >&2
-        echo "$layout"  # Output to stdout for capture
-        return 0
-    fi
-
-    echo "ERROR: Layout '$layout' validation failed:" >&2
-    echo "$validation" >&2
-    echo "This usually means there's still some screens connected but inactive" >&2
-    return 1
-}
-
-# Function to wait for monitor resolutions to be detected
-wait_for_valid_layout() {
-    local timeout=30
-    local start_time=$(date +%s)
-    local retries=0
-
-    echo "Waiting for monitor resolutions to stabilize..."
-
-    while true; do
-        local current_time=$(date +%s)
-        local elapsed=$((current_time - start_time))
-
-        if [ $elapsed -ge $timeout ]; then
-            echo "Timeout after ${elapsed}s - proceeding anyway"
-            return 1
-        fi
-
-        # Clear cache so it will be immediately regenerated
-        $HOME/bin/clear-dpy-cache
-
-        if layout=$(get_and_validate_layout); then
-            echo "Layout ready after ${elapsed}s: $layout"
-            return 0
-        fi
-
-        retries=$((retries + 1))
-        if [ $((retries % 5)) -eq 0 ]; then
-            echo "Running xrandr --auto after ${retries} retries..."
-            xrandr --auto
-        fi
-
-        echo "Retrying in 1s (${elapsed}/${timeout}s elapsed)..."
-        sleep 1
-    done
-}
+md5_file=~/.cache/libdpy/inxi-Gxx.monitors.json.md5
+setup_pid=""
+setup_layout=""
+setup_md5=""
+setup_stop_requested=0
+setup_stop_requested_at=0
+applied_layout=""
+applied_md5=""
+candidate_layout=""
+candidate_md5=""
+candidate_since=0
 
 populate_inxi_cache () {
     ~/lib/libdpy.py --inxi-json >/dev/null
 }
 
+current_monitor_md5() {
+    if [ -f "$md5_file" ]; then
+        cat "$md5_file"
+    fi
+}
+
+load_display_env() {
+    local display_conf="$HOME/.Xdisplay.$localhost_nickname"
+
+    echo "Loading $display_conf" >&2
+    # shellcheck disable=SC1090
+    source "$display_conf"
+}
+
+validate_layout_path() {
+    local layout_path="$1"
+    local validation
+
+    if validation=$( ~/lib/liblayout.py --check-screen-counts "$layout_path" 2>&1 ); then
+        echo "Layout $layout_path validated" >&2
+        return 0
+    fi
+
+    echo "ERROR: Layout '$layout_path' validation failed:" >&2
+    echo "$validation" >&2
+    echo "This usually means there's still some screens connected but inactive" >&2
+    return 1
+}
+
+probe_layout_state() {
+    local state_output
+    local state
+    local value
+    local md5
+
+    load_display_env
+
+    echo "Enabling any disabled monitors ..." >&2
+    xrandr --auto
+
+    "$HOME"/bin/clear-dpy-cache
+    populate_inxi_cache
+    md5=$(current_monitor_md5)
+
+    if ! state_output=$( "$GET_LAYOUT" --state --debug ); then
+        printf 'error\tFailed to get layout state\t%s\n' "$md5"
+        return 0
+    fi
+
+    IFS=$'\t' read -r state value <<EOF
+$state_output
+EOF
+
+    case "$state" in
+        ready)
+            echo "Layout $value detected" >&2
+            if validate_layout_path "$value"; then
+                printf 'ready\t%s\t%s\n' "$value" "$md5"
+            else
+                printf 'wait\tLayout validation failed\t%s\n' "$md5"
+            fi
+            ;;
+        wait|error)
+            printf '%s\t%s\t%s\n' "$state" "$value" "$md5"
+            ;;
+        *)
+            printf 'error\tUnexpected layout state output: %s\t%s\n' "$state_output" "$md5"
+            ;;
+    esac
+}
+
+reset_candidate() {
+    candidate_layout=""
+    candidate_md5=""
+    candidate_since=0
+}
+
+candidate_is_settled() {
+    local layout_path="$1"
+    local md5="$2"
+    local now
+
+    now=$(date +%s)
+
+    if [ "$candidate_layout" != "$layout_path" ] || [ "$candidate_md5" != "$md5" ]; then
+        candidate_layout="$layout_path"
+        candidate_md5="$md5"
+        candidate_since="$now"
+        echo "New candidate layout: $(basename -s .yaml "$layout_path") (MD5: $md5)"
+        return 1
+    fi
+
+    if [ $((now - candidate_since)) -ge "$SETTLE_SECONDS" ]; then
+        return 0
+    fi
+
+    return 1
+}
+
+reap_setup() {
+    local rc
+
+    if [ -z "$setup_pid" ] || kill -0 "$setup_pid" 2>/dev/null; then
+        return 0
+    fi
+
+    wait "$setup_pid"
+    rc=$?
+    echo "$SETUP completed; exit code $rc"
+
+    if [ "$rc" -eq 0 ]; then
+        applied_layout="$setup_layout"
+        applied_md5="$setup_md5"
+    fi
+
+    setup_pid=""
+    setup_layout=""
+    setup_md5=""
+    setup_stop_requested=0
+    setup_stop_requested_at=0
+
+    return "$rc"
+}
+
+start_setup() {
+    local layout_path="$1"
+    local md5="$2"
+    local layout_name
+
+    layout_name=$(basename -s .yaml "$layout_path")
+    echo "Launching $SETUP for $layout_name (MD5: $md5)"
+
+    setsid "$SETUP" --layout "$layout_name" --expected-layout "$layout_name" --expected-md5 "$md5" &
+    setup_pid=$!
+    setup_layout="$layout_name"
+    setup_md5="$md5"
+    setup_stop_requested=0
+    setup_stop_requested_at=0
+}
+
+request_stop_setup() {
+    local reason="$1"
+
+    if [ -z "$setup_pid" ] || [ "$setup_stop_requested" -eq 1 ]; then
+        return 0
+    fi
+
+    echo "Requesting stop of stale setup-monitor: $reason"
+    kill -TERM -- "-$setup_pid" 2>/dev/null || kill -TERM "$setup_pid" 2>/dev/null
+    setup_stop_requested=1
+    setup_stop_requested_at=$(date +%s)
+}
+
+enforce_stop_timeout() {
+    local now
+
+    if [ -z "$setup_pid" ] || [ "$setup_stop_requested" -ne 1 ]; then
+        return 0
+    fi
+
+    if ! kill -0 "$setup_pid" 2>/dev/null; then
+        return 0
+    fi
+
+    now=$(date +%s)
+    if [ $((now - setup_stop_requested_at)) -lt "$STOP_GRACE_SECONDS" ]; then
+        return 0
+    fi
+
+    echo "Force-killing stale setup-monitor after ${STOP_GRACE_SECONDS}s grace period"
+    kill -KILL -- "-$setup_pid" 2>/dev/null || kill -KILL "$setup_pid" 2>/dev/null
+}
+
+wait_for_drm_event() {
+    inotifywait -q -e modify "$log" >/dev/null
+    echo "sleeping 1s"
+    sleep 1
+}
+
+initialize_applied_state() {
+    local probe_output
+    local state
+    local value
+    local md5
+
+    probe_output=$(probe_layout_state)
+    IFS=$'\t' read -r state value md5 <<EOF
+$probe_output
+EOF
+
+    if [ "$state" = "ready" ]; then
+        applied_layout=$(basename -s .yaml "$value")
+        applied_md5="$md5"
+        echo "Initial applied layout: $applied_layout (MD5: $applied_md5)"
+    fi
+}
+
 check_deps () {
-    if ! which inotifywait >&/dev/null; then
+    if ! command -v inotifywait >&/dev/null; then
         echo "ERROR: Couldn't find inotifywait; aborting." >&2
         echo "Try: sudo zypper in inotify-tools" >&2
         exit 1
     fi
 
-    if ! which $SETUP >&/dev/null; then
+    if ! command -v setsid >&/dev/null; then
+        echo "ERROR: Couldn't find setsid; aborting." >&2
+        exit 1
+    fi
+
+    if ! [ -x "$SETUP" ]; then
         echo "ERROR: Couldn't find $SETUP; aborting." >&2
+        exit 1
+    fi
+
+    if ! [ -x "$GET_LAYOUT" ]; then
+        echo "ERROR: Couldn't find $GET_LAYOUT; aborting." >&2
         exit 1
     fi
 }
@@ -102,84 +264,88 @@ start_udev_monitor () {
     sleep 2
 }
 
-prepare_display () {
-    # inotifywait -q /dev/input/by-path
-    # echo "Input device event detected for DISPLAY=$DISPLAY"
+reconcile_monitor_state() {
+    local start_time
+    local now
+    local elapsed
+    local probe_output
+    local state
+    local value
+    local md5
+    local layout_name
 
-    inotifywait -q -e modify "$log"
+    start_time=$(date +%s)
+    reset_candidate
 
-    echo "sleeping 1s"
-    sleep 1
+    echo "Waiting for monitor state to settle..."
 
-    display_conf="$HOME/.Xdisplay.$localhost_nickname"
-    echo "Loading $display_conf"
-    source "$display_conf"
+    while true; do
+        reap_setup || true
+        enforce_stop_timeout
 
-    echo "Enabling any disabled monitors ..."
-    xrandr --auto
-    sleep 1
+        probe_output=$(probe_layout_state)
+        IFS=$'\t' read -r state value md5 <<EOF
+$probe_output
+EOF
 
-    echo "Current xrandr config:"
-    xrandr | cat
+        case "$state" in
+            ready)
+                if [ -z "$md5" ]; then
+                    echo "Ready layout without MD5; waiting"
+                    reset_candidate
+                elif candidate_is_settled "$value" "$md5"; then
+                    layout_name=$(basename -s .yaml "$value")
+                    echo "Settled layout after $(( $(date +%s) - candidate_since ))s: $layout_name"
+                    if [ -n "$setup_pid" ]; then
+                        if [ "$setup_layout" != "$layout_name" ] || [ "$setup_md5" != "$md5" ]; then
+                            request_stop_setup "new settled layout $layout_name (MD5: $md5)"
+                        fi
+                    elif [ "$applied_layout" = "$layout_name" ] && [ "$applied_md5" = "$md5" ]; then
+                        echo "Monitor configuration unchanged (MD5: $md5), skipping setup"
+                        return 0
+                    else
+                        echo "Monitor configuration changed (MD5: ${applied_md5:-(empty)} -> $md5), running setup"
+                        start_setup "$value" "$md5"
+                    fi
+                else
+                    echo "Waiting for candidate layout to settle..."
+                fi
+                ;;
+            wait)
+                echo "Waiting for layout to become actionable: $value"
+                reset_candidate
+                ;;
+            error)
+                echo "Layout detection error: $value"
+                reset_candidate
+                ;;
+        esac
 
-    # Read old MD5 hash if it exists
-    md5_file=~/.cache/libdpy/inxi-Gxx.monitors.json.md5
-    old_md5=""
-    if [ -f "$md5_file" ]; then
-        old_md5=$(cat "$md5_file")
-    fi
-    echo "MD5 of existing inxi monitor cache: ${old_md5:-(empty)}"
-    cat ~/.cache/libdpy/inxi-Gxx.monitors.json
-}
-
-check_and_run_setup () {
-    # Wait for valid monitor resolutions
-    wait_for_valid_layout
-
-    # Ensure that inxi cache is populated (this will automatically
-    # create/update the md5 file too)
-    populate_inxi_cache
-    cat ~/.cache/libdpy/inxi-Gxx.monitors.json
-
-    new_md5=""
-    if [ -f "$md5_file" ]; then
-        new_md5=$(cat "$md5_file")
-    fi
-
-    if [ -z "$new_md5" ]; then
-        echo "ERROR: Failed to get MD5 hash for monitor configuration, skipping setup"
-    elif [ "$old_md5" != "$new_md5" ]; then
-        echo "Monitor configuration changed (MD5: ${old_md5:-(empty)} -> ${new_md5}), running setup"
-        $SETUP
-        echo "$SETUP completed; exit code $?"
-        if ! [ -f "$md5_file" ]; then
-            echo >&2 "WARNING: $SETUP did not populate $md5_file for md5 hashing next time; populating now ..."
-            populate_inxi_cache
-            if ! [ -f "$md5_file" ]; then
-                echo >&2 "ERROR: Fallback population failed; giving up :-("
-            fi
+        now=$(date +%s)
+        elapsed=$((now - start_time))
+        if [ "$elapsed" -ge "$RECONCILE_TIMEOUT" ] && [ -z "$setup_pid" ]; then
+            echo "Timeout after ${elapsed}s while reconciling monitor state"
+            return 1
         fi
-    else
-        echo "Monitor configuration unchanged (MD5: ${new_md5}), skipping setup"
-    fi
-}
 
-handle_drm_event () {
-    prepare_display
-    check_and_run_setup
+        if inotifywait -q -e modify -t "$POLL_INTERVAL" "$log" >/dev/null; then
+            echo "Observed additional DRM event while reconciling"
+        fi
+    done
 }
 
 main () {
     check_deps
     start_udev_monitor
+    initialize_applied_state
 
     # N.B. We can't use entr(1) because that relies on the file
     # being closed after update, which udevadm monitor won't do:
     # https://github.com/eradman/entr/issues/114
 
-    # FIXME: debounce this
     while true; do
-        handle_drm_event
+        wait_for_drm_event
+        reconcile_monitor_state
     done
 }
 

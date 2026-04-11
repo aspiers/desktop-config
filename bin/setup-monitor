@@ -2,10 +2,117 @@
 
 #exec >& ~/.log/setup-monitor.log
 
+STALE_EXIT_CODE=75
+
+layout=""
+expected_layout=""
+expected_md5=""
+terminated=0
+localhost_nickname=""
+screen_0_name=""
+screen_1_name=""
+screen_2_name=""
+
+# shellcheck source=/home/adam/lib/libhost.sh
 . ~/lib/libhost.sh
 read_localhost_nickname
 
+usage() {
+    cat <<EOF
+Usage: setup-monitor [--layout LAYOUT] [--expected-layout LAYOUT] [--expected-md5 MD5]
+EOF
+}
+
+parse_args() {
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --layout)
+                layout="$2"
+                shift 2
+                ;;
+            --expected-layout)
+                expected_layout="$2"
+                shift 2
+                ;;
+            --expected-md5)
+                expected_md5="$2"
+                shift 2
+                ;;
+            --help|-h)
+                usage
+                exit 0
+                ;;
+            *)
+                echo "ERROR: Unknown argument: $1" >&2
+                usage >&2
+                exit 1
+                ;;
+        esac
+    done
+}
+
+monitor_md5_file=~/.cache/libdpy/inxi-Gxx.monitors.json.md5
+
+current_monitor_md5() {
+    ~/lib/libdpy.py --inxi-json >/dev/null
+    if [ -f "$monitor_md5_file" ]; then
+        cat "$monitor_md5_file"
+    fi
+}
+
+current_layout_name() {
+    local current_layout_file
+
+    if ! current_layout_file=$(get-layout); then
+        return 1
+    fi
+
+    basename -s .yaml "$current_layout_file"
+}
+
+stale_exit() {
+    echo "STALE: $1" >&2
+    exit "$STALE_EXIT_CODE"
+}
+
+assert_expected_state() {
+    local current_md5
+    local current_layout
+
+    if [ "$terminated" -ne 0 ]; then
+        stale_exit "termination requested"
+    fi
+
+    if [ -n "$expected_md5" ]; then
+        current_md5=$(current_monitor_md5)
+        if [ -z "$current_md5" ]; then
+            stale_exit "failed to determine current monitor md5"
+        fi
+        if [ "$current_md5" != "$expected_md5" ]; then
+            stale_exit "monitor md5 changed from $expected_md5 to $current_md5"
+        fi
+    fi
+
+    if [ -n "$expected_layout" ]; then
+        current_layout=$(current_layout_name) || stale_exit "failed to determine current layout"
+        if [ "$current_layout" != "$expected_layout" ]; then
+            stale_exit "layout changed from $expected_layout to $current_layout"
+        fi
+    fi
+}
+
+handle_term() {
+    terminated=1
+}
+
+trap handle_term TERM
+
 get_layout() {
+    if [ -n "$layout" ]; then
+        echo "$layout"
+        return 0
+    fi
+
     echo -n "Getting layout ... "
     if ! layout=$( get-layout ); then
         exit 1
@@ -16,7 +123,7 @@ get_layout() {
 }
 
 load_display_data() {
-    eval $(~/lib/libdpy.py)
+    eval "$(~/lib/libdpy.py)"
 }
 
 validate_layout() {
@@ -37,28 +144,28 @@ setup_xrandr() {
     case "$layout" in
         celtic)
             xrandr \
-                --output ${screen_0_name} --pos 0x0 --scale 1 --size $celtic_size --primary --auto
+                --output "${screen_0_name}" --pos 0x0 --scale 1 --size "$celtic_size" --primary --auto
             ;;
         celtic+external)
             xrandr \
-                --output ${screen_0_name} --pos 0x0 --scale 1 --size $celtic_size --auto \
-                --output ${screen_1_name} --pos ${celtic_width}x0 --scale 1 --primary --auto
+                --output "${screen_0_name}" --pos 0x0 --scale 1 --size "$celtic_size" --auto \
+                --output "${screen_1_name}" --pos "${celtic_width}x0" --scale 1 --primary --auto
             ;;
         celtic+external-secondary)
             xrandr \
-                --output ${screen_0_name} --pos 0x0 --scale 1 --size $celtic_size --primary --auto \
-                --output ${screen_1_name} --pos ${celtic_width}x0 --scale 1 --auto
+                --output "${screen_0_name}" --pos 0x0 --scale 1 --size "$celtic_size" --primary --auto \
+                --output "${screen_1_name}" --pos "${celtic_width}x0" --scale 1 --auto
             ;;
         celtic+BenQ)
             xrandr \
-                --output ${screen_0_name} --pos 0x0 --scale 1 --size $celtic_size --auto \
-                --output ${screen_1_name} --pos ${celtic_width}x0 --scale 1 --primary --auto
+                --output "${screen_0_name}" --pos 0x0 --scale 1 --size "$celtic_size" --auto \
+                --output "${screen_1_name}" --pos "${celtic_width}x0" --scale 1 --primary --auto
             ;;
         celtic+BenQ+Dell)
             xrandr \
-                --output ${screen_0_name} --pos 0x0 --scale 1 --size $celtic_size --auto \
-                --output ${screen_1_name} --pos ${celtic_width}x0 --scale 1 --primary --auto \
-                --output ${screen_2_name} --pos $(( celtic_width + BenQ_width ))x0 --scale 1 --auto
+                --output "${screen_0_name}" --pos 0x0 --scale 1 --size "$celtic_size" --auto \
+                --output "${screen_1_name}" --pos "${celtic_width}x0" --scale 1 --primary --auto \
+                --output "${screen_2_name}" --pos "$(( celtic_width + BenQ_width ))x0" --scale 1 --auto
             # Alternate setup where laptop screen is off
             # xrandr \
             #     --output ${screen_0_name} --pos 0x0 --scale 1 --off \
@@ -83,30 +190,34 @@ setup_xrandr() {
 
 refresh_display_cache() {
     ~/lib/libdpy.py --inxi-json
-    eval $(~/lib/libdpy.py)
+    eval "$(~/lib/libdpy.py)"
 }
 
 setup_overlay() {
     local layout="$1"
 
     # Highest priority: layout-specific overlay
-    if [ -e ~/.fluxbox/overlay.$layout ]; then
-        ln -sf overlay.$layout ~/.fluxbox/overlay
+    if [ -e ~/.fluxbox/overlay."$layout" ]; then
+        ln -sf "overlay.$layout" ~/.fluxbox/overlay
         return
     fi
 
     # Second priority: host-specific overlay
-    if [ -e ~/.fluxbox/overlay.$localhost_nickname ]; then
-        ln -sf overlay.$localhost_nickname ~/.fluxbox/overlay
+    if [ -e ~/.fluxbox/overlay."$localhost_nickname" ]; then
+        ln -sf "overlay.$localhost_nickname" ~/.fluxbox/overlay
         return
     fi
 
     # Fallback: generate dynamically based on DPI
     echo "Generating dynamic overlay"
-    local scale_factor=$(~/lib/libdpy.py --calculate-ui-scale)
+    local scale_factor
     local base_font=10
-    local title_font=$(printf "%.0f" $(echo "$base_font * $scale_factor" | bc))
-    local menu_font=$(printf "%.0f" $(echo "($base_font + 1) * $scale_factor" | bc))
+    local title_font
+    local menu_font
+
+    scale_factor=$(~/lib/libdpy.py --calculate-ui-scale)
+    title_font=$(printf "%.0f" "$(echo "$base_font * $scale_factor" | bc)")
+    menu_font=$(printf "%.0f" "$(echo "($base_font + 1) * $scale_factor" | bc)")
 
     cat > ~/.fluxbox/overlay <<EOF
 window.borderWidth:               1
@@ -132,21 +243,30 @@ setup_keyboard () {
 }
 
 main () {
+    parse_args "$@"
+
     get_layout
+    assert_expected_state
+
     load_display_data
     validate_layout
     setup_xrandr
+    assert_expected_state
+
     refresh_display_cache
+    assert_expected_state
 
     setup_overlay "$layout"
     setup-panels
     setup_keyboard
     set-layout-dpi "$layout"
     setup-terminals
+    assert_expected_state
 
     sleep 1
 
     fluxbox-reconfigure  # update ~/.fluxbox/keys
+    assert_expected_state
 
     echo "Loading as-fonts via emacsclient ..."
     emacsclient -e '(load "as-fonts")'
@@ -158,12 +278,14 @@ main () {
 
     echo "Fluxbox layout ..."
     run-with-local-X-display ly
+    assert_expected_state
 
     echo "Restarting xfce4-panel ..."
     xfce4-panel -r
+    assert_expected_state
 
     pkill nm-applet
     nm-applet >&~/.log/nm-applet.log &
 }
 
-main
+main "$@"
