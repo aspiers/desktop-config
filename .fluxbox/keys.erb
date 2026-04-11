@@ -518,4 +518,9 @@ Control Mod1 Mod4 Shift e :Exit
 # Make sure synergys isn't running otherwise it will grab these keys!
 Shift Mod4 comma :Exec screen-navigation --move left --use-xrandr-cache
 Shift Mod4 period :Exec screen-navigation --move right --use-xrandr-cache
+
+# Move current window to a specific screen by physical position (1=leftmost).
+Shift Mod1 Mod4 1 :Exec screen-navigation --head 1 --move-window --use-xrandr-cache
+Shift Mod1 Mod4 quotedbl :Exec screen-navigation --head 2 --move-window --use-xrandr-cache
+Shift Mod1 Mod4 3 :Exec screen-navigation --head 3 --move-window --use-xrandr-cache
 <% end %>

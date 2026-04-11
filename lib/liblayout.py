@@ -322,6 +322,31 @@ def get_adjacent_screen(
     return None
 
 
+def get_screen_by_position(pos, layout_name_or_path, use_cache=False):
+    """
+    Get the screen at a given left-to-right physical position (1-based).
+
+    Screens are ordered by x_offset (left to right), so position 1 is the
+    leftmost screen, 2 is the next, etc.  This is independent of Fluxbox head
+    numbering, which assigns head 1 to the primary display.
+
+    Args:
+        pos (int): 1-based physical position from the left.
+        layout_name_or_path (str): Layout name or path to use.
+        use_cache (bool): Whether to use cached XRandr data. Default False.
+
+    Returns:
+        dict: The screen information, or None if out of range.
+    """
+    layout_file = get_layout_file(layout_name_or_path)
+    screens, _ = get_layout_params(layout_file, use_cache=use_cache)
+    # screens from get_layout_params are already sorted by x_offset (via libdpy)
+    idx = pos - 1
+    if 0 <= idx < len(screens):
+        return screens[idx]
+    return None
+
+
 def main():
     parser = argparse.ArgumentParser(description="Parse and validate layout files")
     parser.add_argument(

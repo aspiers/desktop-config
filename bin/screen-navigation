@@ -186,11 +186,12 @@ def get_window_centre_x():
 
 def main():
     parser = argparse.ArgumentParser(description='Get the adjacent screen (left or right) from the current screen')
-    parser.add_argument('direction', choices=['left', 'right'], help='Direction to look for adjacent screen')
+    parser.add_argument('direction', nargs='?', choices=['left', 'right'], help='Direction to look for adjacent screen')
+    parser.add_argument('--head', '-H', type=int, metavar='N', help='Target a specific screen by physical position (1=leftmost, 2=next, etc.)')
     parser.add_argument('--layout', '-l', dest='layout', help='Layout name or path (default: use get-layout script)')
     parser.add_argument('--json', '-j', action='store_true', help='Output in JSON format')
     parser.add_argument('--move', '-m', action='store_true', help='Move mouse cursor to the adjacent screen')
-    parser.add_argument('--move-window', '-w', action='store_true', help='Move current window to the adjacent screen')
+    parser.add_argument('--move-window', '-w', action='store_true', help='Move current window to the target screen')
     parser.add_argument('--debug', '-d', action='store_true', help='Print debug info to stderr')
     parser.add_argument('--use-xrandr-cache', '-c', action='store_true', help='Use cached XRandr data if available')
     parser.add_argument('--format', '-f',
@@ -199,7 +200,31 @@ def main():
                         help='Output format (default: name)')
     args = parser.parse_args()
 
+    if args.head is None and args.direction is None:
+        parser.error("either direction or --head is required")
+    if args.head is not None and args.direction is not None:
+        parser.error("direction and --head are mutually exclusive")
+
     layout_file = get_layout_file(args)
+
+    if args.head is not None:
+        try:
+            target_screen = liblayout.get_screen_by_position(args.head, layout_file, use_cache=args.use_xrandr_cache)
+        except Exception as e:
+            sys.stderr.write(f"Error: {str(e)}\n")
+            sys.exit(1)
+        if target_screen is None:
+            sys.stderr.write(f"No screen at position {args.head} (out of range)\n")
+            sys.exit(1)
+        if args.move_window:
+            move_window_to_adjacent_screen(target_screen, debug=args.debug)
+        elif args.move:
+            move_to_adjacent_screen(target_screen)
+        elif args.json:
+            print(json.dumps(target_screen, indent=2))
+        else:
+            print(target_screen.get('name', target_screen.get('assignment', '')))
+        return
 
     # When moving a window, use its centre to determine the current screen
     # rather than the mouse position, as they may differ
