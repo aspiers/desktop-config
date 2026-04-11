@@ -1,6 +1,0 @@
-#!/bin/bash
-
-if ! chrome-session-tabs --fzf "$@"; then
-    echo >&2 -e "Press Enter to close ... "
-    read
-fi
