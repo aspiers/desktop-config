@@ -153,16 +153,37 @@ def main():
                 # Small external monitor - keep laptop as primary
                 layout_file("celtic+external-secondary")
 
-        elif libdpy.monitors_connected() == 1:
+        elif num_monitors == 1:
             screens_data = libdpy.get_xrandr_screen_geometries()
             debug_print(f"single monitor, screens_data: {screens_data}")
-            if screens_data: # Should be true if count is 1
+            if screens_data:
                 output_name = screens_data[0]['name']
                 if screens_data[0].get('primary') != 'primary':
                     set_primary(output_name)
                 layout_file(localhost_nickname)
             else:
                 fatal("Monitor count was 1 but failed to get screen data for primary setting.")
+
+        else:
+            # Multiple monitors connected but none recognised; apply laptop-only
+            # layout ignoring the unrecognised screens, but ensure laptop is primary.
+            # In state mode this is a wait state since the topology is unexpected.
+            if state_mode:
+                wait_reason(
+                    "Unrecognised monitor topology on celtic; ignoring extra screens and using laptop-only layout"
+                )
+            screens_data = libdpy.get_xrandr_screen_geometries()
+            debug_print(f"screens_data: {screens_data}")
+            if screens_data:
+                edp_screen = next(
+                    (s for s in screens_data if s['name'].startswith('eDP')),
+                    screens_data[0]
+                )
+                if edp_screen.get('primary') != 'primary':
+                    set_primary(edp_screen['name'])
+                layout_file(localhost_nickname)
+            else:
+                fatal("Failed to get screen data.")
 
     elif localhost_nickname == "ionian":
         if libdpy.monitors_connected() == 2:
