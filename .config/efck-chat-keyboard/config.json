@@ -9,8 +9,8 @@
   "EmojiTab": {
     "Skin": {
       "light skin tone": 0,
-      "medium-light skin tone": 0,
-      "medium skin tone": 1,
+      "medium-light skin tone": 1,
+      "medium skin tone": 0,
       "medium-dark skin tone": 0,
       "dark skin tone": 0
     },
