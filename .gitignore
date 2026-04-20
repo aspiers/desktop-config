@@ -26,3 +26,4 @@ node_modules/
 tasks.json
 tasks/
 /.config/efck-chat-keyboard/recent_emojis.json
+/.config/keyd/app.lock
