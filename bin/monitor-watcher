@@ -74,10 +74,10 @@ probe_layout_state() {
     load_display_env
 
     echo "Enabling any disabled monitors ..." >&2
-    xrandr --auto
+    xrandr --auto >&2
 
-    "$HOME"/bin/clear-dpy-cache
-    populate_inxi_cache
+    "$HOME"/bin/clear-dpy-cache >&2
+    populate_inxi_cache >&2
     md5=$(current_monitor_md5)
 
     if ! state_output=$( "$GET_LAYOUT" --state --debug ); then
