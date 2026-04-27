@@ -369,7 +369,7 @@ Mod4 minus :Exec warpd --normal
 Mod4 x <%= next_unhidden "(Class=(Xfce4|Gnome)-terminal|kitty) (Head=1) (workspace=0)" %>
 Control Mod4 x :Exec rmx-window
 
-Mod4 a :Exec chrome-session-fzf 't3.chat | poe.com | chat.deepseek.com | claude.ai | chatgpt.com | gemini.google.com'
+Mod4 a :Exec chrome-session-rofi 't3.chat|poe.com|chat.deepseek.com|claude.ai|chatgpt.com|gemini.google.com'
 #Mod4 a :Exec fluxbox-focus-or-launch --toggle AI true
 
 Shift Mod4 a :Exec fluxbox-focus-or-launch -c anytype anytype
@@ -380,7 +380,7 @@ Mod4 b :MacroCmd {NextWindow (Name=brave-browser|google-chrome|chromium) (Head=1
 Shift Mod4 b :MacroCmd {NextWindow (Name=brave-browser|google-chrome|chromium) (Title!=.*WhatsApp.*) (Head=2) (Minimized=no)} {<%= focus_active %>}
 
 <% end %>
-Mod4 Tab :Exec chrome-session-fzf
+Mod4 Tab :Exec chrome-session-rofi
 
 # Cleanest but can't find both Cursor and Code:
 #Mod4 c :MacroCmd {Exec wmctrl -x -a 'Code'} {<%= focus_active %>}
@@ -400,19 +400,19 @@ Control Mod1 Mod4 n :Exec fluxbox-focus-or-launch --toggle -r 'node' top-term --
 
 #Mod4 e :MacroCmd {Exec wmctrl -x -a emacs} {<%= focus_active %>}
 Mod4 e  <%= next_unhidden "(Class=Emacs)" %>
-Shift Mod4 e :Exec chrome-session-fzf 'https://linear.app/ '
+Shift Mod4 e :Exec chrome-session-rofi 'https://linear.app/ '
 
 Mod4 apostrophe :MacroCmd {Exec wmctrl -x -a beeper} {<%= focus_active %>}
 #Mod4 apostrophe <%= next_unhidden "(Class=Beeper)" %>
 Control Mod4 d :Exec fluxbox-focus-or-launch -c discord discord
-Control Mod4 f :Exec chrome-session-fzf messenger.com
+Control Mod4 f :Exec chrome-session-rofi messenger.com
 
 Mod4 g :Exec fluxbox-focus-or-launch -c TelegramDesktop ~/software/telegram/Telegram
 Shift Mod4 g :Exec chrome-session-tabs https://meet.google.com/
 Control Mod4 g <%= next_unhidden "(Title=Google Meet.*)" %>
 #Control Mod4 g :Exec chrome-session-tabs https://app.gather.town/
 
-Mod4 h :Exec chrome-session-fzf 'https://github.com/ '
+Mod4 h :Exec chrome-session-rofi 'https://github.com/ '
 
 Control Mod4 2 :Exec switch-emacs-eval '(as-find-personal-todo)'
 Control Mod4 5 :Exec switch-emacs-eval '(as-find-Toucan-todo)'
@@ -425,19 +425,19 @@ Mod4 n :Exec switch-emacs-eval '(as-find-personal-note)'
 Mod1 Mod4 n :Exec fluxbox-focus-or-launch -c notion-app-enhanced ~/software/web/Notion-Enhanced.AppImage
 # Mod4 m m :Exec chrome-session-tabs 'mail.google.com/mail/u/0'
 # Mod4 m t :Exec chrome-session-tabs 'mail.google.com/mail/u/1'
-Shift Mod4 n :Exec chrome-session-fzf 'https://www.notion.so/ '
+Shift Mod4 n :Exec chrome-session-rofi 'https://www.notion.so/ '
 Mod4 s :Exec fluxbox-focus-or-launch -c Slack slack
 Control Mod4 y :Exec chrome-session-tabs 'syncthing.*127.0.0.1:8384|localhost:8384' || open http://localhost:8384
 #Shift Mod4 w :Exec fluxbox-focus-or-launch -c Windsurf windsurf
 Shift Mod4 w :Exec fluxbox-focus-or-launch --toggle -c Whispering whispering
 Mod4 w :Exec rofi-wifi
 Mod1 Mod4 w :Exec chrome-session-tabs WhatsApp
-Mod4 y :Exec chrome-session-fzf youtube.com
+Mod4 y :Exec chrome-session-rofi youtube.com
 Mod4 z :Exec fluxbox-focus-or-launch -c Zulip zulip
 
 #Shift Mod4 z :Exec fluxbox-focus-or-launch Zoom 'zoom --disable-gpu-sandbox'
 Shift Mod4 z :MacroCmd {NextWindow (Title=Zoom Meeting|Personal Meeting|://.*\.zoom\.us/.*)} {<%= focus_active %>}
-Control Mod4 z :Exec chrome-session-fzf 'Zoom\ meeting | Personal\ Meeting | ://app.zoom.us/'
+Control Mod4 z :Exec chrome-session-rofi 'Zoom meeting|Personal Meeting|://app.zoom.us/'
 
 # volume settings
 # Mod4 bracketright :MacroCmd {Exec amixer sset Master,0 2%+} {Delay {Exec amixer sset Master,0 unmute} 10000}

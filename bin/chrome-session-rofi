@@ -1,0 +1,48 @@
+#!/bin/bash
+#
+# rofi launcher for Chrome tab switching.
+# Pipes `chrome-session-tabs --rofi` lines into rofi -dmenu, then focuses
+# the chosen tab via `chrome-session-tabs --focus-rofi-line`.
+#
+# Optional argument: initial query (substring) pre-filled in rofi.
+
+set -euo pipefail
+
+source "$(dirname "$0")/../lib/librofi.sh"
+
+initial_query="${1:-}"
+
+tabs=$(chrome-session-tabs --rofi)
+
+# If the initial query already narrows to a single match, skip rofi and
+# focus directly. Otherwise show rofi for interactive selection.
+if [ -n "$initial_query" ]; then
+    # Match rofi's tokenized regex semantics: split query on whitespace, each
+    # token is a regex, every token must match (AND). `|` works as alternation
+    # within a token (OR).
+    matches="$tabs"
+    for token in $initial_query; do
+        matches=$(printf '%s\n' "$matches" | grep -iE "$token" || true)
+    done
+    match_count=$(printf '%s\n' "$matches" | grep -c . || true)
+    if [ "$match_count" = "1" ]; then
+        exec chrome-session-tabs --focus-rofi-line "$matches"
+    fi
+fi
+
+choice=$(
+    printf '%s\n' "$tabs" |
+        rofi -dmenu \
+            -i \
+            -p 'Tab' \
+            -matching regex \
+            -theme-str "$ROFI_THEME_STR" \
+            -theme-str 'window {width: 75%;} listview {lines: 20;}' \
+            -kb-secondary-copy '' \
+            -kb-cancel 'Escape,Control+c,Control+g' \
+            -filter "$initial_query"
+)
+
+[ -n "$choice" ] || exit 1
+
+exec chrome-session-tabs --focus-rofi-line "$choice"

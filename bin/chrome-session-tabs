@@ -169,7 +169,10 @@ def choose_tab_through_fzf(windows, initial):
 
 def run_fzf(windows, initial):
     win_title, tabnum = choose_tab_through_fzf(windows, initial)
+    focus_by_choice(windows, win_title, tabnum)
 
+
+def focus_by_choice(windows, win_title, tabnum):
     if win_title.startswith(UNNAMED_WIN_PREFIX):
         win_index = int(win_title[len(UNNAMED_WIN_PREFIX):])
         win = windows[win_index]
@@ -180,6 +183,25 @@ def run_fzf(windows, initial):
         win = matches[0]
 
     focus_window_and_tab(win, tabnum)
+
+
+def emit_rofi_lines(windows):
+    choices = get_tab_choices(windows)
+    for line in get_fzf_choice_strings(choices):
+        print(line)
+
+
+def parse_choice_line(line):
+    m = re.match(r'(?P<window>.+?) +/ +(?P<group>.*?) +/ +(?P<tabnum>\d+) -~- (?P<tabtitle>.+)', line)
+    if not m:
+        die("Failed to parse choice line:\n%s" % line)
+    d = m.groupdict()
+    return d['window'].strip(), int(d['tabnum'])
+
+
+def focus_from_line(windows, line):
+    win_title, tabnum = parse_choice_line(line)
+    focus_by_choice(windows, win_title, tabnum)
 
 
 def report_tab_found(tab):
@@ -273,10 +295,16 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--fzf', action='store_true', help='Use fzf to select a tab')
+    parser.add_argument('--rofi', action='store_true', help='Emit one tab per line for rofi -dmenu')
+    parser.add_argument('--focus-rofi-line', metavar='LINE', help='Focus tab from selected rofi line')
     parser.add_argument('substring', nargs='*', help='Substring to search for in tab titles/URLs')
     args = parser.parse_args()
 
-    if args.fzf:
+    if args.rofi:
+        emit_rofi_lines(windows)
+    elif args.focus_rofi_line is not None:
+        focus_from_line(windows, args.focus_rofi_line)
+    elif args.fzf:
         run_fzf(windows, ' '.join(args.substring))
     elif args.substring:
         substring = ' '.join(args.substring)
