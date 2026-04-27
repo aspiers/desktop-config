@@ -63,6 +63,23 @@ rofi_dmenu_prefix() {
     done | rofi -dmenu "$@" -matching prefix -auto-select
 }
 
+# Source libfonts.sh to expose host-aware font sizes for rofi.
+# Provides ROFI_FONT_SMALL/MEDIUM/LARGE/XL in Pango format (e.g.
+# "SauceCodePro Nerd Font 16"), scaled per-host via libfonts.sh and
+# any ui_scale override in the active layout YAML.
+. "$(dirname "${BASH_SOURCE[0]}")/libfonts.sh"
+
+ROFI_FONT_SMALL="$small_font_gnome"
+ROFI_FONT_MEDIUM="$medium_font_gnome"
+ROFI_FONT_LARGE="$large_font_gnome"
+ROFI_FONT_XL="$xl_font_gnome"
+
+# Convenience theme-str fragments for use with rofi -theme-str
+ROFI_FONT_THEME_STR_SMALL="* { font: \"${ROFI_FONT_SMALL}\"; }"
+ROFI_FONT_THEME_STR_MEDIUM="* { font: \"${ROFI_FONT_MEDIUM}\"; }"
+ROFI_FONT_THEME_STR_LARGE="* { font: \"${ROFI_FONT_LARGE}\"; }"
+ROFI_FONT_THEME_STR_XL="* { font: \"${ROFI_FONT_XL}\"; }"
+
 ROFI_THEME_FILE=~/.config/theme
 ROFI_THEME=$(cat "$ROFI_THEME_FILE" 2>/dev/null || echo "dark")
 

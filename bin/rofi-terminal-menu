@@ -34,6 +34,7 @@ add "o\`: btop on ovh"      "fluxbox-focus-or-launch --toggle -r 'ovh btop' top-
 
 chosen=$(printf '%s\n' "${LABELS[@]}" | rofi_dmenu_prefix -p "terminal" \
     -theme-str "$ROFI_THEME_STR" \
+    -theme-str "$ROFI_FONT_THEME_STR_XL" \
     -theme-str 'window {width: 800px;}' \
     -theme-str 'listview {lines: 13;}')
 

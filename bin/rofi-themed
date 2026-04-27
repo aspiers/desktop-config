@@ -1,14 +1,40 @@
 #!/bin/bash
 #
 # Themed rofi wrapper.  Sources librofi.sh and passes the Catppuccin
-# theme to rofi, forwarding all other arguments.
+# theme plus a host-aware font to rofi, forwarding all other arguments.
 #
 # Usage:
 #   rofi-themed -show drun
 #   rofi-themed -show window
+#   rofi-themed -F medium -show drun       # override font size
 #   rofi-themed [any rofi args ...]
+#
+# -F SIZE selects which font from libfonts.sh to use:
+#   small | medium | large (default) | xl
+
+set -euo pipefail
 
 # shellcheck source=../lib/librofi.sh
 source "$(dirname "$0")/../lib/librofi.sh"
 
-exec rofi -theme-str "$ROFI_THEME_STR" "$@"
+font_size="large"
+if [ "${1:-}" = "-F" ] && [ $# -ge 2 ]; then
+    font_size="$2"
+    shift 2
+fi
+
+case "$font_size" in
+    small)  font="$ROFI_FONT_SMALL"  ;;
+    medium) font="$ROFI_FONT_MEDIUM" ;;
+    large)  font="$ROFI_FONT_LARGE"  ;;
+    xl)     font="$ROFI_FONT_XL"     ;;
+    *)
+        echo >&2 "rofi-themed: unknown font size '$font_size' (expected small|medium|large|xl)"
+        exit 2
+        ;;
+esac
+
+exec rofi \
+    -theme-str "$ROFI_THEME_STR" \
+    -theme-str "* { font: \"$font\"; }" \
+    "$@"

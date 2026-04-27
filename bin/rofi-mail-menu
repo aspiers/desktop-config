@@ -59,6 +59,7 @@ add "hw: watch syncing Hypercerts mail"      "top-term --title 'Hypercerts mail 
 
 chosen=$(printf '%s\n' "${ORDER[@]}" | rofi_dmenu_prefix -i -p "mail" \
     -theme-str "$ROFI_THEME_STR" \
+    -theme-str "$ROFI_FONT_THEME_STR_XL" \
     -theme-str 'window {width: 1400px;}' \
     -theme-str 'listview {lines: 20;}')
 

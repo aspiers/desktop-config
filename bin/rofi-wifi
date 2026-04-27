@@ -34,7 +34,7 @@ if [[ -z "${ROFI_RETV:-}" ]]; then
     exec rofi-themed -show wifi -modes "wifi:$0" \
         -theme-str 'window {width: 1400px;}' \
         -theme-str 'listview {lines: 20;}' \
-        -theme-str 'message textbox {font: "SauceCodePro Nerd Font 16";}' \
+        -theme-str "message textbox {font: \"$ROFI_FONT_LARGE\";}" \
         -kb-move-word-forward "" \
         -kb-custom-1 "Alt+r" \
         -kb-custom-2 "Alt+d" \
