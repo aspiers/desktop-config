@@ -5,14 +5,14 @@
 # (Nothing relevant in .cfg-post.d/desktop-config.)
 #
 # See also the other *-watcher services.
+#
+# Reads udevadm monitor in property mode and only re-runs keyboard
+# setup for events on input devices that look like real keyboards
+# (ID_INPUT_KEYBOARD=1 and not ID_INPUT_MOUSE=1). Bluetooth/USB mice
+# advertising consumer-control keys would otherwise churn this every
+# time they wake/sleep.
 
 SETUP=$HOME/bin/setup-keyboard
-
-if ! which inotifywait >&/dev/null; then
-    echo "ERROR: Couldn't find inotifywait; aborting." >&2
-    echo "Try: sudo zypper in inotify-tools" >&2
-    exit 1
-fi
 
 if ! which $SETUP >&/dev/null; then
     echo "ERROR: Couldn't find $SETUP; aborting." >&2
@@ -20,25 +20,37 @@ if ! which $SETUP >&/dev/null; then
 fi
 
 log=~/.log/udev-hid.log
-# hid subsystem is enough to spot keyboards, but when bluetooth
-# headphones are connected, it can reset the keyboard repeat for
-# some weird reason, so we need to re-run keyboard setup in those
-# cases too.
-udevadm monitor -u -s hid -s input > $log &
 
-# N.B. We can't use entr(1) because that relies on the file
-# being closed after update, which udevadm monitor won't do:
-# https://github.com/eradman/entr/issues/114
-
-while true; do
-    # inotifywait -q /dev/input/by-path
-    # echo "Input device event detected for DISPLAY=$DISPLAY"
-
-    inotifywait -q "$log"
-    logger sleeping 1
-    sleep 1
-
-    # ~/.XSP/person-adam.spiers/60-keyboard-repeat is run via
-    # ~/.keymaps/post-change.d/keyboard-repeat
-    $SETUP
+# Property-mode monitor: each event is a block of KEY=VALUE lines
+# terminated by a blank line. -s input restricts to input subsystem.
+udevadm monitor -u -p -s input | tee "$log" | awk '
+    /^$/ {
+        if (action != "" && kbd && !mouse) {
+            print action, devpath
+            fflush()
+        }
+        action=""; devpath=""; kbd=0; mouse=0
+        next
+    }
+    /^UDEV  \[/ {
+        # Header line: "UDEV  [timestamp] ACTION   DEVPATH (subsystem)"
+        action=$3
+        devpath=$4
+        next
+    }
+    /^ACTION=/      { sub("ACTION=", "", $0); action=$0; next }
+    /^DEVPATH=/     { sub("DEVPATH=", "", $0); devpath=$0; next }
+    /^ID_INPUT_KEYBOARD=1/ { kbd=1; next }
+    /^ID_INPUT_MOUSE=1/    { mouse=1; next }
+' | while read -r action devpath; do
+    case "$action" in
+        add|bind|change)
+            logger "keyboard-watcher: $action $devpath; sleeping 1"
+            sleep 1
+            $SETUP
+            ;;
+        *)
+            # remove/unbind: skip; setup will re-run on next add/bind.
+            ;;
+    esac
 done
