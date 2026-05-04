@@ -48,6 +48,14 @@ def get_localhost_nickname():
 
 def layout_file(layout_name_suffix):
     layout = os.path.join(os.path.expanduser('~/.fluxbox/layouts'), f"{layout_name_suffix}.yaml")
+    # Write cache so subsequent `get-layout` (without --no-cache) skips the
+    # full xrandr/inxi probe.  clear-dpy-cache wipes this alongside the other
+    # libdpy caches, so staleness is bounded by the next monitor change.
+    try:
+        with open(libdpy.LAYOUT_CACHE_FILE, 'w') as f:
+            f.write(layout + '\n')
+    except OSError:
+        pass
     if state_mode:
         print(f"ready\t{layout}")
     else:
@@ -114,9 +122,22 @@ def main():
     parser = argparse.ArgumentParser(description="Get monitor layout.")
     parser.add_argument('--debug', action='store_true', help='Enable debug output')
     parser.add_argument('--state', action='store_true', help='Print machine-readable state instead of only the layout path')
+    parser.add_argument('--no-cache', action='store_true', help='Skip the cached layout written by monitor-watcher and recompute')
     args = parser.parse_args()
     debug = args.debug
     state_mode = args.state
+
+    # Fast path: cached layout written by a previous successful run via
+    # layout_file().  Plain `get-layout` (no --state) just needs the path,
+    # so short-circuit unless --no-cache is given.  --state callers need
+    # full probe semantics (ready/wait/error), so they bypass the cache.
+    # clear-dpy-cache wipes this file alongside other libdpy caches.
+    if not args.no_cache and not state_mode and os.path.exists(libdpy.LAYOUT_CACHE_FILE):
+        with open(libdpy.LAYOUT_CACHE_FILE, 'r') as f:
+            cached = f.read().strip()
+        if cached:
+            print(cached)
+            sys.exit(0)
 
     localhost_nickname = get_localhost_nickname()
     debug_print(f"localhost_nickname: {localhost_nickname}")

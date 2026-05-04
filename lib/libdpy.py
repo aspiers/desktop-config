@@ -24,6 +24,13 @@ GLOBAL_CACHE_DIR = os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.ca
 CACHE_DIR = os.path.join(GLOBAL_CACHE_DIR, "libdpy")
 DEBUG = False
 
+# Resolved layout path written by `get-layout` after each successful resolve
+# and consumed by subsequent `get-layout` runs (without --state, --no-cache)
+# for an O(1) fast path that skips xrandr/inxi probing.  Wiped by clear_cache()
+# alongside the other libdpy caches, so monitor changes invalidate it via
+# `clear-dpy-cache` (called by monitor-watcher's probe_layout_state).
+LAYOUT_CACHE_FILE = os.path.join(CACHE_DIR, "current-layout")
+
 os.makedirs(CACHE_DIR, exist_ok=True)
 
 
@@ -292,6 +299,8 @@ class HwinfoMonitorJsonCache(DisplayDataCache):
 
 def clear_cache():
     DisplayDataCache.clear_cache()
+    if os.path.exists(LAYOUT_CACHE_FILE):
+        os.remove(LAYOUT_CACHE_FILE)
 
 
 def xrandr_output(use_cache=True):
