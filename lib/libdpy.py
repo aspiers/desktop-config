@@ -31,6 +31,11 @@ DEBUG = False
 # `clear-dpy-cache` (called by monitor-watcher's probe_layout_state).
 LAYOUT_CACHE_FILE = os.path.join(CACHE_DIR, "current-layout")
 
+# Cached UI scale factor written by --calculate-ui-scale.  Lets shell consumers
+# (libfonts.sh) skip Python startup (~120ms) entirely on a cache hit by reading
+# this file directly.  Same lifecycle as LAYOUT_CACHE_FILE.
+UI_SCALE_CACHE_FILE = os.path.join(CACHE_DIR, "ui-scale")
+
 os.makedirs(CACHE_DIR, exist_ok=True)
 
 
@@ -299,8 +304,9 @@ class HwinfoMonitorJsonCache(DisplayDataCache):
 
 def clear_cache():
     DisplayDataCache.clear_cache()
-    if os.path.exists(LAYOUT_CACHE_FILE):
-        os.remove(LAYOUT_CACHE_FILE)
+    for f in (LAYOUT_CACHE_FILE, UI_SCALE_CACHE_FILE):
+        if os.path.exists(f):
+            os.remove(f)
 
 
 def xrandr_output(use_cache=True):
@@ -815,12 +821,28 @@ def _cmd_monitor_properties(use_cache):
 def _cmd_calculate_ui_scale(scale_arg, use_cache):
     """Handle --calculate-ui-scale."""
     ref_dpi = scale_arg if scale_arg != -1 else None
+    # Fast path: an explicit reference_dpi changes the result, so only the
+    # default (auto-detected) case is cacheable.
+    if use_cache and ref_dpi is None and os.path.exists(UI_SCALE_CACHE_FILE):
+        with open(UI_SCALE_CACHE_FILE) as f:
+            cached = f.read().strip()
+        if cached:
+            print(cached)
+            sys.exit(0)
+
     scale = calculate_ui_scale_factor(
         monitor_info=None,
         reference_dpi=ref_dpi,
         use_cache=use_cache,
     )
-    print(f"{scale:.4f}")
+    formatted = f"{scale:.4f}"
+    if ref_dpi is None:
+        try:
+            with open(UI_SCALE_CACHE_FILE, "w") as f:
+                f.write(formatted + "\n")
+        except OSError:
+            pass
+    print(formatted)
     sys.exit(0)
 
 
