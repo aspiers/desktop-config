@@ -1,8 +1,25 @@
 #!/bin/bash
 
+# Set both xset (server-side) and xfconf (xfsettingsd config) so
+# xfsettingsd doesn't clobber the rate back to its defaults when
+# input devices hotplug (e.g. mouse connect/disconnect triggers
+# XInput hierarchy events that cause xfsettingsd to re-apply
+# /Default/KeyRepeat/{Delay,Rate} from the keyboards channel).
+
 if atreus-attached || preonic-attached; then
     # Speed copper keyswitches have extremely low activation energy :-/
-    xset r rate 250 50
+    delay=250
 else
-    xset r rate 200 50
+    delay=200
+fi
+rate=50
+
+xset r rate "$delay" "$rate"
+
+if command -v xfconf-query >/dev/null 2>&1; then
+    # --create makes the property if missing; without -n it also updates
+    # an existing value.
+    xfconf-query -c keyboards --create -p /Default/KeyRepeat       -t bool -s true
+    xfconf-query -c keyboards --create -p /Default/KeyRepeat/Delay -t int  -s "$delay"
+    xfconf-query -c keyboards --create -p /Default/KeyRepeat/Rate  -t int  -s "$rate"
 fi
