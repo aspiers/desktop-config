@@ -1,0 +1,128 @@
+#!/usr/bin/python3
+#
+# Get dimensions of the screen (monitor) which contains a window
+# matching the given title or class.
+#
+# Uses xdotool to find the window and its geometry, then libdpy to
+# determine which xrandr screen contains the window's center point.
+
+import argparse
+import json
+import os
+import subprocess
+import sys
+
+sys.path.append(os.path.join(os.getenv('HOME'), 'lib'))
+
+import libdpy
+
+
+def find_window_id(title=None, klass=None, name=None, all_windows=False):
+    """Return first matching X11 window id, or raise."""
+    cmd = ['xdotool', 'search']
+    if not all_windows:
+        cmd += ['--onlyvisible']
+    cmd += ['--limit', '1']
+    if title is not None:
+        cmd += ['--name', title]
+    elif klass is not None:
+        cmd += ['--class', klass]
+    elif name is not None:
+        cmd += ['--classname', name]
+    else:
+        raise ValueError("Need title, class or name")
+
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    wid = result.stdout.strip().splitlines()
+    if not wid:
+        raise RuntimeError(
+            "No window matching %s" %
+            (("title=%r" % title) if title else
+             ("class=%r" % klass) if klass else
+             ("name=%r" % name))
+        )
+    return wid[0]
+
+
+def get_window_geometry(wid):
+    """Return dict with x, y, width, height for window id."""
+    out = subprocess.check_output(
+        ['xdotool', 'getwindowgeometry', '--shell', wid],
+        text=True,
+    )
+    geom = {}
+    for line in out.splitlines():
+        if '=' not in line:
+            continue
+        k, v = line.split('=', 1)
+        geom[k.strip()] = int(v.strip())
+    # Keys: WINDOW, X, Y, WIDTH, HEIGHT, SCREEN
+    return geom
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Get screen dimensions for the screen containing a window."
+    )
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('--title', '-t', help='Match window by title (regex)')
+    group.add_argument('--class', '-c', dest='klass',
+                       help='Match window by WM_CLASS class')
+    group.add_argument('--name', '-n',
+                       help='Match window by WM_CLASS instance/classname')
+    out_group = parser.add_mutually_exclusive_group()
+    out_group.add_argument('--shell', action='store_true',
+                           help='Output as shell variable assignments')
+    out_group.add_argument('--json', action='store_true',
+                           help='Output as JSON')
+    parser.add_argument('--no-cache', action='store_true',
+                        help='Bypass libdpy cache')
+    parser.add_argument('--all-windows', action='store_true',
+                        help='Include non-visible windows in search')
+    args = parser.parse_args()
+
+    use_cache = not args.no_cache
+
+    wid = find_window_id(title=args.title, klass=args.klass,
+                         name=args.name, all_windows=args.all_windows)
+    geom = get_window_geometry(wid)
+
+    cx = geom['X'] + geom['WIDTH'] // 2
+    cy = geom['Y'] + geom['HEIGHT'] // 2
+
+    screen = libdpy.get_screen(cx, use_cache=use_cache)
+
+    if args.json:
+        out = {
+            'window': {
+                'id': int(wid),
+                'x': geom['X'],
+                'y': geom['Y'],
+                'width': geom['WIDTH'],
+                'height': geom['HEIGHT'],
+            },
+            'screen': screen,
+        }
+        print(json.dumps(out, indent=2, default=str))
+    elif args.shell:
+        print("window_id=%s" % wid)
+        print("window_x=%d" % geom['X'])
+        print("window_y=%d" % geom['Y'])
+        print("window_width=%d" % geom['WIDTH'])
+        print("window_height=%d" % geom['HEIGHT'])
+        for k, v in screen.items():
+            print("screen_%s=%s" % (k, v))
+    else:
+        print("Window %s @ %dx%d+%d+%d" %
+              (wid, geom['WIDTH'], geom['HEIGHT'], geom['X'], geom['Y']))
+        print("Screen %d: %dx%d+%d+%d" % (
+            screen['num'], screen['width'], screen['height'],
+            screen['x_offset'], screen['y_offset'],
+        ))
+        for k in ('output', 'model', 'primary'):
+            if k in screen and screen[k] != '':
+                print("  %s=%s" % (k, screen[k]))
+
+
+if __name__ == '__main__':
+    main()
