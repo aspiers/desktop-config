@@ -1,3 +1,5 @@
+ui_scale: 1.0
+
 screens:
   -
     # fluxbox treats primary as head 1, and we are setting the external
