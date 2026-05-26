@@ -447,6 +447,9 @@ Mod4 bracketright :MacroCmd {Exec wpvol set 2%+} {Delay {Exec wpvol unmute} 1000
 Mod4 bracketleft :Exec wpvol set 2%-
 Mod4 0 :Exec wpvol toggle
 
+# Push-to-record/playback: start recording on key press, then run stop on key release.
+Control Mod4 8 :MacroCmd {Exec ~/bin/push-to-record-playback start} {Exec ~/.GIT/adamspiers.org/desktop-config/bin/run-on-key-release 17 -- ~/bin/push-to-record-playback stop}
+
 Shift Mod4 bracketleft :Exec brightnessctl set 5%-
 Shift Mod4 bracketright :Exec brightnessctl set +5%
 Control Mod4 bracketleft :Exec brightnessctl set 5%-
