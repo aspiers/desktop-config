@@ -1,0 +1,139 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+    cat >&2 <<'EOF'
+Usage: run-on-key-release KEYCODE|KEYSYM -- COMMAND [ARG...]
+
+Wait for KEYCODE/KEYSYM to be released, then run COMMAND.
+
+This is useful for window managers such as fluxbox which can bind key press
+but not key release.  The key's autorepeat is disabled while waiting so a held
+key does not look like an early release.
+EOF
+}
+
+if [[ $# -lt 3 || ${2:-} != -- ]]; then
+    usage
+    exit 2
+fi
+
+key=$1
+shift 2
+
+require() {
+    command -v "$1" >/dev/null 2>&1 || {
+        echo "Missing required command: $1" >&2
+        exit 1
+    }
+}
+
+resolve_keycodes() {
+    local key=$1
+
+    if [[ $key =~ ^[0-9]+$ ]]; then
+        printf '%s\n' "$key"
+        return
+    fi
+
+    require xmodmap
+    xmodmap -pk |
+        awk -v sym="$key" '
+            {
+                for (i = 2; i <= NF; i++) {
+                    if ($i == "(" sym ")") {
+                        print $1
+                    }
+                }
+            }
+        ' |
+        sort -n -u
+}
+
+require xinput
+
+mapfile -t keycodes < <(resolve_keycodes "$key")
+if [[ ${#keycodes[@]} -eq 0 ]]; then
+    echo "Could not resolve key: $key" >&2
+    exit 1
+fi
+
+code_words=""
+for keycode in "${keycodes[@]}"; do
+    code_words+=" $keycode"
+done
+code_words+=" "
+
+restore_repeat() {
+    if command -v xset >/dev/null 2>&1; then
+        for keycode in "${keycodes[@]}"; do
+            xset r "$keycode" >/dev/null 2>&1 || true
+        done
+    fi
+}
+
+if command -v xset >/dev/null 2>&1; then
+    trap restore_repeat EXIT
+    for keycode in "${keycodes[@]}"; do
+        xset -r "$keycode" >/dev/null 2>&1 || true
+    done
+fi
+
+wait_for_release() {
+    local timeout_s=${KEY_RELEASE_TIMEOUT:-60}
+    local awk_status
+
+    set +e +o pipefail
+    if command -v timeout >/dev/null 2>&1; then
+        timeout "$timeout_s" xinput test-xi2 --root |
+            awk -v codes="$code_words" '
+                BEGIN { found = 0; release = 0 }
+
+                /EVENT type [0-9]+ \(KeyRelease\)/ {
+                    release = 1
+                    next
+                }
+
+                release && /detail:/ {
+                    if (index(codes, " " $2 " ")) {
+                        found = 1
+                        exit 0
+                    }
+                    release = 0
+                }
+
+                END { if (!found) exit 2 }
+            '
+        awk_status=${PIPESTATUS[1]}
+    else
+        xinput test-xi2 --root |
+            awk -v codes="$code_words" '
+                BEGIN { found = 0; release = 0 }
+
+                /EVENT type [0-9]+ \(KeyRelease\)/ {
+                    release = 1
+                    next
+                }
+
+                release && /detail:/ {
+                    if (index(codes, " " $2 " ")) {
+                        found = 1
+                        exit 0
+                    }
+                    release = 0
+                }
+
+                END { if (!found) exit 2 }
+            '
+        awk_status=${PIPESTATUS[1]}
+    fi
+    set -e -o pipefail
+
+    return "$awk_status"
+}
+
+if wait_for_release; then
+    restore_repeat
+    trap - EXIT
+    exec "$@"
+fi
