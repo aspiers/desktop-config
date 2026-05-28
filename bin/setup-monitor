@@ -285,7 +285,7 @@ main () {
     assert_expected_state
 
     pkill nm-applet
-    nm-applet >&~/.log/nm-applet.log &
+    nohup nm-applet >&~/.log/nm-applet.log &
 }
 
 main "$@"
