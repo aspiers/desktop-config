@@ -38,41 +38,82 @@ populate_inxi_cache () {
     ~/lib/libdpy.py --inxi-json >/dev/null
 }
 
+# Count connectors the *kernel* reports as connected. This is the ground
+# truth available immediately after a DRM hotplug, before X/xrandr have
+# finished re-probing. eDP and DP connectors both count; Writeback and
+# the transient MST connectors created during a plug are ignored by the
+# status==connected test (MST stubs report "disconnected" until trained).
+kernel_connected_count () {
+    local n=0
+    local f
+    for f in /sys/class/drm/card*-*/status; do
+        [ -r "$f" ] || continue
+        if [ "$(cat "$f")" = "connected" ]; then
+            n=$((n + 1))
+        fi
+    done
+    echo "$n"
+}
+
 # Enable any connected-but-disabled outputs. After a DRM hotplug burst,
 # X may not have finished re-probing connectors when this runs, so a bare
-# `xrandr --auto` can see outputs as still disconnected. Loop with short
-# sleeps, retrying per-output until every `connected` line has geometry
-# (WxH+X+Y) or we exhaust ENABLE_RETRIES.
+# `xrandr --auto` can see outputs as still disconnected -- and inxi, which
+# the layout probe relies on, only reports a monitor once it has an active
+# mode. We therefore gate on the *kernel* connector count (sysfs ground
+# truth) rather than xrandr's own `connected` flag, which lags behind.
+#
+# Each attempt: nudge X to re-probe (`xrandr --auto`), force-enable every
+# xrandr output that is connected but lacks geometry, then check whether
+# xrandr now shows as many connected+positioned outputs as the kernel does.
+# Loop until they match (with geometry everywhere) or ENABLE_RETRIES runs out.
 enable_disabled_outputs () {
     local attempt
     local xr
     local pending
     local output
+    local kernel_count
+    local xrandr_active
+
+    kernel_count=$(kernel_connected_count)
+    echo "Kernel reports $kernel_count connected connector(s)" >&2
 
     for attempt in $(seq 1 "$ENABLE_RETRIES"); do
+        # Nudge X into re-probing connectors that the kernel already sees
+        # but xrandr may not have picked up yet.
+        xrandr --auto >&2 2>/dev/null || true
+
         xr=$(xrandr)
         # Outputs that are connected but lack a geometry (no WxH+X+Y on the line)
         pending=$(echo "$xr" | awk '
             /^[^ \t].* connected/ {
                 if ($0 !~ /[0-9]+x[0-9]+\+[0-9]+\+[0-9]+/) print $1
             }')
+        # Outputs that are connected AND positioned (have geometry).
+        xrandr_active=$(echo "$xr" | awk '
+            /^[^ \t].* connected/ {
+                if ($0 ~ /[0-9]+x[0-9]+\+[0-9]+\+[0-9]+/) print $1
+            }' | grep -c .)
 
-        if [ -z "$pending" ]; then
+        if [ -z "$pending" ] && [ "$xrandr_active" -ge "$kernel_count" ]; then
             if [ "$attempt" -gt 1 ]; then
-                echo "All connected outputs have geometry (attempt $attempt)" >&2
+                echo "All $kernel_count connected output(s) active in xrandr (attempt $attempt)" >&2
             fi
             return 0
         fi
 
-        echo "Attempt $attempt/$ENABLE_RETRIES: enabling pending outputs: $(echo "$pending" | tr '\n' ' ')" >&2
-        for output in $pending; do
-            xrandr --output "$output" --auto >&2 || true
-        done
+        if [ -n "$pending" ]; then
+            echo "Attempt $attempt/$ENABLE_RETRIES: enabling pending outputs: $(echo "$pending" | tr '\n' ' ')" >&2
+            for output in $pending; do
+                xrandr --output "$output" --auto >&2 || true
+            done
+        else
+            echo "Attempt $attempt/$ENABLE_RETRIES: xrandr shows $xrandr_active active but kernel has $kernel_count; waiting for X to re-probe" >&2
+        fi
 
         sleep "$ENABLE_RETRY_DELAY"
     done
 
-    echo "WARNING: still have connected outputs without geometry after $ENABLE_RETRIES attempts: $(echo "$pending" | tr '\n' ' ')" >&2
+    echo "WARNING: after $ENABLE_RETRIES attempts xrandr shows $xrandr_active active output(s) vs kernel's $kernel_count; pending without geometry: $(echo "$pending" | tr '\n' ' ')" >&2
     return 1
 }
 
