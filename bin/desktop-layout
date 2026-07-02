@@ -110,6 +110,35 @@ def init_magic_cmds(layout_params):
         )
         sys.exit(1)
 
+    # <place_RHS> abstracts "put this window where the right-hand-side display
+    # goes".  On a multi-monitor layout that is the secondary head (e.g. the
+    # Dell in celtic+BenQ+Dell).  On an ultrawide single-screen layout there is
+    # no separate head, so it becomes the full-height third column of the
+    # primary screen.  Either way the window is made sticky, matching how the
+    # RHS display was used before.  Detection: the primary screen advertises a
+    # non-zero col3 iff the layout is 3-column (see liblayout col3_* geometry).
+    primary = next(
+        (s for s in layout_params if s.get('assignment') == 'primary'), None
+    )
+    if primary and int(primary.get('col3_width', 0)) > 0:
+        MAGIC_CMDS['<place_RHS>'] = (
+            'MacroCmd '
+            '{%s} '
+            '{MoveTo %d %d} '
+            '{ResizeTo %d %d} '
+            '{%s}'
+        ) % (
+            MAGIC_CMDS['<s_primary_SetHead>'],
+            primary['col3_left'], primary['row1_top'],
+            primary['col3_width'], primary['active_height'],
+            MAGIC_CMDS['<stick>'],
+        )
+    else:
+        MAGIC_CMDS['<place_RHS>'] = 'MacroCmd {%s} {%s}' % (
+            MAGIC_CMDS['<s_secondary_SetHead>'],
+            MAGIC_CMDS['<stick>'],
+        )
+
     print()
 
 
