@@ -163,12 +163,17 @@ def main():
         elif (external_monitor := libdpy.external_monitor_connected()):
             debug_print(f"external monitor connected: {external_monitor['model']}")
             monitor_res = external_monitor["res"]
-            # Parse width from resolution (format: "WIDTHxHEIGHT")
-            width = int(monitor_res.split("x")[0])
-            debug_print(f"external monitor resolution: {monitor_res}, width: {width}")
-            # Ultrawide (wider than 4K UHD, e.g. Samsung Odyssey G75F at 5120
-            # native) gets the 3-column celtic+ultrawide layout.
-            if width > 3840:
+            # Parse resolution (format: "WIDTHxHEIGHT")
+            width, height = (int(n) for n in monitor_res.split("x"))
+            aspect = width / height
+            debug_print(
+                f"external monitor resolution: {monitor_res}, "
+                f"aspect ratio: {aspect:.2f}"
+            )
+            # Ultrawide aspect ratio (21:9 ≈ 2.33 or wider, e.g. Samsung
+            # Odyssey G75F at 32:9; 16:9 ≈ 1.78 doesn't qualify) gets the
+            # 3-column celtic+ultrawide layout.
+            if aspect > 2:
                 ensure_primary_set_by_prop("res", monitor_res)
                 layout_file("celtic+ultrawide")
             # Other wide externals (> 2000px) are primary with the 2-col layout.
