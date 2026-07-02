@@ -146,7 +146,9 @@ setup_xrandr() {
             xrandr \
                 --output "${screen_0_name}" --pos 0x0 --scale 1 --size "$celtic_size" --primary --auto
             ;;
-        celtic+external)
+        celtic+external|celtic+ultrawide)
+            # Same geometry (celtic left, external primary right); the layout
+            # name only differs so liblayout can pick 2-col vs 3-col sublayouts.
             xrandr \
                 --output "${screen_0_name}" --pos 0x0 --scale 1 --size "$celtic_size" --auto \
                 --output "${screen_1_name}" --pos "${celtic_width}x0" --scale 1 --primary --auto
