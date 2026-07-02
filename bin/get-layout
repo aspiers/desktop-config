@@ -166,9 +166,9 @@ def main():
             # Parse width from resolution (format: "WIDTHxHEIGHT")
             width = int(monitor_res.split("x")[0])
             debug_print(f"external monitor resolution: {monitor_res}, width: {width}")
-            # Ultrawide (>= 3440px, e.g. Samsung Odyssey G75F at 5120 native or
-            # its 3440 fallback) gets the 3-column celtic+ultrawide layout.
-            if width >= 3440:
+            # Ultrawide (wider than 4K UHD, e.g. Samsung Odyssey G75F at 5120
+            # native) gets the 3-column celtic+ultrawide layout.
+            if width > 3840:
                 ensure_primary_set_by_prop("res", monitor_res)
                 layout_file("celtic+ultrawide")
             # Other wide externals (> 2000px) are primary with the 2-col layout.
