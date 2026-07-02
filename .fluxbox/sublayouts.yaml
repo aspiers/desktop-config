@@ -48,6 +48,9 @@ top-middle:
 bottom-middle:
   - MacroCmd {MoveTo <sX_col2_left> <sX_row2_top>} {ResizeTo <sX_col2_width> <sX_row2_height>}
   - Exec mousemove(<sX_col2_middle>, <sX_row2_middle>)
+2cols-left:
+  - MacroCmd {MoveTo <sX_col1_left> <sX_row1_top>} {ResizeTo <sX_cols_1_2_width> <sX_active_height>}
+  - Exec mousemove(<sX_cols_1_2_middle>, <sX_active_middle_y>)
 col3-left:
   - MacroCmd {MoveTo <sX_col1_left> <sX_row1_top>} {ResizeTo <sX_col1_width> <sX_active_height>}
   - Exec mousemove(<sX_col1_middle>, <sX_active_middle_y>)

@@ -274,6 +274,11 @@ def get_layout_params(layout_file, use_cache=False, screens_only=False):
         s["col2_middle"] = s["col2_left"] + int(s["col2_width"] / 2)
         s["col3_middle"] = s["col3_left"] + int(s["col3_width"] / 2)
 
+        # Combined span of the two left columns (col1 through col2), for
+        # sublayouts that treat them as a single region on a 3-column screen.
+        s["cols_1_2_width"] = s["col2_right"] - s["col1_left"]
+        s["cols_1_2_middle"] = s["col1_left"] + int(s["cols_1_2_width"] / 2)
+
         s["row1_height"] = int(s["row1_height_pc_of_active"] * s["active_height"] / 100)
         s["row2_height"] = int(s["row1_height_pc_of_active"] * s["active_height"] / 100)
         s["row1_top"] = s["top_margin"]
