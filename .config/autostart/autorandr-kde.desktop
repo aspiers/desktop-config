@@ -1,0 +1,7 @@
+[Desktop Entry]
+# Override /etc/xdg/autostart/autorandr-kde.desktop (KDE-only, so inert
+# on this XFCE/fluxbox setup, but overridden for belt and braces).
+# See autorandr.desktop alongside this file.
+Name=Autorandr
+Type=Application
+Hidden=true

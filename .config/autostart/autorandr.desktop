@@ -1,0 +1,9 @@
+[Desktop Entry]
+# Override /etc/xdg/autostart/autorandr.desktop: the autorandr package
+# would otherwise run `autorandr -c` at every session login.  During the
+# autorandr PoC (specs/autorandr-hybrid-monitor-plan.md) only
+# monitor-watcher-ng may invoke autorandr, and only when selected via
+# `monitor-system autorandr`.
+Name=Autorandr
+Type=Application
+Hidden=true
