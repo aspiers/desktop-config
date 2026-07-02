@@ -1,0 +1,101 @@
+#!/bin/bash
+
+# Switch between the legacy and experimental (autorandr-based) monitor
+# management systems.  See specs/autorandr-hybrid-monitor-plan.md.
+#
+# The systemd units Conflict= with each other, so exactly one watcher
+# runs at a time.  The chosen mode persists in a state file and is
+# honoured at login via `monitor-system resume` (called from
+# .xsession-progs.d/person-adam.spiers/01-window-manager).
+#
+# This works over ssh (systemctl --user needs no DISPLAY), so it is
+# always a safe escape hatch even with a broken X display.
+
+STATE_DIR=${XDG_STATE_HOME:-$HOME/.local/state}/monitor-system
+MODE_FILE=$STATE_DIR/mode
+LEGACY=monitor-watcher.service
+NG=monitor-watcher-ng.service
+
+usage () {
+    cat <<EOF
+Usage: monitor-system {legacy|autorandr|resume|status}
+
+  legacy     stop experimental watcher, start legacy watcher (safe default)
+  autorandr  stop legacy watcher, start experimental autorandr watcher
+  resume     start whichever mode is persisted (login-time; legacy fallback)
+  status     show persisted mode, unit states and autorandr profiles
+
+Recovery from a broken display (works over ssh):
+  monitor-system legacy && . ~/.Xdisplay.\$(cat \${ZDOTDIR:-\$HOME}/.localhost-nickname) && setup-monitor
+EOF
+}
+
+die () {
+    echo "ERROR: $*" >&2
+    exit 1
+}
+
+mode () {
+    cat "$MODE_FILE" 2>/dev/null || echo legacy
+}
+
+set_mode () {
+    mkdir -p "$STATE_DIR"
+    echo "$1" > "$MODE_FILE"
+}
+
+start_legacy () {
+    # Conflicts= stops the other unit automatically, but stop explicitly
+    # too so failures are visible rather than masked by systemd ordering.
+    systemctl --user stop "$NG" 2>/dev/null
+    systemctl --user start "$LEGACY"
+}
+
+start_ng () {
+    systemctl --user stop "$LEGACY" 2>/dev/null
+    systemctl --user start "$NG"
+}
+
+case "$1" in
+    legacy)
+        set_mode legacy
+        start_legacy
+        echo "Switched to legacy monitor management"
+        ;;
+    autorandr)
+        command -v autorandr >/dev/null || die "autorandr not installed (sudo zypper in autorandr)"
+        set_mode autorandr
+        start_ng
+        echo "Switched to experimental autorandr monitor management"
+        ;;
+    resume)
+        if [ "$(mode)" = autorandr ] && start_ng; then
+            echo "Resumed autorandr monitor management"
+        else
+            if [ "$(mode)" = autorandr ]; then
+                echo "WARNING: failed to start $NG; falling back to legacy" >&2
+            fi
+            start_legacy
+            echo "Resumed legacy monitor management"
+        fi
+        ;;
+    status)
+        echo "mode: $(mode)"
+        for unit in "$LEGACY" "$NG"; do
+            echo "$unit: $(systemctl --user is-active "$unit" 2>/dev/null)"
+        done
+        if command -v autorandr >/dev/null; then
+            echo "autorandr profiles:"
+            autorandr 2>/dev/null | sed 's/^/  /'
+        else
+            echo "autorandr: not installed"
+        fi
+        ;;
+    --help|-h)
+        usage
+        ;;
+    *)
+        usage >&2
+        exit 1
+        ;;
+esac
