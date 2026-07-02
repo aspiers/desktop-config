@@ -1,0 +1,85 @@
+# Ultrawide external (e.g. Samsung Odyssey G75F at 5120x2160).
+# Same physical topology as celtic+external (celtic left, external primary
+# right) but the primary screen defines a third column so the 3col / middle /
+# 3cols-6cells sublayouts have geometry to place windows into.
+# See get-layout: chosen when the external width is >= 3440px.
+
+# This is good for home external
+# ui_scale: 1.0
+
+# This is good in L39
+ui_scale: 0.85
+
+screens:
+  -
+    # fluxbox treats primary as head 1, and we are setting the external
+    # display as the primary head (see bin/get-layout)
+    head: 2
+    <INCLUDE screens/celtic-auxiliary>
+    assignment: secondary
+    right: external
+    # gkrellm_width: &GKRELLM_WIDTH 92
+    gkrellm_width: &GKRELLM_WIDTH 0
+    right_margin: *GKRELLM_WIDTH
+    logs_height_pc: 15
+  -
+    name: external
+    head: 1  # see above
+    assignment: primary
+    left: celtic
+    left_margin: 0%
+    right_margin: 0%
+    panel_height: 35
+    logs_height_pc: 5
+    cols_1_2_margin: 0.2%
+    cols_2_3_margin: 0.2%
+    col1_width_pc_of_active: 31
+    col2_width_pc_of_active: 30
+    col3_width_pc_of_active: 38.6
+    single_width_pc_of_active: 60
+
+windows:
+  <INCLUDE common/monitoring-secondary>
+
+  <INCLUDE common/terminal-windows>
+
+  <INCLUDE common/top-term-windows-secondary>
+
+  <INCLUDE common/editor-windows>
+
+  <INCLUDE common/toucan>
+
+  <INCLUDE common/side-projects>
+
+  - - (Name=brave-browser|google-chrome|chromium) (Title=.*(personal$|Panther))
+    - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 5}
+
+  # Windows that lived on the RHS Dell in celtic+BenQ+Dell go into the full
+  # third column here (sticky), via the <place_RHS> directive.  This replaces
+  # the secondary-title rule from common/browser-multi (inlined below) which
+  # would otherwise send these to the celtic laptop head and clobber col3.
+  - - (Name=brave-browser|google-chrome|chromium) (Title=.*(secondary|gather\.town|.* \| Gather.*))
+    - <place_RHS>
+
+  # Head-1 rules must exclude the col3 (secondary-titled) browsers, else they
+  # override the col3 geometry and unstick them - col3 lives on head 1.
+  - - (Name=brave-browser|google-chrome|chromium) (Head=1) (Title!=.*(secondary|gather\.town|.* \| Gather.*))
+    - MacroCmd {MoveTo <s_primary_single_left> <s_primary_single_top>} {ResizeTo <s_primary_single_width> <s_primary_single_height>}
+
+  - - (Name=brave-browser|google-chrome|chromium) (Head=2)
+    - MacroCmd {MoveTo <s_secondary_single_left> <s_secondary_single_top>} {ResizeTo <s_secondary_single_width> <s_secondary_single_height>}
+
+  - - (Name=brave-browser|google-chrome|chromium) (Head=<s_primary_head>) (Title!=.*(secondary|gather\.town|.* \| Gather.*))
+    - <unstick>
+
+  <INCLUDE common/firefox>
+
+  <INCLUDE common/notion>
+
+  <INCLUDE common/gitk>
+
+  <INCLUDE common/communication>
+
+  <INCLUDE common/system-tools-secondary>
+
+  <INCLUDE common/chrysalis-multi>
