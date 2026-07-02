@@ -1,0 +1,39 @@
+#!/bin/bash
+
+# autorandr predetect hook: wait until xrandr sees at least as many
+# connected outputs as the kernel reports via sysfs.  After a DRM
+# hotplug burst, X can lag behind the kernel's connector state, which
+# would make autorandr fingerprint a partial topology and match no
+# profile.  This mirrors the sysfs ground-truth gating of the legacy
+# monitor-watcher's enable_disabled_outputs(), minus the forced
+# `xrandr --output X --auto`: autorandr enables outputs itself, and
+# detection only needs EDIDs visible to X, not active modes.
+
+RETRIES=6
+DELAY=1
+
+kernel_connected_count () {
+    local n=0
+    local f
+    for f in /sys/class/drm/card*-*/status; do
+        [ -r "$f" ] || continue
+        if [ "$(cat "$f")" = "connected" ]; then
+            n=$((n + 1))
+        fi
+    done
+    echo "$n"
+}
+
+for attempt in $(seq 1 "$RETRIES"); do
+    k=$(kernel_connected_count)
+    x=$(xrandr 2>/dev/null | grep -c '^[^ ].* connected')
+    if [ "$x" -ge "$k" ]; then
+        exit 0
+    fi
+    echo "predetect: xrandr sees $x of $k kernel-connected outputs (attempt $attempt/$RETRIES)" >&2
+    sleep "$DELAY"
+done
+
+# Never block autorandr: worst case a partial topology matches no
+# profile and --change is a no-op; the next DRM event retries.
+exit 0

@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# autorandr postswitch hook: autorandr has just applied the xrandr
+# configuration for $AUTORANDR_CURRENT_PROFILE; run the rest of the
+# desktop pipeline (overlay, panels, DPI, terminals, fluxbox, ...) via
+# setup-monitor --skip-xrandr.  See specs/autorandr-hybrid-monitor-plan.md.
+
+profile=$AUTORANDR_CURRENT_PROFILE
+if [ -z "$profile" ]; then
+    echo "postswitch: no AUTORANDR_CURRENT_PROFILE set; nothing to do" >&2
+    exit 0
+fi
+
+# Profile -> fluxbox layout mapping.  autorandr needs a distinct profile
+# per physical EDID set, but several monitors can share one layout
+# (e.g. celtic+external), so a profile dir may contain a one-line
+# `layout` file naming the layout.  Default: profile name == layout name.
+layout=$profile
+layout_file=~/.config/autorandr/$profile/layout
+if [ -r "$layout_file" ]; then
+    layout=$(cat "$layout_file")
+fi
+
+# Kill any stale in-flight setup-monitor before launching a new one:
+# TERM the process group, grace period, then KILL -- mirroring the
+# legacy monitor-watcher's request_stop_setup/enforce_stop_timeout.
+STOP_GRACE_SECONDS=5
+piddir=${XDG_RUNTIME_DIR:-/tmp}/monitor-system
+mkdir -p "$piddir"
+pidfile=$piddir/setup-monitor.pid
+
+if pid=$(cat "$pidfile" 2>/dev/null) && [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+    echo "postswitch: stopping stale setup-monitor (pid $pid)" >&2
+    kill -TERM -- "-$pid" 2>/dev/null || kill -TERM "$pid" 2>/dev/null
+    for _ in $(seq 1 "$STOP_GRACE_SECONDS"); do
+        kill -0 "$pid" 2>/dev/null || break
+        sleep 1
+    done
+    if kill -0 "$pid" 2>/dev/null; then
+        echo "postswitch: force-killing stale setup-monitor after ${STOP_GRACE_SECONDS}s" >&2
+        kill -KILL -- "-$pid" 2>/dev/null || kill -KILL "$pid" 2>/dev/null
+    fi
+fi
+
+# xrandr state just changed: recompute the libdpy caches and the md5
+# staleness token that setup-monitor's assert_expected_state checks.
+clear-dpy-cache
+~/lib/libdpy.py --inxi-json >/dev/null
+md5=$(cat ~/.cache/libdpy/inxi-Gxx.monitors.json.md5 2>/dev/null)
+
+echo "postswitch: launching setup-monitor for layout $layout (md5 ${md5:-unknown})" >&2
+# Async so `autorandr --change` returns quickly; the setsid child
+# inherits the service's journal fds, so output stays visible under
+# SyslogIdentifier=monitor-watcher-ng.
+setsid "$HOME"/bin/setup-monitor --skip-xrandr \
+    --layout "$layout" --expected-layout "$layout" \
+    ${md5:+--expected-md5 "$md5"} &
+echo $! > "$pidfile"
