@@ -1,0 +1,21 @@
+[Unit]
+Description=Experimental autorandr-based monitor watcher (PoC)
+# Bidirectional in systemd: starting either watcher stops the other,
+# so the legacy unit file needs no changes.
+Conflicts=monitor-watcher.service
+
+[Service]
+SyslogIdentifier=monitor-watcher-ng
+ExecStart=/bin/sh -c ${HOME}/bin/monitor-watcher-ng
+Restart=always
+StandardOutput=journal
+StandardError=journal
+# Deliberately no NoNewPrivileges=true (unlike the legacy unit): the
+# postswitch hook spawns the whole setup-monitor pipeline (nm-applet,
+# fluxbox restarts which launch AppImages), and NoNewPrivs=1 is a
+# one-way latch that breaks setuid fusermount -- see the comment in
+# .xsession-progs.d/person-adam.spiers/01-window-manager.
+
+[Install]
+# Intentionally empty: started only via `monitor-system resume`
+# (see 01-window-manager), after systemd --user env is set up.

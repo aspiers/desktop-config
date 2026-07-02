@@ -1,0 +1,90 @@
+#!/bin/bash
+
+# Experimental autorandr-based monitor watcher (PoC).
+# See specs/autorandr-hybrid-monitor-plan.md for the design.
+#
+# Runs under .config/systemd/user/monitor-watcher-ng.service, which
+# Conflicts= with the legacy monitor-watcher.service so the two can
+# never run together.  Switch between the systems with bin/monitor-system.
+#
+# Unlike the legacy bin/monitor-watcher, this has no settle / md5
+# machinery: autorandr only acts when the connected EDID set exactly
+# matches a saved profile, so transient topologies (e.g. a dock
+# surfacing monitors in stages) simply match nothing and no-op.  The
+# non-xrandr follow-up work is driven from ~/.config/autorandr/postswitch.
+
+DEBOUNCE_SECONDS=1
+# Run one autorandr --change at startup to reconcile state at login /
+# service (re)start.  Idempotent: autorandr skips the load (and hooks)
+# when the matching profile is already active.
+INITIAL_CHANGE=1
+
+# shellcheck source=/home/adam/lib/libhost.sh
+. ~/lib/libhost.sh
+localhost_nickname=""
+read_localhost_nickname
+
+# Separate log from legacy's ~/.log/udev-drm.log so an accidental
+# overlap can't cross-trigger the two watchers.
+log=~/.log/udev-drm-ng.log
+
+check_deps () {
+    local cmd
+    for cmd in inotifywait autorandr udevadm; do
+        if ! command -v "$cmd" >&/dev/null; then
+            echo "ERROR: Couldn't find $cmd; aborting." >&2
+            [ "$cmd" = inotifywait ] && echo "Try: sudo zypper in inotify-tools" >&2
+            [ "$cmd" = autorandr ] && echo "Try: sudo zypper in autorandr" >&2
+            exit 1
+        fi
+    done
+}
+
+load_display_env () {
+    local display_conf="$HOME/.Xdisplay.$localhost_nickname"
+
+    echo "Loading $display_conf" >&2
+    # shellcheck disable=SC1090
+    source "$display_conf"
+}
+
+start_udev_monitor () {
+    udevadm monitor -u -s drm > "$log" &
+
+    # Wait for udevadm to do first modification before proceeding.
+    sleep 2
+}
+
+apply () {
+    # Topology may have changed: invalidate libdpy caches (including the
+    # get-layout fast path and the md5 staleness token) so any in-flight
+    # setup-monitor re-probes and bails with STALE if appropriate.
+    clear-dpy-cache
+
+    echo "Running autorandr --change" >&2
+    # predetect hook waits for X to see all kernel-connected outputs;
+    # no matching profile => no-op; postswitch hook runs the rest of
+    # the desktop pipeline.
+    autorandr --change
+}
+
+main () {
+    check_deps
+    load_display_env
+    start_udev_monitor
+
+    if [ "$INITIAL_CHANGE" = 1 ]; then
+        apply
+    fi
+
+    while true; do
+        inotifywait -q -e modify "$log" >/dev/null
+        sleep "$DEBOUNCE_SECONDS"
+        while inotifywait -q -e modify -t 1 "$log" >/dev/null; do
+            echo "Draining DRM event burst" >&2
+        done
+        apply
+    done
+}
+
+main
