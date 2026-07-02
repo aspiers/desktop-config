@@ -59,7 +59,7 @@ apply () {
     # Topology may have changed: invalidate libdpy caches (including the
     # get-layout fast path and the md5 staleness token) so any in-flight
     # setup-monitor re-probes and bails with STALE if appropriate.
-    clear-dpy-cache
+    "$HOME"/bin/clear-dpy-cache
 
     echo "Running autorandr --change" >&2
     # predetect hook waits for X to see all kernel-connected outputs;

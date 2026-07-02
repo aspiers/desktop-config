@@ -44,7 +44,7 @@ fi
 
 # xrandr state just changed: recompute the libdpy caches and the md5
 # staleness token that setup-monitor's assert_expected_state checks.
-clear-dpy-cache
+"$HOME"/bin/clear-dpy-cache
 ~/lib/libdpy.py --inxi-json >/dev/null
 md5=$(cat ~/.cache/libdpy/inxi-Gxx.monitors.json.md5 2>/dev/null)
 
