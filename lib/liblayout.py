@@ -186,6 +186,11 @@ def get_layout_params(layout_file, use_cache=False, screens_only=False):
             s[margin] = parse_value(s.get(margin, 0), s["height"])
 
         s["cols_1_2_margin"] = parse_value(s.get("cols_1_2_margin", 0), s["width"])
+        # 3-column layouts add a second gutter; default it to the first so that
+        # a layout only needs to set col*_width_pc_of_active to go 3-wide.
+        s["cols_2_3_margin"] = parse_value(
+            s.get("cols_2_3_margin", s["cols_1_2_margin"]), s["width"]
+        )
         s["rows_1_2_margin"] = parse_value(s.get("rows_1_2_margin", 0), s["height"])
 
         s["logs_height"] = int(s["logs_height_pc"] * s["height"] / 100)
@@ -224,16 +229,33 @@ def get_layout_params(layout_file, use_cache=False, screens_only=False):
         s["cols_1_2_margin_pc_of_active"] = percent(
             s["cols_1_2_margin"], s["active_width"]
         )
+        s["cols_2_3_margin_pc_of_active"] = percent(
+            s["cols_2_3_margin"], s["active_width"]
+        )
         s["rows_1_2_margin_pc_of_active"] = percent(
             s["rows_1_2_margin"], s["active_height"]
         )
 
         s.setdefault("col1_width_pc_of_active", 50)
         s.setdefault("row1_height_pc_of_active", 50)
-        s.setdefault(
-            "col2_width_pc_of_active",
-            100 - s["col1_width_pc_of_active"] - s["cols_1_2_margin_pc_of_active"],
-        )
+        # col3 is opt-in: absent (0%) means a 2-column layout, so existing
+        # layouts are unaffected. When set, col2's default share shrinks to
+        # leave room for col3 and its gutter.
+        s.setdefault("col3_width_pc_of_active", 0)
+        if s["col3_width_pc_of_active"]:
+            s.setdefault(
+                "col2_width_pc_of_active",
+                100
+                - s["col1_width_pc_of_active"]
+                - s["col3_width_pc_of_active"]
+                - s["cols_1_2_margin_pc_of_active"]
+                - s["cols_2_3_margin_pc_of_active"],
+            )
+        else:
+            s.setdefault(
+                "col2_width_pc_of_active",
+                100 - s["col1_width_pc_of_active"] - s["cols_1_2_margin_pc_of_active"],
+            )
         s.setdefault(
             "row2_height_pc_of_active",
             100 - s["row1_height_pc_of_active"] - s["rows_1_2_margin_pc_of_active"],
@@ -241,12 +263,16 @@ def get_layout_params(layout_file, use_cache=False, screens_only=False):
 
         s["col1_width"] = int(s["col1_width_pc_of_active"] * s["active_width"] / 100)
         s["col2_width"] = int(s["col2_width_pc_of_active"] * s["active_width"] / 100)
+        s["col3_width"] = int(s["col3_width_pc_of_active"] * s["active_width"] / 100)
         s["col1_left"] = s["left_margin"]
         s["col1_right"] = s["col1_left"] + s["col1_width"]
         s["col2_left"] = s["col1_right"] + s["cols_1_2_margin"]
         s["col2_right"] = s["col2_left"] + s["col2_width"]
+        s["col3_left"] = s["col2_right"] + s["cols_2_3_margin"]
+        s["col3_right"] = s["col3_left"] + s["col3_width"]
         s["col1_middle"] = s["col1_left"] + int(s["col1_width"] / 2)
         s["col2_middle"] = s["col2_left"] + int(s["col2_width"] / 2)
+        s["col3_middle"] = s["col3_left"] + int(s["col3_width"] / 2)
 
         s["row1_height"] = int(s["row1_height_pc_of_active"] * s["active_height"] / 100)
         s["row2_height"] = int(s["row1_height_pc_of_active"] * s["active_height"] / 100)
