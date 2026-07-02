@@ -27,5 +27,7 @@ here=`dirname $0`
 . $here/00-systemd-user-env
 
 # N.B. we should only start after systemd --user environment is
-# already set up.  This means no WantedBy=default.target in the unit.
-systemctl --user start monitor-watcher.service
+# already set up.  This means no WantedBy=default.target in the units.
+# monitor-system starts the persisted choice of legacy or experimental
+# (autorandr-based) watcher, defaulting to legacy.
+~/bin/monitor-system resume
