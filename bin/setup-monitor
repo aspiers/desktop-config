@@ -7,6 +7,7 @@ STALE_EXIT_CODE=75
 layout=""
 expected_layout=""
 expected_md5=""
+skip_xrandr=0
 terminated=0
 localhost_nickname=""
 screen_0_name=""
@@ -19,7 +20,11 @@ read_localhost_nickname
 
 usage() {
     cat <<EOF
-Usage: setup-monitor [--layout LAYOUT] [--expected-layout LAYOUT] [--expected-md5 MD5]
+Usage: setup-monitor [--layout LAYOUT] [--expected-layout LAYOUT] [--expected-md5 MD5] [--skip-xrandr]
+
+--skip-xrandr skips the xrandr invocation, for when something else
+(e.g. autorandr; see specs/autorandr-hybrid-monitor-plan.md) has
+already applied it.
 EOF
 }
 
@@ -37,6 +42,10 @@ parse_args() {
             --expected-md5)
                 expected_md5="$2"
                 shift 2
+                ;;
+            --skip-xrandr)
+                skip_xrandr=1
+                shift
                 ;;
             --help|-h)
                 usage
@@ -252,7 +261,11 @@ main () {
 
     load_display_data
     validate_layout
-    setup_xrandr
+    if [ "$skip_xrandr" -eq 1 ]; then
+        echo "Skipping xrandr setup (already applied, e.g. by autorandr)"
+    else
+        setup_xrandr
+    fi
     assert_expected_state
 
     refresh_display_cache
