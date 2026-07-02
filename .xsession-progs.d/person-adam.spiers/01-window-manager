@@ -3,7 +3,16 @@
 if pgrep xfwm4; then
     echo "Found xfwm4; trying to replace with fluxbox"
     if pkill xfwm4; then
-        fluxbox -log ~/.log/fluxbox.log >~/.log/xfwm-replacement.log 2>&1 &
+        # Launch fluxbox in its own systemd --user scope rather than
+        # directly, so it does *not* inherit NoNewPrivs=1 from the XFCE
+        # session.  NoNewPrivs is a one-way latch that makes the kernel
+        # ignore the setuid bit on fusermount, which breaks FUSE-mounting
+        # of AppImages (e.g. Zulip) launched from fluxbox keybindings
+        # ("fusermount: mount failed: Operation not permitted").  The
+        # systemd --user manager runs with NoNewPrivs=0, so a scope it
+        # spawns inherits 0.  (fluxbox-restart launches it the same way.)
+        systemd-run --user --scope --unit=fluxbox-$$ \
+            fluxbox -log ~/.log/fluxbox.log >~/.log/xfwm-replacement.log 2>&1 &
 
         # Stop xfdesktop grabbing mouse clicks away from fluxbox
         xfdesktop -Q &
