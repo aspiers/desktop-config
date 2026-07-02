@@ -39,3 +39,55 @@ bottom-right:
   - MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (Minimized=no) (FocusHidden=no)}
   - Exec focus-active-window
   - MacroCmd {MoveTo <sX_col1_left> <sX_row2_top>} {ResizeTo <sX_active_width> <sX_row2_height>}
+middle:
+  - MacroCmd {MoveTo <sX_col2_left> <sX_row1_top>} {ResizeTo <sX_col2_width> <sX_active_height>}
+  - Exec mousemove(<sX_col2_middle>, <sX_active_middle_y>)
+top-middle:
+  - MacroCmd {MoveTo <sX_col2_left> <sX_row1_top>} {ResizeTo <sX_col2_width> <sX_row1_height>}
+  - Exec mousemove(<sX_col2_middle>, <sX_row1_middle>)
+bottom-middle:
+  - MacroCmd {MoveTo <sX_col2_left> <sX_row2_top>} {ResizeTo <sX_col2_width> <sX_row2_height>}
+  - Exec mousemove(<sX_col2_middle>, <sX_row2_middle>)
+col3-left:
+  - MacroCmd {MoveTo <sX_col1_left> <sX_row1_top>} {ResizeTo <sX_col1_width> <sX_active_height>}
+  - Exec mousemove(<sX_col1_middle>, <sX_active_middle_y>)
+col3-right:
+  - MacroCmd {MoveTo <sX_col3_left> <sX_row1_top>} {ResizeTo <sX_col3_width> <sX_active_height>}
+  - Exec mousemove(<sX_col3_middle>, <sX_active_middle_y>)
+top-col3-left:
+  - MacroCmd {MoveTo <sX_col1_left> <sX_row1_top>} {ResizeTo <sX_col1_width> <sX_row1_height>}
+  - Exec mousemove(<sX_col1_middle>, <sX_row1_middle>)
+top-col3-right:
+  - MacroCmd {MoveTo <sX_col3_left> <sX_row1_top>} {ResizeTo <sX_col3_width> <sX_row1_height>}
+  - Exec mousemove(<sX_col3_middle>, <sX_row1_middle>)
+bottom-col3-left:
+  - MacroCmd {MoveTo <sX_col1_left> <sX_row2_top>} {ResizeTo <sX_col1_width> <sX_row2_height>}
+  - Exec mousemove(<sX_col1_middle>, <sX_row2_middle>)
+bottom-col3-right:
+  - MacroCmd {MoveTo <sX_col3_left> <sX_row2_top>} {ResizeTo <sX_col3_width> <sX_row2_height>}
+  - Exec mousemove(<sX_col3_middle>, <sX_row2_middle>)
+3cols:
+  - MacroCmd {MoveTo <sX_col1_left> <sX_row1_top>} {ResizeTo <sX_col1_width> <sX_active_height>}
+  - MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (Minimized=no) (FocusHidden=no)}
+  - Exec focus-active-window
+  - MacroCmd {MoveTo <sX_col2_left> <sX_row1_top>} {ResizeTo <sX_col2_width> <sX_active_height>}
+  - MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (Minimized=no) (FocusHidden=no)}
+  - Exec focus-active-window
+  - MacroCmd {MoveTo <sX_col3_left> <sX_row1_top>} {ResizeTo <sX_col3_width> <sX_active_height>}
+3cols-6cells:
+  - MacroCmd {MoveTo <sX_col1_left> <sX_row1_top>} {ResizeTo <sX_col1_width> <sX_row1_height>}
+  - MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (Minimized=no) (FocusHidden=no)}
+  - Exec focus-active-window
+  - MacroCmd {MoveTo <sX_col2_left> <sX_row1_top>} {ResizeTo <sX_col2_width> <sX_row1_height>}
+  - MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (Minimized=no) (FocusHidden=no)}
+  - Exec focus-active-window
+  - MacroCmd {MoveTo <sX_col3_left> <sX_row1_top>} {ResizeTo <sX_col3_width> <sX_row1_height>}
+  - MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (Minimized=no) (FocusHidden=no)}
+  - Exec focus-active-window
+  - MacroCmd {MoveTo <sX_col1_left> <sX_row2_top>} {ResizeTo <sX_col1_width> <sX_row2_height>}
+  - MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (Minimized=no) (FocusHidden=no)}
+  - Exec focus-active-window
+  - MacroCmd {MoveTo <sX_col2_left> <sX_row2_top>} {ResizeTo <sX_col2_width> <sX_row2_height>}
+  - MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (Minimized=no) (FocusHidden=no)}
+  - Exec focus-active-window
+  - MacroCmd {MoveTo <sX_col3_left> <sX_row2_top>} {ResizeTo <sX_col3_width> <sX_row2_height>}
