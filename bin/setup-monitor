@@ -144,6 +144,27 @@ validate_layout() {
     fi
 }
 
+# Check whether OUTPUT advertises MODE at roughly RATE Hz, so we only
+# request an explicit mode/rate combo which actually exists (e.g. the
+# ultrawide via a dock may not offer 5120x2160@60).
+output_has_mode_rate() {
+    local output="$1" mode="$2" rate="$3"
+
+    xrandr --query | awk -v output="$output" -v mode="$mode" -v rate="$rate" '
+        /^[^ ]/ { in_output = ($1 == output) }
+        in_output && $1 == mode {
+            # Rate fields may carry current/preferred markers, e.g.
+            # "60.00*+"; awk numeric coercion strips them.
+            for (i = 2; i <= NF; i++)
+                if ($i + 0 >= rate - 0.5 && $i + 0 < rate + 0.5) {
+                    found = 1
+                    exit
+                }
+        }
+        END { exit !found }
+    '
+}
+
 setup_xrandr() {
     celtic_width=2880
     celtic_height=1920
@@ -155,12 +176,21 @@ setup_xrandr() {
             xrandr \
                 --output "${screen_0_name}" --pos 0x0 --scale 1 --size "$celtic_size" --primary --auto
             ;;
-        celtic+external|celtic+ultrawide)
-            # Same geometry (celtic left, external primary right); the layout
-            # name only differs so liblayout can pick 2-col vs 3-col sublayouts.
+        celtic+external)
             xrandr \
                 --output "${screen_0_name}" --pos 0x0 --scale 1 --size "$celtic_size" --auto \
                 --output "${screen_1_name}" --pos "${celtic_width}x0" --scale 1 --primary --auto
+            ;;
+        celtic+ultrawide)
+            local ultrawide_mode_args=()
+            if output_has_mode_rate "${screen_1_name}" 5120x2160 60; then
+                ultrawide_mode_args=(--rate 60 --mode 5120x2160)
+            else
+                echo "WARNING: ${screen_1_name} doesn't offer 5120x2160@60; using preferred mode" >&2
+            fi
+            xrandr \
+                --output "${screen_0_name}" --pos 0x0 --scale 1 --size "$celtic_size" --auto \
+                --output "${screen_1_name}" --pos "${celtic_width}x0" --scale 1 --primary --auto "${ultrawide_mode_args[@]}"
             ;;
         celtic+external-secondary)
             xrandr \
