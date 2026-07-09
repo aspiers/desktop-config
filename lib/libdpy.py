@@ -691,8 +691,13 @@ def show_xrandr_display_geometry(dpy):
 
 def show_xrandr_screen_geometries(screens):
     for i, screen in enumerate(screens):
-        screen["x_dpi"] = round(int(screen["width"]) / int(screen["x_mm"]) * 25.4, 2)
-        screen["y_dpi"] = round(int(screen["height"]) / int(screen["y_mm"]) * 25.4, 2)
+        # Physical dimensions can be 0 when the monitor reports no EDID size
+        # (e.g. some DisplayPort adapters show "0mm x 0mm"), so guard against
+        # division by zero and report an unknown (0) dpi in that case.
+        x_mm = int(screen["x_mm"])
+        y_mm = int(screen["y_mm"])
+        screen["x_dpi"] = round(int(screen["width"]) / x_mm * 25.4, 2) if x_mm else 0
+        screen["y_dpi"] = round(int(screen["height"]) / y_mm * 25.4, 2) if y_mm else 0
         for k, v in screen.items():
             if k in ("primary", "assignment"):
                 continue
