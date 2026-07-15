@@ -21,7 +21,6 @@ screens:
     # gkrellm_width: &GKRELLM_WIDTH 92
     gkrellm_width: &GKRELLM_WIDTH 0
     right_margin: *GKRELLM_WIDTH
-    logs_height_pc: 15
   -
     name: external
     head: 1  # see above
