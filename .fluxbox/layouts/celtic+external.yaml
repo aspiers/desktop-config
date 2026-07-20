@@ -17,11 +17,11 @@ screens:
     head: 1  # see above
     assignment: primary
     left: celtic
-    left_margin: 2%
-    right_margin: 2%
+    left_margin: 0%
+    right_margin: 0%
     panel_height: 35
     logs_height_pc: 5
-    cols_1_2_margin: 1%
+    cols_1_2_margin: 0.5%
     col1_width_pc_of_active: 56
     col2_width_pc_of_active: 43
     single_width_pc_of_active: 80
