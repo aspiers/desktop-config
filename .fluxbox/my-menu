@@ -7,7 +7,8 @@
       [exec]   (gnome-terminal) {gnome-terminal}
       [exec]   (Run) {fbrun}
 [submenu] (Browsers)
-      [exec]   (Chrome) {google-chrome --remote-debugging-port=9222}
+#      [exec]   (Chrome) {google-chrome --remote-debugging-port=9222}
+      [exec]   (Chrome) {google-chrome}
       [exec]   (Brave) {brave-browser}
       [exec]   (Chromium) {chromium}
       [exec]   (Firefox) {firefox}
