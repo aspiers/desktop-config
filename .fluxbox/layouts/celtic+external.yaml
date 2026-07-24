@@ -1,4 +1,8 @@
-ui_scale: 1.0
+# This is good for home external
+# ui_scale: 1.0
+
+# This is good in L39
+ui_scale: 0.85
 
 screens:
   -
