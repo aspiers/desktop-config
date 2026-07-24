@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# Run a command as a systemd --user *transient service*, so the systemd
+# --user manager forks it with NoNewPrivs=0, regardless of how the
+# caller (e.g. a fluxbox-spawned terminal) was started.
+#
+# NoNewPrivs=1 is a one-way latch: once set on a process it is inherited
+# by all descendants and can never be cleared.  It makes the kernel
+# ignore fusermount's setuid bit, which breaks FUSE-mounting of AppImages
+# ("fusermount: mount failed: Operation not permitted").  A plain fork
+# (or `systemd-run --scope`, which systemd-run runs as its own child)
+# inherits the caller's latch; only a service, forked by the manager
+# (which runs at NoNewPrivs=0), escapes it.
+#
+# The service inherits the manager's environment, which lacks the full
+# X/DBus session, so we run via run-with-local-X-display to source
+# ~/.Xdisplay.$host (DISPLAY, XAUTHORITY, DBUS_SESSION_BUS_ADDRESS, ...).
+#
+# The transient unit is named after the command's basename; its
+# stdout/stderr go to the journal (journalctl --user -u <basename>-\*).
+
+if [ $# -eq 0 ]; then
+    echo "usage: $(basename "$0") COMMAND [ARGS...]" >&2
+    exit 2
+fi
+
+unit=$(basename "$1")-$$
+
+exec systemd-run --user --unit="$unit" \
+    -p StandardOutput=journal -p StandardError=journal \
+    run-with-local-X-display "$@"

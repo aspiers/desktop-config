@@ -143,8 +143,15 @@ main () {
     fi
 
     info "Starting fluxbox"
-    systemd-run --user --scope --unit=fluxbox-$$ \
-        fluxbox -log ~/.log/fluxbox.log </dev/null >&! ~/.log/fluxbox.log &
+    # Transient service, NOT --scope: the systemd --user manager forks
+    # it (NoNewPrivs=0), so fluxbox escapes the caller terminal's
+    # NoNewPrivs=1 latch, which breaks fusermount setuid / AppImage FUSE
+    # mounts.  --scope would inherit the caller's latch instead.
+    # (fluxbox's own -log still writes ~/.log/fluxbox.log; stdout/stderr
+    # go to the journal: journalctl --user -u fluxbox-\*.)
+    systemd-run --user --unit=fluxbox-$$ \
+        -p StandardOutput=journal -p StandardError=journal \
+        fluxbox -log ~/.log/fluxbox.log
 
     sleep 1
     xdotool search \
