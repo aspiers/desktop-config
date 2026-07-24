@@ -88,10 +88,13 @@ setup_panels () {
             local scale_factor=$(~/lib/libdpy.py --calculate-ui-scale)
             local base_panel_size=36
             local panel_size=$(printf "%.0f" $(echo "$base_panel_size * $scale_factor" | bc))
+            echo "scale_factor: $scale_factor"
+            echo "original panel_size: $panel_size"
 
             # Clamp to reasonable range
             [ "$panel_size" -lt 24 ] && panel_size=24
             [ "$panel_size" -gt 40 ] && panel_size=40
+            echo "clamped  panel_size: $panel_size"
 
             set_panel_size 1 "$panel_size"
 
