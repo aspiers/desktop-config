@@ -8,17 +8,64 @@
 
 SETUP=$HOME/bin/setup-network
 
-if ! which $SETUP >&/dev/null; then
+if ! command -v "$SETUP" >&/dev/null; then
     echo "ERROR: Couldn't find $SETUP; aborting." >&2
     exit 1
 fi
 
+ethernet_default_route_device() {
+    local device state type
+
+    while IFS=: read -r device type state; do
+        if [ "$type" = ethernet ] && [ "$state" = connected ] &&
+            ip -4 route show default dev "$device" | grep -q '^default '; then
+            echo "$device"
+            return 0
+        fi
+    done < <(nmcli -t -f DEVICE,TYPE,STATE device status)
+
+    return 1
+}
+
+ethernet_can_reach_internet() {
+    local device=$1
+
+    # A default route can appear briefly before address-conflict checks finish.
+    # Verify actual wired connectivity before removing the Wi-Fi fallback.
+    curl --interface "$device" --ipv4 --fail --silent --show-error \
+        --connect-timeout 3 --max-time 5 \
+        http://conncheck.opensuse.org >/dev/null
+}
+
+sync_wifi_with_ethernet() {
+    local ethernet_device wifi_state
+
+    wifi_state=$(nmcli radio wifi)
+    if ethernet_device=$(ethernet_default_route_device); then
+        if ethernet_can_reach_internet "$ethernet_device"; then
+            if [ "$wifi_state" = enabled ]; then
+                echo "Usable Ethernet connected; turning Wi-Fi off"
+                nmcli radio wifi off
+            fi
+        elif [ "$wifi_state" = disabled ]; then
+            echo "Ethernet connectivity failed; turning Wi-Fi on"
+            nmcli radio wifi on
+        fi
+    elif [ "$wifi_state" = disabled ]; then
+        echo "No Ethernet default route; turning Wi-Fi on"
+        nmcli radio wifi on
+    fi
+}
+
+export LC_ALL=C
+sync_wifi_with_ethernet
+
 echo "Monitoring network via nmcli monitor ..."
-nmcli monitor | while read line; do
-    # echo "got $line"
+nmcli monitor | while IFS= read -r line; do
+    sync_wifi_with_ethernet
     if [[ "$line" =~ \'(.+)\'" is now the primary connection" ]]; then
         network="${BASH_REMATCH[1]}"
         echo "primary connection is now $network"
-        $SETUP "$network"
+        "$SETUP" "$network"
     fi
 done
