@@ -157,10 +157,22 @@ below. Work is NOT complete until they are completed.
 1. **File issues for remaining work** - Create issues for anything that needs follow-up
 2. **Run quality gates** (if code changed) - Tests, linters, builds
 3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - This is MANDATORY:
+4. **Report push readiness** - Do NOT push automatically:
    ```bash
-   bd sync
-   git status  # MUST show "up to date with origin"
+   git status  # report what is unpushed
    ```
-5. **Verify** - All changes committed AND pushed
+   Propose `bd dolt push` and `git push`; run them only when explicitly
+   requested.
+5. **Verify** - All changes committed, and unpushed state reported
 6. **Hand off** - Provide context for next session
+
+## Beads Solo
+
+Use the `beads-solo` skill for Beads setup and maintainer policy in this
+repository. Use the `beads` skill for the standard Beads workflow.
+
+This repository opts into the Beads **team-maintainer** profile for issue
+management and commits. Unless a current user or orchestrator instruction
+says otherwise, agents may manage issues and make atomic commits as work
+progresses. They must not push Git branches or sync or push Dolt state
+unless explicitly requested.
