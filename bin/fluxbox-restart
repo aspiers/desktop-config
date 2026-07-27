@@ -154,13 +154,52 @@ main () {
         fluxbox -log ~/.log/fluxbox.log
 
     sleep 1
-    xdotool search \
-            --onlyvisible \
-            --screen 0 \
-            --class \
-            --classname 'Wrapper-2.0' \
-            getwindowpid |
-        xargs -r kill
+    dismiss_panel_plugin_dialogs
+}
+
+# Dismiss xfce4-panel's "plugin restarted more than once, run it again or
+# leave it unloaded?" dialog, which appears after a fluxbox restart and needs
+# clicking away for no useful purpose.
+#
+# That dialog is emitted by the crashed plugin's own wrapper process, so it
+# carries the same Wrapper-2.0 class as every ordinary panel widget and cannot
+# be told apart by class alone.  It differs by being a managed top-level
+# dialog: it sets WM_TRANSIENT_FOR and/or _NET_WM_WINDOW_TYPE_DIALOG, and its
+# WM_NAME is the dialog title rather than the bare "wrapper-2.0" that panel
+# widgets report.  Any one of those three is taken as sufficient.
+#
+# Previously this killed every window matching Wrapper-2.0 - eleven of them on
+# this desktop, the systray included.  Killing the systray forces it to
+# re-register while the display geometry is still settling, which is a suspect
+# for tray icons returning undersized and positioned off-screen (dc-fka).
+# Scoping was lost by accident: d7d975c (2022) limited the search with
+# --desktop 0, 4368a3e dropped that, and 086b877 turned --class 'Wrapper-2.0'
+# into a bare --class, which in xdotool names the property to match rather
+# than taking a value, so Wrapper-2.0 then matched both class and classname.
+dismiss_panel_plugin_dialogs () {
+    local win name type transient is_dialog
+
+    xdotool search --onlyvisible --screen 0 --class --classname 'Wrapper-2.0' \
+        2>/dev/null |
+        while read -r win; do
+            name=$(xprop -id "$win" WM_NAME 2>/dev/null |
+                sed 's/.*= //; s/"//g')
+            type=$(xprop -id "$win" _NET_WM_WINDOW_TYPE 2>/dev/null)
+            transient=$(xprop -id "$win" WM_TRANSIENT_FOR 2>/dev/null |
+                grep -o 'window id # 0x[0-9a-f]*')
+
+            is_dialog=0
+            case "$type" in
+                *DIALOG*) is_dialog=1 ;;
+            esac
+            [ -n "$transient" ] && is_dialog=1
+            [ "$name" != "wrapper-2.0" ] && is_dialog=1
+
+            [ "$is_dialog" -eq 1 ] || continue
+
+            debug "Dismissing panel plugin dialog $win ($name)"
+            xdotool windowkill "$win" 2>/dev/null
+        done
 }
 
 main "$@"
