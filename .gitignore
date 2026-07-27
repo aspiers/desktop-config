@@ -33,3 +33,10 @@ tasks/
 *.db
 .beads-credential-key
 .beads/proxieddb/
+
+# Safety copies left by bd-migrate-embedded-to-server; keep them on disk
+# until the migrated workspace is trusted, but never commit them.
+.beads-migration-backups/
+.beads.embedded.*/
+.beads.failed-server-restore.*/
+.beads.failed-server-attempt/
