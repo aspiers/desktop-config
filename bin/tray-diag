@@ -1,0 +1,120 @@
+#!/bin/bash
+#
+# tray-diag - snapshot system tray / WM state for diagnosing missing tray
+# icons and misplaced windows after a display change.
+#
+# Run immediately after the failure appears and BEFORE restarting fluxbox,
+# xfce4-panel or nm-applet, then again once things work, and diff the two.
+#
+# The system tray is an X selection, not a root window property, so
+# 'xprop -root _NET_SYSTEM_TRAY_S0' always reports "not found" and must not
+# be used to test for it.
+
+set -uo pipefail
+
+export DISPLAY="${DISPLAY:-:0}"
+
+out=${1:-}
+if [ -n "$out" ]; then
+    exec > >(tee "$out") 2>&1
+fi
+
+section() {
+    printf '\n=== %s ===\n' "$1"
+}
+
+section "timestamp"
+date '+%Y-%m-%d %H:%M:%S'
+
+section "X selection owners"
+python3 - <<'EOF'
+from ctypes import CDLL, c_void_p, c_char_p, c_int, c_ulong
+
+x = CDLL('libX11.so.6')
+x.XOpenDisplay.argtypes = [c_char_p]
+x.XOpenDisplay.restype = c_void_p
+x.XInternAtom.argtypes = [c_void_p, c_char_p, c_int]
+x.XInternAtom.restype = c_ulong
+x.XGetSelectionOwner.argtypes = [c_void_p, c_ulong]
+x.XGetSelectionOwner.restype = c_ulong
+
+import os
+d = x.XOpenDisplay(os.environ.get('DISPLAY', ':0').encode())
+if not d:
+    raise SystemExit('cannot open display')
+
+for name in (b'_NET_SYSTEM_TRAY_S0', b'_NET_SYSTEM_TRAY_S1', b'MANAGER'):
+    atom = x.XInternAtom(d, name, 1)
+    owner = x.XGetSelectionOwner(d, atom) if atom else 0
+    state = f'0x{owner:x}' if owner else 'NONE'
+    print(f'{name.decode():24} {state}')
+EOF
+
+section "tray owner details"
+owner=$(python3 - <<'EOF'
+from ctypes import CDLL, c_void_p, c_char_p, c_int, c_ulong
+import os
+x = CDLL('libX11.so.6')
+x.XOpenDisplay.argtypes = [c_char_p]
+x.XOpenDisplay.restype = c_void_p
+x.XInternAtom.argtypes = [c_void_p, c_char_p, c_int]
+x.XInternAtom.restype = c_ulong
+x.XGetSelectionOwner.argtypes = [c_void_p, c_ulong]
+x.XGetSelectionOwner.restype = c_ulong
+d = x.XOpenDisplay(os.environ.get('DISPLAY', ':0').encode())
+atom = x.XInternAtom(d, b'_NET_SYSTEM_TRAY_S0', 1)
+print(hex(x.XGetSelectionOwner(d, atom)) if atom else '')
+EOF
+)
+if [ -n "$owner" ] && [ "$owner" != "0x0" ]; then
+    echo "owner window: $owner"
+    xprop -id "$owner" 2>&1 |
+        grep -E '_NET_WM_PID|_NET_SYSTEM_TRAY|WM_NAME' || true
+    tray_pid=$(xprop -id "$owner" _NET_WM_PID 2>/dev/null |
+        grep -oE '[0-9]+$')
+    [ -n "$tray_pid" ] && ps -o pid,lstart,cmd -p "$tray_pid" 2>&1
+else
+    echo "NO TRAY OWNER - nothing can dock an icon"
+fi
+
+section "window manager"
+wm=$(xprop -root _NET_SUPPORTING_WM_CHECK 2>/dev/null |
+    grep -oE '0x[0-9a-f]+')
+if [ -n "$wm" ]; then
+    echo "wm check window: $wm"
+    xprop -id "$wm" _NET_WM_NAME 2>&1
+else
+    echo "NO WM MANAGING SCREEN"
+fi
+ps -o pid,lstart,cmd -C fluxbox 2>&1
+
+section "panel and applets"
+ps -o pid,lstart,cmd -C xfce4-panel 2>&1
+ps -o pid,lstart,cmd -C nm-applet 2>&1
+echo "--- panel plugin wrappers (start times reveal which respawned) ---"
+for p in $(pgrep -f 'xfce4/panel/wrapper-2.0'); do
+    printf '%s %s %s\n' \
+        "$p" \
+        "$(ps -o lstart= -p "$p" 2>/dev/null)" \
+        "$(tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null |
+            grep -oE 'lib[a-z]+\.so')"
+done
+
+section "docked tray icons"
+xwininfo -root -tree 2>/dev/null |
+    grep -iE 'tray|applet|nm-|status_icon' | head -20 ||
+    echo "(none found)"
+
+section "monitor geometry"
+xrandr --query 2>&1 | grep -E ' connected'
+
+section "notification placement probe"
+notify-send "tray-diag" "placement probe" 2>&1
+sleep 0.5
+nwin=$(wmctrl -lx 2>/dev/null | grep -i notifyd | awk '{print $1}' | head -1)
+if [ -n "$nwin" ]; then
+    xwininfo -id "$nwin" 2>&1 |
+        grep -E 'Absolute|Width|Height|Map State'
+else
+    echo "(no notification window found)"
+fi
