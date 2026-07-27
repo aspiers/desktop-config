@@ -17,6 +17,14 @@ STOP_GRACE_SECONDS=5
 ENABLE_RETRIES=6
 ENABLE_RETRY_DELAY=1
 
+# A setup run that aborts because the monitor state changed under it (exit
+# STALE_EXIT_CODE) leaves the desktop unconfigured, so the reconcile window is
+# extended to give the new state a chance to settle and be applied. Bound the
+# number of such extensions so a monitor that keeps renegotiating cannot keep
+# the watcher busy indefinitely.
+SETUP_STALE_EXIT_CODE=75
+MAX_STALE_RETRIES=3
+
 # shellcheck source=/home/adam/lib/libhost.sh
 . ~/lib/libhost.sh
 localhost_nickname=""
@@ -33,6 +41,8 @@ applied_md5=""
 candidate_layout=""
 candidate_md5=""
 candidate_since=0
+stale_retries=0
+setup_last_rc=0
 
 populate_inxi_cache () {
     ~/lib/libdpy.py --inxi-json >/dev/null
@@ -226,6 +236,7 @@ reap_setup() {
     wait "$setup_pid"
     rc=$?
     echo "$SETUP completed; exit code $rc"
+    setup_last_rc="$rc"
 
     if [ "$rc" -eq 0 ]; then
         applied_layout="$setup_layout"
@@ -356,13 +367,34 @@ reconcile_monitor_state() {
     local layout_name
 
     start_time=$(date +%s)
+    stale_retries=0
     reset_candidate
 
     echo "Waiting for monitor state to settle..."
 
     while true; do
+        setup_last_rc=0
         reap_setup || true
         enforce_stop_timeout
+
+        # A run that aborted because the monitor changed under it has left
+        # nothing applied. Without extending the window here, the timeout below
+        # fires immediately (the clock has been running since before the run
+        # started) and the desktop is left unconfigured until a manual fluxbox
+        # restart.
+        if [ "$setup_last_rc" -eq "$SETUP_STALE_EXIT_CODE" ]; then
+            if [ "$stale_retries" -lt "$MAX_STALE_RETRIES" ]; then
+                stale_retries=$((stale_retries + 1))
+                start_time=$(date +%s)
+                reset_candidate
+                echo "Setup aborted as stale; waiting for new state to settle" \
+                     "(retry $stale_retries/$MAX_STALE_RETRIES)"
+            else
+                echo "Setup aborted as stale $stale_retries time(s);" \
+                     "giving up on this reconcile"
+                return 1
+            fi
+        fi
 
         probe_output=$(probe_layout_state)
         IFS=$'\t' read -r state value md5 <<EOF
