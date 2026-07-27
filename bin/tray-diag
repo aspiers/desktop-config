@@ -14,9 +14,13 @@ set -uo pipefail
 
 export DISPLAY="${DISPLAY:-:0}"
 
+# Write straight to the file rather than through 'tee' in a process
+# substitution: when stdout is itself redirected (e.g. to /dev/null by an
+# unattended caller), the substituted process can be torn down before it
+# flushes, leaving no file at all.
 out=${1:-}
 if [ -n "$out" ]; then
-    exec > >(tee "$out") 2>&1
+    exec >"$out" 2>&1
 fi
 
 section() {
@@ -73,9 +77,48 @@ if [ -n "$owner" ] && [ "$owner" != "0x0" ]; then
     tray_pid=$(xprop -id "$owner" _NET_WM_PID 2>/dev/null |
         grep -oE '[0-9]+$')
     [ -n "$tray_pid" ] && ps -o pid,lstart,cmd -p "$tray_pid" 2>&1
+
+    # Which panel does the tray belong to? Icon size is derived from the
+    # containing panel's height, so a tray parented to a stale or off-screen
+    # panel hands out undersized icons positioned outside the visible area.
+    echo "--- tray owner ancestry (geometry of each ancestor) ---"
+    xwininfo -id "$owner" -all 2>/dev/null |
+        grep -E 'Parent|Absolute|Width|Height|Map State' || true
+    parent=$(xwininfo -id "$owner" -tree 2>/dev/null |
+        grep -oE 'Parent window id: 0x[0-9a-f]+' |
+        grep -oE '0x[0-9a-f]+')
+    depth=0
+    while [ -n "$parent" ] && [ "$parent" != "0x0" ] && [ "$depth" -lt 6 ]; do
+        printf 'ancestor[%d] %s  %s\n' \
+            "$depth" "$parent" \
+            "$(xwininfo -id "$parent" 2>/dev/null |
+                grep -E 'Width|Height|Absolute upper-left' |
+                tr -s ' \n' ' ')"
+        parent=$(xwininfo -id "$parent" -tree 2>/dev/null |
+            grep -oE 'Parent window id: 0x[0-9a-f]+' |
+            grep -oE '0x[0-9a-f]+')
+        depth=$((depth + 1))
+    done
 else
     echo "NO TRAY OWNER - nothing can dock an icon"
 fi
+
+section "panel windows and sizes"
+echo "--- configured sizes ---"
+for p in 1 2 3; do
+    printf 'panel-%s size=%s output=%s\n' "$p" \
+        "$(xfconf-query -c xfce4-panel -p "/panels/panel-$p/size" 2>/dev/null)" \
+        "$(xfconf-query -c xfce4-panel -p "/panels/panel-$p/output-name" \
+            2>/dev/null)"
+done
+echo "--- live panel window geometry ---"
+for w in $(xwininfo -root -tree 2>/dev/null |
+    grep -i 'xfce4-panel' | grep -oE '0x[0-9a-f]+'); do
+    printf '%s %s\n' "$w" \
+        "$(xwininfo -id "$w" 2>/dev/null |
+            grep -E 'Width|Height|Absolute upper-left|Map State' |
+            tr -s ' \n' ' ')"
+done
 
 section "window manager"
 wm=$(xprop -root _NET_SUPPORTING_WM_CHECK 2>/dev/null |

@@ -331,6 +331,30 @@ main () {
 
     pkill nm-applet
     nohup nm-applet >&~/.log/nm-applet.log &
+
+    capture_tray_diag
+}
+
+# Snapshot tray/panel state after everything has been restarted, so the
+# intermittent "nm-applet icon never appears" failure (dc-fka) is captured
+# automatically rather than depending on someone running tray-diag by hand
+# before restarting fluxbox, which is what normally clears it.
+#
+# nm-applet needs a moment to dock before the icon geometry means anything;
+# a too-early snapshot shows no icon regardless of whether it would appear.
+capture_tray_diag() {
+    local dir=~/.log/tray-diag
+    local out
+
+    command -v tray-diag >/dev/null 2>&1 || return 0
+
+    mkdir -p "$dir" || return 0
+    out="$dir/$(date +%Y%m%d-%H%M%S).${layout:-unknown}.txt"
+
+    (
+        sleep 5
+        tray-diag "$out" >/dev/null 2>&1
+    ) &
 }
 
 main "$@"
