@@ -27,3 +27,9 @@ tasks.json
 tasks/
 /.config/efck-chat-keyboard/recent_emojis.json
 /.config/keyd/app.lock
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key
+.beads/proxieddb/
