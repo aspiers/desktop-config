@@ -330,9 +330,83 @@ main () {
     assert_expected_state
 
     pkill nm-applet
+    wait_for_stable_tray
     nohup nm-applet >&~/.log/nm-applet.log &
 
     capture_tray_diag
+}
+
+# Report the window owning the system tray selection, or nothing when there is
+# no owner.
+#
+# The tray is an X SELECTION, not a root window property, so
+# 'xprop -root _NET_SYSTEM_TRAY_S0' always reports "not found" no matter what
+# and must never be used for this.
+tray_selection_owner() {
+    python3 - <<'EOF' 2>/dev/null
+from ctypes import CDLL, c_void_p, c_char_p, c_int, c_ulong
+import os
+
+x = CDLL('libX11.so.6')
+x.XOpenDisplay.argtypes = [c_char_p]
+x.XOpenDisplay.restype = c_void_p
+x.XInternAtom.argtypes = [c_void_p, c_char_p, c_int]
+x.XInternAtom.restype = c_ulong
+x.XGetSelectionOwner.argtypes = [c_void_p, c_ulong]
+x.XGetSelectionOwner.restype = c_ulong
+
+display = x.XOpenDisplay(os.environ.get('DISPLAY', ':0').encode())
+if not display:
+    raise SystemExit(1)
+atom = x.XInternAtom(display, b'_NET_SYSTEM_TRAY_S0', 1)
+owner = x.XGetSelectionOwner(display, atom) if atom else 0
+if owner:
+    print(hex(owner))
+EOF
+}
+
+# Wait for the system tray to exist and stop moving before starting nm-applet.
+#
+# nm-applet negotiates its icon size once, at dock time, and never
+# re-negotiates. Starting it immediately after 'xfce4-panel -r' meant it
+# frequently docked while the panel was still rebuilding, producing a 21x21
+# icon positioned one pixel below the bottom edge of the screen - present in
+# the tray, correctly reported by xwininfo, and completely invisible.
+#
+# Restarting nm-applet by hand against a settled desktop always fixed it,
+# while the restart performed here did not; that asymmetry is what identified
+# the race (dc-9l7).
+#
+# Requiring the owner to be unchanged across consecutive polls matters as much
+# as requiring it to exist: the panel restart destroys and recreates the tray,
+# so an owner observed too early may be the outgoing one.
+wait_for_stable_tray() {
+    local deadline=$((SECONDS + 15))
+    local required_stable_polls=3
+    local stable=0
+    local owner=""
+    local previous=""
+
+    while [ "$SECONDS" -lt "$deadline" ]; do
+        owner=$(tray_selection_owner)
+
+        if [ -n "$owner" ] && [ "$owner" = "$previous" ]; then
+            stable=$((stable + 1))
+            if [ "$stable" -ge "$required_stable_polls" ]; then
+                echo "System tray settled at $owner"
+                return 0
+            fi
+        else
+            stable=0
+        fi
+
+        previous="$owner"
+        sleep 0.5
+    done
+
+    echo "WARNING: system tray did not settle within 15s (owner: ${owner:-none});" \
+         "starting nm-applet anyway" >&2
+    return 1
 }
 
 # Snapshot tray/panel state after everything has been restarted, so the
