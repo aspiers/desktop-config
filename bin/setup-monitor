@@ -388,8 +388,22 @@ EOF
 #
 # Track the systray WRAPPER PROCESS as well as the selection: both must be
 # present and unchanged across consecutive polls before the tray is final.
+# PIDs of systray wrappers belonging to the CURRENT panel.
+#
+# Wrappers whose panel has died get reparented to init and can linger for
+# hours still holding X windows, so an unfiltered list would contain a PID
+# which never changes and would dilute the signal we are waiting on. Only
+# wrappers parented to a live xfce4-panel say anything about whether the tray
+# is finished being rebuilt.
 systray_wrapper_pids() {
-    pgrep -f 'xfce4/panel/wrapper-2.0.*libsystray' 2>/dev/null | sort | tr '\n' ','
+    local pid ppid
+
+    for pid in $(pgrep -f 'xfce4/panel/wrapper-2.0.*libsystray' 2>/dev/null); do
+        ppid=$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ')
+        [ -n "$ppid" ] || continue
+        [ "$(ps -o comm= -p "$ppid" 2>/dev/null)" = "xfce4-panel" ] || continue
+        echo "$pid"
+    done | sort | tr '\n' ','
 }
 
 wait_for_stable_tray() {
