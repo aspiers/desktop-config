@@ -182,18 +182,26 @@ dismiss_panel_plugin_dialogs () {
     xdotool search --onlyvisible --screen 0 --class --classname 'Wrapper-2.0' \
         2>/dev/null |
         while read -r win; do
+            # xprop prints "PROP:  not found." when a property is absent, so
+            # only treat a value as present when the "= " separator appears.
+            # Getting this wrong killed the systray, whose window reports no
+            # WM_NAME at all.
             name=$(xprop -id "$win" WM_NAME 2>/dev/null |
-                sed 's/.*= //; s/"//g')
-            type=$(xprop -id "$win" _NET_WM_WINDOW_TYPE 2>/dev/null)
+                sed -n 's/^WM_NAME(STRING) = //p; s/^WM_NAME(UTF8_STRING) = //p' |
+                sed 's/"//g')
+            type=$(xprop -id "$win" _NET_WM_WINDOW_TYPE 2>/dev/null |
+                sed -n 's/^_NET_WM_WINDOW_TYPE(ATOM) = //p')
             transient=$(xprop -id "$win" WM_TRANSIENT_FOR 2>/dev/null |
                 grep -o 'window id # 0x[0-9a-f]*')
 
+            # Require positive evidence of a dialog. A window with no WM_NAME
+            # is not evidence of anything, and panel widgets are exactly that.
             is_dialog=0
             case "$type" in
                 *DIALOG*) is_dialog=1 ;;
             esac
             [ -n "$transient" ] && is_dialog=1
-            [ "$name" != "wrapper-2.0" ] && is_dialog=1
+            [ -n "$name" ] && [ "$name" != "wrapper-2.0" ] && is_dialog=1
 
             [ "$is_dialog" -eq 1 ] || continue
 
