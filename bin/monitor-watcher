@@ -42,6 +42,7 @@ candidate_layout=""
 candidate_md5=""
 candidate_since=0
 stale_retries=0
+force_setup=0
 setup_last_rc=0
 
 populate_inxi_cache () {
@@ -368,6 +369,7 @@ reconcile_monitor_state() {
 
     start_time=$(date +%s)
     stale_retries=0
+    force_setup=0
     reset_candidate
 
     echo "Waiting for monitor state to settle..."
@@ -387,6 +389,20 @@ reconcile_monitor_state() {
                 stale_retries=$((stale_retries + 1))
                 start_time=$(date +%s)
                 reset_candidate
+
+                # An aborted run applied nothing, so the monitor state may
+                # well settle back to the MD5 recorded as already applied -
+                # which is exactly what a renegotiating monitor does. Without
+                # this, the settled-layout check below sees an unchanged MD5,
+                # concludes there is nothing to do, and leaves the desktop
+                # unconfigured: no fluxbox layout, no fluxbox restart (so
+                # notifications land at +0+0), and no tray-diag capture.
+                #
+                # One-shot rather than clearing applied_* outright: the loop
+                # can settle on the same MD5 repeatedly while waiting, and
+                # only the first settle after an abort should force a re-run.
+                force_setup=1
+
                 echo "Setup aborted as stale; waiting for new state to settle" \
                      "(retry $stale_retries/$MAX_STALE_RETRIES)"
             else
@@ -413,11 +429,19 @@ EOF
                         if [ "$setup_layout" != "$layout_name" ] || [ "$setup_md5" != "$md5" ]; then
                             request_stop_setup "new settled layout $layout_name (MD5: $md5)"
                         fi
-                    elif [ "$applied_layout" = "$layout_name" ] && [ "$applied_md5" = "$md5" ]; then
+                    elif [ "$force_setup" -eq 0 ] &&
+                         [ "$applied_layout" = "$layout_name" ] &&
+                         [ "$applied_md5" = "$md5" ]; then
                         echo "Monitor configuration unchanged (MD5: $md5), skipping setup"
                         return 0
                     else
-                        echo "Monitor configuration changed (MD5: ${applied_md5:-(empty)} -> $md5), running setup"
+                        if [ "$force_setup" -ne 0 ]; then
+                            echo "Re-running setup after stale abort" \
+                                 "(MD5: $md5)"
+                            force_setup=0
+                        else
+                            echo "Monitor configuration changed (MD5: ${applied_md5:-(empty)} -> $md5), running setup"
+                        fi
                         start_setup "$value" "$md5"
                     fi
                 else
