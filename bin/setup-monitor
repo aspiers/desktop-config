@@ -368,43 +368,65 @@ EOF
 # Wait for the system tray to exist and stop moving before starting nm-applet.
 #
 # nm-applet negotiates its icon size once, at dock time, and never
-# re-negotiates. Starting it immediately after 'xfce4-panel -r' meant it
-# frequently docked while the panel was still rebuilding, producing a 21x21
-# icon positioned one pixel below the bottom edge of the screen - present in
-# the tray, correctly reported by xwininfo, and completely invisible.
+# re-negotiates. Docking against a tray which is subsequently torn down leaves
+# it re-docked to the replacement but still carrying the size it agreed with
+# the old one, producing a 21x21 icon positioned one pixel below the bottom
+# edge of the screen: present in the tray, correctly reported by xwininfo, and
+# completely invisible.
 #
-# Restarting nm-applet by hand against a settled desktop always fixed it,
-# while the restart performed here did not; that asymmetry is what identified
-# the race (dc-9l7).
+# Watching the selection owner alone is NOT enough, which an earlier version
+# of this function got wrong. 'xfce4-panel -r' restarts the panel process
+# first and respawns its plugin wrappers several seconds later, so the
+# selection can be held by an instance that is about to die. Observed:
 #
-# Requiring the owner to be unchanged across consecutive polls matters as much
-# as requiring it to exist: the panel restart destroys and recreates the tray,
-# so an owner observed too early may be the outgoing one.
+#   23:06:24  xfce4-panel starts
+#   23:06:27  selection owner stable, nm-applet starts and docks
+#   23:06:30  every plugin wrapper respawns, systray included
+#
+# The icon was wrong despite panel-1 already having correct geometry when
+# nm-applet docked, so this is not about the panel still being laid out.
+#
+# Track the systray WRAPPER PROCESS as well as the selection: both must be
+# present and unchanged across consecutive polls before the tray is final.
+systray_wrapper_pids() {
+    pgrep -f 'xfce4/panel/wrapper-2.0.*libsystray' 2>/dev/null | sort | tr '\n' ','
+}
+
 wait_for_stable_tray() {
-    local deadline=$((SECONDS + 15))
-    local required_stable_polls=3
+    local deadline=$((SECONDS + 25))
+    local required_stable_polls=6
     local stable=0
-    local owner=""
+    local state=""
     local previous=""
 
     while [ "$SECONDS" -lt "$deadline" ]; do
-        owner=$(tray_selection_owner)
+        # Both halves matter: the selection says a tray is claimable, the
+        # wrapper PIDs say the plugin behind it is not about to be replaced.
+        state="$(tray_selection_owner):$(systray_wrapper_pids)"
 
-        if [ -n "$owner" ] && [ "$owner" = "$previous" ]; then
-            stable=$((stable + 1))
-            if [ "$stable" -ge "$required_stable_polls" ]; then
-                echo "System tray settled at $owner"
-                return 0
-            fi
-        else
-            stable=0
-        fi
+        case "$state" in
+            :*|*:)
+                # Missing one half or the other; not ready.
+                stable=0
+                ;;
+            *)
+                if [ "$state" = "$previous" ]; then
+                    stable=$((stable + 1))
+                    if [ "$stable" -ge "$required_stable_polls" ]; then
+                        echo "System tray settled: $state"
+                        return 0
+                    fi
+                else
+                    stable=0
+                fi
+                ;;
+        esac
 
-        previous="$owner"
+        previous="$state"
         sleep 0.5
     done
 
-    echo "WARNING: system tray did not settle within 15s (owner: ${owner:-none});" \
+    echo "WARNING: system tray did not settle within 25s (state: ${state:-none});" \
          "starting nm-applet anyway" >&2
     return 1
 }
