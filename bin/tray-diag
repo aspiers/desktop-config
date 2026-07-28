@@ -129,7 +129,81 @@ if [ -n "$wm" ]; then
 else
     echo "NO WM MANAGING SCREEN"
 fi
+# lstart matters: fluxbox's own Shift+Ctrl+Mod4+r re-execs IN PLACE, keeping
+# the same PID, so an unchanged PID does not mean fluxbox was never restarted.
 ps -o pid,lstart,cmd -C fluxbox 2>&1
+
+section "root window properties"
+# Notifications landing at +0+0 after a resume (dc-esm) are not explained by
+# any of these - they were byte-identical either side of the fluxbox restart
+# that fixed placement. Recorded anyway so the claim can be re-checked rather
+# than re-assumed, and because _NET_CURRENT_DESKTOP was the one property NOT
+# captured in the failing state.
+for prop in _NET_DESKTOP_GEOMETRY _NET_WORKAREA _NET_CURRENT_DESKTOP \
+            _NET_NUMBER_OF_DESKTOPS _NET_DESKTOP_VIEWPORT \
+            _NET_ACTIVE_WINDOW _NET_SUPPORTED; do
+    printf '%-26s %s\n' "$prop" \
+        "$(xprop -root "$prop" 2>/dev/null | sed 's/.*= //' | cut -c1-160)"
+done
+
+section "monitor views compared"
+# Two independent views of the same hardware. If they disagree, a client
+# using one will place windows where a client using the other would not.
+echo "--- RandR (xrandr) ---"
+xrandr --query 2>/dev/null | grep -E ' connected' | sed 's/(.*//'
+echo "--- Xinerama (what the WM synthesises) ---"
+xdpyinfo -ext XINERAMA 2>/dev/null |
+    sed -n '/XINERAMA/,/^$/p' | grep -E 'head #|screen #' || echo "(none)"
+echo "--- Gdk monitors (what GTK clients such as notifyd see) ---"
+python3 - <<'EOF' 2>&1 || echo "(gdk query failed)"
+import gi
+gi.require_version('Gdk', '3.0')
+from gi.repository import Gdk
+
+display = Gdk.Display.get_default()
+if display is None:
+    raise SystemExit('(no display)')
+for i in range(display.get_n_monitors()):
+    m = display.get_monitor(i)
+    g = m.get_geometry()
+    w = m.get_workarea()
+    print(f'  [{i}] {m.get_model()} '
+          f'geom={g.width}x{g.height}+{g.x}+{g.y} '
+          f'workarea={w.width}x{w.height}+{w.x}+{w.y} '
+          f'primary={m.is_primary()} scale={m.get_scale_factor()}')
+EOF
+
+section "pointer position"
+# xfce4-notifyd is configured show-notifications-on=active-monitor, and the
+# pointer is what defines "active", so placement cannot be judged without it.
+pointer=$(xdotool getmouselocation --shell 2>/dev/null)
+if [ -n "$pointer" ]; then
+    echo "$pointer" | tr '\n' ' '
+    echo
+    # Name the monitor the pointer is on, which is the one notifications
+    # should appear on.
+    px=$(printf '%s\n' "$pointer" | sed -n 's/^X=//p')
+    py=$(printf '%s\n' "$pointer" | sed -n 's/^Y=//p')
+    xrandr --query 2>/dev/null |
+        awk -v px="$px" -v py="$py" '
+            / connected/ && match($0, /([0-9]+)x([0-9]+)\+([0-9]+)\+([0-9]+)/) {
+                geo = substr($0, RSTART, RLENGTH)
+                split(geo, a, /[x+]/)
+                if (px >= a[3] && px < a[3] + a[1] &&
+                    py >= a[4] && py < a[4] + a[2])
+                    printf "pointer is on %s (%s)\n", $1, geo
+            }'
+else
+    echo "(pointer query failed)"
+fi
+
+section "notification daemon"
+ps -o pid,lstart,cmd -C xfce4-notifyd 2>&1
+for prop in /notify-location /show-notifications-on /do-not-disturb \
+            /primary-monitor; do
+    printf '%-24s %s\n' "$prop" \
+        "$(xfconf-query -c xfce4-notifyd -p "$prop" 2>&1)"
+done
 
 section "panel and applets"
 ps -o pid,lstart,cmd -C xfce4-panel 2>&1
