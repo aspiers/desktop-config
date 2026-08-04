@@ -10,8 +10,23 @@
 
 SETUP=$HOME/bin/setup-monitor
 GET_LAYOUT=$HOME/bin/get-layout
-SETTLE_SECONDS=3
-RECONCILE_TIMEOUT=30
+# A DisplayPort monitor negotiates its final mode in stages, and the
+# intermediate stages are stable for several seconds each -- long enough to
+# look settled. The Samsung Odyssey G75F reproducibly reports 3440x1440 for 6s
+# before switching to its native 5120x2160 (observed identically at 23:43 and
+# 01:18 on 2026-08-04). Settling after 3s launched setup-monitor against the
+# intermediate mode every time, which was then aborted as stale and re-run --
+# two full relayouts, including two window-manager restarts, per wake.
+#
+# 8s clears the observed 6s staging with margin. This is dead time before a
+# genuine hotplug is acted on, so it is a deliberate latency-for-stability
+# trade rather than a value to raise casually.
+SETTLE_SECONDS=8
+
+# Must comfortably exceed SETTLE_SECONDS plus several probe cycles (each probe
+# clears the cache and re-runs inxi/xrandr, taking ~2s). Reconciles were
+# already reaching "Settled after 32s" against the previous 30s budget.
+RECONCILE_TIMEOUT=60
 POLL_INTERVAL=1
 STOP_GRACE_SECONDS=5
 ENABLE_RETRIES=6
