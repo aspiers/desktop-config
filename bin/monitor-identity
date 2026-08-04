@@ -1,0 +1,66 @@
+#!/usr/bin/python3
+"""Print a fingerprint of which monitors are attached, ignoring their mode.
+
+The inxi monitor MD5 (~/.cache/libdpy/inxi-Gxx.monitors.json.md5) hashes the
+whole blob, "res" included.  A DisplayPort monitor reaches its final mode in
+stages -- the Samsung Odyssey G75F reports no mode, then 3440x1440, then its
+native 5120x2160 -- so that MD5 changes several times on the way up.  Anything
+comparing it sees a string of configuration changes where the set of attached
+monitors never actually changed, which is what made a DPMS blank/unblank cycle
+look identical to a hotplug.
+
+This fingerprint covers connector and model only.  Both are properties of
+which monitor is plugged in where, not of the mode it currently happens to be
+running, so it stays constant while a monitor settles and still changes when a
+monitor is genuinely added, removed or swapped.
+
+Used by bin/monitor-watcher (to decide whether a relayout is needed) and
+bin/setup-monitor (to detect the topology changing under a run in progress).
+Both must agree, hence one implementation here rather than two copies.
+"""
+
+import os
+import sys
+
+sys.path.append(os.path.join(os.getenv('HOME'), 'lib'))
+
+import libdpy
+
+
+def monitor_identity(use_cache=True):
+    """
+    Fingerprint of connector + model, deliberately excluding resolution.
+
+    Resolution is tempting to include -- a mode change sounds like something a
+    relayout should react to -- but it is exactly what makes this unusable as
+    a change detector.  A DisplayPort monitor passes through several modes on
+    its way to a final one, so a resolution-bearing fingerprint changes
+    repeatedly during a blank/unblank cycle in which nothing was unplugged.
+
+    It is also unnecessary.  The layout files are percentage-based
+    (col1_width_pc_of_active and friends) and liblayout resolves them against
+    live xrandr geometry when the layout is applied, so the same layout file
+    is correct at 3440x1440 and at 5120x2160.  What picks the layout is which
+    monitors are attached, and that is precisely what this fingerprint covers.
+    """
+    monitors = libdpy.get_hybrid_monitors(use_cache)
+    if not monitors:
+        return None
+
+    return ",".join(sorted(
+        "%s=%s" % (m.get("Monitor", "?"), m.get("model") or "Unknown")
+        for m in monitors
+    ))
+
+
+def main():
+    identity = monitor_identity()
+    if not identity:
+        print("ERROR: no monitors reported; cannot fingerprint", file=sys.stderr)
+        sys.exit(1)
+
+    print(identity)
+
+
+if __name__ == "__main__":
+    main()

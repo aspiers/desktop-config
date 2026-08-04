@@ -149,6 +149,13 @@ current_monitor_md5() {
     fi
 }
 
+# A fingerprint of *which monitors are attached*, ignoring the mode they
+# currently happen to be in. See bin/monitor-identity for why the inxi MD5 is
+# unsuitable; setup-monitor uses the same script so the two agree.
+monitor_identity() {
+    "$HOME"/bin/monitor-identity 2>/dev/null
+}
+
 load_display_env() {
     local display_conf="$HOME/.Xdisplay.$localhost_nickname"
 
@@ -185,7 +192,14 @@ probe_layout_state() {
 
     "$HOME"/bin/clear-dpy-cache >&2
     populate_inxi_cache >&2
-    md5=$(current_monitor_md5)
+
+    # Identity rather than current_monitor_md5: the MD5 covers the negotiated
+    # mode, so it churns while a monitor is still settling and makes an
+    # unchanged set of monitors look like a reconfiguration.
+    md5=$(monitor_identity)
+    if [ -z "$md5" ]; then
+        md5=$(current_monitor_md5)
+    fi
 
     if ! state_output=$( "$GET_LAYOUT" --state --debug ); then
         printf 'error\tFailed to get layout state\t%s\n' "$md5"

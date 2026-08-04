@@ -62,8 +62,21 @@ parse_args() {
 
 monitor_md5_file=~/.cache/libdpy/inxi-Gxx.monitors.json.md5
 
+# Which monitors are attached, ignoring the mode they are currently in.  The
+# inxi MD5 covers "res", so it churns while a DisplayPort monitor negotiates
+# its final mode and would abort this run as stale for a topology that has not
+# actually changed.  monitor-watcher fingerprints the same way, so the value it
+# passes as --expected-md5 is comparable with this one.
 current_monitor_md5() {
+    local identity
+
     ~/lib/libdpy.py --inxi-json >/dev/null
+
+    if identity=$( ~/bin/monitor-identity 2>/dev/null ) && [ -n "$identity" ]; then
+        echo "$identity"
+        return 0
+    fi
+
     if [ -f "$monitor_md5_file" ]; then
         cat "$monitor_md5_file"
     fi
