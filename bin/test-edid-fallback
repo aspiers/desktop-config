@@ -1,0 +1,86 @@
+#!/usr/bin/python3
+"""Exercise edid_unavailable_reason() against the monitor shapes observed in
+the journal, plus the genuine-monitor cases that must NOT be rejected."""
+
+import os
+import sys
+import importlib.util
+
+sys.path.append(os.path.join(os.getenv('HOME'), 'lib'))
+
+# get-layout has no .py extension, so it needs an explicit source loader
+# rather than spec_from_file_location(), which returns None for it.
+GET_LAYOUT_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), 'get-layout')
+spec = importlib.util.spec_from_loader(
+    "get_layout",
+    importlib.machinery.SourceFileLoader("get_layout", GET_LAYOUT_PATH))
+get_layout = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(get_layout)
+
+import libdpy
+
+# get_monitor_properties() consults xrandr for physical size.  Stub it so the
+# test is hermetic and can describe monitors that aren't currently attached.
+STUB_MM = {}
+
+
+def fake_get_monitor_properties(monitor_info, use_cache=True):
+    name = monitor_info.get("mapped") or monitor_info.get("Monitor")
+    w, h = STUB_MM.get(name, (0, 0))
+    return {"width_mm": w, "height_mm": h}
+
+
+libdpy.get_monitor_properties = fake_get_monitor_properties
+get_layout.libdpy = libdpy
+
+CASES = [
+    # (description, monitor dict, mm, expect_rejected)
+    ("EDID-less 640x480 fallback (observed 01:11)",
+     {"Monitor": "DP-2", "mapped": "DisplayPort-1", "res": "640x480"},
+     (0, 0), True),
+    ("EDID-less fallback, explicit Unknown model",
+     {"Monitor": "DP-2", "mapped": "DisplayPort-1", "res": "640x480",
+      "model": "Unknown"},
+     (0, 0), True),
+    ("res=N/A, mid link-training (observed 01:19)",
+     {"Monitor": "DP-2", "mapped": "DisplayPort-1", "res": "N/A",
+      "model": "Samsung Odyssey G75F"},
+     (1000, 420), True),
+    ("res missing entirely",
+     {"Monitor": "DP-2", "mapped": "DisplayPort-1"},
+     (0, 0), True),
+    ("healthy ultrawide 5120x2160",
+     {"Monitor": "DP-2", "mapped": "DisplayPort-1", "res": "5120x2160",
+      "model": "Samsung Odyssey G75F"},
+     (1000, 420), False),
+    ("healthy intermediate 3440x1440",
+     {"Monitor": "DP-2", "mapped": "DisplayPort-1", "res": "3440x1440",
+      "model": "Samsung Odyssey G75F"},
+     (1000, 420), False),
+    ("GENUINE small external monitor - must NOT be rejected",
+     {"Monitor": "DP-2", "mapped": "DisplayPort-1", "res": "1280x1024",
+      "model": "Dell E170S"},
+     (338, 270), False),
+    ("genuine small monitor at exactly 640x480",
+     {"Monitor": "DP-2", "mapped": "DisplayPort-1", "res": "640x480",
+      "model": "Some Tiny Panel"},
+     (100, 75), False),
+]
+
+failures = 0
+for desc, monitor, mm, expect_rejected in CASES:
+    STUB_MM.clear()
+    STUB_MM[monitor.get("mapped") or monitor.get("Monitor")] = mm
+    reason = get_layout.edid_unavailable_reason(monitor)
+    rejected = reason is not None
+    ok = rejected == expect_rejected
+    if not ok:
+        failures += 1
+    print(f"{'PASS' if ok else 'FAIL'}  {desc}")
+    print(f"        rejected={rejected} (expected {expect_rejected})"
+          f"{'  reason=' + reason if reason else ''}")
+
+print()
+print(f"{len(CASES) - failures}/{len(CASES)} passed")
+sys.exit(1 if failures else 0)
