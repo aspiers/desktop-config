@@ -109,6 +109,45 @@ def set_primary(desired_output_name):
     debug_print(f"Successfully set {desired_output_name} as primary.")
 
 
+def edid_unavailable_reason(monitor):
+    """
+    Detect a DisplayPort output whose link has trained but whose EDID is not
+    yet readable, and return a human-readable reason (or None if the monitor
+    looks genuine).
+
+    A monitor in this state misreports itself as a tiny generic display: no
+    model (or "Unknown"), zero physical size, and either the 640x480 VGA
+    fallback mode or no mode at all ("N/A").  Committing to it picks a layout
+    for a monitor that does not exist and derives DPI, panel size and font
+    scaling from the bogus geometry.
+
+    Both halves of the test matter.  A genuine small external monitor reports
+    a real model string *and* real physical dimensions, so it is unaffected;
+    only the EDID-less fallback has neither.  Physical size alone would be too
+    eager, since some virtual//remote outputs legitimately report 0mm.
+    """
+    res = monitor.get("res", "")
+    model = (monitor.get("model") or "").strip()
+    has_model = bool(model) and model.lower() != "unknown"
+
+    # No usable mode at all: inxi reports "N/A" between link training and
+    # mode-setting.  Parsing this as WIDTHxHEIGHT would raise ValueError.
+    if "x" not in res:
+        return f"no mode yet (res={res or 'missing'})"
+
+    if has_model:
+        return None
+
+    props = libdpy.get_monitor_properties(monitor)
+    width_mm = props.get("width_mm", 0) if props else 0
+    height_mm = props.get("height_mm", 0) if props else 0
+
+    if width_mm == 0 and height_mm == 0:
+        return f"no EDID yet (model unknown, 0mm physical size, res={res})"
+
+    return None
+
+
 def benq_bl3200_connected():
     inxi_monitors = libdpy.get_hybrid_monitors()
     monitor = libdpy.find_monitor_by_attribute('model', 'BenQ BL3200')
@@ -161,7 +200,20 @@ def main():
             )
 
         elif (external_monitor := libdpy.external_monitor_connected()):
-            debug_print(f"external monitor connected: {external_monitor['model']}")
+            debug_print(
+                f"external monitor connected: "
+                f"{external_monitor.get('model') or 'Unknown'}"
+            )
+
+            # A DP link re-trains from scratch whenever the monitor powers back
+            # on -- after DPMS blanking as much as after a real hotplug -- and
+            # reports garbage until EDID arrives.  Wait it out rather than
+            # committing to a layout for a monitor that isn't really there.
+            if (reason := edid_unavailable_reason(external_monitor)):
+                wait_reason(
+                    f"external monitor present but not ready: {reason}"
+                )
+
             monitor_res = external_monitor["res"]
             # Parse resolution (format: "WIDTHxHEIGHT")
             width, height = (int(n) for n in monitor_res.split("x"))
