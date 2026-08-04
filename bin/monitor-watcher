@@ -81,6 +81,78 @@ kernel_connected_count () {
     echo "$n"
 }
 
+# Last known good geometry per output, one "NAME MODE POSITION PRIMARY" line
+# each, e.g. "DisplayPort-1 5120x2160 2880x0 primary".
+#
+# Kept in a file rather than an associative array because probe_layout_state
+# runs inside a command substitution, so anything enable_disabled_outputs
+# records in memory dies with that subshell before the next probe reads it.
+geometry_file=~/.cache/libdpy/last-good-geometry
+mkdir -p "$(dirname "$geometry_file")"
+
+# Snapshot the current output geometry as the known-good state.
+#
+# This exists because `xrandr --auto` -- whether bare or per-output -- resolves
+# to the monitor's EDID-*preferred* mode at +0+0, which is not necessarily the
+# mode the layout applied. The Samsung Odyssey G75F advertises 3440x1440 as
+# preferred despite being natively 5120x2160 (dc-wtm), so re-enabling it with
+# --auto after a DPMS wake silently downgraded it and stacked it on top of the
+# laptop at +0+0. Replaying the recorded geometry avoids guessing.
+#
+# Called ONLY after setup-monitor exits 0, which is the one moment the geometry
+# is known to be what the layout intended. Recording on every probe instead
+# looks tempting but is self-defeating: once --auto has re-enabled an output at
+# the wrong mode that state is "positioned" too, so it promptly overwrites the
+# good record with the bad one and the restore has nothing useful to replay.
+record_output_geometry () {
+    local recorded
+
+    recorded=$(xrandr | awk '
+        /^[^ \t].* connected/ {
+            primary = ($0 ~ / connected primary /) ? "primary" : "-"
+            if (match($0, /[0-9]+x[0-9]+\+[0-9]+\+[0-9]+/)) {
+                geom = substr($0, RSTART, RLENGTH)
+                split(geom, parts, "+")
+                print $1, parts[1], parts[2] "x" parts[3], primary
+            }
+        }')
+
+    if [ -n "$recorded" ]; then
+        echo "$recorded" > "$geometry_file"
+        echo "Recorded good geometry:" >&2
+        echo "$recorded" | sed 's/^/  /' >&2
+    fi
+}
+
+# Re-enable one output, preferring its last known good geometry over --auto.
+restore_output_geometry () {
+    local output="$1"
+    local remembered=""
+    local name mode pos primary
+
+    if [ -f "$geometry_file" ]; then
+        remembered=$(awk -v want="$output" '$1 == want { print; exit }' \
+            "$geometry_file")
+    fi
+
+    if [ -z "$remembered" ]; then
+        echo "No recorded geometry for $output; falling back to --auto" >&2
+        xrandr --output "$output" --auto >&2 || true
+        return
+    fi
+
+    read -r name mode pos primary <<<"$remembered"
+    echo "Restoring $output to $mode at $pos${primary:+ ($primary)}" >&2
+
+    if [ "$primary" = "primary" ]; then
+        xrandr --output "$output" --mode "$mode" --pos "$pos" --primary >&2 ||
+            xrandr --output "$output" --auto >&2 || true
+    else
+        xrandr --output "$output" --mode "$mode" --pos "$pos" >&2 ||
+            xrandr --output "$output" --auto >&2 || true
+    fi
+}
+
 # Enable any connected-but-disabled outputs. After a DRM hotplug burst,
 # X may not have finished re-probing connectors when this runs, so a bare
 # `xrandr --auto` can see outputs as still disconnected -- and inxi, which
@@ -88,10 +160,10 @@ kernel_connected_count () {
 # mode. We therefore gate on the *kernel* connector count (sysfs ground
 # truth) rather than xrandr's own `connected` flag, which lags behind.
 #
-# Each attempt: nudge X to re-probe (`xrandr --auto`), force-enable every
-# xrandr output that is connected but lacks geometry, then check whether
-# xrandr now shows as many connected+positioned outputs as the kernel does.
-# Loop until they match (with geometry everywhere) or ENABLE_RETRIES runs out.
+# Each attempt: restore geometry to every xrandr output that is connected but
+# lacks it, then check whether xrandr now shows as many connected+positioned
+# outputs as the kernel does. Loop until they match (with geometry everywhere)
+# or ENABLE_RETRIES runs out.
 enable_disabled_outputs () {
     local attempt
     local xr
@@ -104,10 +176,6 @@ enable_disabled_outputs () {
     echo "Kernel reports $kernel_count connected connector(s)" >&2
 
     for attempt in $(seq 1 "$ENABLE_RETRIES"); do
-        # Nudge X into re-probing connectors that the kernel already sees
-        # but xrandr may not have picked up yet.
-        xrandr --auto >&2 2>/dev/null || true
-
         xr=$(xrandr)
         # Outputs that are connected but lack a geometry (no WxH+X+Y on the line)
         pending=$(echo "$xr" | awk '
@@ -130,10 +198,19 @@ enable_disabled_outputs () {
         if [ -n "$pending" ]; then
             echo "Attempt $attempt/$ENABLE_RETRIES: enabling pending outputs: $(echo "$pending" | tr '\n' ' ')" >&2
             for output in $pending; do
-                xrandr --output "$output" --auto >&2 || true
+                restore_output_geometry "$output"
             done
         else
-            echo "Attempt $attempt/$ENABLE_RETRIES: xrandr shows $xrandr_active active but kernel has $kernel_count; waiting for X to re-probe" >&2
+            # Nudge X into re-probing connectors the kernel already sees but
+            # xrandr has not picked up yet. Only safe here, where an output is
+            # genuinely missing: a bare `xrandr --auto` re-applies every
+            # output's *preferred* mode at +0+0, so running it unconditionally
+            # on each probe undid the applied layout every time a DPMS wake
+            # re-trained the link -- dropping the ultrawide from 5120x2160 to
+            # its preferred 3440x1440, stacking both outputs at +0+0 and
+            # moving primary back to the laptop (dc-wtm).
+            echo "Attempt $attempt/$ENABLE_RETRIES: xrandr shows $xrandr_active active but kernel has $kernel_count; nudging X to re-probe" >&2
+            xrandr --auto >&2 2>/dev/null || true
         fi
 
         sleep "$ENABLE_RETRY_DELAY"
@@ -271,6 +348,7 @@ reap_setup() {
     if [ "$rc" -eq 0 ]; then
         applied_layout="$setup_layout"
         applied_md5="$setup_md5"
+        record_output_geometry
     fi
 
     setup_pid=""
@@ -352,6 +430,11 @@ EOF
         applied_layout=$(basename -s .yaml "$value")
         applied_md5="$md5"
         echo "Initial applied layout: $applied_layout (MD5: $applied_md5)"
+
+        # The desktop is configured and settled at startup, so this geometry
+        # is as good a reference as one taken after a setup run. Without it a
+        # watcher restart has nothing to replay until the next layout change.
+        record_output_geometry
     fi
 }
 
