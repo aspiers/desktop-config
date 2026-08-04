@@ -10,8 +10,14 @@ if pgrep xfwm4; then
         # (fluxbox's own -log still writes ~/.log/fluxbox.log; stdout/
         # stderr go to the journal: journalctl --user -u fluxbox-\*.)
         # bin/fluxbox-restart launches it the same way.
+        #
+        # KillMode=process keeps everything fluxbox launches -- which lands
+        # in this unit's cgroup -- alive when the unit is stopped. The
+        # default control-group mode killed Chrome on every layout change,
+        # since each one restarts the window manager.
         systemd-run --user --unit=fluxbox-$$ \
             -p StandardOutput=journal -p StandardError=journal \
+            -p KillMode=process \
             fluxbox -log ~/.log/fluxbox.log
 
         # Stop xfdesktop grabbing mouse clicks away from fluxbox

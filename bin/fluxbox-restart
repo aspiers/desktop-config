@@ -149,8 +149,16 @@ main () {
     # mounts.  --scope would inherit the caller's latch instead.
     # (fluxbox's own -log still writes ~/.log/fluxbox.log; stdout/stderr
     # go to the journal: journalctl --user -u fluxbox-\*.)
+    #
+    # KillMode=process is essential. Everything fluxbox launches -- from its
+    # menu, its keybindings, or a session script -- is forked as a child and
+    # so joins this unit's cgroup. Under the default KillMode=control-group,
+    # stopping the unit kills that entire cgroup, so every layout change took
+    # Chrome and friends down with the window manager. KillMode=process kills
+    # only fluxbox itself and leaves its children running across the restart.
     systemd-run --user --unit=fluxbox-$$ \
         -p StandardOutput=journal -p StandardError=journal \
+        -p KillMode=process \
         fluxbox -log ~/.log/fluxbox.log
 
     sleep 1
