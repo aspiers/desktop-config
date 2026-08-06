@@ -32,8 +32,15 @@ fi
 here=`dirname $0`
 . $here/00-systemd-user-env
 
-# N.B. we should only start after systemd --user environment is
-# already set up.  This means no WantedBy=default.target in the units.
-# monitor-system starts the persisted choice of legacy or experimental
-# (autorandr-based) watcher, defaulting to legacy.
-~/bin/monitor-system resume
+# Raise graphical-session.target, which is RefuseManualStart=yes and so
+# can only be activated via a session target that BindsTo= it.  Desktop
+# environments ship their own; fluxbox has none, so without this nothing
+# raises it and units with PartOf=graphical-session.target never start
+# (and never get stopped when the session ends).  Must follow
+# 00-systemd-user-env so DISPLAY is already in the systemd --user
+# environment when session units start.
+#
+# The monitor watchers are WantedBy= this target, so whichever one is
+# enabled starts here -- no separate resume step, and no mode file:
+# systemctl --user enable/disable is the switch.
+systemctl --user start fluxbox-session.target

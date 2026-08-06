@@ -1,3 +1,16 @@
+[Unit]
+Description=Legacy monitor hotplug watcher
+# Bidirectional in systemd: starting either watcher stops the other.
+Conflicts=monitor-watcher-ng.service
+
+# Needs DISPLAY in the systemd --user environment, which only exists
+# once the X session has pushed it in (see 00-systemd-user-env).
+# fluxbox-session.target is raised after that, so ordering after it is
+# what makes WantedBy= safe here -- default.target would be too early.
+# PartOf= additionally stops this watcher when the session ends.
+PartOf=fluxbox-session.target
+After=fluxbox-session.target
+
 [Service]
 SyslogIdentifier=monitor-watcher
 ExecStart=/bin/sh -c ${HOME}/bin/monitor-watcher
@@ -7,4 +20,6 @@ StandardOutput=journal
 StandardError=journal
 
 [Install]
-# WantedBy=default.target
+# Enable exactly one of monitor-watcher / monitor-watcher-ng; Conflicts=
+# is a safety net rather than the selection mechanism.
+WantedBy=fluxbox-session.target

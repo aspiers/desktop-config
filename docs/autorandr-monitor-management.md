@@ -19,9 +19,18 @@ other). The choice persists across logins.
 ## Daily use
 
 ```sh
-monitor-system status      # which mode, which watcher active, profiles
-monitor-system autorandr   # switch to experimental system
-monitor-system legacy      # switch back (instant, ssh-safe)
+# which watcher is enabled / running
+systemctl --user is-enabled monitor-watcher.service monitor-watcher-ng.service
+systemctl --user is-active  monitor-watcher.service monitor-watcher-ng.service
+autorandr                  # saved profiles, with (detected)/(current)
+
+# switch to the experimental system
+systemctl --user disable --now monitor-watcher.service
+systemctl --user enable  --now monitor-watcher-ng.service
+
+# switch back (instant, ssh-safe: systemctl --user needs no DISPLAY)
+systemctl --user disable --now monitor-watcher-ng.service
+systemctl --user enable  --now monitor-watcher.service
 ```
 
 Watch what the experimental system is doing:
@@ -45,7 +54,8 @@ the new monitor:
 1. Switch to the legacy system and let it converge:
 
    ```sh
-   monitor-system legacy
+   systemctl --user disable --now monitor-watcher-ng.service
+   systemctl --user enable  --now monitor-watcher.service
    ```
 
    Wait for the layout to apply fully (or run `setup-monitor` by hand).
@@ -84,7 +94,12 @@ the new monitor:
    git add .config/autorandr/<profile> && git commit
    ```
 
-6. Switch back: `monitor-system autorandr`.
+6. Switch back:
+
+   ```sh
+   systemctl --user disable --now monitor-watcher.service
+   systemctl --user enable  --now monitor-watcher-ng.service
+   ```
 
 The same procedure re-saves an *existing* profile after changing its
 setup (different mode, refresh rate, primary, rotation, ...): converge
@@ -139,9 +154,12 @@ Key differences from the legacy system:
 
 ### Login
 
-`01-window-manager` runs `monitor-system resume`, which starts the
-watcher for the persisted mode (`~/.local/state/monitor-system/mode`),
-defaulting to legacy and falling back to legacy if the ng unit fails.
+`01-window-manager` starts `fluxbox-session.target`, which both watcher
+units are `WantedBy=`, so whichever one is enabled starts there. The
+target must be started from the X session because it has to follow
+`00-systemd-user-env` putting `DISPLAY` into the systemd `--user`
+environment; `default.target` would be too early. Both units are also
+`PartOf=` it, so the watcher stops when the session ends.
 At startup the ng watcher runs one `autorandr --change` to reconcile;
 if the matching profile is already active this is a no-op (hooks
 included).
@@ -164,7 +182,8 @@ autorandr mode:
 Instant switch back (works over ssh — no DISPLAY needed):
 
 ```sh
-monitor-system legacy
+systemctl --user disable --now monitor-watcher-ng.service
+systemctl --user enable  --now monitor-watcher.service
 ```
 
 If the display state is wrong after switching:
@@ -173,25 +192,25 @@ If the display state is wrong after switching:
 . ~/.Xdisplay.celtic && setup-monitor
 ```
 
-If `monitor-system` itself is broken:
+To switch just for the current session, without changing what starts at
+next login, use `start`/`stop` instead of `enable`/`disable --now`:
 
 ```sh
-systemctl --user stop monitor-watcher-ng
+systemctl --user stop  monitor-watcher-ng
 systemctl --user start monitor-watcher
 ```
 
 Full removal: revert the `autorandr-poc` branch, restow, `systemctl
 --user daemon-reload`, `sudo systemctl unmask autorandr.service
-autorandr-lid-listener.service`, `sudo zypper rm autorandr`, `rm -f
-~/.local/state/monitor-system/mode`. The legacy path never depended on
-any of it.
+autorandr-lid-listener.service`, `sudo zypper rm autorandr`. The legacy
+path never depended on any of it.
 
 ## Known limitations (accepted for the PoC)
 
 - **Exact-match only**: the legacy `get-layout` rules match *any*
   external monitor by width/aspect; autorandr needs a saved profile per
-  EDID set. Unknown monitor → dark screen until captured (or
-  `monitor-system legacy`).
+  EDID set. Unknown monitor → dark screen until captured (or switch
+  back to the legacy watcher).
 - A monitor can present **different EDIDs on different inputs** (the
   Samsung G75F does on HDMI vs DP), so the same physical monitor may
   need one profile per input used.
@@ -203,12 +222,11 @@ any of it.
 
 | File | Role |
 |---|---|
-| `bin/monitor-system` | switch/status/resume CLI |
 | `bin/monitor-watcher-ng` | experimental watcher (udev → autorandr) |
 | `.config/systemd/user/monitor-watcher-ng.service` | its unit; `Conflicts=` legacy |
+| `.config/systemd/user/fluxbox-session.target` | raises `graphical-session.target`; both watchers are `WantedBy=`/`PartOf=` it |
 | `.config/autorandr/predetect` | hotplug race guard |
 | `.config/autorandr/postswitch` | bridge to `setup-monitor --skip-xrandr` |
 | `.config/autorandr/<profile>/` | saved profiles (`config`, `setup`, optional `layout`) |
 | `.config/autostart/autorandr*.desktop` | disable packaged login triggers |
 | `bin/setup-monitor` | unchanged pipeline; `--skip-xrandr` added |
-| `~/.local/state/monitor-system/mode` | persisted mode (not in repo) |

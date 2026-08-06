@@ -5,7 +5,11 @@
 #
 # Runs under .config/systemd/user/monitor-watcher-ng.service, which
 # Conflicts= with the legacy monitor-watcher.service so the two can
-# never run together.  Switch between the systems with bin/monitor-system.
+# never run together.  Switch between the systems by enabling exactly
+# one of them, e.g.
+#
+#   systemctl --user disable --now monitor-watcher-ng.service
+#   systemctl --user enable  --now monitor-watcher.service
 #
 # Unlike the legacy bin/monitor-watcher, this has no settle / md5
 # machinery: autorandr only acts when the connected EDID set exactly

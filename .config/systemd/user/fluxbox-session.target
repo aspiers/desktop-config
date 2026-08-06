@@ -1,0 +1,11 @@
+[Unit]
+Description=Fluxbox graphical session
+Documentation=man:systemd.special(7)
+
+# graphical-session.target is RefuseManualStart=yes: it can only be
+# activated by a per-session target that binds to it.  Desktop
+# environments ship their own (gnome-session.target, plasma-workspace
+# .target); fluxbox launched from .xsession-progs.d has none, so
+# nothing was raising it and units wanting it never started.
+BindsTo=graphical-session.target
+Before=graphical-session.target
