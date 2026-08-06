@@ -80,3 +80,15 @@ nohup\.out
 
 specs/
 ^/\.beads
+# Per-repository opt-in marker, read from the repo root -- it means
+# nothing in ~, and stowing it collides with ai-config, which also
+# provides one and owns ~/.beads-solo.  The collision aborted stow for
+# this entire package, not just this file.
+#
+# ~/.stow-global-ignore already lists this, but a local ignore file
+# REPLACES the global list rather than adding to it, so every global
+# entry has to be repeated here.  Keep this file in sync with the
+# global one when that gains entries.
+^/\.beads-solo
+^/\.agents/skills/beads/
+\.perles
