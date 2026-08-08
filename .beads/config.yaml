@@ -71,6 +71,6 @@ export.path: "issues.jsonl"
 
 export.auto: true
 
-export.git-add: true
+export.git-add: false
 
 import.path: "issues.jsonl"
