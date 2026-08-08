@@ -42,17 +42,22 @@ if pid=$(cat "$pidfile" 2>/dev/null) && [ -n "$pid" ] && kill -0 "$pid" 2>/dev/n
     fi
 fi
 
-# xrandr state just changed: recompute the libdpy caches and the md5
-# staleness token that setup-monitor's assert_expected_state checks.
+# xrandr state just changed: recompute the libdpy caches and the topology
+# staleness token that setup-monitor's assert_expected_state checks.  Prefer
+# the shared connector/model identity, which ignores transient mode changes;
+# fall back to the old inxi MD5 exactly as setup-monitor does.
 "$HOME"/bin/clear-dpy-cache
 ~/lib/libdpy.py --inxi-json >/dev/null
-md5=$(cat ~/.cache/libdpy/inxi-Gxx.monitors.json.md5 2>/dev/null)
+expected_token=$("$HOME"/bin/monitor-identity 2>/dev/null)
+if [ -z "$expected_token" ]; then
+    expected_token=$(cat ~/.cache/libdpy/inxi-Gxx.monitors.json.md5 2>/dev/null)
+fi
 
-echo "postswitch: launching setup-monitor for layout $layout (md5 ${md5:-unknown})" >&2
+echo "postswitch: launching setup-monitor for layout $layout (token ${expected_token:-unknown})" >&2
 # Async so `autorandr --change` returns quickly; the setsid child
 # inherits the service's journal fds, so output stays visible under
 # SyslogIdentifier=monitor-watcher-ng.
 setsid "$HOME"/bin/setup-monitor --skip-xrandr \
     --layout "$layout" --expected-layout "$layout" \
-    ${md5:+--expected-md5 "$md5"} &
+    ${expected_token:+--expected-md5 "$expected_token"} &
 echo $! > "$pidfile"
