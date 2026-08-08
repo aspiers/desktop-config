@@ -113,7 +113,7 @@ makes autorandr ignore it.
 
 ## How it works
 
-```
+```text
 DRM hotplug event (udev)
   └─ bin/monitor-watcher-ng            (systemd user service)
        debounce 1s, drain event burst
@@ -171,7 +171,7 @@ so that *only* `monitor-watcher-ng` invokes autorandr, and only in
 autorandr mode:
 
 | Trigger | Neutralised by |
-|---|---|
+| --- | --- |
 | udev rule `40-monitor-hotplug.rules` → `autorandr.service` | `systemctl mask autorandr.service` |
 | `autorandr.service` (also `WantedBy=sleep.target`) | same mask |
 | `autorandr-lid-listener.service` | `systemctl mask autorandr-lid-listener.service` |
@@ -207,13 +207,16 @@ path never depended on any of it.
 
 ## Known limitations (accepted for the PoC)
 
-- **Exact-match only**: the legacy `get-layout` rules match *any*
-  external monitor by width/aspect; autorandr needs a saved profile per
+- **EDID matching**: the legacy `get-layout` rules match *any* external
+  monitor by width/aspect; autorandr normally needs a saved profile per
   EDID set. Unknown monitor → dark screen until captured (or switch
-  back to the legacy watcher).
+  back to the legacy watcher). Autorandr permits one `*` wildcard in a
+  profile's `setup` EDID when part of a monitor's fingerprint is unstable.
 - A monitor can present **different EDIDs on different inputs** (the
   Samsung G75F does on HDMI vs DP), so the same physical monitor may
-  need one profile per input used.
+  need one profile per input used. Its DisplayPort profile wildcards
+  volatile bytes 352–383 while retaining the stable manufacturer,
+  model, serial, timing data, and final 16-byte suffix.
 - During staged dock bring-up, outputs stay dark until the full
   topology matches — the legacy system force-enabled them earlier but
   then had to guess about settling.
@@ -221,7 +224,7 @@ path never depended on any of it.
 ## File reference
 
 | File | Role |
-|---|---|
+| --- | --- |
 | `bin/monitor-watcher-ng` | experimental watcher (udev → autorandr) |
 | `.config/systemd/user/monitor-watcher-ng.service` | its unit; `Conflicts=` legacy |
 | `.config/systemd/user/fluxbox-session.target` | raises `graphical-session.target`; both watchers are `WantedBy=`/`PartOf=` it |
