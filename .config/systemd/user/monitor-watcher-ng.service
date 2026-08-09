@@ -1,5 +1,5 @@
 [Unit]
-Description=Experimental autorandr-based monitor watcher (PoC)
+Description=Autorandr monitor convergence watcher
 # Bidirectional in systemd: starting either watcher stops the other,
 # so the legacy unit file needs no changes.
 Conflicts=monitor-watcher.service

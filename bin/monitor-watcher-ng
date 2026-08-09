@@ -1,43 +1,49 @@
 #!/bin/bash
 
-# Experimental autorandr-based monitor watcher (PoC).
+# Autorandr-based monitor watcher and convergence controller.
 # See specs/autorandr-hybrid-monitor-plan.md for the design.
 #
 # Runs under .config/systemd/user/monitor-watcher-ng.service, which
 # Conflicts= with the legacy monitor-watcher.service so the two can
-# never run together.  Switch between the systems by enabling exactly
+# never run together. Switch between the systems by enabling exactly
 # one of them, e.g.
 #
 #   systemctl --user disable --now monitor-watcher-ng.service
 #   systemctl --user enable  --now monitor-watcher.service
 #
-# Unlike the legacy bin/monitor-watcher, this has no settle / md5
-# machinery: autorandr only acts when the connected EDID set exactly
-# matches a saved profile, so transient topologies (e.g. a dock
-# surfacing monitors in stages) simply match nothing and no-op.  The
-# non-xrandr follow-up work is driven from ~/.config/autorandr/postswitch.
+# autorandr owns profile matching and xrandr configuration. This watcher
+# supplies the missing event/convergence layer: it keeps listening while
+# autorandr runs, retries profiles that do not remain current, and only
+# permits the expensive postswitch desktop pipeline after the display has
+# been quiet for a short period.
 
-DEBOUNCE_SECONDS=1
-# Run one autorandr --change at startup to reconcile state at login /
-# service (re)start.  Idempotent: autorandr skips the load (and hooks)
-# when the matching profile is already active.
-INITIAL_CHANGE=1
+# The Samsung/hub emitted a final link-training event 4.3s after the initial
+# reconnect event, so shorter intervals can start setup-monitor prematurely.
+QUIET_SECONDS=${QUIET_SECONDS:-5}
+RETRY_DELAY_SECONDS=${RETRY_DELAY_SECONDS:-1}
+RECONCILE_TIMEOUT_SECONDS=${RECONCILE_TIMEOUT_SECONDS:-30}
+MAX_RECONCILE_ATTEMPTS=${MAX_RECONCILE_ATTEMPTS:-12}
+# Redshift owns the live CRTC gamma ramps, so they are not display-profile
+# state and must not prevent autorandr from recognising a current profile.
+AUTORANDR_SKIP_OPTIONS=${AUTORANDR_SKIP_OPTIONS:-gamma}
+# Reconcile once at login / service restart. An already-current profile is
+# detected as such and does not run the postswitch desktop pipeline.
+INITIAL_CHANGE=${INITIAL_CHANGE:-1}
 
-# shellcheck source=/home/adam/lib/libhost.sh
-. ~/lib/libhost.sh
-localhost_nickname=""
-read_localhost_nickname
+log=${MONITOR_WATCHER_NG_LOG:-$HOME/.log/udev-drm-ng.log}
+runtime_dir=${MONITOR_WATCHER_NG_RUNTIME_DIR:-${XDG_RUNTIME_DIR:-/tmp}/monitor-system}
+pending_profile_file=${MONITOR_WATCHER_NG_PENDING_PROFILE_FILE:-$runtime_dir/autorandr-pending-profile}
+postswitch_hook=${MONITOR_WATCHER_NG_POSTSWITCH_HOOK:-$HOME/.config/autorandr/postswitch}
 
-# Separate log from legacy's ~/.log/udev-drm.log so an accidental
-# overlap can't cross-trigger the two watchers.
-log=~/.log/udev-drm-ng.log
+DRM_EVENT_FD=
+DRM_MONITOR_PID=
+LAST_CONVERGED_PROFILE=
 
 check_deps () {
     local cmd
-    for cmd in inotifywait autorandr udevadm; do
+    for cmd in autorandr udevadm xrandr; do
         if ! command -v "$cmd" >&/dev/null; then
             echo "ERROR: Couldn't find $cmd; aborting." >&2
-            [ "$cmd" = inotifywait ] && echo "Try: sudo zypper in inotify-tools" >&2
             [ "$cmd" = autorandr ] && echo "Try: sudo zypper in autorandr" >&2
             exit 1
         fi
@@ -45,50 +51,342 @@ check_deps () {
 }
 
 load_display_env () {
-    local display_conf="$HOME/.Xdisplay.$localhost_nickname"
+    local localhost_nickname=""
+    local display_conf
+
+    # shellcheck source=/home/adam/lib/libhost.sh
+    . "$HOME/lib/libhost.sh"
+    read_localhost_nickname
+    display_conf="$HOME/.Xdisplay.$localhost_nickname"
 
     echo "Loading $display_conf" >&2
     # shellcheck disable=SC1090
     source "$display_conf"
 }
 
-start_udev_monitor () {
-    udevadm monitor -u -s drm > "$log" &
-
-    # Wait for udevadm to do first modification before proceeding.
-    sleep 2
+record_monitor_line () {
+    printf '%s\n' "$1" >> "$log"
 }
 
-apply () {
-    # Topology may have changed: invalidate libdpy caches (including the
-    # get-layout fast path and the md5 staleness token) so any in-flight
-    # setup-monitor re-probes and bails with STALE if appropriate.
-    "$HOME"/bin/clear-dpy-cache
+start_udev_monitor () {
+    local line
 
-    echo "Running autorandr --change" >&2
-    # predetect hook waits for X to see all kernel-connected outputs;
-    # no matching profile => no-op; postswitch hook runs the rest of
-    # the desktop pipeline.
-    autorandr --change
+    mkdir -p "$(dirname "$log")"
+    : > "$log"
+
+    # Keep one monitor alive for the service lifetime. Its pipe buffers DRM
+    # events while autorandr or postswitch is running, unlike repeatedly
+    # arming inotifywait around synchronous autorandr invocations.
+    exec {DRM_EVENT_FD}< <(exec udevadm monitor -u -s drm)
+    DRM_MONITOR_PID=$!
+
+    # Do not start the initial reconciliation until udevadm confirms that its
+    # netlink listener is ready; otherwise an event in this tiny startup
+    # window could still be lost.
+    while IFS= read -r -t 5 -u "$DRM_EVENT_FD" line; do
+        record_monitor_line "$line"
+        if [[ $line == "UDEV - "* ]]; then
+            return 0
+        fi
+    done
+
+    echo "ERROR: udevadm monitor did not become ready" >&2
+    return 1
+}
+
+stop_udev_monitor () {
+    if [[ -n $DRM_MONITOR_PID ]]; then
+        kill "$DRM_MONITOR_PID" 2>/dev/null || true
+    fi
+}
+
+read_drm_event () {
+    local timeout=${1:-}
+    local line
+    local -a read_args=(-u "$DRM_EVENT_FD")
+
+    if [[ -n $timeout ]]; then
+        read_args+=(-t "$timeout")
+    fi
+
+    while IFS= read -r "${read_args[@]}" line; do
+        record_monitor_line "$line"
+        if [[ $line == UDEV*"(drm)" ]]; then
+            REPLY=$line
+            return 0
+        fi
+    done
+
+    if [[ -n $DRM_MONITOR_PID ]] && kill -0 "$DRM_MONITOR_PID" 2>/dev/null; then
+        return 1                    # timeout
+    fi
+
+    echo "ERROR: udevadm monitor exited" >&2
+    return 2
+}
+
+wait_for_quiescence () {
+    local status
+
+    read_drm_event "$QUIET_SECONDS"
+    status=$?
+    if [[ $status -eq 0 ]]; then
+        echo "DRM event received before quiescence; retrying" >&2
+        while true; do
+            read_drm_event 0.05
+            status=$?
+            [[ $status -ne 0 ]] && break
+            echo "Draining queued DRM event" >&2
+        done
+        [[ $status -eq 2 ]] && return 2
+        return 1                    # topology changed
+    fi
+
+    [[ $status -eq 1 ]] && return 0 # quiet timeout elapsed
+    return 2
+}
+
+autorandr_command () {
+    local -a args=("$@")
+
+    if [[ -n $AUTORANDR_SKIP_OPTIONS ]]; then
+        args+=(--skip-options "$AUTORANDR_SKIP_OPTIONS")
+    fi
+    autorandr "${args[@]}"
+}
+
+profile_outputs_connected () {
+    local profile=$1
+    local setup_file="$HOME/.config/autorandr/$profile/setup"
+    local query output _edid
+
+    [[ -r $setup_file ]] || return 1
+    query=$(xrandr --query 2>/dev/null) || return 1
+    while read -r output _edid; do
+        [[ -n $output ]] || continue
+        if ! awk -v wanted="$output" \
+             '$1 == wanted && $2 == "connected" { found=1 }
+              END { exit !found }' <<< "$query"; then
+            return 1
+        fi
+    done < "$setup_file"
+    return 0
+}
+
+apply_profile () {
+    local retry_profile=${1:-}
+
+    # Invalidate get-layout and staleness-token caches before every attempt.
+    # Any old setup-monitor process will then abort if it observes the new
+    # topology while this controller is still converging.
+    "$HOME/bin/clear-dpy-cache" </dev/null
+
+    if [[ -n $retry_profile ]] && profile_outputs_connected "$retry_profile"; then
+        # Some slow monitors expose their full EDID long enough for the first
+        # match, then temporarily expose a truncated EDID after the mode-set.
+        # Autorandr can no longer auto-detect the profile at that point, but an
+        # explicit second load wakes the same still-connected outputs (#402).
+        echo "Reloading previously matched autorandr profile $retry_profile (desktop postswitch deferred)" >&2
+        MONITOR_WATCHER_NG_DEFER_POSTSWITCH=1 \
+            MONITOR_WATCHER_NG_PENDING_PROFILE_FILE="$pending_profile_file" \
+            autorandr_command --load "$retry_profile" </dev/null
+    else
+        echo "Running autorandr --change (desktop postswitch deferred)" >&2
+        MONITOR_WATCHER_NG_DEFER_POSTSWITCH=1 \
+            MONITOR_WATCHER_NG_PENDING_PROFILE_FILE="$pending_profile_file" \
+            autorandr_command --change </dev/null
+    fi
+}
+
+get_detected_profiles () {
+    autorandr_command --detected </dev/null 2>/dev/null
+}
+
+get_current_profiles () {
+    autorandr_command --current </dev/null 2>/dev/null
+}
+
+profile_in_list () {
+    local wanted=$1
+    local profiles=$2
+    local profile
+
+    while IFS= read -r profile; do
+        [[ -n $profile && $profile == "$wanted" ]] && return 0
+    done <<< "$profiles"
+    return 1
+}
+
+first_common_profile () {
+    local detected=$1
+    local current=$2
+    local profile
+
+    while IFS= read -r profile; do
+        if [[ -n $profile ]] && profile_in_list "$profile" "$current"; then
+            printf '%s\n' "$profile"
+            return 0
+        fi
+    done <<< "$detected"
+    return 1
+}
+
+read_pending_profile () {
+    local profile
+
+    if [[ -s $pending_profile_file ]] && IFS= read -r profile < "$pending_profile_file"; then
+        printf '%s\n' "$profile"
+    fi
+}
+
+finalize_postswitch () {
+    local profile=$1
+
+    echo "Converged on autorandr profile $profile; running desktop postswitch" >&2
+    AUTORANDR_CURRENT_PROFILE="$profile" \
+        AUTORANDR_PROFILE_FOLDER="$HOME/.config/autorandr/$profile" \
+        MONITOR_WATCHER_NG_DEFER_POSTSWITCH=0 \
+        "$postswitch_hook" </dev/null
+}
+
+wait_before_retry () {
+    local status
+
+    read_drm_event "$RETRY_DELAY_SECONDS"
+    status=$?
+    if [[ $status -eq 0 ]]; then
+        echo "DRM event received while waiting to retry" >&2
+        return 0
+    fi
+    [[ $status -eq 1 ]] && return 0
+    return 2
+}
+
+reconcile () {
+    local reason=${1:-DRM event}
+    local finalize_changed_profile=${2:-1}
+    local started=$SECONDS
+    local attempt=0
+    local apply_failed=0
+    local detected current common pending_from_hook
+    local pending_profile=""
+    local status
+
+    mkdir -p "$runtime_dir"
+    pending_profile=$(read_pending_profile)
+    if [[ -n $pending_profile ]]; then
+        echo "Resuming previously matched autorandr profile $pending_profile" >&2
+    fi
+    echo "Starting display reconciliation ($reason)" >&2
+
+    while (( attempt < MAX_RECONCILE_ATTEMPTS && SECONDS - started < RECONCILE_TIMEOUT_SECONDS )); do
+        attempt=$((attempt + 1))
+        echo "Reconciliation attempt $attempt/$MAX_RECONCILE_ATTEMPTS" >&2
+
+        apply_failed=0
+        if ! apply_profile "$pending_profile"; then
+            apply_failed=1
+            echo "autorandr --change failed on attempt $attempt; will verify and retry" >&2
+        fi
+
+        pending_from_hook=$(read_pending_profile)
+        if [[ -n $pending_from_hook ]]; then
+            pending_profile=$pending_from_hook
+        fi
+
+        wait_for_quiescence
+        status=$?
+        if [[ $status -ne 0 ]]; then
+            [[ $status -eq 2 ]] && return 1
+            continue
+        fi
+
+        if ! detected=$(get_detected_profiles); then
+            echo "Could not query detected autorandr profiles; retrying" >&2
+            wait_before_retry || return 1
+            continue
+        fi
+        if ! current=$(get_current_profiles); then
+            echo "Could not query current autorandr profiles; retrying" >&2
+            wait_before_retry || return 1
+            continue
+        fi
+
+        common=$(first_common_profile "$detected" "$current")
+        if [[ -z $common && -n $pending_profile ]] &&
+           profile_in_list "$pending_profile" "$current" &&
+           profile_outputs_connected "$pending_profile"; then
+            # The explicit retry can be current even while a temporarily
+            # truncated EDID prevents --detected from matching it.
+            common=$pending_profile
+        fi
+        if [[ -n $common && $apply_failed -eq 0 ]]; then
+            # Close the small gap between the quiet wait and profile queries.
+            read_drm_event 0.05
+            status=$?
+            if [[ $status -eq 0 ]]; then
+                echo "DRM event received during profile verification; retrying" >&2
+                continue
+            fi
+            [[ $status -eq 2 ]] && return 1
+
+            if [[ -n $pending_profile ]] && \
+               profile_in_list "$pending_profile" "$current" && \
+               { profile_in_list "$pending_profile" "$detected" ||
+                 profile_outputs_connected "$pending_profile"; }; then
+                finalize_postswitch "$pending_profile"
+                LAST_CONVERGED_PROFILE=$pending_profile
+            elif [[ $finalize_changed_profile == 1 &&
+                    $common != "$LAST_CONVERGED_PROFILE" ]]; then
+                # X may automatically disable an unplugged output before
+                # autorandr runs.  In that case the new profile is already
+                # current and autorandr legitimately skips its hook, but the
+                # non-xrandr desktop pipeline still needs the new layout.
+                finalize_postswitch "$common"
+                LAST_CONVERGED_PROFILE=$common
+            else
+                echo "Autorandr profile $common is already current; no desktop relayout needed" >&2
+                LAST_CONVERGED_PROFILE=$common
+            fi
+            : > "$pending_profile_file"
+            return 0
+        fi
+
+        if [[ -z $detected ]]; then
+            # A dock can temporarily expose an EDID/topology which matches no
+            # saved profile and then emit no final DRM event. Keep polling
+            # within this bounded reconciliation cycle; applying nothing is
+            # still the safe behaviour for a genuinely unknown monitor.
+            echo "No autorandr profile matches yet after attempt $attempt; retrying" >&2
+        else
+            echo "Detected profile(s) [${detected//$'\n'/, }] not current after attempt $attempt" >&2
+        fi
+        wait_before_retry || return 1
+    done
+
+    echo "Display did not converge within ${RECONCILE_TIMEOUT_SECONDS}s/${MAX_RECONCILE_ATTEMPTS} attempts; preserving any matched profile and waiting for the next DRM event" >&2
+    return 0
 }
 
 main () {
     check_deps
     load_display_env
-    start_udev_monitor
+    start_udev_monitor || exit 1
+    trap stop_udev_monitor EXIT
+    trap 'exit 0' INT TERM
 
-    if [ "$INITIAL_CHANGE" = 1 ]; then
-        apply
+    if [[ $INITIAL_CHANGE == 1 ]]; then
+        reconcile "service startup" 0
     fi
 
-    while true; do
-        inotifywait -q -e modify "$log" >/dev/null
-        sleep "$DEBOUNCE_SECONDS"
-        while inotifywait -q -e modify -t 1 "$log" >/dev/null; do
-            echo "Draining DRM event burst" >&2
-        done
-        apply
+    while read_drm_event; do
+        echo "DRM change: $REPLY" >&2
+        reconcile "DRM event" 1
     done
+
+    exit 1
 }
 
-main
+if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
+    main "$@"
+fi

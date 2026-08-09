@@ -1,0 +1,242 @@
+#!/bin/bash
+
+# Functions sourced from monitor-watcher-ng deliberately call the test doubles
+# below; ShellCheck cannot see those dynamic references.
+# shellcheck disable=SC2034,SC2317
+
+set -u
+
+watcher=$(cd "$(dirname "$0")" && pwd)/monitor-watcher-ng
+postswitch=$(cd "$(dirname "$0")/.." && pwd)/.config/autorandr/postswitch
+failures=0
+
+run_test () {
+    local name=$1
+    shift
+
+    if ("$@"); then
+        printf 'ok - %s\n' "$name"
+    else
+        printf 'not ok - %s\n' "$name" >&2
+        failures=$((failures + 1))
+    fi
+}
+
+prepare_watcher () {
+    local tmp=$1
+
+    # shellcheck disable=SC1090
+    source "$watcher"
+    runtime_dir=$tmp/runtime
+    pending_profile_file=$runtime_dir/pending
+    RECONCILE_TIMEOUT_SECONDS=999
+    MAX_RECONCILE_ATTEMPTS=5
+    mkdir -p "$runtime_dir"
+
+    read_drm_event () { return 1; }
+    wait_before_retry () { return 0; }
+}
+
+test_event_during_apply_is_retried () {
+    local tmp attempts finalizations finalized_profile
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' RETURN
+    attempts=0
+    finalizations=0
+    finalized_profile=""
+    prepare_watcher "$tmp"
+
+    apply_profile () {
+        attempts=$((attempts + 1))
+        printf '%s\n' samsung > "$pending_profile_file"
+    }
+    wait_for_quiescence () {
+        [[ $attempts -gt 1 ]]
+    }
+    get_detected_profiles () { printf '%s\n' samsung; }
+    get_current_profiles () { printf '%s\n' samsung; }
+    finalize_postswitch () {
+        finalizations=$((finalizations + 1))
+        finalized_profile=$1
+    }
+
+    reconcile test >/dev/null 2>&1 &&
+        [[ $attempts -eq 2 ]] &&
+        [[ $finalizations -eq 1 ]] &&
+        [[ $finalized_profile == samsung ]]
+}
+
+test_detected_but_not_current_is_retried () {
+    local tmp attempts finalizations
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' RETURN
+    attempts=0
+    finalizations=0
+    prepare_watcher "$tmp"
+
+    apply_profile () {
+        attempts=$((attempts + 1))
+        printf '%s\n' samsung > "$pending_profile_file"
+    }
+    wait_for_quiescence () { return 0; }
+    get_detected_profiles () { printf '%s\n' samsung; }
+    get_current_profiles () {
+        [[ $attempts -gt 1 ]] && printf '%s\n' samsung
+    }
+    finalize_postswitch () { finalizations=$((finalizations + 1)); }
+
+    reconcile test >/dev/null 2>&1 &&
+        [[ $attempts -eq 2 ]] &&
+        [[ $finalizations -eq 1 ]]
+}
+
+test_already_current_skips_relayout () {
+    local tmp attempts finalizations
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' RETURN
+    attempts=0
+    finalizations=0
+    prepare_watcher "$tmp"
+    LAST_CONVERGED_PROFILE=celtic
+
+    apply_profile () { attempts=$((attempts + 1)); }
+    wait_for_quiescence () { return 0; }
+    get_detected_profiles () { printf '%s\n' celtic; }
+    get_current_profiles () { printf '%s\n' celtic; }
+    finalize_postswitch () { finalizations=$((finalizations + 1)); }
+
+    reconcile test >/dev/null 2>&1 &&
+        [[ $attempts -eq 1 ]] &&
+        [[ $finalizations -eq 0 ]]
+}
+
+test_previously_matched_profile_is_explicitly_retried () {
+    local tmp attempts finalizations retry_arg
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' RETURN
+    attempts=0
+    finalizations=0
+    retry_arg="unset"
+    prepare_watcher "$tmp"
+
+    apply_profile () {
+        attempts=$((attempts + 1))
+        retry_arg=${1:-}
+        printf '%s\n' samsung > "$pending_profile_file"
+    }
+    wait_for_quiescence () { return 0; }
+    get_detected_profiles () {
+        [[ $attempts -eq 1 ]] && printf '%s\n' samsung
+        return 0
+    }
+    get_current_profiles () {
+        [[ $attempts -gt 1 ]] && printf '%s\n' samsung
+        return 0
+    }
+    profile_outputs_connected () { return 0; }
+    finalize_postswitch () { finalizations=$((finalizations + 1)); }
+
+    reconcile test >/dev/null 2>&1 &&
+        [[ $attempts -eq 2 ]] &&
+        [[ $retry_arg == samsung ]] &&
+        [[ $finalizations -eq 1 ]]
+}
+
+test_automatically_current_new_profile_runs_relayout () {
+    local tmp attempts finalizations finalized_profile
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' RETURN
+    attempts=0
+    finalizations=0
+    finalized_profile=""
+    prepare_watcher "$tmp"
+    LAST_CONVERGED_PROFILE=samsung
+
+    # Simulate X automatically reaching the internal-only profile before
+    # autorandr runs, so no deferred postswitch marker is produced.
+    apply_profile () { attempts=$((attempts + 1)); }
+    wait_for_quiescence () { return 0; }
+    get_detected_profiles () { printf '%s\n' celtic; }
+    get_current_profiles () { printf '%s\n' celtic; }
+    finalize_postswitch () {
+        finalizations=$((finalizations + 1))
+        finalized_profile=$1
+    }
+
+    reconcile test >/dev/null 2>&1 &&
+        [[ $attempts -eq 1 ]] &&
+        [[ $finalizations -eq 1 ]] &&
+        [[ $finalized_profile == celtic ]]
+}
+
+test_unmatched_topology_is_retried_without_relayout () {
+    local tmp attempts finalizations
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' RETURN
+    attempts=0
+    finalizations=0
+    prepare_watcher "$tmp"
+    MAX_RECONCILE_ATTEMPTS=2
+
+    apply_profile () { attempts=$((attempts + 1)); }
+    wait_for_quiescence () { return 0; }
+    get_detected_profiles () { return 0; }
+    get_current_profiles () { return 0; }
+    finalize_postswitch () { finalizations=$((finalizations + 1)); }
+
+    reconcile test >/dev/null 2>&1 &&
+        [[ $attempts -eq 2 ]] &&
+        [[ $finalizations -eq 0 ]]
+}
+
+test_retry_count_is_bounded () {
+    local tmp attempts finalizations
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' RETURN
+    attempts=0
+    finalizations=0
+    prepare_watcher "$tmp"
+    MAX_RECONCILE_ATTEMPTS=2
+
+    apply_profile () {
+        attempts=$((attempts + 1))
+        printf '%s\n' samsung > "$pending_profile_file"
+    }
+    wait_for_quiescence () { return 0; }
+    get_detected_profiles () { printf '%s\n' samsung; }
+    get_current_profiles () { return 0; }
+    finalize_postswitch () { finalizations=$((finalizations + 1)); }
+
+    reconcile test >/dev/null 2>&1 &&
+        [[ $attempts -eq 2 ]] &&
+        [[ $finalizations -eq 0 ]] &&
+        [[ $(cat "$pending_profile_file") == samsung ]]
+}
+
+test_postswitch_deferral_records_profile_only () {
+    local tmp pending output
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' RETURN
+    pending=$tmp/pending
+
+    output=$(AUTORANDR_CURRENT_PROFILE=samsung \
+        MONITOR_WATCHER_NG_DEFER_POSTSWITCH=1 \
+        MONITOR_WATCHER_NG_PENDING_PROFILE_FILE="$pending" \
+        bash "$postswitch" 2>&1) &&
+        [[ $(cat "$pending") == samsung ]] &&
+        [[ $output == *"deferred desktop reconfiguration"* ]]
+}
+
+run_test 'DRM event during apply causes a retry' test_event_during_apply_is_retried
+run_test 'detected-but-not-current profile causes a retry' test_detected_but_not_current_is_retried
+run_test 'previously matched profile is explicitly retried' test_previously_matched_profile_is_explicitly_retried
+run_test 'unchanged current profile does not relayout the desktop' test_already_current_skips_relayout
+run_test 'automatically current changed profile still relayouts the desktop' test_automatically_current_new_profile_runs_relayout
+run_test 'unmatched topology is retried without relayout' test_unmatched_topology_is_retried_without_relayout
+run_test 'reconciliation retry count is bounded' test_retry_count_is_bounded
+run_test 'postswitch deferral records the profile without relayout' test_postswitch_deferral_records_profile_only
+
+if [[ $failures -ne 0 ]]; then
+    printf '%d test(s) failed\n' "$failures" >&2
+    exit 1
+fi

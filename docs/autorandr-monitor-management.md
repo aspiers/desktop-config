@@ -114,40 +114,62 @@ makes autorandr ignore it.
 ## How it works
 
 ```text
-DRM hotplug event (udev)
-  └─ bin/monitor-watcher-ng            (systemd user service)
-       debounce 1s, drain event burst
-       clear-dpy-cache                  # invalidate libdpy caches
-       autorandr --change
-         ├─ predetect hook              # wait until xrandr sees as many
-         │                              # connected outputs as the kernel
-         │                              # (sysfs) reports, max 6s
-         ├─ fingerprint EDIDs, match against saved profiles
-         │    no match → no-op          # unknown monitor or transient state
-         ├─ apply profile's xrandr config (modes, positions, primary)
-         └─ postswitch hook
-              ├─ map profile → fluxbox layout
-              │    (~/.config/autorandr/<profile>/layout, default: profile name)
-              ├─ stale-kill any in-flight setup-monitor (TERM, 5s, KILL)
-              ├─ refresh libdpy caches, compute md5 staleness token
-              └─ setsid setup-monitor --skip-xrandr \
-                     --layout L --expected-layout L --expected-md5 M &
-                   # overlay, panels, keyboard, DPI, terminals,
-                   # fluxbox-reconfigure, fonts, window layout (ly),
-                   # fluxbox restart, xfce4-panel, nm-applet
+DRM hotplug event (persistent udev monitor)
+  └─ bin/monitor-watcher-ng              (systemd user service)
+       ├─ retain events while autorandr is running
+       └─ bounded reconciliation loop    (max 30s / 12 attempts)
+            ├─ clear-dpy-cache            # invalidate libdpy caches
+            ├─ autorandr --change --skip-options gamma
+            │    (later attempts explicitly reload the first matched profile
+            │     while all of its outputs remain connected)
+            │    ├─ predetect hook        # wait until xrandr sees as many
+            │    │                        # connected outputs as sysfs, max 6s
+            │    ├─ match saved EDIDs and apply xrandr configuration
+            │    └─ postswitch hook records the applied profile but defers
+            │         the desktop pipeline
+            ├─ require an event-free 5s interval
+            ├─ require detected profile == current profile
+            │    mismatch or queued event → retry
+            │    no detected profile      → retry without applying anything
+            └─ run postswitch once after convergence
+                 ├─ map profile → fluxbox layout
+                 │    (~/.config/autorandr/<profile>/layout, default: profile name)
+                 ├─ stale-kill any in-flight setup-monitor (TERM, 5s, KILL)
+                 ├─ refresh libdpy caches, compute staleness token
+                 └─ setsid setup-monitor --skip-xrandr \
+                        --layout L --expected-layout L --expected-md5 M &
+                      # overlay, panels, keyboard, DPI, terminals,
+                      # fluxbox-reconfigure, fonts, window layout (ly),
+                      # fluxbox restart, xfce4-panel, nm-applet
 ```
 
 Key differences from the legacy system:
 
-- **No settle/md5 machinery in the watcher.** The legacy watcher had to
-  guess when a topology had "settled". autorandr's exact-EDID-set
-  matching replaces that: partial/transient states match nothing.
+- **Autorandr still owns topology matching and xrandr.** Exact EDID-set
+  matching rejects partial or unknown topologies without reimplementing
+  profile selection in the watcher.
+- **The watcher verifies convergence rather than assuming `xrandr` exit 0
+  means the physical link stayed active.** This handles slow monitors which
+  first expose their EDID, then drop back to connected-but-disabled while
+  DisplayPort link training continues. DRM events received during autorandr
+  remain queued, and both detected-but-not-current and temporarily unmatched
+  states are retried within the bounded window. If a monitor's EDID becomes
+  temporarily truncated after an initial successful match, later attempts
+  explicitly reload that remembered profile only while all of its configured
+  outputs still report connected. This follows the working two-load workaround
+  from upstream issue #402 without forcing an external profile after a genuine
+  unplug. A matched profile is retained across a bounded timeout/service
+  restart so the next cycle can resume recovery. The 5s quiet interval covers
+  the observed final Samsung/hub event at 4.3s.
+- **Gamma is ignored for convergence comparisons** because Redshift owns the
+  live CRTC gamma ramps; gamma differences do not make a display profile
+  inactive.
 - **`setup-monitor --skip-xrandr`** reuses the entire non-xrandr
-  pipeline unchanged; autorandr has already applied the xrandr config.
-- **Staleness protection is unchanged**: `setup-monitor`'s
-  `assert_expected_state` still aborts (exit 75) if the monitor md5 or
-  detected layout changes mid-run, and postswitch kills a superseded
-  run before starting the next.
+  pipeline unchanged after autorandr has converged.
+- **Staleness protection remains the final safety net**: `setup-monitor`'s
+  `assert_expected_state` still aborts (exit 75) if the monitor identity or
+  detected layout changes mid-run, and postswitch kills a superseded run
+  before starting the next.
 - The ng service deliberately omits `NoNewPrivileges=true` (the legacy
   unit has it) so spawned processes can FUSE-mount AppImages — see the
   comment in `.xsession-progs.d/person-adam.spiers/01-window-manager`.
@@ -225,11 +247,12 @@ path never depended on any of it.
 
 | File | Role |
 | --- | --- |
-| `bin/monitor-watcher-ng` | experimental watcher (udev → autorandr) |
+| `bin/monitor-watcher-ng` | persistent udev listener and bounded autorandr convergence controller |
 | `.config/systemd/user/monitor-watcher-ng.service` | its unit; `Conflicts=` legacy |
 | `.config/systemd/user/fluxbox-session.target` | raises `graphical-session.target`; both watchers are `WantedBy=`/`PartOf=` it |
 | `.config/autorandr/predetect` | hotplug race guard |
-| `.config/autorandr/postswitch` | bridge to `setup-monitor --skip-xrandr` |
+| `.config/autorandr/postswitch` | records deferred attempts and bridges a converged/manual switch to `setup-monitor --skip-xrandr` |
+| `bin/test-monitor-watcher-ng` | behavioral tests for retry, timeout, idempotence, and hook deferral |
 | `.config/autorandr/<profile>/` | saved profiles (`config`, `setup`, optional `layout`) |
 | `.config/autostart/autorandr*.desktop` | disable packaged login triggers |
 | `bin/setup-monitor` | unchanged pipeline; `--skip-xrandr` added |

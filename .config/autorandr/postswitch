@@ -11,6 +11,30 @@ if [ -z "$profile" ]; then
     exit 0
 fi
 
+# monitor-watcher-ng may need several autorandr applications before a slow
+# DisplayPort link remains active.  Record each applied profile atomically but
+# defer the expensive desktop pipeline until the watcher verifies convergence.
+# Direct/manual autorandr invocations do not set this flag and retain the usual
+# immediate postswitch behaviour.
+if [ "${MONITOR_WATCHER_NG_DEFER_POSTSWITCH:-0}" = 1 ]; then
+    pending_profile_file=${MONITOR_WATCHER_NG_PENDING_PROFILE_FILE:-}
+    if [ -z "$pending_profile_file" ]; then
+        echo "postswitch: deferral requested without a pending-profile file" >&2
+        exit 1
+    fi
+
+    mkdir -p "$(dirname "$pending_profile_file")"
+    pending_tmp=$pending_profile_file.$$
+    if ! printf '%s\n' "$profile" > "$pending_tmp" ||
+       ! mv -f "$pending_tmp" "$pending_profile_file"; then
+        rm -f "$pending_tmp"
+        echo "postswitch: could not record deferred profile $profile" >&2
+        exit 1
+    fi
+    echo "postswitch: deferred desktop reconfiguration for profile $profile" >&2
+    exit 0
+fi
+
 # Profile -> fluxbox layout mapping.  autorandr needs a distinct profile
 # per physical EDID set, but several monitors can share one layout
 # (e.g. celtic+external), so a profile dir may contain a one-line
