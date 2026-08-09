@@ -37,17 +37,40 @@ def expand_magic(cmd):
     return cmd
 
 
+def combine_commands(cmds):
+    """Combine commands into one flat Fluxbox MacroCmd.
+
+    Fluxbox needs a short pause between remote layout operations for reliable
+    window matching.  Sending every command for the same matcher separately
+    paid that pause repeatedly.  Flatten existing MacroCmd bodies rather than
+    nesting them, preserving command order in one Map operation.
+    """
+    if len(cmds) == 1:
+        return cmds[0]
+
+    parts = []
+    for cmd in cmds:
+        if cmd.startswith('MacroCmd '):
+            parts.append(cmd.removeprefix('MacroCmd '))
+        else:
+            parts.append('{%s}' % cmd)
+    return 'MacroCmd %s' % ' '.join(parts)
+
+
 def exec_window_cmds(window_cmds, args):
     for matcher, *cmds in window_cmds:
         matcher = expand_magic(matcher)
         print(matcher)
-        for cmd in cmds:
-            expanded = expand_magic(cmd)
-            map_cmd = "Map {%s} {Matches %s}" % (expanded, matcher)
-            print("   %s" % map_cmd)
-            if not args.dump:
-                subprocess.check_call(['fluxbox-remote', map_cmd])
-                time.sleep(0.1)
+        expanded = [expand_magic(cmd) for cmd in cmds]
+        combined = combine_commands(expanded)
+        map_cmd = "Map {%s} {Matches %s}" % (combined, matcher)
+        print("   %s" % map_cmd)
+        if not args.dump:
+            subprocess.check_call(['fluxbox-remote', map_cmd])
+            # A 10ms delay was unreliable (ca44f65); retain the proven 100ms
+            # pacing between matchers while avoiding duplicate waits within
+            # one matcher's now-atomic command sequence.
+            time.sleep(0.1)
         print()
 
 

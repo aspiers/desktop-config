@@ -174,6 +174,30 @@ Key differences from the legacy system:
   unit has it) so spawned processes can FUSE-mount AppImages — see the
   comment in `.xsession-progs.d/person-adam.spiers/01-window-manager`.
 
+### Performance diagnostics
+
+`setup-monitor` emits elapsed phase markers to the service journal:
+
+```sh
+journalctl --user -t monitor-watcher-ng --since today |
+    grep 'TIMING setup-monitor'
+```
+
+A measured Samsung/hub replug before the first performance pass took about
+35.3s from the first DRM event to a settled tray: 12.1s converging the physical
+link, 1.7s preparing postswitch state, and 21.5s in `setup-monitor`. Batching
+per-window Fluxbox commands, removing obsolete fixed sleeps, and overlapping
+the cold Emacs font reload with independent configuration reduced
+`setup-monitor` to 18.0s. Visible window placement completed in 5.8s rather
+than about 9.7s.
+
+The remaining dominant setup cost is intentional: restarting Fluxbox takes
+about 3s and rebuilding XFCE's panel/systray takes about 9s. The latter waits
+through a delayed systray-wrapper replacement before starting nm-applet;
+shortening it previously produced an invisible 21x21 icon. Optimize or skip
+those restarts only with observable health checks and repeated real hotplug
+verification.
+
 ### Login
 
 `01-window-manager` starts `fluxbox-session.target`, which both watcher

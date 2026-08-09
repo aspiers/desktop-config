@@ -1,0 +1,38 @@
+#!/bin/bash
+
+set -eu
+
+repo_root=$(cd "$(dirname "$0")/.." && pwd)
+
+python3 - "$repo_root" <<'PY'
+import runpy
+import subprocess
+import sys
+from pathlib import Path
+
+repo = Path(sys.argv[1])
+module = runpy.run_path(repo / "bin/desktop-layout")
+combine = module["combine_commands"]
+
+assert combine(["MoveTo 1 2"]) == "MoveTo 1 2"
+assert combine(["MoveTo 1 2", "ResizeTo 3 4"]) == (
+    "MacroCmd {MoveTo 1 2} {ResizeTo 3 4}"
+)
+assert combine([
+    "MacroCmd {SetHead 1} {MoveTo 1 2}",
+    "Sticky {yes}",
+    "MacroCmd {ResizeTo 3 4} {Activate}",
+]) == (
+    "MacroCmd {SetHead 1} {MoveTo 1 2} {Sticky {yes}} "
+    "{ResizeTo 3 4} {Activate}"
+)
+
+output = subprocess.check_output(
+    [repo / "bin/desktop-layout", "--dump", "celtic+ultrawide"],
+    text=True,
+)
+map_lines = [line for line in output.splitlines() if line.startswith("   Map ")]
+assert len(map_lines) == 21, len(map_lines)
+assert not any("MacroCmd {MacroCmd" in line for line in map_lines)
+print("ok - desktop-layout batches each matcher's commands into one flat MacroCmd")
+PY

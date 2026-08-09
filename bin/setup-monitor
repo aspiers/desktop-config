@@ -13,6 +13,20 @@ localhost_nickname=""
 screen_0_name=""
 screen_1_name=""
 screen_2_name=""
+timing_started_us=0
+
+start_timing() {
+    timing_started_us=${EPOCHREALTIME/./}
+    echo "TIMING setup-monitor +0.000s: started"
+}
+
+timing_mark() {
+    local now_us=${EPOCHREALTIME/./}
+    local elapsed_us=$((10#$now_us - 10#$timing_started_us))
+
+    printf 'TIMING setup-monitor +%d.%03ds: %s\n' \
+        $((elapsed_us / 1000000)) $(((elapsed_us / 1000) % 1000)) "$*"
+}
 
 # shellcheck source=/home/adam/lib/libhost.sh
 . ~/lib/libhost.sh
@@ -298,6 +312,7 @@ setup_keyboard () {
 
 main () {
     parse_args "$@"
+    start_timing
 
     get_layout
     assert_expected_state
@@ -313,30 +328,41 @@ main () {
 
     refresh_display_cache
     assert_expected_state
+    timing_mark "display state validated and caches refreshed"
 
     setup_overlay "$layout"
     setup-panels
     setup_keyboard
     set-layout-dpi "$layout"
-    setup-terminals
-    assert_expected_state
 
-    sleep 1
-
-    fluxbox-reconfigure  # update ~/.fluxbox/keys
-    assert_expected_state
-
+    # Reloading Emacs fonts after a DPI change is cold-cache work (~1.85s on
+    # celtic), but it is independent of terminal configuration and Fluxbox
+    # config generation.  Overlap those synchronous operations, then join
+    # before moving windows so Emacs has its final geometry.
     echo "Loading as-fonts via emacsclient ..."
-    emacsclient -e '(load "as-fonts")'
+    emacsclient -e '(load "as-fonts")' &
+    fonts_pid=$!
 
-    sleep 1
+    setup-terminals
+    fluxbox-reconfigure  # update ~/.fluxbox/keys
+    if ! wait "$fonts_pid"; then
+        echo "WARNING: failed to reload as-fonts via emacsclient" >&2
+    fi
+    assert_expected_state
+    timing_mark "desktop properties, terminal config, Fluxbox config, and fonts ready"
 
+    # The historical sleeps around Fluxbox reconfiguration and font loading
+    # are no longer synchronization: every preceding operation is synchronous
+    # (including the explicit wait above), and live state assertions guard the
+    # transition.  Proceed immediately to the visible window layout.
     echo "Fluxbox layout ..."
     run-with-local-X-display ly
     assert_expected_state
+    timing_mark "window layout applied"
 
     echo "Fluxbox restart ..."
     fr
+    timing_mark "Fluxbox restarted"
 
     echo "Restarting xfce4-panel ..."
     xfce4-panel -r
@@ -345,6 +371,7 @@ main () {
     pkill nm-applet
     wait_for_stable_tray
     nohup nm-applet >&~/.log/nm-applet.log &
+    timing_mark "panel and system tray settled; nm-applet launched"
 
     capture_tray_diag
 }
