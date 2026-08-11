@@ -83,8 +83,8 @@ the new monitor:
 
    ```sh
    grep primary ~/.config/autorandr/<profile>/config   # primary saved?
-   autorandr                                           # shows "(detected)"
-   autorandr --change --dry-run                        # review the xrandr call
+   autorandr --match-edid                              # shows "(detected)"
+   autorandr --match-edid --change --dry-run           # review the xrandr call
    ```
 
 5. Profiles live in the repo (`~/.config/autorandr` is a stow symlink
@@ -119,7 +119,7 @@ DRM hotplug event (persistent udev monitor)
        ├─ retain events while autorandr is running
        └─ bounded reconciliation loop    (max 30s / 12 attempts)
             ├─ clear-dpy-cache            # invalidate libdpy caches
-            ├─ autorandr --change --skip-options gamma
+            ├─ autorandr --match-edid --change --skip-options gamma
             │    (later attempts explicitly reload the first matched profile
             │     while all of its outputs remain connected)
             │    ├─ predetect hook        # wait until xrandr sees as many
@@ -147,7 +147,11 @@ Key differences from the legacy system:
 
 - **Autorandr still owns topology matching and xrandr.** Exact EDID-set
   matching rejects partial or unknown topologies without reimplementing
-  profile selection in the watcher.
+  profile selection in the watcher. For profiles with exact EDID fingerprints,
+  `--match-edid` lets one saved profile follow the same physical monitors when
+  a dock or GPU renames connectors (for example, AOC on `DisplayPort-2`
+  becoming `DisplayPort-1`); the watcher consumes autorandr's reported mapping
+  before validating connected and active outputs.
 - **The watcher verifies convergence rather than assuming `xrandr` exit 0
   means the physical link stayed active.** This handles slow monitors which
   first expose their EDID, then drop back to connected-but-disabled while
@@ -258,6 +262,13 @@ path never depended on any of it.
   EDID set. Unknown monitor → dark screen until captured (or switch
   back to the legacy watcher). Autorandr permits one `*` wildcard in a
   profile's `setup` EDID when part of a monitor's fingerprint is unstable.
+  Connector-name changes do not require duplicate profiles for exact EDIDs
+  because the watcher invokes autorandr with `--match-edid`. Autorandr may not
+  rename a wildcarded profile because the wildcard prevents it extracting the
+  same serial-based fingerprint as the live EDID; such a profile can still
+  require a connector-specific variant. Likewise, a profile containing
+  multiple external monitors which exchange connectors may need a separate
+  capture because autorandr does not always report both halves of the swap.
 - A monitor can present **different EDIDs on different inputs** (the
   Samsung G75F does on HDMI vs DP), so the same physical monitor may
   need one profile per input used. Its DisplayPort profile wildcards

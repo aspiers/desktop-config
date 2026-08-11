@@ -38,6 +38,7 @@ INITIAL_CHANGE=${INITIAL_CHANGE:-1}
 log=${MONITOR_WATCHER_NG_LOG:-$HOME/.log/udev-drm-ng.log}
 runtime_dir=${MONITOR_WATCHER_NG_RUNTIME_DIR:-${XDG_RUNTIME_DIR:-/tmp}/monitor-system}
 pending_profile_file=${MONITOR_WATCHER_NG_PENDING_PROFILE_FILE:-$runtime_dir/autorandr-pending-profile}
+output_mapping_file=${MONITOR_WATCHER_NG_OUTPUT_MAPPING_FILE:-$runtime_dir/autorandr-output-mappings}
 postswitch_hook=${MONITOR_WATCHER_NG_POSTSWITCH_HOOK:-$HOME/.config/autorandr/postswitch}
 
 DRM_EVENT_FD=
@@ -158,7 +159,7 @@ wait_for_quiescence () {
 }
 
 autorandr_command () {
-    local -a args=("$@")
+    local -a args=(--match-edid "$@")
 
     if [[ -n $AUTORANDR_SKIP_OPTIONS ]]; then
         args+=(--skip-options "$AUTORANDR_SKIP_OPTIONS")
@@ -166,60 +167,116 @@ autorandr_command () {
     autorandr "${args[@]}"
 }
 
-profile_outputs_connected () {
+record_output_mappings () {
+    local diagnostics_file=$1
+    local detected_profiles=$2
+    local additions tmp line profile saved_output live_output _edid
+
+    additions=$(mktemp "$runtime_dir/output-mappings-additions.XXXXXX") || return 1
+    tmp=$(mktemp "$runtime_dir/output-mappings.XXXXXX") || {
+        rm -f "$additions"
+        return 1
+    }
+
+    # Refresh identity mappings for every detected profile first, so returning
+    # a monitor to its originally saved connector supersedes an older rename.
+    while IFS= read -r profile; do
+        [[ -n $profile ]] || continue
+        while read -r saved_output _edid; do
+            [[ -n $saved_output && $saved_output != \#* ]] || continue
+            printf '%s %s %s\n' "$profile" "$saved_output" "$saved_output" \
+                >> "$additions"
+        done < "$HOME/.config/autorandr/$profile/setup"
+    done <<< "$detected_profiles"
+
+    # Rename diagnostics follow identity entries, so the last-value-wins merge
+    # below records autorandr's actual connector choice.
+    while IFS= read -r line; do
+        if [[ $line =~ ^([^:]+):\ renaming\ display\ ([^[:space:]]+)\ to\ ([^[:space:]]+)$ ]]; then
+            profile=${BASH_REMATCH[1]}
+            saved_output=${BASH_REMATCH[2]}
+            live_output=${BASH_REMATCH[3]}
+            printf '%s %s %s\n' "$profile" "$saved_output" "$live_output" \
+                >> "$additions"
+        fi
+    done < "$diagnostics_file"
+
+    if [[ -s $additions ]]; then
+        {
+            [[ -r $output_mapping_file ]] && cat "$output_mapping_file"
+            cat "$additions"
+        } | awk '
+            { key=$1 SUBSEP $2; mapping[key]=$0 }
+            END { for (key in mapping) print mapping[key] }
+        ' > "$tmp"
+        mv -f "$tmp" "$output_mapping_file"
+    else
+        rm -f "$tmp"
+    fi
+    rm -f "$additions"
+}
+
+autorandr_recording_mappings () {
+    local diagnostics status
+
+    diagnostics=$(mktemp "$runtime_dir/autorandr-command.XXXXXX") || return 1
+    autorandr_command "$@" 2>"$diagnostics"
+    status=$?
+    cat "$diagnostics" >&2
+    # A mode-set may make the EDID unavailable before the next --detected
+    # query. Persist any rename learned by this application immediately so an
+    # explicit retry still targets the live connector.
+    record_output_mappings "$diagnostics" "" || true
+    rm -f "$diagnostics"
+    return "$status"
+}
+
+resolve_profile_outputs () {
     local profile=$1
     local setup_file="$HOME/.config/autorandr/$profile/setup"
-    local query output _edid
+    local query expected_output _expected_edid resolved
+    local -A used=()
 
     [[ -r $setup_file ]] || return 1
     query=$(xrandr --query 2>/dev/null) || return 1
-    while read -r output _edid; do
-        [[ -n $output ]] || continue
-        if ! awk -v wanted="$output" \
+
+    while read -r expected_output _expected_edid; do
+        [[ -n $expected_output && $expected_output != \#* ]] || continue
+        resolved=
+
+        # Consume autorandr's own --match-edid rename decision rather than
+        # independently approximating its serial/EDID/wildcard semantics.
+        if [[ -r $output_mapping_file ]]; then
+            resolved=$(awk -v profile="$profile" -v output="$expected_output" \
+                '$1 == profile && $2 == output { mapped=$3 }
+                 END { print mapped }' "$output_mapping_file")
+        fi
+
+        # Profiles whose connector names did not change have no rename record.
+        [[ -n $resolved ]] || resolved=$expected_output
+        [[ -z ${used[$resolved]:-} ]] || return 1
+        if ! awk -v wanted="$resolved" \
              '$1 == wanted && $2 == "connected" { found=1 }
               END { exit !found }' <<< "$query"; then
             return 1
         fi
+
+        used[$resolved]=1
+        printf '%s\n' "$resolved"
     done < "$setup_file"
-    return 0
 }
 
-profile_matches_connected_outputs () {
+profile_output_state_matches () {
     local profile=$1
-    local setup_file="$HOME/.config/autorandr/$profile/setup"
-    local query
+    local require_active=$2
+    local require_exact=$3
+    local query resolved_outputs
 
-    [[ -r $setup_file ]] || return 1
     query=$(xrandr --query 2>/dev/null) || return 1
+    resolved_outputs=$(resolve_profile_outputs "$profile") || return 1
+    [[ -n $resolved_outputs ]] || return 1
 
-    awk '
-        NR == FNR { expected[$1]=1; next }
-        $2 == "connected" { connected[$1]=1 }
-        END {
-            for (output in expected) {
-                if (!connected[output]) exit 1
-            }
-            for (output in connected) {
-                if (!expected[output]) exit 1
-            }
-        }
-    ' "$setup_file" <(printf '%s\n' "$query")
-}
-
-profile_matches_active_outputs () {
-    local profile=$1
-    local setup_file="$HOME/.config/autorandr/$profile/setup"
-    local query
-
-    [[ -r $setup_file ]] || return 1
-    query=$(xrandr --query 2>/dev/null) || return 1
-
-    # Autorandr may temporarily identify the internal-only profile while a
-    # DisplayPort output is connected but has no usable EDID. Reject that
-    # lower-topology match. Also require every profile output to have an active
-    # mode; "connected" alone still includes the disabled state which caused
-    # the Samsung recovery failure.
-    awk '
+    awk -v require_active="$require_active" -v require_exact="$require_exact" '
         NR == FNR { expected[$1]=1; next }
         $2 == "connected" {
             connected[$1]=1
@@ -229,13 +286,33 @@ profile_matches_active_outputs () {
         }
         END {
             for (output in expected) {
-                if (!connected[output] || !active[output]) exit 1
+                if (!connected[output]) exit 1
+                if (require_active && !active[output]) exit 1
             }
-            for (output in connected) {
-                if (!expected[output]) exit 1
+            if (require_exact) {
+                for (output in connected) {
+                    if (!expected[output]) exit 1
+                }
             }
         }
-    ' "$setup_file" <(printf '%s\n' "$query")
+    ' <(printf '%s\n' "$resolved_outputs") <(printf '%s\n' "$query")
+}
+
+profile_outputs_connected () {
+    profile_output_state_matches "$1" 0 0
+}
+
+profile_matches_connected_outputs () {
+    profile_output_state_matches "$1" 0 1
+}
+
+profile_matches_active_outputs () {
+    # Autorandr may temporarily identify the internal-only profile while an
+    # external output is connected but has no usable EDID. Reject that
+    # lower-topology match. Also require every profile output to have an active
+    # mode; "connected" alone still includes the disabled state which caused
+    # the Samsung recovery failure.
+    profile_output_state_matches "$1" 1 1
 }
 
 apply_profile () {
@@ -254,17 +331,25 @@ apply_profile () {
         echo "Reloading previously matched autorandr profile $retry_profile (desktop postswitch deferred)" >&2
         MONITOR_WATCHER_NG_DEFER_POSTSWITCH=1 \
             MONITOR_WATCHER_NG_PENDING_PROFILE_FILE="$pending_profile_file" \
-            autorandr_command --load "$retry_profile" </dev/null
+            autorandr_recording_mappings --load "$retry_profile" </dev/null
     else
         echo "Running autorandr --change (desktop postswitch deferred)" >&2
         MONITOR_WATCHER_NG_DEFER_POSTSWITCH=1 \
             MONITOR_WATCHER_NG_PENDING_PROFILE_FILE="$pending_profile_file" \
-            autorandr_command --change </dev/null
+            autorandr_recording_mappings --change </dev/null
     fi
 }
 
 get_detected_profiles () {
-    autorandr_command --detected </dev/null 2>/dev/null
+    local diagnostics output status
+
+    diagnostics=$(mktemp "$runtime_dir/autorandr-detected.XXXXXX") || return 1
+    output=$(autorandr_command --detected </dev/null 2>"$diagnostics")
+    status=$?
+    record_output_mappings "$diagnostics" "$output" || true
+    rm -f "$diagnostics"
+    printf '%s\n' "$output"
+    return "$status"
 }
 
 get_current_profiles () {

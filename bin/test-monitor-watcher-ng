@@ -29,6 +29,7 @@ prepare_watcher () {
     source "$watcher"
     runtime_dir=$tmp/runtime
     pending_profile_file=$runtime_dir/pending
+    output_mapping_file=$runtime_dir/output-mappings
     RECONCILE_TIMEOUT_SECONDS=999
     MAX_RECONCILE_ATTEMPTS=5
     PROFILE_STABILITY_SECONDS=0
@@ -321,6 +322,92 @@ DisplayPort-1 disconnected'
         profile_matches_active_outputs celtic
 }
 
+test_connector_rename_is_resolved_by_edid () {
+    local tmp xrandr_output resolved detected
+    # shellcheck disable=SC1090
+    source "$watcher"
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' RETURN
+    mkdir -p "$tmp/home/.config/autorandr/aoc"
+    printf '%s\n' 'DisplayPort-2 aoc-edid' 'eDP laptop-edid' \
+        > "$tmp/home/.config/autorandr/aoc/setup"
+    HOME=$tmp/home
+    runtime_dir=$tmp/runtime
+    output_mapping_file=$runtime_dir/output-mappings
+    mkdir -p "$runtime_dir"
+
+    autorandr_command () {
+        printf '%s\n' 'aoc: renaming display DisplayPort-2 to DisplayPort-1' >&2
+        printf '%s\n' aoc
+    }
+    xrandr () { printf '%s\n' "$xrandr_output"; }
+
+    xrandr_output='eDP connected 2880x1920+0+0
+DisplayPort-1 connected primary 3840x2160+2880+0'
+    detected=$(get_detected_profiles) || return 1
+    [[ $detected == aoc ]] || return 1
+    resolved=$(resolve_profile_outputs aoc) || return 1
+    [[ $resolved == $'DisplayPort-1\neDP' ]] &&
+        profile_matches_connected_outputs aoc &&
+        profile_matches_active_outputs aoc || return 1
+
+    xrandr_output+=$'\nDisplayPort-3 connected 1920x1080+6720+0'
+    ! profile_matches_connected_outputs aoc &&
+        ! profile_matches_active_outputs aoc || return 1
+
+    # Returning to the saved connector emits no rename diagnostic. Detection
+    # must replace the stale DisplayPort-1 mapping with the identity mapping.
+    autorandr_command () { printf '%s\n' aoc; }
+    xrandr_output='eDP connected 2880x1920+0+0
+DisplayPort-2 connected primary 3840x2160+2880+0'
+    get_detected_profiles >/dev/null || return 1
+    resolved=$(resolve_profile_outputs aoc) || return 1
+    [[ $resolved == $'DisplayPort-2\neDP' ]] &&
+        profile_matches_active_outputs aoc
+}
+
+test_applied_rename_survives_lost_detection () {
+    local tmp xrandr_output
+    # shellcheck disable=SC1090
+    source "$watcher"
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' RETURN
+    mkdir -p "$tmp/home/.config/autorandr/aoc" "$tmp/runtime"
+    printf '%s\n' 'DisplayPort-2 aoc-edid' 'eDP laptop-edid' \
+        > "$tmp/home/.config/autorandr/aoc/setup"
+    HOME=$tmp/home
+    runtime_dir=$tmp/runtime
+    output_mapping_file=$runtime_dir/output-mappings
+
+    autorandr_command () {
+        printf '%s\n' 'aoc: renaming display DisplayPort-2 to DisplayPort-1' >&2
+    }
+    autorandr_recording_mappings --change >/dev/null 2>&1 || return 1
+
+    # Simulate the following detection query seeing no usable external EDID.
+    autorandr_command () { return 0; }
+    [[ -z $(get_detected_profiles) ]] || return 1
+    xrandr_output='eDP connected 2880x1920+0+0
+DisplayPort-1 connected'
+    xrandr () { printf '%s\n' "$xrandr_output"; }
+
+    [[ $(resolve_profile_outputs aoc) == $'DisplayPort-1\neDP' ]] &&
+        profile_matches_connected_outputs aoc
+}
+
+test_autorandr_commands_match_by_edid () {
+    local command
+    # shellcheck disable=SC1090
+    source "$watcher"
+    command=""
+    AUTORANDR_SKIP_OPTIONS=gamma
+
+    autorandr () { command=$*; }
+
+    autorandr_command --detected >/dev/null 2>&1 &&
+        [[ $command == '--match-edid --detected --skip-options gamma' ]]
+}
+
 test_profile_stability_rechecks_current_state () {
     local tmp samples
     tmp=$(mktemp -d)
@@ -456,6 +543,9 @@ run_test 'genuine unplug replaces a pending external profile' test_genuine_unplu
 run_test 'internal marker expands to Samsung without another event' test_internal_marker_can_expand_without_another_event
 run_test 'retry profile must exactly match connected outputs' test_retry_profile_requires_exact_connected_outputs
 run_test 'active-output matching rejects disabled and extra outputs' test_active_output_match_rejects_disabled_or_extra_output
+run_test 'connector renaming is resolved by EDID' test_connector_rename_is_resolved_by_edid
+run_test 'applied connector rename survives lost detection' test_applied_rename_survives_lost_detection
+run_test 'autorandr commands match outputs by EDID' test_autorandr_commands_match_by_edid
 run_test 'profile stability window rechecks current state' test_profile_stability_rechecks_current_state
 run_test 'profile stability catches an event after the final query' test_profile_stability_catches_event_after_final_query
 run_test 'unchanged current profile does not relayout the desktop' test_already_current_skips_relayout
