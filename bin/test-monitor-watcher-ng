@@ -31,10 +31,30 @@ prepare_watcher () {
     pending_profile_file=$runtime_dir/pending
     RECONCILE_TIMEOUT_SECONDS=999
     MAX_RECONCILE_ATTEMPTS=5
+    PROFILE_STABILITY_SECONDS=0
     mkdir -p "$runtime_dir"
 
     read_drm_event () { return 1; }
     wait_before_retry () { return 0; }
+    profile_matches_connected_outputs () { return 0; }
+    profile_matches_active_outputs () { return 0; }
+}
+
+install_celtic_to_samsung_doubles () {
+    wait_for_quiescence () { return 0; }
+    get_detected_profiles () {
+        [[ $attempts -eq 1 ]] && printf '%s\n' celtic || printf '%s\n' samsung
+    }
+    get_current_profiles () {
+        [[ $attempts -eq 1 ]] && printf '%s\n' celtic || printf '%s\n' samsung
+    }
+    profile_outputs_connected () { [[ $1 == samsung ]]; }
+    profile_matches_connected_outputs () { [[ $1 == samsung ]]; }
+    profile_matches_active_outputs () { [[ $1 == samsung ]]; }
+    finalize_postswitch () {
+        finalizations=$((finalizations + 1))
+        finalized_profile=$1
+    }
 }
 
 test_event_during_apply_is_retried () {
@@ -142,6 +162,207 @@ test_previously_matched_profile_is_explicitly_retried () {
         [[ $finalizations -eq 1 ]]
 }
 
+test_transient_fallback_preserves_external_profile () {
+    local tmp attempts finalizations finalized_profile applied stability_reads
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' RETURN
+    attempts=0
+    finalizations=0
+    finalized_profile=""
+    applied=""
+    stability_reads=0
+    prepare_watcher "$tmp"
+    LAST_CONVERGED_PROFILE=celtic
+    PROFILE_STABILITY_SECONDS=2
+    PROFILE_STABILITY_POLL_SECONDS=1
+
+    apply_profile () {
+        attempts=$((attempts + 1))
+        applied=${applied:+$applied,}${1:-change}
+        if [[ $attempts -eq 1 ]]; then
+            printf '%s\n' samsung > "$pending_profile_file"
+        else
+            # Simulate autorandr briefly loading the internal-only profile and
+            # its hook attempting to replace the earlier Samsung marker.
+            printf '%s\n' celtic > "$pending_profile_file"
+        fi
+    }
+    install_celtic_to_samsung_doubles
+    read_drm_event () { stability_reads=$((stability_reads + 1)); return 1; }
+
+    reconcile test >/dev/null 2>&1 &&
+        [[ $attempts -eq 2 ]] &&
+        [[ $applied == change,samsung ]] &&
+        [[ $stability_reads -eq 4 ]] &&
+        [[ $finalizations -eq 1 ]] &&
+        [[ $finalized_profile == samsung ]]
+}
+
+test_genuine_unplug_replaces_pending_external_profile () {
+    local tmp attempts finalizations finalized_profile retry_arg stability_reads
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' RETURN
+    attempts=0
+    finalizations=0
+    finalized_profile=""
+    retry_arg=""
+    stability_reads=0
+    prepare_watcher "$tmp"
+    LAST_CONVERGED_PROFILE=samsung
+    PROFILE_STABILITY_SECONDS=2
+    PROFILE_STABILITY_POLL_SECONDS=1
+    printf '%s\n' samsung > "$pending_profile_file"
+
+    apply_profile () {
+        attempts=$((attempts + 1))
+        retry_arg=${1:-}
+        printf '%s\n' celtic > "$pending_profile_file"
+    }
+    wait_for_quiescence () { return 0; }
+    read_drm_event () { stability_reads=$((stability_reads + 1)); return 1; }
+    get_detected_profiles () { printf '%s\n' celtic; }
+    get_current_profiles () { printf '%s\n' celtic; }
+    profile_outputs_connected () { return 1; }
+    profile_matches_connected_outputs () { [[ $1 == celtic ]]; }
+    finalize_postswitch () {
+        finalizations=$((finalizations + 1))
+        finalized_profile=$1
+    }
+
+    reconcile test >/dev/null 2>&1 &&
+        [[ $attempts -eq 1 ]] &&
+        [[ $retry_arg == samsung ]] &&
+        [[ $stability_reads -eq 4 ]] &&
+        [[ $finalizations -eq 1 ]] &&
+        [[ $finalized_profile == celtic ]]
+}
+
+test_internal_marker_can_expand_without_another_event () {
+    local tmp attempts finalizations finalized_profile applied
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' RETURN
+    attempts=0
+    finalizations=0
+    finalized_profile=""
+    applied=""
+    prepare_watcher "$tmp"
+    LAST_CONVERGED_PROFILE=celtic
+
+    apply_profile () {
+        attempts=$((attempts + 1))
+        applied=${applied:+$applied,}${1:-change}
+        if [[ $attempts -eq 1 ]]; then
+            printf '%s\n' celtic > "$pending_profile_file"
+        else
+            printf '%s\n' samsung > "$pending_profile_file"
+        fi
+    }
+    install_celtic_to_samsung_doubles
+
+    reconcile test >/dev/null 2>&1 &&
+        [[ $attempts -eq 2 ]] &&
+        [[ $applied == change,celtic ]] &&
+        [[ $finalizations -eq 1 ]] &&
+        [[ $finalized_profile == samsung ]]
+}
+
+test_retry_profile_requires_exact_connected_outputs () {
+    local tmp command exact_match
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' RETURN
+    prepare_watcher "$tmp"
+    mkdir -p "$tmp/home/bin"
+    printf '#!/bin/sh\nexit 0\n' > "$tmp/home/bin/clear-dpy-cache"
+    chmod +x "$tmp/home/bin/clear-dpy-cache"
+    HOME=$tmp/home
+    command=""
+    exact_match=0
+
+    profile_matches_connected_outputs () { [[ $exact_match -eq 1 ]]; }
+    autorandr_command () { command=$*; }
+
+    apply_profile celtic >/dev/null 2>&1 || return 1
+    [[ $command == --change ]] || return 1
+
+    exact_match=1
+    apply_profile samsung >/dev/null 2>&1 || return 1
+    [[ $command == '--load samsung' ]]
+}
+
+test_active_output_match_rejects_disabled_or_extra_output () {
+    local tmp xrandr_output
+    # Source before installing the RETURN cleanup trap; sourcing itself counts
+    # as a return and would otherwise remove the fixture immediately.
+    # shellcheck disable=SC1090
+    source "$watcher"
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' RETURN
+    mkdir -p "$tmp/home/.config/autorandr/celtic" \
+             "$tmp/home/.config/autorandr/samsung"
+    printf '%s\n' eDP > "$tmp/home/.config/autorandr/celtic/setup"
+    printf '%s\n' DisplayPort-1 eDP > "$tmp/home/.config/autorandr/samsung/setup"
+
+    HOME=$tmp/home
+    xrandr () { printf '%s\n' "$xrandr_output"; }
+
+    xrandr_output='eDP connected 2880x1920+0+0
+DisplayPort-1 connected'
+    ! profile_matches_active_outputs celtic &&
+        ! profile_matches_active_outputs samsung || return 1
+
+    xrandr_output='eDP connected 2880x1920+0+0
+DisplayPort-1 connected primary 5120x2160+-5120+0'
+    profile_matches_connected_outputs samsung &&
+        profile_matches_active_outputs samsung || return 1
+
+    xrandr_output='eDP connected 2880x1920+0+0
+DisplayPort-1 disconnected'
+    profile_matches_connected_outputs celtic &&
+        profile_matches_active_outputs celtic
+}
+
+test_profile_stability_rechecks_current_state () {
+    local tmp samples
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' RETURN
+    samples=0
+    prepare_watcher "$tmp"
+    PROFILE_STABILITY_SECONDS=3
+    PROFILE_STABILITY_POLL_SECONDS=1
+
+    read_drm_event () { samples=$((samples + 1)); return 1; }
+    get_detected_profiles () { printf '%s\n' samsung; }
+    get_current_profiles () {
+        [[ $samples -lt 2 ]] && printf '%s\n' samsung || printf '%s\n' celtic
+    }
+    profile_outputs_connected () { return 0; }
+
+    ! wait_for_profile_stability samsung >/dev/null 2>&1 &&
+        [[ $samples -eq 2 ]]
+}
+
+test_profile_stability_catches_event_after_final_query () {
+    local tmp reads
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' RETURN
+    reads=0
+    prepare_watcher "$tmp"
+    PROFILE_STABILITY_SECONDS=1
+    PROFILE_STABILITY_POLL_SECONDS=1
+
+    read_drm_event () {
+        reads=$((reads + 1))
+        [[ $reads -eq 2 ]] && return 0
+        return 1
+    }
+    get_detected_profiles () { printf '%s\n' samsung; }
+    get_current_profiles () { printf '%s\n' samsung; }
+    profile_outputs_connected () { return 0; }
+
+    ! wait_for_profile_stability samsung >/dev/null 2>&1 &&
+        [[ $reads -eq 2 ]]
+}
+
 test_automatically_current_new_profile_runs_relayout () {
     local tmp attempts finalizations finalized_profile
     tmp=$(mktemp -d)
@@ -230,6 +451,13 @@ test_postswitch_deferral_records_profile_only () {
 run_test 'DRM event during apply causes a retry' test_event_during_apply_is_retried
 run_test 'detected-but-not-current profile causes a retry' test_detected_but_not_current_is_retried
 run_test 'previously matched profile is explicitly retried' test_previously_matched_profile_is_explicitly_retried
+run_test 'transient fallback preserves the pending external profile' test_transient_fallback_preserves_external_profile
+run_test 'genuine unplug replaces a pending external profile' test_genuine_unplug_replaces_pending_external_profile
+run_test 'internal marker expands to Samsung without another event' test_internal_marker_can_expand_without_another_event
+run_test 'retry profile must exactly match connected outputs' test_retry_profile_requires_exact_connected_outputs
+run_test 'active-output matching rejects disabled and extra outputs' test_active_output_match_rejects_disabled_or_extra_output
+run_test 'profile stability window rechecks current state' test_profile_stability_rechecks_current_state
+run_test 'profile stability catches an event after the final query' test_profile_stability_catches_event_after_final_query
 run_test 'unchanged current profile does not relayout the desktop' test_already_current_skips_relayout
 run_test 'automatically current changed profile still relayouts the desktop' test_automatically_current_new_profile_runs_relayout
 run_test 'unmatched topology is retried without relayout' test_unmatched_topology_is_retried_without_relayout

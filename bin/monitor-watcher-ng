@@ -20,6 +20,11 @@
 # The Samsung/hub emitted a final link-training event 4.3s after the initial
 # reconnect event, so shorter intervals can start setup-monitor prematurely.
 QUIET_SECONDS=${QUIET_SECONDS:-5}
+# An active xrandr mode can precede the Samsung becoming visibly usable. Keep
+# verifying the selected profile after DRM quiescence before disruptive
+# postswitch work (Fluxbox/panel restarts) is allowed to begin.
+PROFILE_STABILITY_SECONDS=${PROFILE_STABILITY_SECONDS:-10}
+PROFILE_STABILITY_POLL_SECONDS=${PROFILE_STABILITY_POLL_SECONDS:-1}
 RETRY_DELAY_SECONDS=${RETRY_DELAY_SECONDS:-1}
 RECONCILE_TIMEOUT_SECONDS=${RECONCILE_TIMEOUT_SECONDS:-30}
 MAX_RECONCILE_ATTEMPTS=${MAX_RECONCILE_ATTEMPTS:-12}
@@ -48,6 +53,12 @@ check_deps () {
             exit 1
         fi
     done
+
+    if [[ ! $PROFILE_STABILITY_SECONDS =~ ^(0|[1-9][0-9]*)$ ]] ||
+       [[ ! $PROFILE_STABILITY_POLL_SECONDS =~ ^[1-9][0-9]*$ ]]; then
+        echo "ERROR: PROFILE_STABILITY_SECONDS must be a non-negative integer and PROFILE_STABILITY_POLL_SECONDS a positive integer" >&2
+        exit 1
+    fi
 }
 
 load_display_env () {
@@ -173,6 +184,60 @@ profile_outputs_connected () {
     return 0
 }
 
+profile_matches_connected_outputs () {
+    local profile=$1
+    local setup_file="$HOME/.config/autorandr/$profile/setup"
+    local query
+
+    [[ -r $setup_file ]] || return 1
+    query=$(xrandr --query 2>/dev/null) || return 1
+
+    awk '
+        NR == FNR { expected[$1]=1; next }
+        $2 == "connected" { connected[$1]=1 }
+        END {
+            for (output in expected) {
+                if (!connected[output]) exit 1
+            }
+            for (output in connected) {
+                if (!expected[output]) exit 1
+            }
+        }
+    ' "$setup_file" <(printf '%s\n' "$query")
+}
+
+profile_matches_active_outputs () {
+    local profile=$1
+    local setup_file="$HOME/.config/autorandr/$profile/setup"
+    local query
+
+    [[ -r $setup_file ]] || return 1
+    query=$(xrandr --query 2>/dev/null) || return 1
+
+    # Autorandr may temporarily identify the internal-only profile while a
+    # DisplayPort output is connected but has no usable EDID. Reject that
+    # lower-topology match. Also require every profile output to have an active
+    # mode; "connected" alone still includes the disabled state which caused
+    # the Samsung recovery failure.
+    awk '
+        NR == FNR { expected[$1]=1; next }
+        $2 == "connected" {
+            connected[$1]=1
+            for (i=3; i<=NF; i++) {
+                if ($i ~ /^[0-9]+x[0-9]+\+-?[0-9]+\+-?[0-9]+$/) active[$1]=1
+            }
+        }
+        END {
+            for (output in expected) {
+                if (!connected[output] || !active[output]) exit 1
+            }
+            for (output in connected) {
+                if (!expected[output]) exit 1
+            }
+        }
+    ' "$setup_file" <(printf '%s\n' "$query")
+}
+
 apply_profile () {
     local retry_profile=${1:-}
 
@@ -181,7 +246,7 @@ apply_profile () {
     # topology while this controller is still converging.
     "$HOME/bin/clear-dpy-cache" </dev/null
 
-    if [[ -n $retry_profile ]] && profile_outputs_connected "$retry_profile"; then
+    if [[ -n $retry_profile ]] && profile_matches_connected_outputs "$retry_profile"; then
         # Some slow monitors expose their full EDID long enough for the first
         # match, then temporarily expose a truncated EDID after the mode-set.
         # Autorandr can no longer auto-detect the profile at that point, but an
@@ -262,6 +327,58 @@ wait_before_retry () {
     return 2
 }
 
+wait_for_profile_stability () {
+    local profile=$1
+    local elapsed=0
+    local interval status detected current
+
+    if (( PROFILE_STABILITY_SECONDS > 0 )); then
+        echo "Verifying autorandr profile $profile remains active for ${PROFILE_STABILITY_SECONDS}s" >&2
+    fi
+
+    while (( elapsed < PROFILE_STABILITY_SECONDS )); do
+        interval=$PROFILE_STABILITY_POLL_SECONDS
+        if (( elapsed + interval > PROFILE_STABILITY_SECONDS )); then
+            interval=$((PROFILE_STABILITY_SECONDS - elapsed))
+        fi
+
+        read_drm_event "$interval"
+        status=$?
+        if [[ $status -eq 0 ]]; then
+            echo "DRM event received during profile stability window; retrying" >&2
+            return 1
+        fi
+        [[ $status -eq 2 ]] && return 2
+
+        if ! detected=$(get_detected_profiles) ||
+           ! current=$(get_current_profiles) ||
+           ! profile_in_list "$profile" "$current" ||
+           { ! profile_in_list "$profile" "$detected" &&
+             ! profile_outputs_connected "$profile"; } ||
+           ! profile_matches_active_outputs "$profile"; then
+            echo "Autorandr profile $profile did not remain active during stability window; retrying" >&2
+            return 1
+        fi
+
+        elapsed=$((elapsed + interval))
+    done
+
+    if (( PROFILE_STABILITY_SECONDS > 0 )); then
+        # Close the final query-to-postswitch gap too. An event arriving while
+        # the last autorandr/xrandr queries ran can otherwise remain queued
+        # while those queries still describe the old state.
+        read_drm_event 0.05
+        status=$?
+        if [[ $status -eq 0 ]]; then
+            echo "DRM event received after profile stability verification; retrying" >&2
+            return 1
+        fi
+        [[ $status -eq 2 ]] && return 2
+    fi
+
+    return 0
+}
+
 reconcile () {
     local reason=${1:-DRM event}
     local finalize_changed_profile=${2:-1}
@@ -291,7 +408,22 @@ reconcile () {
 
         pending_from_hook=$(read_pending_profile)
         if [[ -n $pending_from_hook ]]; then
-            pending_profile=$pending_from_hook
+            if [[ -z $pending_profile || $pending_from_hook == "$pending_profile" ]]; then
+                pending_profile=$pending_from_hook
+            elif profile_matches_connected_outputs "$pending_from_hook" &&
+                 ! profile_matches_connected_outputs "$pending_profile"; then
+                # The first marker can itself be a transient lower-topology
+                # profile. Let a later marker replace it only when the later
+                # profile exactly describes the now-connected outputs.
+                echo "Replacing deferred profile $pending_profile with topology match $pending_from_hook" >&2
+                pending_profile=$pending_from_hook
+            else
+                # Conversely, do not let an internal-only fallback replace a
+                # previously matched external profile while that external
+                # output remains connected or is still link-training.
+                echo "Ignoring transient deferred profile $pending_from_hook; preserving $pending_profile" >&2
+                printf '%s\n' "$pending_profile" > "$pending_profile_file"
+            fi
         fi
 
         wait_for_quiescence
@@ -321,6 +453,12 @@ reconcile () {
             common=$pending_profile
         fi
         if [[ -n $common && $apply_failed -eq 0 ]]; then
+            if ! profile_matches_active_outputs "$common"; then
+                echo "Autorandr profile $common does not exactly match the active outputs; retrying" >&2
+                wait_before_retry || return 1
+                continue
+            fi
+
             # Close the small gap between the quiet wait and profile queries.
             read_drm_event 0.05
             status=$?
@@ -329,6 +467,13 @@ reconcile () {
                 continue
             fi
             [[ $status -eq 2 ]] && return 1
+
+            wait_for_profile_stability "$common"
+            status=$?
+            if [[ $status -ne 0 ]]; then
+                [[ $status -eq 2 ]] && return 1
+                continue
+            fi
 
             if [[ -n $pending_profile ]] && \
                profile_in_list "$pending_profile" "$current" && \
