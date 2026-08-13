@@ -113,6 +113,7 @@ physical_epoch
 physical_token
 reconcile_epoch
 candidate_profile
+candidate_scope
 candidate_mapping
 candidate_proof_epoch
 candidate_observation_key
@@ -122,10 +123,18 @@ backoff_index
 verify_since_ms
 last_drm_at_ms
 attempted_application_keys
+pending_application_key
+pending_application_profile
+pending_application_scope
+application_status
+application_exit_status
 desktop_finalized_profile
+finalization_sequence
 finalization_id
 finalization_profile
+finalization_transition_key
 finalization_status
+finalization_exit_status
 unknown_key
 unknown_since_ms
 unplug_since_ms
@@ -142,11 +151,14 @@ verified independently.
 | `RECOVERING` | Validate persisted state against a fresh observation. | immediate |
 | `QUIESCENT` | One known profile is exact and stable; no unresolved work. | DRM or 60s health tick |
 | `DISCOVER_FAST` | Topology/identity is changing within the aggressive budget. | 0, 250ms, 500ms, 1s, then 2s |
-| `APPLYING` | One explicit profile application is in progress. | process completion |
+| `APPLY_PENDING` | An explicit profile load is admitted but not yet acknowledged as dispatched. | clean observation or dispatch acknowledgement |
+| `APPLYING` | One acknowledged explicit profile application is in progress. | process completion |
+| `APPLY_FAILED` | An application failed or its outcome became unknowable after restart; unchanged evidence cannot repeat it. | changed evidence or 60s health tick |
 | `VERIFYING` | A candidate is exact/current/active and accumulating proof. | 1s |
 | `WAIT_SLOW` | Fast budget expired, but an external display remains unresolved. | 5s, 10s, 20s, then 30s capped |
 | `UNSUPPORTED` | A complete stable external identity matches no saved profile. | DRM or 60s health tick |
-| `FINALIZING` | One durable desktop transition is running. | DRM or 1s status tick |
+| `FINALIZE_PENDING` | A durable desktop transition is admitted but not yet acknowledged as dispatched. | clean observation or dispatch acknowledgement |
+| `FINALIZING` | One acknowledged durable desktop transition is running. | DRM or 1s status tick |
 | `FINALIZE_FAILED` | The transition failed; automatic duplicate execution is barred. | DRM or 60s health tick |
 
 The aggressive deadline is a true deadline for *aggressive work*. It changes
@@ -162,7 +174,9 @@ transition:
    a connected external output, an internal-only target is ineligible even if
    autorandr detects it.
 2. **Explicit applications only.** Select a target first, then use `autorandr
-   --load TARGET`; never use unrestricted `--change` during discovery.
+   --load TARGET`; never use unrestricted `--change` during discovery. Action
+   admission and dispatch acknowledgement are distinct so a queued event cannot
+   erase an action before it executes or mark an unexecuted action complete.
 3. **No duplicate application for unchanged evidence.** Apply each
    `(physical_epoch, target, observation_key)` at most once.
 4. **EDID absence means uncertainty, not unplug.** It cannot select or finalize
@@ -170,16 +184,22 @@ transition:
 5. **Continuous final proof.** Exact connected and active topology, current
    profile agreement, no contradiction, event quietness, and the stability
    duration must all hold continuously.
-6. **Independent desktop state.** `desktop_finalized_profile` changes only
+6. **Durable action dispatch.** Both autorandr loads and desktop finalization
+   run as keyed, discoverable workers. Persist admission before launch and
+   acknowledge dispatch only after the service manager accepts the keyed unit;
+   recovery re-observes pending admissions and reattaches acknowledged workers.
+   An indeterminate or failed application becomes explicit `APPLY_FAILED`
+   rather than being silently deduplicated into waiting.
+7. **Independent desktop state.** `desktop_finalized_profile` changes only
    after successful desktop work, never after autorandr application alone.
-7. **Profile-transition finalization.** Resume, connector rename, repeated
+8. **Profile-transition finalization.** Resume, connector rename, repeated
    apply, and EDID churn do not finalize if the verified profile equals
    `desktop_finalized_profile`.
-8. **Explicit unplug proof.** Internal-only becomes eligible only after both
+9. **Explicit unplug proof.** Internal-only becomes eligible only after both
    sysfs and X report no external output for two observations spanning at
    least one second with no queued event.
-9. **No implicit abandonment.** Every unresolved connected external topology
-   has a scheduled timer.
+10. **No implicit abandonment.** Every unresolved connected external topology
+    has a scheduled timer.
 
 ## Transition table
 
@@ -202,22 +222,31 @@ prevents action until re-probed.
 | `DISCOVER_FAST` | External connected, identity incomplete | Preserve external intent | `DISCOVER_FAST`, then `WAIT_SLOW` at deadline |
 | `DISCOVER_FAST` | Complete unknown identity stable for 10s | Record reason | `UNSUPPORTED` |
 | `DISCOVER_FAST` | Candidate already exact/current/active | Start stability proof | `VERIFYING` |
-| `DISCOVER_FAST` | Eligible target not exact/current and application key is new | Persist key; explicitly load target | `APPLYING` |
+| `DISCOVER_FAST` | Eligible target not exact/current and application key is new | Persist admission; emit explicit load request | `APPLY_PENDING` |
+| `APPLY_PENDING` | Queued event dirties observation before dispatch | Re-observe; leave admission re-emittable | `APPLY_PENDING` or discovery state |
+| `APPLY_PENDING` | Keyed worker is accepted by the service manager | Persist attempted key and worker identity | `APPLYING` |
 | `DISCOVER_FAST` | Application key already attempted | Wait for changed evidence | `DISCOVER_FAST` or `WAIT_SLOW` |
 | `DISCOVER_FAST` | Aggressive deadline reached unresolved | Preserve intent; begin slow backoff | `WAIT_SLOW` |
 | `WAIT_SLOW` | Same unresolved observation | Increase capped backoff | `WAIT_SLOW` |
 | `WAIT_SLOW` | Evidence changes | Reset fast backoff, retain epoch/candidate as valid | `DISCOVER_FAST` |
 | `WAIT_SLOW` | Candidate becomes eligible/exact | Apply or verify | `APPLYING` or `VERIFYING` |
 | `APPLYING` | Command completes | Drain events and re-observe | classify into discovery/verification |
-| `APPLYING` | Same evidence remains unresolved | Keep attempted key; do not repeat | `DISCOVER_FAST` or `WAIT_SLOW` |
+| `APPLYING` | Command succeeds | Re-observe without repeating the attempted key | discovery or `VERIFYING` |
+| `APPLYING` | Command fails or restart makes outcome unknowable | Preserve terminal attempt evidence; do not silently deduplicate it into waiting | `APPLY_FAILED` |
+| `APPLY_FAILED` | Same evidence | Report only; never repeat side effects automatically | `APPLY_FAILED` |
+| `APPLY_FAILED` | Genuinely changed target/evidence | Clear terminal context and classify anew | `DISCOVER_FAST` |
 | `VERIFYING` | Event, contradiction, inactive/extra output, or no longer current | Reset proof; revoke only on contradiction/topology change | `DISCOVER_FAST` |
 | `VERIFYING` | Exact proof younger than 10s | Continue proof | `VERIFYING` |
 | `VERIFYING` | Proof complete; target equals finalized desktop profile | Record stable X profile only | `QUIESCENT` |
 | `VERIFYING` | Proof complete during startup baseline adoption | Adopt desktop baseline without relayout | `QUIESCENT` |
-| `VERIFYING` | Proof complete; target differs from finalized desktop profile | Create durable transaction | `FINALIZING` |
+| `VERIFYING` | Proof complete; target differs from finalized desktop profile | Admit durable transaction | `FINALIZE_PENDING` |
+| `FINALIZE_PENDING` | Queued event dirties observation before dispatch | Re-observe; leave transaction re-emittable | `FINALIZE_PENDING` or discovery state |
+| `FINALIZE_PENDING` | Adapter acknowledges dispatch | Persist running status | `FINALIZING` |
 | `FINALIZING` | Same unit still running and topology valid | No duplicate launch | `FINALIZING` |
 | `FINALIZING` | Topology changes | Stop stale unit; keep prior finalized profile | `DISCOVER_FAST` |
-| `FINALIZING` | Unit succeeds | Persist finalized profile and acknowledge transaction | `QUIESCENT` |
+| `FINALIZING` | Unit succeeds | Preserve a result-pending tombstone and re-observe | `FINALIZING` |
+| `FINALIZING` | Fresh valid observation confirms the completed transaction | Persist finalized profile and acknowledge transaction | `QUIESCENT` |
+| `FINALIZING` | Observation is temporarily invalid after completion | Keep the tombstone and continue probing; never rerun desktop work | `FINALIZING` |
 | `FINALIZING` | Unit fails without cancellation | Record failure; do not retry same ID | `FINALIZE_FAILED` |
 | `UNSUPPORTED` | Same complete unknown topology | No action | `UNSUPPORTED` |
 | `UNSUPPORTED` | Identity becomes incomplete | Resume polling | `WAIT_SLOW` |
@@ -255,8 +284,14 @@ desktop_finalized_profile`.
 The production implementation should run `setup-monitor` synchronously in a
 dedicated oneshot systemd unit keyed by that ID. The unit is outside the
 watcher's cgroup and remains discoverable after watcher restart. Repeated starts
-of the same active instance are no-ops. The watcher updates
-`desktop_finalized_profile` only after successful completion.
+of the same active instance are no-ops. Admission, dispatch acknowledgement,
+and completion are separate persisted steps. Even after a successful unit
+exit, the watcher updates `desktop_finalized_profile` only after a fresh valid
+observation proves that the transaction still describes the current topology.
+Pending admissions require that same fresh observation before dispatch after a
+watcher restart; acknowledged running units are reattached instead. Each new
+admission receives a monotonically increasing transaction sequence, so failed
+or cancelled IDs are never reused after an away-and-back transition.
 
 Strict exactly-once completion across arbitrary power loss is impossible
 because `setup-monitor` is not transactional. This protocol provides
@@ -270,7 +305,7 @@ It proves the reducer policy with synthetic observations. Every `OBSERVE` input
 contains:
 
 ```text
-key physical_token external_state eligible_profile exact_profile current_profile
+key physical_token external_state eligible_profile eligible_scope exact_profile current_profile valid
 ```
 
 where `external_state` is `none`, `unresolved`, `known`, or `unknown`.
@@ -278,12 +313,14 @@ The reducer emits symbolic actions such as:
 
 ```text
 SCHEDULE delay_ms
-APPLY profile
+APPLY profile application_key
 FINALIZE transition_id profile
 STOP_FINALIZER transition_id
 ```
 
-It never executes autorandr, xrandr, systemd, or `setup-monitor`.
+It never executes autorandr, xrandr, systemd, or `setup-monitor`. The repository's
+`.stow-local-ignore` anchors `^specs$`, and a Stow dry run must confirm that the
+spike is not linked into `$HOME`.
 
 ## Required trace coverage
 
@@ -306,7 +343,10 @@ desktop finalizations for:
 
 The trace must fail if an internal-only application occurs while external
 hardware is present, if identical evidence causes repeated application, or if
-an unresolved external state lacks a future timer.
+an unresolved external state lacks a future timer. It must also distinguish
+admission from dispatch, preserve completed-action tombstones across uncertain
+samples, and reject truncated, duplicate, semantically invalid, or
+arithmetic-bearing persisted records without partial mutation.
 
 ## Migration outline
 

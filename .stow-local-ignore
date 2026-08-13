@@ -78,7 +78,7 @@ COPYING
 tmp
 nohup\.out
 
-specs/
+^specs$
 ^/\.beads
 # Per-repository opt-in marker, read from the repo root -- it means
 # nothing in ~, and stowing it collides with ai-config, which also
