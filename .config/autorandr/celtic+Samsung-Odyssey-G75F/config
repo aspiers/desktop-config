@@ -17,7 +17,7 @@ crtc 1
 gamma 1.25:1.0:0.833
 mode 2880x1920
 pos 0x0
-rate 120.00
+rate 60.00
 x-prop-colorspace Default
 x-prop-max_bpc 16
 x-prop-non_desktop 0
