@@ -275,6 +275,66 @@ immediately; unresolved waiting is neither reset nor abandoned. DRM events
 schedule an immediate observation but reset the aggressive deadline only when
 they reveal a new physical epoch.
 
+## Optimistic desktop preparation and disruptive commit
+
+Waiting for full stability before starting any desktop work imposes the entire
+verification interval in front of the already long `setup-monitor` pipeline.
+Instead, begin repeatable preparation once a target has a short clean proof of
+an exact active X topology, continue observing concurrently, and reserve the
+most disruptive work for a separately authorized commit.
+
+### Phase 1: preflight and planning
+
+Start immediately for a plausible exact target. Determine the layout, bind the
+work to its transition and physical epoch, load display data, validate screen
+counts, refresh libdpy caches, and calculate the intended overlay, panel
+properties, DPI, and other configuration. Prefer staging calculated values
+under the transition ID so cancellation before mutation only removes that
+transaction directory.
+
+### Phase 2: optimistic soft application
+
+Apply repeatable configuration which a newer transaction can safely supersede:
+
+- install the selected Fluxbox overlay;
+- update panel properties;
+- apply layout DPI;
+- configure terminal fonts and themes;
+- reload Emacs fonts; and
+- generate Fluxbox configuration.
+
+These changes are not necessarily invisible, but they avoid window movement
+and process restarts. Continue probing throughout this phase. Contradictory
+physical topology, active X topology, or usable identity evidence cancels the
+worker; temporary EDID absence alone does not. Split the current
+`fluxbox-reconfigure` helper so configuration generation can happen here while
+`fluxbox-remote Reconfigure` remains part of commit. Move `setup_keyboard` out
+of this phase because a speculative target must not change external keyboard
+connection state.
+
+### Phase 3: disruptive commit
+
+Authorize commit only after a fresh observation still has the same physical
+epoch, target layout, exact active X topology, no contradictory identity, no
+queued DRM event, and a short clean interval. Then:
+
+1. apply the staged Fluxbox configuration and keyboard intent;
+2. run `ly` to place windows;
+3. restart Fluxbox;
+4. restart `xfce4-panel`; and
+5. restart `nm-applet`, wait for the tray, and capture diagnostics.
+
+Check the transition at safe boundaries. Do not hard-kill an atomic restart
+step merely because newer evidence arrived; finish that step, then cancel or
+run a corrective transaction. A successful process exit is still not durable
+completion: re-observe and commit `desktop_finalized_profile` only if the same
+transition remains authorized.
+
+The controller therefore has orthogonal display-convergence and desktop-worker
+lifecycles. Full ten-second proof is not a prerequisite for all work; beginning
+useful repeatable work and declaring the desktop transition complete use
+separate confidence thresholds.
+
 ## Desktop finalization transaction
 
 Autorandr postswitch must cease being authoritative. After stable proof, create
