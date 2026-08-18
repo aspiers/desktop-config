@@ -33,8 +33,12 @@ This produces two user-visible failures:
 1. An unresolved external link is abandoned after the fast retry budget.
 2. A transient laptop-only match can be applied while that link trains,
    needlessly reprogramming the eDP CRTC and blanking the laptop panel.
+3. Some Samsung plug/resume sequences deadlock with a valid, exact base EDID
+   identity but invalid extension blocks while the external output remains
+   disabled. Passive polling does not repair this state; a safe activation
+   probe causes the monitor to republish valid extension data.
 
-A deferred autorandr postswitch marker creates a third error: it proves only
+A deferred autorandr postswitch marker creates another error: it proves only
 that autorandr applied *some* X state, not that the final desktop layout
 changed.
 
@@ -46,8 +50,9 @@ The replacement is a single event loop around four layers:
    immutable canonical observation.
 2. **Pure reducer** — consumes `(controller state, event, observation, time)`
    and emits a new state plus symbolic actions. It performs no I/O.
-3. **Action adapter** — explicitly loads one selected autorandr profile or
-   starts/stops one desktop-finalization transaction.
+3. **Action adapter** — activates one safe probe mode, explicitly loads one
+   selected autorandr profile, or starts/stops one desktop-finalization
+   transaction.
 4. **Scheduler and persistence** — multiplexes DRM events with the nearest
    monotonic deadline and atomically stores a versioned state record.
 
@@ -64,6 +69,11 @@ kernel_external_outputs
 x_connected_outputs
 x_active_outputs
 live_fingerprints
+base_identity_profiles
+edid_integrity
+probe_candidate
+probe_output
+probe_mode
 eligible_profiles
 current_profiles
 exact_profile
@@ -76,10 +86,28 @@ watcher separately computes whether one eligible profile has an exact,
 unambiguous mapping onto the complete connected and active topology.
 `exact_profile` is set only for that proof.
 
+`base_identity_profiles` contains profiles whose complete 128-byte EDID base
+block is checksum-valid and exactly equal to the live base block. Manufacturer,
+product, binary serial, text serial, and base checksum must therefore all
+agree; model-name heuristics are insufficient. `edid_integrity` separately
+records whether the advertised extension count, length, and per-block checksums
+are complete. A monitor can have a proven base identity while its extension
+blocks are not ready.
+
+`probe_candidate` is set only when exactly one saved profile entry resolves to
+the inactive external output and has that base identity, exactly one external
+output is connected but inactive, exactly
+one internal output is active, the connected topology exactly matches the
+profile, and no full autorandr profile matches. Its mode is the output's
+advertised preferred mode; the probe does not select a desktop profile.
+
 `observation_key` hashes all fields except time. Repeated identical evidence
-therefore has the same key. An observation is invalid if sysfs/X sampling is
-internally inconsistent in a way that could authorize an action; invalid
-samples may cause another probe but never an application or finalization.
+therefore has the same key. `valid` describes whether the canonical sample is
+internally coherent. Broken extension checksums are represented explicitly in
+`edid_integrity`; they do not make an otherwise coherent base-identity sample
+invalid. A mixed/torn sample whose facts cannot safely be classified has
+`valid=0` and may schedule another observation but can never authorize a probe,
+application, or finalization.
 
 Before every action, the runtime adapter drains queued DRM input. If it drains
 anything, it re-observes instead of acting. After a blocking action it drains
@@ -122,6 +150,14 @@ next_timer_ms
 backoff_index
 verify_since_ms
 last_drm_at_ms
+attempted_probe_keys
+pending_probe_key
+pending_probe_profile
+pending_probe_output
+pending_probe_internal_output
+pending_probe_mode
+probe_status
+probe_exit_status
 attempted_application_keys
 pending_application_key
 pending_application_profile
@@ -151,6 +187,9 @@ verified independently.
 | `RECOVERING` | Validate persisted state against a fresh observation. | immediate |
 | `QUIESCENT` | One known profile is exact and stable; no unresolved work. | DRM or 60s health tick |
 | `DISCOVER_FAST` | Topology/identity is changing within the aggressive budget. | 0, 250ms, 500ms, 1s, then 2s |
+| `PROBE_PENDING` | A safe output activation is admitted from one exact base identity but not yet acknowledged as dispatched. | same clean observation or dispatch acknowledgement |
+| `PROBING` | One acknowledged safe-mode activation probe is in progress. | process completion |
+| `PROBE_FAILED` | A probe failed or became unknowable after restart; unchanged evidence cannot repeat it. | changed evidence or 60s health tick |
 | `APPLY_PENDING` | An explicit profile load is admitted but not yet acknowledged as dispatched. | clean observation or dispatch acknowledgement |
 | `APPLYING` | One acknowledged explicit profile application is in progress. | process completion |
 | `APPLY_FAILED` | An application failed or its outcome became unknowable after restart; unchanged evidence cannot repeat it. | changed evidence or 60s health tick |
@@ -173,32 +212,40 @@ transition:
 1. **No laptop fallback with external hardware present.** If sysfs or X reports
    a connected external output, an internal-only target is ineligible even if
    autorandr detects it.
-2. **Explicit applications only.** Select a target first, then use `autorandr
+2. **A probe is not profile authorization.** A safe activation probe requires
+   one checksum-valid base block exactly matching one saved profile, an exact
+   connected topology, one inactive external output, one active internal
+   output, and no complete autorandr match. It may enable only the output's
+   advertised preferred mode. It never authorizes autorandr, desktop work, or
+   persistence of a selected profile; those require a later full match.
+3. **Explicit applications only.** Select a target first, then use `autorandr
    --load TARGET`; never use unrestricted `--change` during discovery. Action
    admission and dispatch acknowledgement are distinct so a queued event cannot
    erase an action before it executes or mark an unexecuted action complete.
-3. **No duplicate application for unchanged evidence.** Apply each
+4. **No duplicate probe or application for unchanged evidence.** Probe each
+   `(physical_epoch, base_identity_profile, observation_key)` and apply each
    `(physical_epoch, target, observation_key)` at most once.
-4. **EDID absence means uncertainty, not unplug.** It cannot select or finalize
+5. **EDID absence means uncertainty, not unplug.** It cannot select or finalize
    the laptop-only profile.
-5. **Continuous final proof.** Exact connected and active topology, current
+6. **Continuous final proof.** Exact connected and active topology, current
    profile agreement, no contradiction, event quietness, and the stability
    duration must all hold continuously.
-6. **Durable action dispatch.** Both autorandr loads and desktop finalization
+7. **Durable action dispatch.** Activation probes, autorandr loads, and desktop finalization
    run as keyed, discoverable workers. Persist admission before launch and
    acknowledge dispatch only after the service manager accepts the keyed unit;
    recovery re-observes pending admissions and reattaches acknowledged workers.
-   An indeterminate or failed application becomes explicit `APPLY_FAILED`
-   rather than being silently deduplicated into waiting.
-7. **Independent desktop state.** `desktop_finalized_profile` changes only
+   An indeterminate or failed probe/application becomes explicit
+   `PROBE_FAILED`/`APPLY_FAILED` rather than being silently deduplicated into
+   waiting.
+8. **Independent desktop state.** `desktop_finalized_profile` changes only
    after successful desktop work, never after autorandr application alone.
-8. **Profile-transition finalization.** Resume, connector rename, repeated
+9. **Profile-transition finalization.** Resume, connector rename, repeated
    apply, and EDID churn do not finalize if the verified profile equals
    `desktop_finalized_profile`.
-9. **Explicit unplug proof.** Internal-only becomes eligible only after both
+10. **Explicit unplug proof.** Internal-only becomes eligible only after both
    sysfs and X report no external output for two observations spanning at
    least one second with no queued event.
-10. **No implicit abandonment.** Every unresolved connected external topology
+11. **No implicit abandonment.** Every unresolved connected external topology
     has a scheduled timer.
 
 ## Transition table
@@ -218,7 +265,15 @@ prevents action until re-probed.
 | `QUIESCENT` | Candidate EDID disappears but mapped output remains | Preserve intent, do not load internal profile | `DISCOVER_FAST` |
 | `QUIESCENT` | Another exact/current eligible profile appears | Start stability proof | `VERIFYING` |
 | `QUIESCENT` | Other meaningful observation change | Start epoch/deadline | `DISCOVER_FAST` |
-| `DISCOVER_FAST` | Invalid/mixed observation | Schedule fast probe | `DISCOVER_FAST` |
+| `DISCOVER_FAST` | Invalid/mixed observation | Schedule another observation; no action | `DISCOVER_FAST` |
+| `DISCOVER_FAST` | One exact base identity, broken extensions, exact connected/inactive topology, no full match, new probe key | Persist probe admission | `PROBE_PENDING` |
+| `PROBE_PENDING` | Queued event dirties observation before dispatch | Re-observe; leave admission re-emittable only under the same base identity | `PROBE_PENDING` or discovery state |
+| `PROBE_PENDING` | Probe worker is accepted | Persist attempted key and worker identity | `PROBING` |
+| `PROBING` | Safe-mode activation completes | Drain events and re-observe; do not infer profile readiness | `DISCOVER_FAST` |
+| `PROBING` | Physical topology changes while worker may still mutate X | Request idempotent stop; preserve worker admission until completion callback | `PROBING` |
+| `PROBING` | Command fails or restart makes outcome unknowable | Preserve terminal attempt evidence | `PROBE_FAILED` |
+| `PROBE_FAILED` | Same base identity and observation | Report only; never repeat automatically | `PROBE_FAILED` |
+| `PROBE_FAILED` | Genuinely changed evidence | Clear terminal context and classify anew | `DISCOVER_FAST` |
 | `DISCOVER_FAST` | External connected, identity incomplete | Preserve external intent | `DISCOVER_FAST`, then `WAIT_SLOW` at deadline |
 | `DISCOVER_FAST` | Complete unknown identity stable for 10s | Record reason | `UNSUPPORTED` |
 | `DISCOVER_FAST` | Candidate already exact/current/active | Start stability proof | `VERIFYING` |
@@ -229,7 +284,10 @@ prevents action until re-probed.
 | `DISCOVER_FAST` | Aggressive deadline reached unresolved | Preserve intent; begin slow backoff | `WAIT_SLOW` |
 | `WAIT_SLOW` | Same unresolved observation | Increase capped backoff | `WAIT_SLOW` |
 | `WAIT_SLOW` | Evidence changes | Reset fast backoff, retain epoch/candidate as valid | `DISCOVER_FAST` |
+| `WAIT_SLOW` | A unique probe candidate appears | Admit safe activation | `PROBE_PENDING` |
 | `WAIT_SLOW` | Candidate becomes eligible/exact | Apply or verify | `APPLYING` or `VERIFYING` |
+| `APPLYING` | Same worker still running and observation changes | Preserve admission; do not classify or dispatch another display action | `APPLYING` |
+| `APPLYING` | Physical topology changes while worker may still mutate X | Request idempotent stop; preserve worker admission until completion callback | `APPLYING` |
 | `APPLYING` | Command completes | Drain events and re-observe | classify into discovery/verification |
 | `APPLYING` | Command succeeds | Re-observe without repeating the attempted key | discovery or `VERIFYING` |
 | `APPLYING` | Command fails or restart makes outcome unknowable | Preserve terminal attempt evidence; do not silently deduplicate it into waiting | `APPLY_FAILED` |
@@ -274,6 +332,29 @@ Persist absolute deadlines. On service restart, an overdue timer fires
 immediately; unresolved waiting is neither reset nor abandoned. DRM events
 schedule an immediate observation but reset the aggressive deadline only when
 they reveal a new physical epoch.
+
+## Safe monitor activation probe
+
+The activation probe resolves a specific hardware deadlock before autorandr
+application. It is neither optimistic desktop preparation nor profile
+application. The adapter runs only the admitted command equivalent to:
+
+```text
+xrandr --output PROBE_OUTPUT --mode ADMITTED_PREFERRED_MODE --right-of ACTIVE_INTERNAL_OUTPUT
+```
+
+`ADMITTED_PREFERRED_MODE` is copied from the same clean observation which
+admitted the action, so a later mode-list change fails the command instead of
+silently selecting a different mode. The adapter does not set primary output,
+load an autorandr profile, move windows, or run a
+postswitch hook. Completion merely requests a fresh observation. Full EDID
+integrity and ordinary autorandr/profile-topology matching must subsequently
+select the target; probe success cannot manufacture that authorization.
+
+The production action is keyed and persisted like profile application. It is
+attempted once per `(physical_epoch, base_identity_profile, observation_key)`.
+A restart after acknowledged dispatch records an unknown/failed outcome rather
+than repeating the mode set. A changed physical topology cancels the admission.
 
 ## Optimistic desktop preparation and disruptive commit
 
@@ -368,13 +449,19 @@ contains:
 key physical_token external_state eligible_profile eligible_scope exact_profile current_profile valid
 ```
 
-where `external_state` is `none`, `unresolved`, `known`, or `unknown`.
-The reducer emits symbolic actions such as:
+where `external_state` is `none`, `unresolved`, `probeable`, `known`, or
+`unknown`. Optional trailing `identity_profile`, `probe_output`,
+`probe_internal_output`, and `probe_mode` values fully describe the admitted
+command only when `external_state=probeable`. The reducer emits symbolic
+actions such as:
 
 ```text
 SCHEDULE delay_ms
+PROBE profile output internal_output mode probe_key
 APPLY profile application_key
 FINALIZE transition_id profile
+STOP_PROBE probe_key
+STOP_APPLICATION application_key
 STOP_FINALIZER transition_id
 ```
 
@@ -391,6 +478,11 @@ desktop finalizations for:
 - genuine laptop-to-external plug;
 - readiness arriving after the aggressive deadline without a DRM event;
 - EDID ready → missing → ready;
+- exact known base identity with broken extensions → one safe activation probe
+  → later full match → application;
+- invalid/mixed observations never admitting a probe;
+- probe admission interrupted before dispatch, failed probe, physical change
+  during an acknowledged probe, and restart without duplicate execution;
 - transient laptop-only detection while external remains connected;
 - genuine unplug;
 - resume to the same external profile;
@@ -399,10 +491,13 @@ desktop finalizations for:
 - stable unknown external monitor;
 - restart in every non-stable phase;
 - unchanged observation/application deduplication;
+- same-token and changed-token events during acknowledged probe/application
+  workers without concurrent actions or lost completion tracking;
 - finalizer reattachment without duplicate launch.
 
 The trace must fail if an internal-only application occurs while external
-hardware is present, if identical evidence causes repeated application, or if
+hardware is present, if invalid evidence admits a probe, if identical evidence
+causes repeated probe/application, or if
 an unresolved external state lacks a future timer. It must also distinguish
 admission from dispatch, preserve completed-action tombstones across uncertain
 samples, and reject truncated, duplicate, semantically invalid, or
@@ -411,7 +506,8 @@ arithmetic-bearing persisted records without partial mutation.
 ## Migration outline
 
 1. Land and review the pure reducer spike.
-2. Implement the canonical observation adapter and EDID bijection tests.
+2. Implement the canonical observation adapter, base-identity/integrity
+   classification, safe activation-probe adapter, and EDID bijection tests.
 3. Add versioned persistence and event/timer scheduler in shadow/dry-run mode.
 4. Compare shadow decisions with the existing watcher during real hub cycles.
 5. Add durable desktop-finalizer units and remove postswitch-marker authority.
