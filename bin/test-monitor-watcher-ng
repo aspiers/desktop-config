@@ -7,7 +7,9 @@
 set -u
 
 watcher=$(cd "$(dirname "$0")" && pwd)/monitor-watcher-ng
-postswitch=$(cd "$(dirname "$0")/.." && pwd)/.config/autorandr/postswitch
+repo=$(cd "$(dirname "$0")/.." && pwd)
+postswitch=$repo/.config/autorandr/postswitch
+failure_fixture=$repo/specs/fixtures/monitor-watcher/samsung-invalid-extension-20260818.fingerprint
 failures=0
 
 run_test () {
@@ -39,6 +41,10 @@ prepare_watcher () {
     wait_before_retry () { return 0; }
     profile_matches_connected_outputs () { return 0; }
     profile_matches_active_outputs () { return 0; }
+    connected_external_present () { return 1; }
+    profile_live_edids_ready () { return 0; }
+    find_activation_probe_candidate () { return 1; }
+    run_activation_probe () { return 1; }
 }
 
 install_celtic_to_samsung_doubles () {
@@ -194,7 +200,7 @@ test_transient_fallback_preserves_external_profile () {
     reconcile test >/dev/null 2>&1 &&
         [[ $attempts -eq 2 ]] &&
         [[ $applied == change,samsung ]] &&
-        [[ $stability_reads -eq 4 ]] &&
+        [[ $stability_reads -eq 6 ]] &&
         [[ $finalizations -eq 1 ]] &&
         [[ $finalized_profile == samsung ]]
 }
@@ -232,8 +238,8 @@ test_genuine_unplug_replaces_pending_external_profile () {
 
     reconcile test >/dev/null 2>&1 &&
         [[ $attempts -eq 1 ]] &&
-        [[ $retry_arg == samsung ]] &&
-        [[ $stability_reads -eq 4 ]] &&
+        [[ -z $retry_arg ]] &&
+        [[ $stability_reads -eq 5 ]] &&
         [[ $finalizations -eq 1 ]] &&
         [[ $finalized_profile == celtic ]]
 }
@@ -259,12 +265,275 @@ test_internal_marker_can_expand_without_another_event () {
         fi
     }
     install_celtic_to_samsung_doubles
+    # This test isolates deferred-marker replacement; both synthetic markers
+    # are considered connected-topology matches here.
+    profile_matches_connected_outputs () { return 0; }
 
     reconcile test >/dev/null 2>&1 &&
         [[ $attempts -eq 2 ]] &&
         [[ $applied == change,celtic ]] &&
         [[ $finalizations -eq 1 ]] &&
         [[ $finalized_profile == samsung ]]
+}
+
+test_activation_probe_requires_unique_valid_base_identity () {
+    local tmp zeros valid_base invalid_base xrandr_output fingerprint_output detected_output
+    # shellcheck disable=SC1090
+    source "$watcher"
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' RETURN
+    mkdir -p "$tmp/home/.config/autorandr/samsung" \
+             "$tmp/home/.config/autorandr/other" "$tmp/runtime"
+    printf -v zeros '%0238d' 0
+    valid_base="00ffffffffffff00${zeros}06"
+    invalid_base="00ffffffffffff00${zeros}07"
+    printf '%s\n' "DisplayPort-1 ${valid_base}abcd" 'eDP internal' \
+        > "$tmp/home/.config/autorandr/samsung/setup"
+    HOME=$tmp/home
+    runtime_dir=$tmp/runtime
+    output_mapping_file=$runtime_dir/output-mappings
+    xrandr_output='eDP connected primary 2880x1920+0+0
+DisplayPort-1 connected
+   3440x1440     59.97 +'
+    fingerprint_output="DisplayPort-1 ${valid_base}abcd"
+    detected_output=""
+
+    xrandr () { printf '%s\n' "$xrandr_output"; }
+    autorandr () { printf '%s\n' "$fingerprint_output"; }
+    get_detected_profiles () { printf '%s\n' "$detected_output"; }
+    profile_matches_connected_outputs () { return 0; }
+    get_drm_edid_for_output () { printf '%s\n' "${fingerprint_output#* }"; }
+
+    [[ $(find_activation_probe_candidate) == 'samsung DisplayPort-1 eDP 3440x1440' ]] || return 1
+
+    xrandr_output='eDP connected primary 2880x1920+0+0
+DisplayPort-1 connected
+   3440x1440     59.97'
+    ! find_activation_probe_candidate || return 1
+
+    xrandr_output='eDP connected primary 2880x1920+0+0
+DisplayPort-1 connected
+   3440x1440     59.97 +
+DisplayPort-2 connected 1920x1080+6320+0'
+    ! find_activation_probe_candidate || return 1
+
+    xrandr_output='eDP connected primary 2880x1920+0+0
+DisplayPort-1 connected
+   3440x1440     59.97 +'
+    fingerprint_output="DisplayPort-1 ${valid_base}"
+    ! find_activation_probe_candidate || return 1
+
+    fingerprint_output="DisplayPort-1 ${invalid_base}abcd"
+    ! find_activation_probe_candidate || return 1
+
+    fingerprint_output="DisplayPort-1 ${valid_base}abcd"
+    detected_output=samsung
+    cp "$tmp/home/.config/autorandr/samsung/setup" \
+        "$tmp/home/.config/autorandr/other/setup"
+    ! find_activation_probe_candidate || return 1
+
+    printf '%s\n' 'DisplayPort-1 unrelated' "eDP ${valid_base}abcd" \
+        > "$tmp/home/.config/autorandr/other/setup"
+    [[ $(find_activation_probe_candidate) == 'samsung DisplayPort-1 eDP 3440x1440' ]]
+}
+
+test_captured_samsung_failure_is_probe_candidate () {
+    local tmp xrandr_output fingerprint_output
+    # shellcheck disable=SC1090
+    source "$watcher"
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' RETURN
+    HOME=$repo
+    runtime_dir=$tmp/runtime
+    output_mapping_file=$runtime_dir/output-mappings
+    mkdir -p "$runtime_dir"
+    xrandr_output='eDP connected primary 2880x1920+0+0
+DisplayPort-1 connected
+   3440x1440     59.97 +'
+    fingerprint_output=$(grep -v '^#' "$failure_fixture")
+
+    xrandr () { printf '%s\n' "$xrandr_output"; }
+    autorandr () { printf '%s\n' "$fingerprint_output"; }
+    get_detected_profiles () { return 0; }
+    profile_matches_connected_outputs () { return 0; }
+    get_drm_edid_for_output () { printf '%s\n' "${fingerprint_output#* }"; }
+
+    [[ $(find_activation_probe_candidate) == \
+        'celtic+Samsung-Odyssey-G75F DisplayPort-1 eDP 3440x1440' ]]
+}
+
+test_profile_readiness_requires_checksum_valid_drm_edid () {
+    local tmp zeros valid_base fingerprint_output drm_output
+    # shellcheck disable=SC1090
+    source "$watcher"
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' RETURN
+    printf -v zeros '%0238d' 0
+    valid_base="00ffffffffffff00${zeros}06"
+    fingerprint_output="DisplayPort-1 ${valid_base}"
+    drm_output=$valid_base
+
+    autorandr () { printf '%s\n' "$fingerprint_output"; }
+    resolve_profile_outputs () { printf '%s\n' DisplayPort-1; }
+    get_drm_edid_for_output () { printf '%s\n' "$drm_output"; }
+
+    profile_live_edids_ready samsung || return 1
+    drm_output="${valid_base}abcd"
+    ! profile_live_edids_ready samsung
+}
+
+test_activation_probe_uses_admitted_mode () {
+    local command=""
+    # shellcheck disable=SC1090
+    source "$watcher"
+    xrandr () { command=$*; }
+
+    run_activation_probe samsung DisplayPort-1 eDP 3440x1440 >/dev/null 2>&1 &&
+        [[ $command == '--output DisplayPort-1 --mode 3440x1440 --right-of eDP' ]]
+}
+
+test_activation_probe_waits_for_full_profile_match () {
+    local tmp attempts probes finalizations finalized_profile applied detection_count_file
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' RETURN
+    attempts=0
+    probes=0
+    finalizations=0
+    finalized_profile=""
+    applied=""
+    detection_count_file=$tmp/detection-count
+    printf '%s\n' 0 > "$detection_count_file"
+    prepare_watcher "$tmp"
+
+    connected_external_present () { return 0; }
+    profile_live_edids_ready () { return 0; }
+    find_activation_probe_candidate () {
+        printf '%s\n' 'samsung DisplayPort-1 eDP 3440x1440'
+    }
+    run_activation_probe () {
+        probes=$((probes + 1))
+        [[ $1 == samsung && $2 == DisplayPort-1 && $3 == eDP && $4 == 3440x1440 ]]
+    }
+    get_detected_profiles () {
+        local count
+        count=$(<"$detection_count_file")
+        count=$((count + 1))
+        printf '%s\n' "$count" > "$detection_count_file"
+        ((count >= 2)) && printf '%s\n' samsung
+        return 0
+    }
+    apply_profile () {
+        attempts=$((attempts + 1))
+        applied=${1:-change}
+        printf '%s\n' samsung > "$pending_profile_file"
+    }
+    wait_for_quiescence () { return 0; }
+    get_current_profiles () { printf '%s\n' samsung; }
+    profile_outputs_connected () { [[ $1 == samsung ]]; }
+    profile_matches_connected_outputs () { [[ $1 == samsung ]]; }
+    profile_matches_active_outputs () { [[ $1 == samsung ]]; }
+    finalize_postswitch () {
+        finalizations=$((finalizations + 1))
+        finalized_profile=$1
+    }
+
+    reconcile test >/dev/null 2>&1 &&
+        [[ $probes -eq 1 ]] &&
+        [[ $attempts -eq 1 ]] &&
+        [[ $applied == samsung ]] &&
+        [[ $finalizations -eq 1 ]] &&
+        [[ $finalized_profile == samsung ]]
+}
+
+test_kernel_only_external_presence_blocks_laptop_fallback () {
+    local tmp xrandr_status=0
+    # shellcheck disable=SC1090
+    source "$watcher"
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' RETURN
+    drm_sysfs_dir=$tmp/drm
+    mkdir -p "$drm_sysfs_dir/card1-DP-2"
+    printf '%s\n' connected > "$drm_sysfs_dir/card1-DP-2/status"
+    xrandr () {
+        ((xrandr_status == 0)) || return "$xrandr_status"
+        printf '%s\n' 'eDP connected primary 2880x1920+0+0'
+    }
+
+    connected_external_present || return 1
+    printf '%s\n' disconnected > "$drm_sysfs_dir/card1-DP-2/status"
+    ! connected_external_present || return 1
+    xrandr_status=1
+    connected_external_present
+}
+
+test_unresolved_external_never_reaches_autorandr_fallback () {
+    local tmp applications
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' RETURN
+    applications=0
+    prepare_watcher "$tmp"
+    MAX_RECONCILE_ATTEMPTS=2
+
+    connected_external_present () { return 0; }
+    get_detected_profiles () { return 0; }
+    find_activation_probe_candidate () { return 1; }
+    apply_profile () { applications=$((applications + 1)); }
+
+    reconcile test >/dev/null 2>&1 && [[ $applications -eq 0 ]]
+}
+
+test_probe_does_not_apply_until_drm_edid_is_ready () {
+    local tmp probes applications
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' RETURN
+    probes=0
+    applications=0
+    prepare_watcher "$tmp"
+    MAX_RECONCILE_ATTEMPTS=3
+
+    connected_external_present () { return 0; }
+    get_detected_profiles () { printf '%s\n' samsung; }
+    profile_matches_connected_outputs () { [[ $1 == samsung ]]; }
+    profile_live_edids_ready () { return 1; }
+    find_activation_probe_candidate () {
+        printf '%s\n' 'samsung DisplayPort-1 eDP 3440x1440'
+    }
+    run_activation_probe () { probes=$((probes + 1)); }
+    apply_profile () { applications=$((applications + 1)); }
+
+    reconcile test >/dev/null 2>&1 &&
+        [[ $probes -eq 1 ]] && [[ $applications -eq 0 ]]
+}
+
+test_changed_probe_evidence_is_not_dispatched () {
+    local tmp probes applications count_file
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' RETURN
+    probes=0
+    applications=0
+    count_file=$tmp/candidate-count
+    printf '%s\n' 0 > "$count_file"
+    prepare_watcher "$tmp"
+    MAX_RECONCILE_ATTEMPTS=1
+
+    connected_external_present () { return 0; }
+    get_detected_profiles () { return 0; }
+    find_activation_probe_candidate () {
+        local count
+        count=$(<"$count_file")
+        count=$((count + 1))
+        printf '%s\n' "$count" > "$count_file"
+        if ((count == 1)); then
+            printf '%s\n' 'samsung DisplayPort-1 eDP 3440x1440'
+        else
+            printf '%s\n' 'samsung DisplayPort-1 eDP 5120x2160'
+        fi
+    }
+    run_activation_probe () { probes=$((probes + 1)); }
+    apply_profile () { applications=$((applications + 1)); }
+
+    reconcile test >/dev/null 2>&1 &&
+        [[ $probes -eq 0 ]] && [[ $applications -eq 0 ]]
 }
 
 test_retry_profile_requires_exact_connected_outputs () {
@@ -282,7 +551,10 @@ test_retry_profile_requires_exact_connected_outputs () {
     profile_matches_connected_outputs () { [[ $exact_match -eq 1 ]]; }
     autorandr_command () { command=$*; }
 
-    apply_profile celtic >/dev/null 2>&1 || return 1
+    ! apply_profile celtic >/dev/null 2>&1 || return 1
+    [[ -z $command ]] || return 1
+
+    apply_profile "" >/dev/null 2>&1 || return 1
     [[ $command == --change ]] || return 1
 
     exact_match=1
@@ -541,6 +813,15 @@ run_test 'previously matched profile is explicitly retried' test_previously_matc
 run_test 'transient fallback preserves the pending external profile' test_transient_fallback_preserves_external_profile
 run_test 'genuine unplug replaces a pending external profile' test_genuine_unplug_replaces_pending_external_profile
 run_test 'internal marker expands to Samsung without another event' test_internal_marker_can_expand_without_another_event
+run_test 'activation probe requires one valid known base identity' test_activation_probe_requires_unique_valid_base_identity
+run_test 'captured Samsung failure is a unique probe candidate' test_captured_samsung_failure_is_probe_candidate
+run_test 'profile readiness requires checksum-valid DRM EDID' test_profile_readiness_requires_checksum_valid_drm_edid
+run_test 'activation probe uses only the admitted preferred mode' test_activation_probe_uses_admitted_mode
+run_test 'activation probe waits for complete profile before apply' test_activation_probe_waits_for_full_profile_match
+run_test 'kernel-only external presence blocks laptop fallback' test_kernel_only_external_presence_blocks_laptop_fallback
+run_test 'unresolved external never reaches autorandr fallback' test_unresolved_external_never_reaches_autorandr_fallback
+run_test 'probe waits for checksum-valid DRM EDID before apply' test_probe_does_not_apply_until_drm_edid_is_ready
+run_test 'changed probe evidence is not dispatched' test_changed_probe_evidence_is_not_dispatched
 run_test 'retry profile must exactly match connected outputs' test_retry_profile_requires_exact_connected_outputs
 run_test 'active-output matching rejects disabled and extra outputs' test_active_output_match_rejects_disabled_or_extra_output
 run_test 'connector renaming is resolved by EDID' test_connector_rename_is_resolved_by_edid

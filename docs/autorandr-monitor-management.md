@@ -118,6 +118,10 @@ DRM hotplug event (persistent udev monitor)
   └─ bin/monitor-watcher-ng              (systemd user service)
        ├─ retain events while autorandr is running
        └─ bounded reconciliation loop    (max 30s / 12 attempts)
+            ├─ if one inactive external has a checksum-valid base EDID
+            │    exactly matching one saved profile, but incomplete extensions:
+            │    enable only its admitted preferred mode as a wake-up probe;
+            │    wait for a later complete autorandr match
             ├─ clear-dpy-cache            # invalidate libdpy caches
             ├─ autorandr --match-edid --change --skip-options gamma
             │    (later attempts explicitly reload the first matched profile
@@ -152,6 +156,21 @@ Key differences from the legacy system:
   a dock or GPU renames connectors (for example, AOC on `DisplayPort-2`
   becoming `DisplayPort-1`); the watcher consumes autorandr's reported mapping
   before validating connected and active outputs.
+- **A wake-up probe is separate from profile selection.** Some Samsung plug
+  sequences expose a checksum-valid, exact known 128-byte base identity but
+  broken extension blocks indefinitely while the output stays disabled. Kernel
+  connector presence blocks laptop fallback even before X catches up. When
+  exactly one external output is connected/inactive, one internal output is
+  active, one saved external profile entry resolves to that output with the
+  exact base block and connected topology,
+  no checksum-valid full DRM EDID/profile match exists, and X advertises a
+  preferred mode, the watcher may enable only that captured mode beside the
+  internal display. It does not set
+  the primary output, record a selected profile, or run desktop work. The
+  ordinary autorandr match, exact connected topology, matching X/DRM base
+  blocks, and checksum-valid complete DRM EDIDs must all appear afterward
+  before any profile is loaded. The probe is attempted at most once per
+  reconciliation cycle.
 - **The watcher verifies convergence rather than assuming `xrandr` exit 0
   means the physical link stayed active.** This handles slow monitors which
   first expose their EDID, then drop back to connected-but-disabled while
