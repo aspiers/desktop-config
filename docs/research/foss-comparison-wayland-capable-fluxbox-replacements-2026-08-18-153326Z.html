@@ -1,0 +1,1666 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Wayland-capable Fluxbox replacement comparison</title>
+        <style>
+            :root {
+                color-scheme: light dark;
+                --bg: #f6f7fb;
+                --panel: #fff;
+                --text: #18212f;
+                --muted: #5e6b7a;
+                --border: #d8dee8;
+                --accent: #3157c8;
+                --good: #18794e;
+                --caution: #9a6700;
+                --poor: #c9372c;
+                --unknown: #6f42c1;
+                --shadow: 0 8px 24px rgb(22 34 51/8%);
+            }
+            @media (prefers-color-scheme: dark) {
+                :root {
+                    --bg: #111722;
+                    --panel: #1a2230;
+                    --text: #edf2f7;
+                    --muted: #aeb9c7;
+                    --border: #344054;
+                    --accent: #8ca8ff;
+                    --good: #5bd6a2;
+                    --caution: #f2c14e;
+                    --poor: #ff8a80;
+                    --unknown: #c4a7ff;
+                    --shadow: 0 8px 24px rgb(0 0 0/24%);
+                }
+            }
+            * {
+                box-sizing: border-box;
+            }
+            html {
+                scroll-behavior: smooth;
+            }
+            body {
+                background: var(--bg);
+                color: var(--text);
+                font:
+                    16px/1.55 system-ui,
+                    -apple-system,
+                    BlinkMacSystemFont,
+                    "Segoe UI",
+                    sans-serif;
+                margin: 0;
+            }
+            a {
+                color: var(--accent);
+            }
+            a:focus-visible {
+                outline: 3px solid var(--accent);
+                outline-offset: 3px;
+            }
+            header,
+            main,
+            footer {
+                margin: 0 auto;
+                max-width: 1220px;
+                padding: 1.5rem;
+            }
+            header {
+                padding-top: 3rem;
+            }
+            h1 {
+                font-size: clamp(2rem, 5vw, 3.4rem);
+                letter-spacing: -0.035em;
+                line-height: 1.05;
+                margin: 0 0 1rem;
+            }
+            h2 {
+                line-height: 1.2;
+                margin-top: 0;
+            }
+            h3 {
+                margin-bottom: 0.35rem;
+            }
+            .lede {
+                font-size: 1.15rem;
+                max-width: 90ch;
+            }
+            .meta,
+            .muted {
+                color: var(--muted);
+            }
+            .table-wrap {
+                background: var(--panel);
+                border: 1px solid var(--border);
+                border-radius: 14px;
+                box-shadow: var(--shadow);
+                margin-bottom: 2rem;
+                overflow-x: auto;
+            }
+            table {
+                border-collapse: collapse;
+                min-width: 900px;
+                width: 100%;
+            }
+            caption {
+                font-weight: 700;
+                padding: 1rem;
+                text-align: left;
+            }
+            th,
+            td {
+                border-top: 1px solid var(--border);
+                padding: 0.8rem 1rem;
+                text-align: left;
+                vertical-align: top;
+            }
+            th {
+                background: color-mix(in srgb, var(--panel), var(--accent) 6%);
+            }
+            #comparison-summary td:nth-child(3),
+            #comparison-summary th:nth-child(3) {
+                font-variant-numeric: tabular-nums;
+                text-align: right;
+            }
+            .project-detail,
+            .methodology,
+            .recommendation,
+            .audit,
+            .requirements,
+            .track {
+                background: var(--panel);
+                border: 1px solid var(--border);
+                border-radius: 14px;
+                box-shadow: var(--shadow);
+                margin: 1.5rem 0;
+                padding: clamp(1.1rem, 3vw, 2rem);
+                scroll-margin-top: 1rem;
+            }
+            .facts {
+                display: grid;
+                gap: 0.8rem;
+                grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+                margin: 1rem 0;
+            }
+            .fact {
+                border-left: 4px solid var(--border);
+                padding: 0.25rem 0.8rem;
+            }
+            .fact strong {
+                display: block;
+            }
+            .badge {
+                border: 1px solid currentColor;
+                border-radius: 999px;
+                display: inline-block;
+                font-size: 0.86rem;
+                font-weight: 700;
+                padding: 0.12rem 0.55rem;
+            }
+            .good {
+                color: var(--good);
+            }
+            .caution {
+                color: var(--caution);
+            }
+            .poor {
+                color: var(--poor);
+            }
+            .unknown {
+                color: var(--unknown);
+            }
+            .score {
+                font-weight: 700;
+            }
+            .callout {
+                border-left: 5px solid var(--accent);
+                background: color-mix(in srgb, var(--panel), var(--accent) 7%);
+                padding: 1rem 1.2rem;
+                margin: 1rem 0;
+            }
+            .warning {
+                border-left-color: var(--caution);
+            }
+            code {
+                background: color-mix(in srgb, var(--panel), var(--muted) 12%);
+                border-radius: 4px;
+                padding: 0.08em 0.3em;
+            }
+            .evidence li,
+            li {
+                margin-bottom: 0.35rem;
+            }
+            .back {
+                display: inline-block;
+                margin-top: 1rem;
+            }
+            .small {
+                font-size: 0.92rem;
+            }
+            footer {
+                color: var(--muted);
+                padding-bottom: 3rem;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <h1>Wayland-capable Fluxbox replacement comparison</h1>
+            <p class="lede">
+                A corrected, repository-specific comparison which treats a
+                credible Wayland future as mandatory. It ranks dual-backend
+                projects for a staged X11→Wayland transition separately from
+                Wayland-native compositors, while preserving the hard
+                requirement for the YAML-driven floating autolayout engine.
+            </p>
+            <p class="meta">
+                Evidence observed 18 August 2026 UTC · 8 candidates ·
+                maintenance window 18 August 2025–18 August 2026
+            </p>
+        </header>
+        <main>
+            <div class="table-wrap">
+                <table id="comparison-summary">
+                    <caption>
+                        Comparison summary — X11-only projects are excluded
+                    </caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Project</th>
+                            <th scope="col">Domain fit</th>
+                            <th scope="col">GitHub stars</th>
+                            <th scope="col">Maintenance</th>
+                            <th scope="col">Licence</th>
+                            <th scope="col">Recommendation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><a href="#project-kwin">KWin</a></td>
+                            <td>
+                                Dual X11/Wayland; closest global-desktop,
+                                sticky, floating and multi-head semantics
+                            </td>
+                            <td>
+                                N/A <span class="muted">(mirror: 680)</span>
+                            </td>
+                            <td><span class="badge good">Very active</span></td>
+                            <td>GPL-2.0-or-later overall</td>
+                            <td>
+                                <strong>Best staged desktop migration</strong>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><a href="#project-qtile">Qtile</a></td>
+                            <td>
+                                Dual X11/Wayland; strongest shared Python
+                                configuration and command API
+                            </td>
+                            <td>5,287</td>
+                            <td><span class="badge good">Very active</span></td>
+                            <td>MIT</td>
+                            <td>
+                                <strong
+                                    >Best staged automation migration</strong
+                                >
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><a href="#project-wayfire">Wayfire</a></td>
+                            <td>
+                                Wayland-native; strongest direct IPC for
+                                retaining external YAML geometry
+                            </td>
+                            <td>3,032</td>
+                            <td><span class="badge good">Active</span></td>
+                            <td>MIT</td>
+                            <td>
+                                <strong
+                                    >Best direct-to-Wayland prototype</strong
+                                >
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><a href="#project-sway">Sway</a></td>
+                            <td>
+                                Wayland-native; mature queryable IPC, exact
+                                floating geometry and normal titlebars
+                            </td>
+                            <td>17,250</td>
+                            <td>
+                                <span class="badge good"
+                                    >Active, conservative</span
+                                >
+                            </td>
+                            <td>MIT</td>
+                            <td>Best durable command substrate</td>
+                        </tr>
+                        <tr>
+                            <td><a href="#project-hyprland">Hyprland</a></td>
+                            <td>
+                                Wayland-native; best grouped tabs/pinning, rich
+                                IPC, rapid 0.x churn
+                            </td>
+                            <td>37,938</td>
+                            <td><span class="badge good">Very active</span></td>
+                            <td>BSD-3-Clause</td>
+                            <td>Best if grouping outweighs stability</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <a href="#project-enlightenment"
+                                    >Enlightenment</a
+                                >
+                            </td>
+                            <td>
+                                Dual X11/Wayland; excellent floating/group UX,
+                                uncertain supported external control
+                            </td>
+                            <td>N/A <span class="muted">(mirror: 3)</span></td>
+                            <td><span class="badge good">Active</span></td>
+                            <td>BSD-2-Clause</td>
+                            <td>Bounded exploratory trial only</td>
+                        </tr>
+                        <tr>
+                            <td><a href="#project-pinnacle">Pinnacle</a></td>
+                            <td>
+                                Wayland-native; gRPC-first programmable
+                                architecture, but young and tag-oriented
+                            </td>
+                            <td>617</td>
+                            <td>
+                                <span class="badge caution"
+                                    >Active, pre-1.0</span
+                                >
+                            </td>
+                            <td>GPL-3.0-only</td>
+                            <td>Experimental watch/prototype</td>
+                        </tr>
+                        <tr>
+                            <td><a href="#project-labwc">labwc</a></td>
+                            <td>
+                                Wayland-native; closest manual floating UX and
+                                global workspaces, but no custom IPC
+                            </td>
+                            <td>2,731</td>
+                            <td><span class="badge good">Very active</span></td>
+                            <td>GPL-2.0-only</td>
+                            <td>Blocked by autolayout requirement</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <section class="recommendation" id="recommendation">
+                <h2>Revised conclusion</h2>
+                <p class="callout">
+                    <strong
+                        >X11-only projects are no longer
+                        recommendations.</strong
+                    >
+                    pekwm and FVWM3 remain useful evidence that Fluxbox parity
+                    is possible, but they are technological dead ends under the
+                    new requirement. AwesomeWM and XMonad are excluded for the
+                    same reason.
+                </p>
+                <h3>Track A — staged migration while still on X11</h3>
+                <ol>
+                    <li>
+                        <strong>KWin first for desktop-semantic parity.</strong>
+                        Test <code>kwin_x11 --replace</code> now, preserve six
+                        global desktops and sticky secondary-output windows,
+                        then move the same rules/script concepts to KWin
+                        Wayland. It best preserves traditional floating
+                        interaction, titlebars, strict focus and multi-output
+                        semantics.
+                    </li>
+                    <li>
+                        <strong
+                            >Qtile first if the layout engine dominates the
+                            decision.</strong
+                        >
+                        Its Python command graph is cleaner than KWin scripting
+                        and most configuration is backend-neutral. The costs are
+                        per-screen group semantics, weaker decorations and no
+                        native floating tab groups.
+                    </li>
+                    <li>
+                        <strong
+                            >Enlightenment only as a short discovery
+                            spike.</strong
+                        >
+                        It is genuinely dual-backend and unusually close to
+                        Fluxbox’s floating/grouped UX, but the trial must prove
+                        supported enumeration and mutation of existing windows
+                        before any port begins.
+                    </li>
+                </ol>
+                <h3>Track B — switch WM and display protocol together</h3>
+                <ol>
+                    <li>
+                        <strong>Wayfire</strong> is the best match to the
+                        repository’s defining architecture: external Python can
+                        enumerate windows and apply geometry, output, workspace,
+                        sticky, alpha and state through IPC.
+                    </li>
+                    <li>
+                        <strong>Sway</strong> has the most mature, stable and
+                        inspectable IPC. An all-floating profile is practical,
+                        but its workspace/container model is a deliberate UX
+                        compromise.
+                    </li>
+                    <li>
+                        <strong>Hyprland</strong> provides the closest Wayland
+                        equivalent to Fluxbox grouping/tabs and pinning. Its
+                        faster-changing 0.x interface should be hidden behind a
+                        backend adapter.
+                    </li>
+                    <li>
+                        <strong>Pinnacle</strong> is architecturally attractive
+                        because configuration itself is a gRPC client, but it is
+                        not mature enough to make the primary migration target.
+                    </li>
+                    <li>
+                        <strong>labwc</strong> is the manual-UX winner but
+                        cannot satisfy imperative relayout of arbitrary existing
+                        native Wayland windows without a fork.
+                    </li>
+                </ol>
+                <p>
+                    <strong>Overall recommendation:</strong> run two bounded
+                    prototypes, not eight: <strong>KWin on X11</strong> for the
+                    staged track and
+                    <strong>Wayfire in a nested/direct Wayland session</strong>
+                    for the native track. The outcome will reveal whether
+                    preserving global desktops/titlebar UX or preserving the
+                    external layout engine is harder in practice.
+                </p>
+            </section>
+
+            <section class="audit" id="requirements">
+                <h2>Repository requirements retained from the Fluxbox audit</h2>
+                <ul>
+                    <li>
+                        <strong
+                            >Imperative existing-window relayout is
+                            mandatory:</strong
+                        >
+                        <code>bin/desktop-layout</code> applies ordered actions
+                        to every current match, not only mapping-time rules.
+                    </li>
+                    <li>
+                        <strong>The YAML geometry model survives:</strong>
+                        includes, topology placeholders, margins, named regions
+                        and <code>sublayouts.yaml</code> remain more flexible
+                        than adopting a compositor’s default tiler.
+                    </li>
+                    <li>
+                        <strong>Multi-head is semantic:</strong> stable
+                        primary/secondary identities, hotplug, reserved
+                        panel/log regions, exact logical geometry, proportional
+                        moves and laptop/ultrawide/three-monitor profiles.
+                    </li>
+                    <li>
+                        <strong>Workspace behaviour matters:</strong> six global
+                        Fluxbox workspaces plus sticky secondary-head clients
+                        are not equivalent to independent workspace sets on
+                        every output.
+                    </li>
+                    <li>
+                        <strong>Window identity changes:</strong> native Wayland
+                        exposes <code>app_id</code>/title, while XWayland
+                        retains class/instance/role. Every current match must be
+                        audited.
+                    </li>
+                    <li>
+                        <strong>Floating UX matters:</strong> strict mouse focus
+                        without raise, conventional titlebars, shade, modifier
+                        drag, layers/above/below, opacity, key modes and
+                        focus-or-launch.
+                    </li>
+                    <li>
+                        <strong>Grouping is real but narrow:</strong> browser
+                        attachment is scripted in one layout, while tab controls
+                        are globally bound. Losing it must be explicit.
+                    </li>
+                    <li>
+                        <strong>Wayland coordinates are logical:</strong> mixed
+                        fractional scale invalidates assumptions that XRandR
+                        pixel dimensions equal compositor geometry.
+                    </li>
+                    <li>
+                        <strong>The panel/session stack changes:</strong> X11
+                        tray selections, <code>wmctrl</code>,
+                        <code>xdotool</code>, <code>xprop</code>, X IDs and
+                        autorandr cannot manage native Wayland clients/outputs.
+                    </li>
+                </ul>
+            </section>
+
+            <section class="track" id="track-comparison">
+                <h2>Two migration tracks</h2>
+                <div class="table-wrap">
+                    <table>
+                        <caption>
+                            What “supports Wayland” means operationally
+                        </caption>
+                        <thead>
+                            <tr>
+                                <th>Candidate</th>
+                                <th>Run as X11 WM now</th>
+                                <th>Run native Wayland later</th>
+                                <th>Same policy/config</th>
+                                <th>Multi-head/workspace model</th>
+                                <th>YAML backend feasibility</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>KWin</td>
+                                <td class="good score">Yes</td>
+                                <td class="good score">Yes</td>
+                                <td>
+                                    Rules and JS concepts shared; session/output
+                                    plumbing differs
+                                </td>
+                                <td>
+                                    Global desktops by default; native sticky;
+                                    per-output scale/hotplug
+                                </td>
+                                <td class="good score">
+                                    High via persistent KWin script
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Qtile</td>
+                                <td class="good score">Yes</td>
+                                <td class="good score">Yes</td>
+                                <td class="good score">
+                                    Strongest shared config
+                                </td>
+                                <td>
+                                    One group per screen; hotplug screen
+                                    generator; per-output scale
+                                </td>
+                                <td class="good score">
+                                    High via Python command graph
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Enlightenment</td>
+                                <td class="good score">Yes</td>
+                                <td class="good score">Yes</td>
+                                <td>
+                                    Profiles largely shared but
+                                    opaque/backend-specific in places
+                                </td>
+                                <td>Per-zone desks; sticky within zone</td>
+                                <td class="unknown score">
+                                    Unproven external API
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Wayfire</td>
+                                <td>No, except nested Wayland-on-X</td>
+                                <td class="good score">Yes</td>
+                                <td>N/A</td>
+                                <td>
+                                    Independent 2-D grid per output; global
+                                    switching needs adapter
+                                </td>
+                                <td class="good score">
+                                    High via JSON IPC/pywayfire
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Sway</td>
+                                <td>No, except nested Wayland-on-X</td>
+                                <td class="good score">Yes</td>
+                                <td>N/A</td>
+                                <td>
+                                    Globally named workspace visible on one
+                                    output; output-scoped sticky
+                                </td>
+                                <td class="good score">
+                                    High via stable i3 IPC
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Hyprland</td>
+                                <td>No, except nested Wayland-on-X</td>
+                                <td class="good score">Yes</td>
+                                <td>N/A</td>
+                                <td>
+                                    Workspace per monitor; persistent bindings;
+                                    monitor-scoped pin
+                                </td>
+                                <td class="good score">
+                                    High, isolate interface churn
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Pinnacle</td>
+                                <td>No</td>
+                                <td class="good score">Yes</td>
+                                <td>N/A</td>
+                                <td>
+                                    Tags belong to outputs; multi-tag windows;
+                                    dynamic output callbacks
+                                </td>
+                                <td class="caution score">
+                                    Promising gRPC, immature
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>labwc</td>
+                                <td>No, except nested Wayland-on-X</td>
+                                <td class="good score">Yes</td>
+                                <td>N/A</td>
+                                <td class="good score">
+                                    Global workspace spans all outputs
+                                </td>
+                                <td class="poor score">
+                                    No exact external window IPC
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="project-detail" id="project-kwin">
+                <h2><a href="https://invent.kde.org/plasma/kwin">KWin</a></h2>
+                <p>
+                    <strong>Verdict and best fit:</strong> Best staged migration
+                    when traditional floating interaction, global desktops,
+                    sticky secondary windows and mature multi-head behaviour are
+                    weighted above a simple shell IPC.
+                </p>
+                <div class="facts">
+                    <div class="fact">
+                        <strong>GitHub stars</strong>N/A: canonical forge is KDE
+                        GitLab; GitHub mirror had 680 on 18 August 2026
+                    </div>
+                    <div class="fact">
+                        <strong>Maintenance</strong>Plasma 6.7.4 on 4 August
+                        2026; canonical development is continuous; GitHub mirror
+                        recorded 2,097 commits in the common window
+                    </div>
+                    <div class="fact">
+                        <strong>Licence</strong
+                        ><a
+                            href="https://invent.kde.org/plasma/kwin/-/blob/master/COPYING"
+                            >GPL-2.0-or-later overall</a
+                        >
+                    </div>
+                </div>
+                <h3>Domain fit</h3>
+                <p>
+                    KWin supplies native floating placement, server decorations,
+                    shading, snapping/quick tiling, strict focus-under-mouse
+                    independent of raising, per-window rules, all-desktops
+                    state, above/below, opacity, no-border and rich
+                    JavaScript/QML scripting. Current KWin no longer has the
+                    historic grouped titlebar tabs.
+                </p>
+                <h3>Backend and multi-head behaviour</h3>
+                <p>
+                    <code>kwin_x11</code> can replace Fluxbox in the current X
+                    session. <code>kwin_wayland</code> is a native compositor
+                    with XWayland, but its supported deployment expects a
+                    desktop shell—normally Plasma. Outputs expose connector,
+                    make/model/serial, logical geometry, scale and hotplug
+                    signals. Global virtual desktops remain the default;
+                    secondary-output windows can be <code>onAllDesktops</code>.
+                    KWin 6.7 even bundles a “Virtual Desktops Only on Primary”
+                    script implementing almost exactly the current
+                    sticky-secondary convention. KScreen should replace, not
+                    compete with, autorandr.
+                </p>
+                <h3>Autolayout backend</h3>
+                <p>
+                    A persistent KWin script can call
+                    <code>workspace.windowList()</code>, match
+                    class/resource/role/title, and mutate frame geometry,
+                    desktops, output, all-desktops, opacity, above/below and
+                    border state. The weakness is packaging an external request
+                    channel: D-Bus can load/control scripts but is not a
+                    Qtile-like direct mutation API. The clean design is a small
+                    long-lived KWin script receiving structured layout requests.
+                </p>
+                <h3>Popularity</h3>
+                <p>
+                    GitHub stars are not representative because the canonical
+                    project is on KDE Invent and ships as a core Plasma
+                    component. The non-canonical mirror had 680 stars; the
+                    installed/deployed Plasma user base is the meaningful
+                    adoption signal.
+                </p>
+                <h3>Maintenance</h3>
+                <p>
+                    KWin follows KDE Plasma’s regular feature and bug-fix
+                    cadence. Plasma 6.7.4 shipped 4 August 2026 and the mirror
+                    had over two thousand commits in the common window.
+                </p>
+                <h3>Licence</h3>
+                <p>
+                    KWin is GPL-2.0-or-later overall, with per-file SPDX
+                    declarations for components.
+                </p>
+                <h3>Strengths and trade-offs</h3>
+                <p>
+                    Strongest global-desktop and floating-UX match; mature
+                    fractional scaling and hotplug. Costs: likely transition
+                    from XFCE panel to Plasma shell on Wayland, JavaScript
+                    bridge engineering, and no Fluxbox-style tabs.
+                </p>
+                <h3>Evidence</h3>
+                <ul class="evidence">
+                    <li>
+                        <a href="https://invent.kde.org/plasma/kwin"
+                            >Canonical repository</a
+                        >
+                    </li>
+                    <li>
+                        <a href="https://kde.org/announcements/plasma/6/6.7.4/"
+                            >Plasma 6.7.4 release</a
+                        >
+                    </li>
+                    <li>
+                        <a href="https://develop.kde.org/docs/plasma/kwin/api/"
+                            >KWin scripting API</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="https://docs.kde.org/stable6/en/kwin/kcontrol/windowspecific/"
+                            >Window rules</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="https://invent.kde.org/plasma/kwin/-/tree/v6.7.4/src/plugins/scripting/scripts/virtualdesktopsonlyonprimary"
+                            >Primary-only virtual desktops script</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="https://invent.kde.org/plasma/kwin/-/blob/master/COPYING"
+                            >Licence</a
+                        >
+                    </li>
+                </ul>
+                <a class="back" href="#comparison-summary"
+                    >Back to comparison</a
+                >
+            </section>
+
+            <section class="project-detail" id="project-qtile">
+                <h2><a href="https://qtile.org/">Qtile</a></h2>
+                <p>
+                    <strong>Verdict and best fit:</strong> Best staged option
+                    when preserving Python programmability and one shared policy
+                    across X11 and Wayland is the overriding goal.
+                </p>
+                <div class="facts">
+                    <div class="fact">
+                        <strong>GitHub stars</strong>5,287 as of 18 August 2026
+                        UTC
+                    </div>
+                    <div class="fact">
+                        <strong>Maintenance</strong>577 commits in the common
+                        window; v0.37.0 on 8 August 2026; latest commit 11
+                        August
+                    </div>
+                    <div class="fact">
+                        <strong>Licence</strong
+                        ><a
+                            href="https://github.com/qtile/qtile/blob/master/LICENSE"
+                            >MIT</a
+                        >
+                    </div>
+                </div>
+                <h3>Domain fit</h3>
+                <p>
+                    Qtile exposes matching, floating geometry, groups, screens,
+                    hooks, focus and window state directly to Python and through
+                    its command graph. This maps cleanly to
+                    <code>liblayout.py</code>. It lacks conventional compositor
+                    titlebars, native arbitrary floating tabs, Fluxbox’s layer
+                    hierarchy and a normal sticky-window primitive.
+                </p>
+                <h3>Backend and multi-head behaviour</h3>
+                <p>
+                    Qtile runs as an X11 WM or wlroots-based Wayland compositor
+                    with optional XWayland. Most layouts, groups, keybindings
+                    and hooks are shared. X11 observes RandR; Wayland implements
+                    <code>wlr-output-management</code>.
+                    <code>generate_screens(outputs)</code> can create topology
+                    policy by count, port, model or serial—an excellent fit for
+                    the repository’s dock profiles. Each screen displays one
+                    group and a group is attached to at most one screen, unlike
+                    Fluxbox’s one global current desktop.
+                </p>
+                <h3>Autolayout backend</h3>
+                <p>
+                    The command client can enumerate and mutate windows, while
+                    custom Python functions can expose exactly the layout
+                    operations required. The same neutral adapter can work on
+                    both backends; only identity and output discovery differ.
+                    Native Wayland uses app-id/title, while X11/XWayland
+                    preserve richer properties. Official documentation still
+                    warns about incomplete Wayland functionality and an XWayland
+                    pointer-routing bug.
+                </p>
+                <h3>Popularity</h3>
+                <p>The canonical repository had exactly 5,287 stars.</p>
+                <h3>Maintenance</h3>
+                <p>
+                    Qtile had the strongest conventional release cadence among
+                    programmable dual-backend WMs: 577 commits in the common
+                    window and v0.37.0 ten days before this report.
+                </p>
+                <h3>Licence</h3>
+                <p>MIT, an OSI-approved permissive licence.</p>
+                <h3>Strengths and trade-offs</h3>
+                <p>
+                    Strongest shared-source migration and easiest layout
+                    adapter. Trade-offs are tiling-first ergonomics,
+                    screen/group semantics, sparse decorations, no native tabs,
+                    and more policy code to emulate sticky secondary windows.
+                </p>
+                <h3>Evidence</h3>
+                <ul class="evidence">
+                    <li>
+                        <a href="https://github.com/qtile/qtile">Repository</a>
+                    </li>
+                    <li>
+                        <a
+                            href="https://github.com/qtile/qtile/releases/tag/v0.37.0"
+                            >v0.37.0</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="https://docs.qtile.org/en/latest/manual/backends/index.html"
+                            >Backends</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="https://docs.qtile.org/en/stable/manual/config/screens.html"
+                            >Screens and dynamic output generation</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="https://docs.qtile.org/en/stable/manual/wayland.html"
+                            >Wayland and XWayland status</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="https://docs.qtile.org/en/latest/manual/commands/client.html"
+                            >Command client</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="https://github.com/qtile/qtile/blob/master/LICENSE"
+                            >Licence</a
+                        >
+                    </li>
+                </ul>
+                <a class="back" href="#comparison-summary"
+                    >Back to comparison</a
+                >
+            </section>
+
+            <section class="project-detail" id="project-wayfire">
+                <h2><a href="https://wayfire.org/">Wayfire</a></h2>
+                <p>
+                    <strong>Verdict and best fit:</strong> Best Wayland-native
+                    prototype for retaining the external, imperative YAML layout
+                    architecture.
+                </p>
+                <div class="facts">
+                    <div class="fact">
+                        <strong>GitHub stars</strong>3,032 as of 18 August 2026
+                        UTC
+                    </div>
+                    <div class="fact">
+                        <strong>Maintenance</strong>206 commits in common
+                        window; v0.11.0 on 27 July 2026; latest commit 11 August
+                    </div>
+                    <div class="fact">
+                        <strong>Licence</strong
+                        ><a
+                            href="https://github.com/WayfireWM/wayfire/blob/master/LICENSE"
+                            >MIT</a
+                        >
+                    </div>
+                </div>
+                <h3>Domain fit</h3>
+                <p>
+                    Wayfire is a plugin-based Wayland stacking compositor with
+                    SSD titlebars, modifier/titlebar move-resize, snapping/grid,
+                    alpha, sticky and above/below actions. It has no supported
+                    Fluxbox-like tab/group container and no shade-equivalent was
+                    found.
+                </p>
+                <h3>Backend and multi-head behaviour</h3>
+                <p>
+                    Wayland-native with optional XWayland. Outputs support exact
+                    position, mode, transform, fractional scale, mirroring, HDR
+                    and colour profiles.
+                    <code>wlr-output-management</code> allows Kanshi profiles;
+                    IPC emits output-layout changes. Workspaces are normally
+                    independent 2-D grids per output, so global six-workspace
+                    switching needs a small script that changes every output
+                    together.
+                </p>
+                <h3>Autolayout backend</h3>
+                <p>
+                    <code>ipc-rules</code> can list views with ID, PID, app-id,
+                    title, geometry, output, workspace/layer/state and configure
+                    exact geometry/output/sticky/tiled/fullscreen state.
+                    Additional plugins expose workspace movement, top/bottom,
+                    alpha and pre-map policy. Official
+                    <code>pywayfire</code> already includes layout, move,
+                    opacity and session-restore examples. This is the closest
+                    native equivalent to <code>fluxbox-remote Map</code>.
+                </p>
+                <h3>Popularity</h3>
+                <p>
+                    3,032 stars—smaller than Sway/Hyprland, but a meaningful
+                    floating-compositor community.
+                </p>
+                <h3>Maintenance</h3>
+                <p>
+                    Active 0.11 development, 206 commits in the common window
+                    and a release three weeks before observation.
+                </p>
+                <h3>Licence</h3>
+                <p>MIT.</p>
+                <h3>Strengths and trade-offs</h3>
+                <p>
+                    Best direct control and good XFCE 4.20 panel test history.
+                    Gaps: per-output workspace model, no tabs/shade, plugin
+                    composition/versioning, and conversion to logical
+                    coordinates/app-id matching.
+                </p>
+                <h3>Evidence</h3>
+                <ul class="evidence">
+                    <li>
+                        <a href="https://github.com/WayfireWM/wayfire"
+                            >Repository</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="https://github.com/WayfireWM/wayfire/releases/tag/v0.11.0"
+                            >v0.11.0</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="https://github.com/WayfireWM/wayfire/blob/master/plugins/ipc-rules/ipc-rules.cpp"
+                            >IPC rules implementation</a
+                        >
+                    </li>
+                    <li>
+                        <a href="https://github.com/WayfireWM/pywayfire"
+                            >Official Python IPC library</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="https://github.com/WayfireWM/wayfire/wiki/Configuration#output"
+                            >Output configuration</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="https://github.com/WayfireWM/wayfire/blob/master/LICENSE"
+                            >Licence</a
+                        >
+                    </li>
+                </ul>
+                <a class="back" href="#comparison-summary"
+                    >Back to comparison</a
+                >
+            </section>
+
+            <section class="project-detail" id="project-sway">
+                <h2><a href="https://swaywm.org/">Sway</a></h2>
+                <p>
+                    <strong>Verdict and best fit:</strong> Best long-lived,
+                    queryable command substrate if an all-floating profile on an
+                    i3-style compositor is acceptable.
+                </p>
+                <div class="facts">
+                    <div class="fact">
+                        <strong>GitHub stars</strong>17,250 as of 18 August 2026
+                        UTC
+                    </div>
+                    <div class="fact">
+                        <strong>Maintenance</strong>105 commits in common
+                        window; 1.12 on 25 May 2026; latest commit 31 July
+                    </div>
+                    <div class="fact">
+                        <strong>Licence</strong
+                        ><a
+                            href="https://github.com/swaywm/sway/blob/master/LICENSE"
+                            >MIT</a
+                        >
+                    </div>
+                </div>
+                <h3>Domain fit</h3>
+                <p>
+                    Sway can force every normal window floating, supplies
+                    compositor titlebars, criteria, modifier drag,
+                    focus-follows-mouse, sticky floating windows and
+                    tabbed/stacked tree containers. Floating tabs are not
+                    Fluxbox arbitrary-frame attachment, and shade/layers are
+                    absent.
+                </p>
+                <h3>Backend and multi-head behaviour</h3>
+                <p>
+                    Wayland-native with XWayland.
+                    <code>GET_OUTPUTS</code> returns connector,
+                    make/model/serial, modes, logical rectangle, scale,
+                    transform and current workspace. Output rules can match
+                    stable identifiers and hotplug reapplies configuration.
+                    Workspaces are globally named but each is visible on one
+                    output; sticky is output-scoped.
+                </p>
+                <h3>Autolayout backend</h3>
+                <p>
+                    <code>swaymsg -t get_tree -r</code> gives a complete JSON
+                    tree. Criteria include native app-id and XWayland
+                    class/instance/title/role, PID, container ID, marks,
+                    workspace and state. Exact commands set floating, pixel
+                    geometry, output, workspace, sticky and opacity. This is
+                    stable and easy to test, making it an excellent backend
+                    despite the UX mismatch.
+                </p>
+                <h3>Popularity</h3>
+                <p>17,250 stars and broad distribution adoption.</p>
+                <h3>Maintenance</h3>
+                <p>
+                    105 commits and release 1.12 in the common window.
+                    Maintainers deliberately prioritize stability, reliability
+                    and performance over feature growth.
+                </p>
+                <h3>Licence</h3>
+                <p>MIT.</p>
+                <h3>Strengths and trade-offs</h3>
+                <p>
+                    Most durable IPC and excellent inspection/matching. Costs:
+                    opinionated container/workspace model, no native
+                    Fluxbox-style floating groups, output-scoped sticky and
+                    likely replacement of XFCE panel with Waybar/swaybar.
+                </p>
+                <h3>Evidence</h3>
+                <ul class="evidence">
+                    <li>
+                        <a href="https://github.com/swaywm/sway">Repository</a>
+                    </li>
+                    <li>
+                        <a
+                            href="https://github.com/swaywm/sway/releases/tag/1.12"
+                            >Release 1.12</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="https://github.com/swaywm/sway/blob/master/sway/sway-ipc.7.scd"
+                            >IPC manual source</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="https://github.com/swaywm/sway/blob/master/sway/sway.5.scd"
+                            >Criteria and command language</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="https://github.com/swaywm/sway/blob/master/sway/sway-output.5.scd"
+                            >Output configuration</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="https://github.com/swaywm/sway/blob/master/LICENSE"
+                            >Licence</a
+                        >
+                    </li>
+                </ul>
+                <a class="back" href="#comparison-summary"
+                    >Back to comparison</a
+                >
+            </section>
+
+            <section class="project-detail" id="project-hyprland">
+                <h2><a href="https://hypr.land/">Hyprland</a></h2>
+                <p>
+                    <strong>Verdict and best fit:</strong> Best Wayland option
+                    when grouped floating tabs and pinning are more important
+                    than conventional titlebars and API stability.
+                </p>
+                <div class="facts">
+                    <div class="fact">
+                        <strong>GitHub stars</strong>37,938 as of 18 August 2026
+                        UTC
+                    </div>
+                    <div class="fact">
+                        <strong>Maintenance</strong>1,367 commits in common
+                        window; v0.56.2 on 5 August 2026; latest commit 17
+                        August
+                    </div>
+                    <div class="fact">
+                        <strong>Licence</strong
+                        ><a
+                            href="https://github.com/hyprwm/Hyprland/blob/main/LICENSE"
+                            >BSD-3-Clause</a
+                        >
+                    </div>
+                </div>
+                <h3>Domain fit</h3>
+                <p>
+                    Hyprland supports a practical all-floating profile, exact
+                    pixel dispatchers, rich regex selectors, modifier movement,
+                    pinning, z-order changes and native window groups with
+                    groupbar tabs. It lacks conventional built-in titlebars;
+                    <code>hyprbars</code> is a version-coupled plugin.
+                </p>
+                <h3>Backend and multi-head behaviour</h3>
+                <p>
+                    Wayland-native with XWayland. Monitor JSON includes
+                    connector, description/make/model/serial, mode, logical
+                    position, scale, transform, active workspace and reserved
+                    margins. Rules can match stable descriptions; hotplug events
+                    are available. Workspaces bind to monitors and pinning is
+                    monitor-scoped, unlike global Fluxbox desktops.
+                </p>
+                <h3>Autolayout backend</h3>
+                <p>
+                    <code>hyprctl clients -j</code> plus monitor/workspace/event
+                    sockets provide discovery. Address-targeted dispatchers set
+                    exact move/resize, workspace, floating and grouping. Dynamic
+                    rules set opacity and decorations. The interface is capable,
+                    but rapid 0.x change makes a narrow adapter and
+                    compatibility tests mandatory.
+                </p>
+                <h3>Popularity</h3>
+                <p>
+                    37,938 stars—the largest current community signal in this
+                    shortlist.
+                </p>
+                <h3>Maintenance</h3>
+                <p>
+                    Extremely active: 1,367 commits, current release v0.56.2 and
+                    code activity the day before this report.
+                </p>
+                <h3>Licence</h3>
+                <p>BSD-3-Clause.</p>
+                <h3>Strengths and trade-offs</h3>
+                <p>
+                    Only mature candidate with a strong native grouped-window
+                    story close to Fluxbox tabs. Trade-offs: no standard
+                    titlebar, per-monitor workspace model, plugin/version churn
+                    and a more animated/opinionated default which must be pared
+                    back.
+                </p>
+                <h3>Evidence</h3>
+                <ul class="evidence">
+                    <li>
+                        <a href="https://github.com/hyprwm/Hyprland"
+                            >Repository</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="https://github.com/hyprwm/Hyprland/releases/tag/v0.56.2"
+                            >v0.56.2</a
+                        >
+                    </li>
+                    <li><a href="https://wiki.hypr.land/IPC/">IPC</a></li>
+                    <li>
+                        <a
+                            href="https://wiki.hypr.land/Configuring/Dispatchers/"
+                            >Dispatchers</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="https://wiki.hypr.land/Configuring/Window-Rules/"
+                            >Window rules</a
+                        >
+                    </li>
+                    <li>
+                        <a href="https://wiki.hypr.land/Configuring/Monitors/"
+                            >Monitor configuration</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="https://github.com/hyprwm/Hyprland/blob/main/LICENSE"
+                            >Licence</a
+                        >
+                    </li>
+                </ul>
+                <a class="back" href="#comparison-summary"
+                    >Back to comparison</a
+                >
+            </section>
+
+            <section class="project-detail" id="project-enlightenment">
+                <h2>
+                    <a href="https://www.enlightenment.org/">Enlightenment</a>
+                </h2>
+                <p>
+                    <strong>Verdict and best fit:</strong> Genuine dual-backend
+                    floating desktop with promising grouping UX, but only a
+                    bounded trial should determine whether supported external
+                    control is sufficient.
+                </p>
+                <div class="facts">
+                    <div class="fact">
+                        <strong>GitHub stars</strong>N/A: canonical self-hosted
+                        forge; current GitHub mirror had 3
+                    </div>
+                    <div class="fact">
+                        <strong>Maintenance</strong>173 mirror commits in common
+                        window; 0.27.1 released 14 March 2025; latest mirror
+                        commit 8 July 2026
+                    </div>
+                    <div class="fact">
+                        <strong>Licence</strong
+                        ><a
+                            href="https://github.com/Enlightenment/enlightenment/blob/master/COPYING"
+                            >BSD-2-Clause</a
+                        >
+                    </div>
+                </div>
+                <h3>Domain fit</h3>
+                <p>
+                    Enlightenment is a full floating desktop with server
+                    decorations, remember rules, sticky, shade, layer/opacity
+                    concepts and interactive stacking/grouping close to Fluxbox.
+                    Much configuration is GUI-managed opaque Eet state rather
+                    than a reviewable text program.
+                </p>
+                <h3>Backend and multi-head behaviour</h3>
+                <p>
+                    E genuinely operates as an X11 WM and native Wayland
+                    compositor with XWayland. Profiles share much configuration,
+                    though identifiers and output state differ. Outputs are
+                    zones; every zone has its own desk grid and current desk,
+                    with sticky windows visible across desks on their zone—not
+                    Fluxbox global workspaces.
+                </p>
+                <h3>Autolayout backend</h3>
+                <p>
+                    <code>enlightenment_remote</code> and the message-bus module
+                    control desktop/session concerns, but no documented stable
+                    API was found that combines arbitrary-client enumeration,
+                    exact geometry/output/desk and state/group mutation. An
+                    in-process C module could, but that couples the repository
+                    to E internals. This is the trial’s go/no-go gate.
+                </p>
+                <h3>Popularity</h3>
+                <p>
+                    The canonical forge has no GitHub stars; the small current
+                    mirror count is not meaningful for this long-established
+                    desktop.
+                </p>
+                <h3>Maintenance</h3>
+                <p>
+                    E27 remains maintained, with 173 mirrored commits in the
+                    common window and changes through July 2026, though releases
+                    are less frequent than KDE/Qtile.
+                </p>
+                <h3>Licence</h3>
+                <p>
+                    Enlightenment uses BSD-2-Clause; EFL dependencies have their
+                    own licences.
+                </p>
+                <h3>Strengths and trade-offs</h3>
+                <p>
+                    Potentially the closest dual-backend manual UX, including
+                    grouping. The decisive weaknesses are opaque configuration,
+                    per-zone desks and unproven external automation.
+                </p>
+                <h3>Evidence</h3>
+                <ul class="evidence">
+                    <li>
+                        <a
+                            href="https://git.enlightenment.org/enlightenment/enlightenment"
+                            >Canonical repository</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="https://www.enlightenment.org/news/2025-03-14-enlightenment-0.27.1"
+                            >0.27.1 release</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="https://www.enlightenment.org/user-guide/start.md"
+                            >User guide</a
+                        >
+                    </li>
+                    <li>
+                        <a href="https://github.com/Enlightenment/enlightenment"
+                            >GitHub mirror</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="https://github.com/Enlightenment/enlightenment/blob/master/COPYING"
+                            >Licence</a
+                        >
+                    </li>
+                </ul>
+                <a class="back" href="#comparison-summary"
+                    >Back to comparison</a
+                >
+            </section>
+
+            <section class="project-detail" id="project-pinnacle">
+                <h2>
+                    <a href="https://pinnacle-comp.github.io/pinnacle/"
+                        >Pinnacle</a
+                    >
+                </h2>
+                <p>
+                    <strong>Verdict and best fit:</strong> Most interesting
+                    young programmable Wayland architecture; watch and prototype
+                    narrowly, but do not anchor the migration to its pre-1.0 API
+                    yet.
+                </p>
+                <div class="facts">
+                    <div class="fact">
+                        <strong>GitHub stars</strong>617 as observed 18 August
+                        2026 UTC
+                    </div>
+                    <div class="fact">
+                        <strong>Maintenance</strong>v0.2.3 on 3 February 2026;
+                        meaningful commits through 27 June 2026
+                    </div>
+                    <div class="fact">
+                        <strong>Licence</strong
+                        ><a
+                            href="https://github.com/pinnacle-comp/pinnacle/blob/main/LICENSE"
+                            >GPL-3.0-only</a
+                        >
+                    </div>
+                </div>
+                <h3>Domain fit</h3>
+                <p>
+                    Pinnacle is an Awesome-inspired Smithay compositor whose
+                    configuration is deliberately a separate gRPC client.
+                    Official Lua/Rust APIs expose windows, tags, outputs,
+                    signals and layouts; Python bindings could be generated.
+                    Floating geometry is controllable, but conventional Fluxbox
+                    decorations/group tabs are absent.
+                </p>
+                <h3>Backend and multi-head behaviour</h3>
+                <p>
+                    Wayland-native with XWayland. Output callbacks run for
+                    current and newly connected displays; APIs set global
+                    location and adjacency. Tags belong to outputs; a window can
+                    have multiple tags, but cross-output tag association is
+                    explicitly undefined. This is flexible but not the global
+                    Fluxbox workspace model.
+                </p>
+                <h3>Autolayout backend</h3>
+                <p>
+                    The gRPC Unix socket is conceptually ideal: get all window
+                    handles, subscribe to signals and issue
+                    geometry/tag/output/state operations from a config client. A
+                    Python client or small Lua/Rust bridge can host the existing
+                    YAML. The risk is API maturity, incomplete polish and a
+                    smaller tester base.
+                </p>
+                <h3>Popularity</h3>
+                <p>
+                    617 stars: healthy interest for a young niche compositor,
+                    far below mature alternatives.
+                </p>
+                <h3>Maintenance</h3>
+                <p>
+                    Active pre-1.0 development with v0.2.3 in February and fixes
+                    through June 2026.
+                </p>
+                <h3>Licence</h3>
+                <p>
+                    GPL-3.0-only based on the distributed GPLv3 text and
+                    repository metadata.
+                </p>
+                <h3>Strengths and trade-offs</h3>
+                <p>
+                    Cleanest future-facing client/server configuration
+                    architecture. Trade-offs are youth, tag/output semantics,
+                    missing traditional floating chrome/tabs and maintaining a
+                    client bridge.
+                </p>
+                <h3>Evidence</h3>
+                <ul class="evidence">
+                    <li>
+                        <a href="https://github.com/pinnacle-comp/pinnacle"
+                            >Repository</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="https://github.com/pinnacle-comp/pinnacle/releases/tag/v0.2.3"
+                            >v0.2.3</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="https://pinnacle-comp.github.io/pinnacle/configuration/config-basics"
+                            >gRPC configuration model</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="https://pinnacle-comp.github.io/pinnacle/configuration/windows"
+                            >Window API</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="https://pinnacle-comp.github.io/pinnacle/configuration/outputs"
+                            >Output API</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="https://pinnacle-comp.github.io/pinnacle/configuration/tags"
+                            >Tag model</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="https://github.com/pinnacle-comp/pinnacle/blob/main/LICENSE"
+                            >Licence</a
+                        >
+                    </li>
+                </ul>
+                <a class="back" href="#comparison-summary"
+                    >Back to comparison</a
+                >
+            </section>
+
+            <section class="project-detail" id="project-labwc">
+                <h2><a href="https://labwc.github.io/">labwc</a></h2>
+                <p>
+                    <strong>Verdict and best fit:</strong> Closest manual
+                    Fluxbox/Openbox-style Wayland compositor and excellent
+                    global multi-head semantics, but incompatible with mandatory
+                    external relayout.
+                </p>
+                <div class="facts">
+                    <div class="fact">
+                        <strong>GitHub stars</strong>2,731 as of 18 August 2026
+                        UTC
+                    </div>
+                    <div class="fact">
+                        <strong>Maintenance</strong>474 commits in common
+                        window; 0.20.1 on 15 June 2026; latest commit 14 August
+                    </div>
+                    <div class="fact">
+                        <strong>Licence</strong
+                        ><a
+                            href="https://github.com/labwc/labwc/blob/master/LICENSE"
+                            >GPL-2.0-only</a
+                        >
+                    </div>
+                </div>
+                <h3>Domain fit</h3>
+                <p>
+                    labwc has Openbox themes, server titlebars/buttons, shade,
+                    sticky, move/resize, snapping, regions, menus, window rules
+                    and a classic switcher. It lacks native tabs/groups and
+                    useful opacity control.
+                </p>
+                <h3>Backend and multi-head behaviour</h3>
+                <p>
+                    Wayland-native with optional XWayland. Kanshi/<code
+                        >wlr-randr</code
+                    >
+                    configure output position, mode, transform and scale;
+                    hotplugged DRM outputs auto-enable. A workspace explicitly
+                    covers all outputs, making it the closest match to Fluxbox
+                    global workspace semantics. XFCE 4.20 panel integration is
+                    officially documented.
+                </p>
+                <h3>Autolayout backend</h3>
+                <p>
+                    Internal actions can move/resize and change
+                    output/workspace/sticky/top/bottom/decor state, but the
+                    project intentionally rejects custom D-Bus/i3-style IPC.
+                    Standard foreign-toplevel protocols cannot set arbitrary
+                    exact geometry or these states. Static mapping rules cannot
+                    replace relayout after hotplug. Using X11 tools would affect
+                    only XWayland clients.
+                </p>
+                <h3>Popularity</h3>
+                <p>2,731 stars.</p>
+                <h3>Maintenance</h3>
+                <p>
+                    Strong current maintenance: 474 commits, 0.20.1 in June and
+                    activity four days before observation.
+                </p>
+                <h3>Licence</h3>
+                <p>GPL-2.0-only.</p>
+                <h3>Strengths and trade-offs</h3>
+                <p>
+                    Best simple floating UX, global workspaces and XFCE panel
+                    continuity. The no-custom-IPC policy is a direct, not
+                    incidental, blocker to the repository’s highest-priority
+                    feature.
+                </p>
+                <h3>Evidence</h3>
+                <ul class="evidence">
+                    <li>
+                        <a href="https://github.com/labwc/labwc">Repository</a>
+                    </li>
+                    <li>
+                        <a
+                            href="https://github.com/labwc/labwc/releases/tag/0.20.1"
+                            >0.20.1</a
+                        >
+                    </li>
+                    <li>
+                        <a href="https://labwc.github.io/labwc-config.5.html"
+                            >Output/workspace configuration</a
+                        >
+                    </li>
+                    <li>
+                        <a href="https://labwc.github.io/integration.html"
+                            >Output and XFCE integration</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="https://github.com/labwc/labwc-scope#appendix-b---ipc"
+                            >IPC scope</a
+                        >
+                    </li>
+                    <li>
+                        <a
+                            href="https://github.com/labwc/labwc/blob/master/LICENSE"
+                            >Licence</a
+                        >
+                    </li>
+                </ul>
+                <a class="back" href="#comparison-summary"
+                    >Back to comparison</a
+                >
+            </section>
+
+            <section class="methodology" id="methodology">
+                <h2>Methodology and shortlist</h2>
+                <p>
+                    The requirement was changed after the first report: a
+                    candidate must have a maintained native Wayland path.
+                    X11-only projects were therefore removed regardless of
+                    Fluxbox similarity. Candidates were split into genuine
+                    dual-session projects and Wayland-native compositors; a
+                    nested Wayland compositor running on an X11 backend does not
+                    count as an X11 WM migration stage.
+                </p>
+                <p>
+                    The shortlist includes the serious programmable/floating
+                    options found: KWin, Qtile and exploratory Enlightenment for
+                    dual-backend migration; Wayfire, Sway, Hyprland, Pinnacle
+                    and labwc for Wayland-native migration. Mutter/GNOME Shell
+                    and Muffin were excluded because their supported external
+                    arbitrary-window policy surfaces are weaker and
+                    desktop-shell coupling is stronger. River and niri remain
+                    watchlist projects: both are active, but their tag/scrolling
+                    models and control surfaces are worse matches. Xfwm4 is not
+                    itself a Wayland compositor.
+                </p>
+                <p>
+                    Maintenance uses a common 12-month window. GitHub counts
+                    were observed through API/search where the canonical project
+                    uses GitHub. KWin and Enlightenment correctly show N/A
+                    because their canonical forges are elsewhere; mirror counts
+                    are labelled. Popularity is contextual, not a quality score.
+                    No compositor was installed or run during this research, so
+                    real browser app-ids, pointer-focus races, mixed-scale
+                    geometry, panel/tray behaviour and hotplug convergence
+                    remain prototype questions.
+                </p>
+            </section>
+
+            <section class="recommendation" id="prototype-plan">
+                <h2>Prototype plan and acceptance gates</h2>
+                <ol>
+                    <li>
+                        <strong>Normalize the layout engine first:</strong>
+                        compile YAML into structured operations—match, output,
+                        workspace/tag, logical geometry, sticky/pin, opacity,
+                        stacking, decoration and group—without Fluxbox command
+                        strings.
+                    </li>
+                    <li>
+                        <strong>KWin staged spike:</strong> run
+                        <code>kwin_x11 --replace</code>, build a tiny script
+                        request bridge, apply one full topology and all
+                        <code>ly</code> sublayouts, then verify global desktops
+                        and sticky secondary outputs. Stop if external requests
+                        cannot be made reliable.
+                    </li>
+                    <li>
+                        <strong>Wayfire native spike:</strong> run nested for
+                        safety, enumerate views through <code>pywayfire</code>,
+                        apply the same operation fixture in logical coordinates,
+                        then test direct output hotplug/Kanshi.
+                    </li>
+                    <li>
+                        <strong>Compare hard failures:</strong> KWin’s script
+                        bridge/Plasma-shell coupling versus Wayfire’s per-output
+                        workspaces/no-tabs. Pick the smaller long-term
+                        compromise.
+                    </li>
+                    <li>
+                        <strong>Only then evaluate alternatives:</strong> Qtile
+                        if shared Python backends are decisive, Sway if API
+                        stability is decisive, Hyprland if grouping is decisive.
+                    </li>
+                    <li>
+                        <strong>Wayland acceptance suite:</strong> native and
+                        XWayland identity matching; three monitor topologies and
+                        fractional scaling; repeated dock/DPMS; focus without
+                        raise; active-window sublayouts; full autolayout;
+                        focus-or-launch; panel/tasklist/tray; client survival
+                        across compositor config reload; browser grouping
+                        decision.
+                    </li>
+                </ol>
+                <p class="callout warning">
+                    <strong>Do not port the 229 bindings first.</strong> A
+                    candidate fails early if it cannot deterministically
+                    relayout existing native windows after output changes. Prove
+                    that vertical slice before investing in menus, themes or
+                    shortcut parity.
+                </p>
+            </section>
+        </main>
+        <footer>
+            <p>
+                Generated from repository evidence and public primary sources
+                observed 18 August 2026 UTC. Repository popularity and activity
+                figures change over time. This report is not legal advice.
+            </p>
+        </footer>
+    </body>
+</html>
