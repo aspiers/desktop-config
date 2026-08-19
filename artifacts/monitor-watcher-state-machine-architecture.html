@@ -1,0 +1,2232 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <base href="file:///home/adam/.GIT/adamspiers.org/desktop-config/" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <title>Markdown Preview</title>
+        <style>
+            :root {
+                color-scheme: dark;
+                --preview-font-size: 14px;
+                --bg: #11111b;
+                --card: #1e1e2e;
+                --panel-2: #232431;
+                --border: #7f849c;
+                --border-muted: #6c7086;
+                --border-subtle: #272738;
+                --panel-border: #2a2b3c;
+                --text: #cdd6f4;
+                --muted: #7f849c;
+                --accent: #b4befe;
+                --warn: #f9e2af;
+                --error: #f38ba8;
+                --ok: #a6e3a1;
+                --code-bg: #232431;
+                --link: #b4befe;
+                --md-heading: #f38ba8;
+                --md-link: #b4befe;
+                --md-link-url: #89b4fa;
+                --md-code: #a6e3a1;
+                --md-codeblock: #cdd6f4;
+                --md-codeblock-border: #2f303e;
+                --md-quote: #f5c2e7;
+                --md-quote-border: #f5c2e7;
+                --md-hr: #94e2d5;
+                --md-list-bullet: #94e2d5;
+                --syntax-keyword: #cba6f7;
+                --syntax-function: #89b4fa;
+                --syntax-variable: #eba0ac;
+                --syntax-string: #a6e3a1;
+                --syntax-number: #fab387;
+                --syntax-type: #f9e2af;
+                --syntax-comment: #9399b2;
+                --syntax-operator: #89dceb;
+                --syntax-punctuation: #9399b2;
+                --syntax-error: #f38ba8;
+                --annotation-bg: rgba(180, 190, 254, 0.25);
+                --annotation-border: rgba(180, 190, 254, 0.65);
+                --annotation-text: #cdd6f4;
+                --blockquote-bg: rgba(245, 194, 231, 0.16);
+                --inline-code-bg: rgba(147, 153, 178, 0.18);
+                --table-alt-bg: rgba(147, 153, 178, 0.14);
+                --md-table-border: #272738;
+                --diff-add-bg: rgba(166, 227, 161, 0.14);
+                --diff-add-text: #a6e3a1;
+                --diff-del-bg: rgba(243, 139, 168, 0.14);
+                --diff-del-text: #f38ba8;
+                --diff-meta-text: #7f849c;
+                --diff-header-bg: rgba(180, 190, 254, 0.1);
+                --diff-header-text: #b4befe;
+                --diff-hunk-bg: rgba(180, 190, 254, 0.16);
+                --diff-hunk-text: #b4befe;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            html,
+            body {
+                margin: 0;
+                padding: 0;
+                background: var(--bg);
+                color: var(--text);
+            }
+            body {
+                min-height: 100vh;
+                padding: 28px;
+                font-family:
+                    -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica,
+                    Arial, sans-serif;
+            }
+            #preview-root {
+                width: min(1100px, 100%);
+                margin: 0 auto;
+                background: var(--card);
+                border: 1px solid var(--panel-border);
+                border-radius: 10px;
+                padding: 24px 28px;
+                overflow-wrap: anywhere;
+                line-height: 1.58;
+                font-size: var(--preview-font-size);
+            }
+            #preview-root h1,
+            #preview-root h2,
+            #preview-root h3,
+            #preview-root h4,
+            #preview-root h5,
+            #preview-root h6 {
+                margin-top: 1.2em;
+                margin-bottom: 0.5em;
+                line-height: 1.25;
+                letter-spacing: -0.01em;
+                color: var(--md-heading);
+            }
+            #preview-root h1 {
+                font-size: 1.6em;
+                border-bottom: 0;
+                padding-bottom: 0;
+            }
+            #preview-root h2 {
+                font-size: 1.25em;
+                border-bottom: 0;
+                padding-bottom: 0;
+            }
+            #preview-root p,
+            #preview-root ul,
+            #preview-root ol,
+            #preview-root blockquote,
+            #preview-root table {
+                margin-top: 0;
+                margin-bottom: 1em;
+            }
+            #preview-root li::marker {
+                color: var(--md-list-bullet);
+            }
+            #preview-root a {
+                color: var(--md-link);
+                text-decoration: none;
+            }
+            #preview-root a:hover {
+                text-decoration: underline;
+            }
+            #preview-root a.uri,
+            #preview-root .uri {
+                color: var(--md-link-url);
+            }
+            #preview-root blockquote {
+                margin-left: 0;
+                padding: 0.2em 1em;
+                border-left: 0.25em solid var(--md-quote-border);
+                border-radius: 0 8px 8px 0;
+                background: var(--blockquote-bg);
+                color: var(--md-quote);
+            }
+            #preview-root pre {
+                background: var(--panel-2);
+                border: 1px solid var(--md-codeblock-border);
+                border-radius: 8px;
+                padding: 12px 14px;
+                overflow: auto;
+            }
+            #preview-root code {
+                font-family:
+                    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                    "Liberation Mono", "Courier New", monospace;
+                font-size: 0.9em;
+                color: var(--md-code);
+            }
+            #preview-root pre code {
+                color: var(--text);
+            }
+            #preview-root :not(pre) > code {
+                background: var(--inline-code-bg);
+                border: 1px solid var(--md-codeblock-border);
+                border-radius: 6px;
+                padding: 0.12em 0.35em;
+            }
+            #preview-root .annotation-marker {
+                display: inline;
+                border-radius: 4px;
+                border: 1px solid var(--annotation-border);
+                background: var(--annotation-bg);
+                color: var(--annotation-text);
+                font-family:
+                    -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica,
+                    Arial, sans-serif;
+                padding: 0 0.28em;
+            }
+            #preview-root .annotation-marker mjx-container {
+                margin: 0;
+            }
+            #preview-root pre.sourceCode.diff code > .diff-line {
+                display: block;
+                margin: 0 -4px;
+                padding: 0 4px;
+                border-radius: 4px;
+            }
+            #preview-root pre.sourceCode.diff code > .diff-add-line {
+                background: var(--diff-add-bg);
+                color: var(--diff-add-text);
+            }
+            #preview-root pre.sourceCode.diff code > .diff-del-line {
+                background: var(--diff-del-bg);
+                color: var(--diff-del-text);
+            }
+            #preview-root pre.sourceCode.diff code > .diff-meta-line {
+                color: var(--diff-meta-text);
+            }
+            #preview-root pre.sourceCode.diff code > .diff-header-line {
+                background: var(--diff-header-bg);
+                color: var(--diff-header-text);
+                font-weight: 600;
+            }
+            #preview-root pre.sourceCode.diff code > .diff-hunk-line {
+                background: var(--diff-hunk-bg);
+                color: var(--diff-hunk-text);
+            }
+            #preview-root pre.sourceCode.diff code > .diff-line .kw,
+            #preview-root pre.sourceCode.diff code > .diff-line .dt,
+            #preview-root pre.sourceCode.diff code > .diff-line .st,
+            #preview-root pre.sourceCode.diff code > .diff-line .va {
+                color: inherit;
+                font-weight: inherit;
+            }
+            #preview-root code span.kw,
+            #preview-root code span.cf,
+            #preview-root code span.im {
+                color: var(--syntax-keyword);
+                font-weight: 600;
+            }
+            #preview-root code span.dt {
+                color: var(--syntax-type);
+                font-weight: 600;
+            }
+            #preview-root code span.fu,
+            #preview-root code span.bu {
+                color: var(--syntax-function);
+            }
+            #preview-root code span.va,
+            #preview-root code span.ot {
+                color: var(--syntax-variable);
+            }
+            #preview-root code span.st,
+            #preview-root code span.ss,
+            #preview-root code span.sc,
+            #preview-root code span.ch {
+                color: var(--syntax-string);
+            }
+            #preview-root code span.dv,
+            #preview-root code span.bn,
+            #preview-root code span.fl {
+                color: var(--syntax-number);
+            }
+            #preview-root code span.co {
+                color: var(--syntax-comment);
+                font-style: italic;
+            }
+            #preview-root code span.op {
+                color: var(--syntax-operator);
+            }
+            #preview-root code span.pp,
+            #preview-root code span.pu {
+                color: var(--syntax-punctuation);
+            }
+            #preview-root code span.er,
+            #preview-root code span.al {
+                color: var(--syntax-error);
+                font-weight: 600;
+            }
+            #preview-root table {
+                border-collapse: collapse;
+                display: block;
+                max-width: 100%;
+                overflow: auto;
+            }
+            #preview-root th,
+            #preview-root td {
+                border: 1px solid var(--md-table-border);
+                padding: 6px 12px;
+            }
+            #preview-root thead th {
+                background: var(--panel-2);
+            }
+            #preview-root tbody tr:nth-child(even) {
+                background: var(--table-alt-bg);
+            }
+            #preview-root hr {
+                border: 0;
+                border-top: 1px solid var(--md-hr);
+                margin: 1.25em 0;
+            }
+            #preview-root img {
+                max-width: 100%;
+            }
+            #preview-root math[display="block"] {
+                display: block;
+                margin: 1em 0;
+                overflow-x: auto;
+                overflow-y: hidden;
+            }
+            #preview-root mjx-container[display="true"] {
+                display: block;
+                margin: 1em 0;
+                overflow-x: auto;
+                overflow-y: hidden;
+            }
+            #preview-root .mermaid-container {
+                text-align: center;
+                margin: 1em 0;
+                overflow-x: auto;
+            }
+            #preview-root .mermaid-container svg {
+                max-width: 100%;
+                height: auto;
+            }
+        </style>
+    </head>
+    <body>
+        <article id="preview-root">
+            <h1 id="persistent-monitor-watcher-v2">
+                Persistent Monitor Watcher v2
+            </h1>
+            <blockquote>
+                <p>
+                    <strong>Architecture spike — not deployed.</strong> DRM
+                    events reduce latency, while persisted timers guarantee
+                    continued progress.
+                </p>
+            </blockquote>
+            <h2 id="runtime-architecture">Runtime architecture</h2>
+            <pre class="mermaid"><code>flowchart LR
+  subgraph Inputs[Live display evidence]
+    DRM[DRM / udev events]
+    SYS[sysfs connector state]
+    XR[X11 / XRandR topology]
+    AR[autorandr identity and profile data]
+    CLOCK[Monotonic clock]
+  end
+
+  subgraph Controller[Persistent monitor-watcher service]
+    LOOP[Event + timer scheduler]
+    OBS[Observation adapter&lt;br/&gt;immutable canonical sample]
+    RED[Pure state reducer&lt;br/&gt;state + event + observation + time]
+    INV[Central invariant checks]
+    STORE[(Atomic versioned state&lt;br/&gt;whitelist-parsed TSV)]
+    DISPATCH[Action dispatcher&lt;br/&gt;admit → dispatch → acknowledge]
+  end
+
+  subgraph Workers[Keyed discoverable workers]
+    APPLY[Autorandr application worker&lt;br/&gt;autorandr --load TARGET]
+    FINAL[Desktop finalizer worker&lt;br/&gt;setup-monitor oneshot]
+  end
+
+  subgraph Outcomes[Independent durable outcomes]
+    XSTATE[Applied / stable X profile]
+    DSTATE[Desktop-finalized profile]
+    DIAG[Logs and diagnostic state]
+  end
+
+  DRM -. wake-up hint .-&gt; LOOP
+  CLOCK --&gt;|nearest persisted deadline| LOOP
+  LOOP --&gt; OBS
+  SYS --&gt; OBS
+  XR --&gt; OBS
+  AR --&gt; OBS
+  OBS --&gt;|canonical observation + validity| RED
+  STORE --&gt;|restart recovery| RED
+  RED --&gt; INV
+  INV --&gt;|new controller state| STORE
+  INV --&gt;|symbolic actions| DISPATCH
+  DISPATCH --&gt;|keyed application| APPLY
+  DISPATCH --&gt;|keyed transaction| FINAL
+  APPLY --&gt;|completion; drain events; re-observe| LOOP
+  FINAL --&gt;|completion tombstone; re-observe| LOOP
+  APPLY --&gt; XSTATE
+  FINAL --&gt; DSTATE
+  RED --&gt; DIAG
+
+  classDef input fill:#eaf4ff,stroke:#2463a8,color:#102a43;
+  classDef core fill:#fff4d6,stroke:#9a6700,color:#3d2c00;
+  classDef worker fill:#f2eaff,stroke:#6941a5,color:#27123f;
+  classDef outcome fill:#e9f8ef,stroke:#267447,color:#123921;
+  class DRM,SYS,XR,AR,CLOCK input;
+  class LOOP,OBS,RED,INV,STORE,DISPATCH core;
+  class APPLY,FINAL worker;
+  class XSTATE,DSTATE,DIAG outcome;</code></pre>
+            <h3 id="architectural-boundaries">Architectural boundaries</h3>
+            <table>
+                <colgroup>
+                    <col style="width: 33%" />
+                    <col style="width: 33%" />
+                    <col style="width: 33%" />
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th>Layer</th>
+                        <th>Owns</th>
+                        <th>Must not do</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Observation adapter</td>
+                        <td>
+                            One canonical, immutable sysfs/XRandR/autorandr
+                            sample
+                        </td>
+                        <td>Authorize actions from torn evidence</td>
+                    </tr>
+                    <tr>
+                        <td>Pure reducer</td>
+                        <td>
+                            Transitions, timers, retry policy, deduplication
+                        </td>
+                        <td>Perform display or process I/O</td>
+                    </tr>
+                    <tr>
+                        <td>Action dispatcher</td>
+                        <td>Durable admission and keyed worker lifecycle</td>
+                        <td>Infer desired topology</td>
+                    </tr>
+                    <tr>
+                        <td>Persistence + scheduler</td>
+                        <td>
+                            Atomic state, restart recovery, nearest monotonic
+                            wake-up
+                        </td>
+                        <td>Abandon unresolved external displays</td>
+                    </tr>
+                </tbody>
+            </table>
+            <h2 id="controller-state-diagram">Controller state diagram</h2>
+            <pre class="mermaid"><code>stateDiagram-v2
+  [*] --&gt; RECOVERING
+
+  RECOVERING --&gt; FINALIZING: keyed finalizer still running / reattach
+  RECOVERING --&gt; VERIFYING: exact current profile / restart proof
+  RECOVERING --&gt; DISCOVER_FAST: new or changed evidence
+  RECOVERING --&gt; WAIT_SLOW: restore unresolved expired deadline
+
+  QUIESCENT --&gt; QUIESCENT: same exact stable profile
+  QUIESCENT --&gt; VERIFYING: another exact current profile
+  QUIESCENT --&gt; DISCOVER_FAST: meaningful change or EDID loss
+
+  DISCOVER_FAST --&gt; DISCOVER_FAST: invalid or incomplete sample / fast timer
+  DISCOVER_FAST --&gt; APPLY_PENDING: eligible target differs / persist admission
+  DISCOVER_FAST --&gt; VERIFYING: target already exact, active, current
+  DISCOVER_FAST --&gt; WAIT_SLOW: 30 s aggressive deadline reached
+  DISCOVER_FAST --&gt; UNSUPPORTED: complete unknown identity stable 10 s
+
+  APPLY_PENDING --&gt; APPLY_PENDING: dirty event / re-observe admission
+  APPLY_PENDING --&gt; APPLYING: keyed worker accepted
+  APPLYING --&gt; VERIFYING: success + exact re-observation
+  APPLYING --&gt; DISCOVER_FAST: success but still changing
+  APPLYING --&gt; APPLY_FAILED: failure or unknowable outcome
+  APPLY_FAILED --&gt; APPLY_FAILED: unchanged evidence / never repeat
+  APPLY_FAILED --&gt; DISCOVER_FAST: genuinely changed evidence
+
+  WAIT_SLOW --&gt; WAIT_SLOW: unresolved / 5, 10, 20, 30 s capped polling
+  WAIT_SLOW --&gt; DISCOVER_FAST: evidence changes / reset fast backoff
+  WAIT_SLOW --&gt; APPLY_PENDING: target becomes eligible
+  WAIT_SLOW --&gt; VERIFYING: target becomes exact/current
+
+  VERIFYING --&gt; VERIFYING: continuous proof younger than 10 s
+  VERIFYING --&gt; DISCOVER_FAST: event, contradiction, inactive or extra output
+  VERIFYING --&gt; QUIESCENT: stable profile equals finalized profile
+  VERIFYING --&gt; FINALIZE_PENDING: stable profile differs / admit transaction
+
+  FINALIZE_PENDING --&gt; FINALIZE_PENDING: dirty event / re-authorize exact key
+  FINALIZE_PENDING --&gt; FINALIZING: keyed finalizer accepted
+  FINALIZING --&gt; FINALIZING: running or result pending / no relaunch
+  FINALIZING --&gt; QUIESCENT: success tombstone + fresh valid confirmation
+  FINALIZING --&gt; DISCOVER_FAST: topology changed / stop stale worker
+  FINALIZING --&gt; FINALIZE_FAILED: finalizer failure
+  FINALIZE_FAILED --&gt; FINALIZE_FAILED: same transition / never repeat ID
+  FINALIZE_FAILED --&gt; DISCOVER_FAST: genuine new topology or profile
+
+  UNSUPPORTED --&gt; UNSUPPORTED: same complete unknown topology / 60 s health tick
+  UNSUPPORTED --&gt; WAIT_SLOW: identity becomes incomplete
+  UNSUPPORTED --&gt; DISCOVER_FAST: eligible profile or proven unplug
+
+  note right of DISCOVER_FAST
+    External presence makes an
+    internal-only target ineligible.
+    EDID loss means uncertainty,
+    not unplug.
+  end note
+
+  note right of WAIT_SLOW
+    Fast timeout changes retry rate;
+    it never abandons observation.
+    DRM events are only wake-up hints.
+  end note
+
+  note right of VERIFYING
+    Exact connected + active topology,
+    current profile agreement,
+    event quietness and stability
+    must hold continuously.
+  end note
+
+  note right of FINALIZING
+    X profile and desktop-finalized
+    profile have independent lifetimes.
+  end note</code></pre>
+            <h2 id="primary-transition-path">Primary transition path</h2>
+            <pre class="mermaid"><code>sequenceDiagram
+  participant H as Hub / display
+  participant W as Watcher scheduler
+  participant O as Observation adapter
+  participant R as Pure reducer
+  participant A as Autorandr worker
+  participant F as Desktop finalizer
+  participant P as Persistent state
+
+  H--&gt;&gt;W: DRM event (wake-up hint)
+  W-&gt;&gt;O: Probe canonical evidence
+  O--&gt;&gt;R: External connected, EDID unresolved
+  R-&gt;&gt;P: DISCOVER_FAST + deadline
+  loop Fast retries until 30 s
+    W-&gt;&gt;O: Timer-driven probe
+    O--&gt;&gt;R: Updated evidence
+  end
+  R-&gt;&gt;P: WAIT_SLOW (intent preserved)
+  loop Persistent capped polling
+    W-&gt;&gt;O: 5/10/20/30 s probe
+    O--&gt;&gt;R: EDID/profile now eligible
+  end
+  R-&gt;&gt;P: APPLY_PENDING + application key
+  R-&gt;&gt;A: autorandr --load selected profile
+  A--&gt;&gt;W: Completion
+  W-&gt;&gt;O: Drain events and re-probe
+  O--&gt;&gt;R: Exact + active + current
+  R-&gt;&gt;P: VERIFYING
+  W-&gt;&gt;O: Continuous proof probes for 10 s
+  O--&gt;&gt;R: Stable exact evidence
+  alt Profile already desktop-finalized
+    R-&gt;&gt;P: QUIESCENT (no desktop relayout)
+  else Genuine desktop transition
+    R-&gt;&gt;P: FINALIZE_PENDING + unique ID
+    R-&gt;&gt;F: Start keyed setup-monitor oneshot
+    F--&gt;&gt;W: Success
+    W-&gt;&gt;O: Fresh confirmation probe
+    O--&gt;&gt;R: Same transition key still valid
+    R-&gt;&gt;P: Commit desktop-finalized profile, then QUIESCENT
+  end</code></pre>
+            <h2 id="safety-invariants">Safety invariants</h2>
+            <ol type="1">
+                <li>
+                    Never apply laptop-only while external hardware is present.
+                </li>
+                <li>Never infer unplug from temporary EDID absence.</li>
+                <li>
+                    Never repeat an application for unchanged
+                    <code>(physical epoch, target, observation)</code> evidence.
+                </li>
+                <li>
+                    Never finalize before 10 seconds of continuous
+                    exact/current/active proof.
+                </li>
+                <li>
+                    Never equate autorandr application with completed desktop
+                    finalization.
+                </li>
+                <li>
+                    Never abandon an unresolved connected external topology: a
+                    future timer always exists.
+                </li>
+                <li>
+                    Invalid/torn observations preserve
+                    admitted/running/completed action evidence and only schedule
+                    re-observation.
+                </li>
+                <li>Failed or cancelled finalization IDs are never reused.</li>
+            </ol>
+        </article>
+        <script>
+            (() => {
+                function normalizePreviewAnnotationLabel(text) {
+                    return String(text || "")
+                        .replace(/\r\n/g, "\n")
+                        .replace(/\s*\n\s*/g, " ")
+                        .replace(/\s{2,}/g, " ")
+                        .trim();
+                }
+
+                function advancePastBacktickSpan(source, startIndex) {
+                    let fenceLength = 1;
+                    while (source[startIndex + fenceLength] === "`")
+                        fenceLength += 1;
+
+                    let index = startIndex + fenceLength;
+                    while (index < source.length) {
+                        const ch = source[index];
+                        if (ch === "\\") {
+                            index = Math.min(source.length, index + 2);
+                            continue;
+                        }
+                        if (ch === "`") {
+                            let runLength = 1;
+                            while (source[index + runLength] === "`")
+                                runLength += 1;
+                            if (runLength === fenceLength) {
+                                return index + runLength;
+                            }
+                            index += runLength;
+                            continue;
+                        }
+                        if (ch === "\n") {
+                            return index + 1;
+                        }
+                        index += 1;
+                    }
+
+                    return source.length;
+                }
+
+                function readInlineAnnotationMarkerAt(source, startIndex) {
+                    const text = String(source || "");
+                    if (startIndex < 0 || startIndex + 4 > text.length)
+                        return null;
+                    if (
+                        text[startIndex] !== "[" ||
+                        text.slice(startIndex, startIndex + 4).toLowerCase() !==
+                            "[an:"
+                    ) {
+                        return null;
+                    }
+
+                    let index = startIndex + 4;
+                    while (index < text.length && /\s/.test(text[index]))
+                        index += 1;
+                    const bodyStart = index;
+                    let squareDepth = 0;
+
+                    while (index < text.length) {
+                        const ch = text[index];
+                        if (ch === "\\") {
+                            index = Math.min(text.length, index + 2);
+                            continue;
+                        }
+                        if (ch === "`") {
+                            index = advancePastBacktickSpan(text, index);
+                            continue;
+                        }
+                        if (ch === "[") {
+                            squareDepth += 1;
+                            index += 1;
+                            continue;
+                        }
+                        if (ch === "]") {
+                            if (squareDepth === 0) {
+                                const end = index + 1;
+                                return {
+                                    start: startIndex,
+                                    end: end,
+                                    raw: text.slice(startIndex, end),
+                                    body: text.slice(bodyStart, index),
+                                };
+                            }
+                            squareDepth -= 1;
+                            index += 1;
+                            continue;
+                        }
+                        index += 1;
+                    }
+
+                    return null;
+                }
+
+                function collectInlineAnnotationMarkers(text) {
+                    const source = String(text || "");
+                    const markers = [];
+                    let index = 0;
+
+                    while (index < source.length) {
+                        const ch = source[index];
+                        if (ch === "\\") {
+                            index = Math.min(source.length, index + 2);
+                            continue;
+                        }
+                        if (ch === "`") {
+                            index = advancePastBacktickSpan(source, index);
+                            continue;
+                        }
+                        if (
+                            ch === "[" &&
+                            source.slice(index, index + 4).toLowerCase() ===
+                                "[an:"
+                        ) {
+                            const marker = readInlineAnnotationMarkerAt(
+                                source,
+                                index,
+                            );
+                            if (marker) {
+                                markers.push(marker);
+                                index = marker.end;
+                                continue;
+                            }
+                        }
+                        index += 1;
+                    }
+
+                    return markers;
+                }
+
+                function replaceInlineAnnotationMarkers(
+                    text,
+                    annotationReplacer,
+                    textReplacer,
+                ) {
+                    const source = String(text || "");
+                    const markers = collectInlineAnnotationMarkers(source);
+                    const replaceAnnotation =
+                        typeof annotationReplacer === "function"
+                            ? annotationReplacer
+                            : function (marker) {
+                                  return marker.raw;
+                              };
+                    const replaceText =
+                        typeof textReplacer === "function"
+                            ? textReplacer
+                            : function (segment) {
+                                  return segment;
+                              };
+
+                    if (markers.length === 0) {
+                        return replaceText(source);
+                    }
+
+                    let out = "";
+                    let lastIndex = 0;
+                    markers.forEach(function (marker) {
+                        if (marker.start > lastIndex) {
+                            out += String(
+                                replaceText(
+                                    source.slice(lastIndex, marker.start),
+                                ) ?? "",
+                            );
+                        }
+                        out += String(replaceAnnotation(marker) ?? "");
+                        lastIndex = marker.end;
+                    });
+                    if (lastIndex < source.length) {
+                        out += String(
+                            replaceText(source.slice(lastIndex)) ?? "",
+                        );
+                    }
+                    return out;
+                }
+
+                function escapeHtml(text) {
+                    return String(text || "")
+                        .replace(/&/g, "&amp;")
+                        .replace(/</g, "&lt;")
+                        .replace(/>/g, "&gt;")
+                        .replace(/"/g, "&quot;")
+                        .replace(/'/g, "&#39;");
+                }
+
+                function isWordChar(ch) {
+                    return typeof ch === "string" && /[A-Za-z0-9]/.test(ch);
+                }
+
+                function readInlineMarkdownLinkAt(source, startIndex) {
+                    const text = String(source || "");
+                    if (text[startIndex] !== "[") return null;
+
+                    let index = startIndex + 1;
+                    let squareDepth = 0;
+                    while (index < text.length) {
+                        const ch = text[index];
+                        if (ch === "\\") {
+                            index = Math.min(text.length, index + 2);
+                            continue;
+                        }
+                        if (ch === "`") {
+                            index = advancePastBacktickSpan(text, index);
+                            continue;
+                        }
+                        if (ch === "[") {
+                            squareDepth += 1;
+                            index += 1;
+                            continue;
+                        }
+                        if (ch === "]") {
+                            if (squareDepth === 0) break;
+                            squareDepth -= 1;
+                            index += 1;
+                            continue;
+                        }
+                        if (ch === "\n") return null;
+                        index += 1;
+                    }
+
+                    if (
+                        index >= text.length ||
+                        text[index] !== "]" ||
+                        text[index + 1] !== "("
+                    )
+                        return null;
+
+                    index += 2;
+                    let parenDepth = 0;
+                    while (index < text.length) {
+                        const ch = text[index];
+                        if (ch === "\\") {
+                            index = Math.min(text.length, index + 2);
+                            continue;
+                        }
+                        if (ch === "`") {
+                            index = advancePastBacktickSpan(text, index);
+                            continue;
+                        }
+                        if (ch === "(") {
+                            parenDepth += 1;
+                            index += 1;
+                            continue;
+                        }
+                        if (ch === ")") {
+                            if (parenDepth === 0) {
+                                return {
+                                    type: "literal",
+                                    raw: text.slice(startIndex, index + 1),
+                                    end: index + 1,
+                                };
+                            }
+                            parenDepth -= 1;
+                            index += 1;
+                            continue;
+                        }
+                        if (ch === "\n") return null;
+                        index += 1;
+                    }
+
+                    return null;
+                }
+
+                function readDelimitedPreviewTokenAt(
+                    source,
+                    startIndex,
+                    open,
+                    close,
+                    allowNewlines,
+                ) {
+                    const text = String(source || "");
+                    if (
+                        text.slice(startIndex, startIndex + open.length) !==
+                        open
+                    )
+                        return null;
+
+                    let index = startIndex + open.length;
+                    while (index < text.length) {
+                        const ch = text[index];
+                        if (!allowNewlines && ch === "\n") return null;
+                        if (ch === "\\") {
+                            index = Math.min(text.length, index + 2);
+                            continue;
+                        }
+                        if (text.slice(index, index + close.length) === close) {
+                            return {
+                                type: "math",
+                                raw: text.slice(
+                                    startIndex,
+                                    index + close.length,
+                                ),
+                                end: index + close.length,
+                            };
+                        }
+                        index += 1;
+                    }
+
+                    return null;
+                }
+
+                function readInlineMathTokenAt(source, startIndex) {
+                    const text = String(source || "");
+                    if (
+                        text[startIndex] === "\\" &&
+                        text[startIndex + 1] === "("
+                    ) {
+                        return readDelimitedPreviewTokenAt(
+                            text,
+                            startIndex,
+                            "\\(",
+                            "\\)",
+                            true,
+                        );
+                    }
+                    if (
+                        text[startIndex] === "\\" &&
+                        text[startIndex + 1] === "["
+                    ) {
+                        return readDelimitedPreviewTokenAt(
+                            text,
+                            startIndex,
+                            "\\[",
+                            "\\]",
+                            true,
+                        );
+                    }
+                    if (
+                        text[startIndex] === "$" &&
+                        text[startIndex + 1] === "$"
+                    ) {
+                        return readDelimitedPreviewTokenAt(
+                            text,
+                            startIndex,
+                            "$$",
+                            "$$",
+                            true,
+                        );
+                    }
+                    if (
+                        text[startIndex] === "$" &&
+                        text[startIndex + 1] !== "$" &&
+                        text[startIndex + 1] &&
+                        !/\s/.test(text[startIndex + 1])
+                    ) {
+                        const token = readDelimitedPreviewTokenAt(
+                            text,
+                            startIndex,
+                            "$",
+                            "$",
+                            false,
+                        );
+                        if (token && token.raw.length > 2) return token;
+                    }
+                    return null;
+                }
+
+                function readBareUrlTokenAt(source, startIndex) {
+                    const text = String(source || "").slice(startIndex);
+                    const match = text.match(/^https?:\/\/[^\s<]+/i);
+                    if (!match) return null;
+                    return {
+                        type: "literal",
+                        raw: match[0],
+                        end: startIndex + match[0].length,
+                    };
+                }
+
+                function readAnnotationPreviewProtectedTokenAt(
+                    source,
+                    startIndex,
+                ) {
+                    const text = String(source || "");
+                    if (startIndex < 0 || startIndex >= text.length)
+                        return null;
+
+                    if (text[startIndex] === "`") {
+                        const end = advancePastBacktickSpan(text, startIndex);
+                        return {
+                            type: "code",
+                            raw: text.slice(startIndex, end),
+                            end: end,
+                        };
+                    }
+
+                    const linkToken =
+                        text[startIndex] === "["
+                            ? readInlineMarkdownLinkAt(text, startIndex)
+                            : null;
+                    if (linkToken) return linkToken;
+
+                    const mathToken =
+                        text[startIndex] === "$" || text[startIndex] === "\\"
+                            ? readInlineMathTokenAt(text, startIndex)
+                            : null;
+                    if (mathToken) return mathToken;
+
+                    const urlToken =
+                        text[startIndex].toLowerCase() === "h"
+                            ? readBareUrlTokenAt(text, startIndex)
+                            : null;
+                    if (urlToken) return urlToken;
+
+                    return null;
+                }
+
+                function canOpenEmphasisDelimiter(
+                    source,
+                    startIndex,
+                    delimiter,
+                ) {
+                    const text = String(source || "");
+                    if (
+                        text.slice(
+                            startIndex,
+                            startIndex + delimiter.length,
+                        ) !== delimiter
+                    )
+                        return false;
+                    const prev = startIndex > 0 ? text[startIndex - 1] : "";
+                    const next = text[startIndex + delimiter.length] || "";
+                    if (!next || /\s/.test(next)) return false;
+                    return !isWordChar(prev);
+                }
+
+                function canCloseEmphasisDelimiter(
+                    source,
+                    startIndex,
+                    delimiter,
+                ) {
+                    const text = String(source || "");
+                    if (
+                        text.slice(
+                            startIndex,
+                            startIndex + delimiter.length,
+                        ) !== delimiter
+                    )
+                        return false;
+                    const prev = startIndex > 0 ? text[startIndex - 1] : "";
+                    const next = text[startIndex + delimiter.length] || "";
+                    if (!prev || /\s/.test(prev)) return false;
+                    return !isWordChar(next);
+                }
+
+                function readAnnotationEmphasisSpanAt(
+                    source,
+                    startIndex,
+                    delimiter,
+                    tagName,
+                ) {
+                    const text = String(source || "");
+                    if (!canOpenEmphasisDelimiter(text, startIndex, delimiter))
+                        return null;
+
+                    let index = startIndex + delimiter.length;
+                    while (index < text.length) {
+                        if (text[index] === "\\") {
+                            index = Math.min(text.length, index + 2);
+                            continue;
+                        }
+
+                        const protectedToken =
+                            readAnnotationPreviewProtectedTokenAt(text, index);
+                        if (protectedToken) {
+                            index = protectedToken.end;
+                            continue;
+                        }
+
+                        if (canCloseEmphasisDelimiter(text, index, delimiter)) {
+                            const inner = text.slice(
+                                startIndex + delimiter.length,
+                                index,
+                            );
+                            return {
+                                end: index + delimiter.length,
+                                html:
+                                    "<" +
+                                    tagName +
+                                    ">" +
+                                    renderAnnotationPlainTextHtml(inner) +
+                                    "</" +
+                                    tagName +
+                                    ">",
+                            };
+                        }
+
+                        index += 1;
+                    }
+
+                    return null;
+                }
+
+                function renderAnnotationCodeSpanHtml(rawToken) {
+                    const raw = String(rawToken || "");
+                    if (!raw || raw[0] !== "`") return escapeHtml(raw);
+
+                    let fenceLength = 1;
+                    while (raw[fenceLength] === "`") fenceLength += 1;
+                    const fence = "`".repeat(fenceLength);
+                    if (
+                        raw.length < fenceLength * 2 ||
+                        raw.slice(raw.length - fenceLength) !== fence
+                    ) {
+                        return escapeHtml(raw);
+                    }
+
+                    return (
+                        "<code>" +
+                        escapeHtml(
+                            raw.slice(fenceLength, raw.length - fenceLength),
+                        ) +
+                        "</code>"
+                    );
+                }
+
+                function renderAnnotationPlainTextHtml(text) {
+                    const source = String(text || "");
+                    let out = "";
+                    let index = 0;
+
+                    while (index < source.length) {
+                        const strongMatch =
+                            readAnnotationEmphasisSpanAt(
+                                source,
+                                index,
+                                "**",
+                                "strong",
+                            ) ||
+                            readAnnotationEmphasisSpanAt(
+                                source,
+                                index,
+                                "__",
+                                "strong",
+                            );
+                        if (strongMatch) {
+                            out += strongMatch.html;
+                            index = strongMatch.end;
+                            continue;
+                        }
+
+                        const emphasisMatch =
+                            readAnnotationEmphasisSpanAt(
+                                source,
+                                index,
+                                "*",
+                                "em",
+                            ) ||
+                            readAnnotationEmphasisSpanAt(
+                                source,
+                                index,
+                                "_",
+                                "em",
+                            );
+                        if (emphasisMatch) {
+                            out += emphasisMatch.html;
+                            index = emphasisMatch.end;
+                            continue;
+                        }
+
+                        out += escapeHtml(source[index]);
+                        index += 1;
+                    }
+
+                    return out;
+                }
+
+                function renderPreviewAnnotationHtml(text) {
+                    const source = normalizePreviewAnnotationLabel(text);
+                    let out = "";
+                    let plainStart = 0;
+                    let index = 0;
+
+                    while (index < source.length) {
+                        const token = readAnnotationPreviewProtectedTokenAt(
+                            source,
+                            index,
+                        );
+                        if (!token) {
+                            index += 1;
+                            continue;
+                        }
+
+                        if (index > plainStart) {
+                            out += renderAnnotationPlainTextHtml(
+                                source.slice(plainStart, index),
+                            );
+                        }
+
+                        if (token.type === "code") {
+                            out += renderAnnotationCodeSpanHtml(token.raw);
+                        } else {
+                            out += escapeHtml(token.raw);
+                        }
+
+                        index = token.end;
+                        plainStart = index;
+                    }
+
+                    if (plainStart < source.length) {
+                        out += renderAnnotationPlainTextHtml(
+                            source.slice(plainStart),
+                        );
+                    }
+
+                    return out;
+                }
+
+                function transformMarkdownOutsideFences(
+                    text,
+                    plainTransformer,
+                ) {
+                    const source = String(text || "").replace(/\r\n/g, "\n");
+                    if (!source) return source;
+
+                    const transformPlain =
+                        typeof plainTransformer === "function"
+                            ? plainTransformer
+                            : function (segment) {
+                                  return segment;
+                              };
+                    const lines = source.split("\n");
+                    const out = [];
+                    let plainBuffer = [];
+                    let inFence = false;
+                    let fenceChar = null;
+                    let fenceLength = 0;
+
+                    function flushPlain() {
+                        if (plainBuffer.length === 0) return;
+                        const transformed = transformPlain(
+                            plainBuffer.join("\n"),
+                        );
+                        out.push(
+                            typeof transformed === "string"
+                                ? transformed
+                                : String(transformed ?? ""),
+                        );
+                        plainBuffer = [];
+                    }
+
+                    lines.forEach(function (line) {
+                        const trimmed = line.trimStart();
+                        const fenceMatch = trimmed.match(/^(`{3,}|~{3,})/);
+                        if (fenceMatch) {
+                            const marker = fenceMatch[1] || "";
+                            const markerChar = marker.charAt(0);
+                            const markerLength = marker.length;
+
+                            if (!inFence) {
+                                flushPlain();
+                                inFence = true;
+                                fenceChar = markerChar;
+                                fenceLength = markerLength;
+                                out.push(line);
+                                return;
+                            }
+
+                            if (
+                                fenceChar === markerChar &&
+                                markerLength >= fenceLength
+                            ) {
+                                inFence = false;
+                                fenceChar = null;
+                                fenceLength = 0;
+                            }
+
+                            out.push(line);
+                            return;
+                        }
+
+                        if (inFence) {
+                            out.push(line);
+                        } else {
+                            plainBuffer.push(line);
+                        }
+                    });
+
+                    flushPlain();
+                    return out.join("\n");
+                }
+
+                function hasAnnotationMarkers(text) {
+                    let found = false;
+                    transformMarkdownOutsideFences(text, function (segment) {
+                        if (
+                            !found &&
+                            collectInlineAnnotationMarkers(segment).length > 0
+                        ) {
+                            found = true;
+                        }
+                        return segment;
+                    });
+                    return found;
+                }
+
+                function stripAnnotationMarkers(text) {
+                    return transformMarkdownOutsideFences(
+                        text,
+                        function (segment) {
+                            return replaceInlineAnnotationMarkers(
+                                segment,
+                                function () {
+                                    return "";
+                                },
+                            );
+                        },
+                    );
+                }
+
+                function prepareMarkdownForPandocPreview(
+                    markdown,
+                    placeholderPrefix,
+                ) {
+                    const placeholders = [];
+                    const prefix =
+                        typeof placeholderPrefix === "string" &&
+                        placeholderPrefix
+                            ? placeholderPrefix
+                            : "PIMDANNOT";
+                    const prepared = transformMarkdownOutsideFences(
+                        markdown,
+                        function (segment) {
+                            return replaceInlineAnnotationMarkers(
+                                segment,
+                                function (marker) {
+                                    const label =
+                                        normalizePreviewAnnotationLabel(
+                                            marker.body,
+                                        );
+                                    if (!label) return "";
+                                    const token =
+                                        prefix + placeholders.length + "TOKEN";
+                                    placeholders.push({
+                                        token: token,
+                                        text: label,
+                                        title: "[an: " + label + "]",
+                                    });
+                                    return token;
+                                },
+                            );
+                        },
+                    );
+                    return { markdown: prepared, placeholders: placeholders };
+                }
+
+                const helpers = Object.freeze({
+                    collectInlineAnnotationMarkers:
+                        collectInlineAnnotationMarkers,
+                    hasAnnotationMarkers: hasAnnotationMarkers,
+                    normalizePreviewAnnotationLabel:
+                        normalizePreviewAnnotationLabel,
+                    prepareMarkdownForPandocPreview:
+                        prepareMarkdownForPandocPreview,
+                    readInlineAnnotationMarkerAt: readInlineAnnotationMarkerAt,
+                    renderPreviewAnnotationHtml: renderPreviewAnnotationHtml,
+                    replaceInlineAnnotationMarkers:
+                        replaceInlineAnnotationMarkers,
+                    stripAnnotationMarkers: stripAnnotationMarkers,
+                    transformMarkdownOutsideFences:
+                        transformMarkdownOutsideFences,
+                });
+
+                globalThis.PiMarkdownPreviewAnnotationHelpers = helpers;
+            })();
+        </script>
+        <script type="module">
+            (async () => {
+                const annotationHelpers =
+                    window.PiMarkdownPreviewAnnotationHelpers || null;
+                const previewAnnotationPlaceholders = [];
+                const DIFF_META_LINE_REGEX =
+                    /^(diff --git |index |new file mode |deleted file mode |similarity index |rename from |rename to |Binary files )/;
+
+                const escapeRegExp = (text) => {
+                    const backslash = String.fromCharCode(92);
+                    const specials = ".+*?^" + "$" + "{}|[]" + backslash;
+                    return Array.from(String(text || ""))
+                        .map((ch) =>
+                            specials.includes(ch) ? backslash + ch : ch,
+                        )
+                        .join("");
+                };
+
+                const setAnnotationMarkerContent = (marker, text) => {
+                    if (!(marker instanceof HTMLElement)) return;
+                    const rendered =
+                        annotationHelpers &&
+                        typeof annotationHelpers.renderPreviewAnnotationHtml ===
+                            "function"
+                            ? annotationHelpers.renderPreviewAnnotationHtml(
+                                  text,
+                              )
+                            : String(text || "");
+                    marker.innerHTML = rendered;
+                };
+
+                const replaceAnnotationTextNode = (textNode) => {
+                    if (
+                        !annotationHelpers ||
+                        typeof annotationHelpers.collectInlineAnnotationMarkers !==
+                            "function"
+                    )
+                        return;
+                    const text =
+                        typeof textNode.nodeValue === "string"
+                            ? textNode.nodeValue
+                            : "";
+                    if (!text || text.toLowerCase().indexOf("[an:") === -1)
+                        return;
+
+                    const markers =
+                        annotationHelpers.collectInlineAnnotationMarkers(text);
+                    if (!Array.isArray(markers) || markers.length === 0) return;
+
+                    const fragment = document.createDocumentFragment();
+                    let lastIndex = 0;
+                    markers.forEach((markerInfo) => {
+                        const token =
+                            markerInfo && typeof markerInfo.raw === "string"
+                                ? markerInfo.raw
+                                : "";
+                        const start =
+                            markerInfo && typeof markerInfo.start === "number"
+                                ? markerInfo.start
+                                : lastIndex;
+                        const end =
+                            markerInfo && typeof markerInfo.end === "number"
+                                ? markerInfo.end
+                                : start;
+                        if (start > lastIndex) {
+                            fragment.appendChild(
+                                document.createTextNode(
+                                    text.slice(lastIndex, start),
+                                ),
+                            );
+                        }
+
+                        const markerText =
+                            annotationHelpers &&
+                            typeof annotationHelpers.normalizePreviewAnnotationLabel ===
+                                "function"
+                                ? annotationHelpers.normalizePreviewAnnotationLabel(
+                                      markerInfo.body,
+                                  )
+                                : String(
+                                      (markerInfo && markerInfo.body) || "",
+                                  ).trim();
+                        if (markerText) {
+                            const markerEl = document.createElement("span");
+                            markerEl.className = "annotation-marker";
+                            markerEl.title = token || markerText;
+                            setAnnotationMarkerContent(markerEl, markerText);
+                            fragment.appendChild(markerEl);
+                        }
+
+                        lastIndex = end;
+                    });
+
+                    if (lastIndex < text.length) {
+                        fragment.appendChild(
+                            document.createTextNode(text.slice(lastIndex)),
+                        );
+                    }
+
+                    if (textNode.parentNode) {
+                        textNode.parentNode.replaceChild(fragment, textNode);
+                    }
+                };
+
+                const applyPreviewAnnotationPlaceholders = (root) => {
+                    if (
+                        !root ||
+                        !Array.isArray(previewAnnotationPlaceholders) ||
+                        previewAnnotationPlaceholders.length === 0
+                    )
+                        return;
+                    const placeholderMap = new Map();
+                    const placeholderTokens = [];
+                    previewAnnotationPlaceholders.forEach((entry) => {
+                        const token =
+                            entry && typeof entry.token === "string"
+                                ? entry.token
+                                : "";
+                        if (!token) return;
+                        placeholderMap.set(token, entry);
+                        placeholderTokens.push(token);
+                    });
+                    if (placeholderTokens.length === 0) return;
+
+                    const placeholderPattern = new RegExp(
+                        placeholderTokens.map(escapeRegExp).join("|"),
+                        "g",
+                    );
+                    const walker = document.createTreeWalker(
+                        root,
+                        NodeFilter.SHOW_TEXT,
+                    );
+                    const textNodes = [];
+                    let node = walker.nextNode();
+                    while (node) {
+                        const textNode = node;
+                        const value =
+                            typeof textNode.nodeValue === "string"
+                                ? textNode.nodeValue
+                                : "";
+                        if (value && value.indexOf("PIMDPREVIEWANNOT") !== -1) {
+                            const parent = textNode.parentElement;
+                            const tag =
+                                parent && parent.tagName
+                                    ? parent.tagName.toUpperCase()
+                                    : "";
+                            if (
+                                tag !== "CODE" &&
+                                tag !== "PRE" &&
+                                tag !== "SCRIPT" &&
+                                tag !== "STYLE" &&
+                                tag !== "TEXTAREA"
+                            ) {
+                                textNodes.push(textNode);
+                            }
+                        }
+                        node = walker.nextNode();
+                    }
+
+                    textNodes.forEach((textNode) => {
+                        const text =
+                            typeof textNode.nodeValue === "string"
+                                ? textNode.nodeValue
+                                : "";
+                        if (!text) return;
+                        placeholderPattern.lastIndex = 0;
+                        if (!placeholderPattern.test(text)) return;
+                        placeholderPattern.lastIndex = 0;
+
+                        const fragment = document.createDocumentFragment();
+                        let lastIndex = 0;
+                        let match;
+                        while (
+                            (match = placeholderPattern.exec(text)) !== null
+                        ) {
+                            const token = match[0] || "";
+                            const entry = placeholderMap.get(token);
+                            const start =
+                                typeof match.index === "number"
+                                    ? match.index
+                                    : 0;
+                            if (start > lastIndex) {
+                                fragment.appendChild(
+                                    document.createTextNode(
+                                        text.slice(lastIndex, start),
+                                    ),
+                                );
+                            }
+                            if (entry) {
+                                const markerEl = document.createElement("span");
+                                markerEl.className = "annotation-marker";
+                                const markerText =
+                                    typeof entry.text === "string"
+                                        ? entry.text
+                                        : token;
+                                markerEl.title =
+                                    typeof entry.title === "string"
+                                        ? entry.title
+                                        : markerText;
+                                setAnnotationMarkerContent(
+                                    markerEl,
+                                    markerText,
+                                );
+                                fragment.appendChild(markerEl);
+                            } else {
+                                fragment.appendChild(
+                                    document.createTextNode(token),
+                                );
+                            }
+                            lastIndex = start + token.length;
+                            if (token.length === 0) {
+                                placeholderPattern.lastIndex += 1;
+                            }
+                        }
+
+                        if (lastIndex < text.length) {
+                            fragment.appendChild(
+                                document.createTextNode(text.slice(lastIndex)),
+                            );
+                        }
+
+                        if (textNode.parentNode) {
+                            textNode.parentNode.replaceChild(
+                                fragment,
+                                textNode,
+                            );
+                        }
+                    });
+                };
+
+                const decorateDiffCodeBlocks = (root) => {
+                    if (!root) return;
+                    const diffBlocks = Array.from(
+                        root.querySelectorAll("pre.sourceCode.diff code"),
+                    );
+
+                    diffBlocks.forEach((codeBlock) => {
+                        const lineElements = Array.from(
+                            codeBlock.children,
+                        ).filter((child) => child instanceof HTMLElement);
+                        lineElements.forEach((lineEl) => {
+                            const text =
+                                typeof lineEl.textContent === "string"
+                                    ? lineEl.textContent
+                                    : "";
+                            if (!text) return;
+
+                            if (/^\+(?!\+\+)/.test(text)) {
+                                lineEl.classList.add(
+                                    "diff-line",
+                                    "diff-add-line",
+                                );
+                            } else if (/^-(?!--)/.test(text)) {
+                                lineEl.classList.add(
+                                    "diff-line",
+                                    "diff-del-line",
+                                );
+                            } else if (/^@@/.test(text)) {
+                                lineEl.classList.add(
+                                    "diff-line",
+                                    "diff-hunk-line",
+                                );
+                            } else if (/^(?:\+\+\+ |--- )/.test(text)) {
+                                lineEl.classList.add(
+                                    "diff-line",
+                                    "diff-header-line",
+                                );
+                            } else if (DIFF_META_LINE_REGEX.test(text)) {
+                                lineEl.classList.add(
+                                    "diff-line",
+                                    "diff-meta-line",
+                                );
+                            }
+
+                            const walker = document.createTreeWalker(
+                                lineEl,
+                                NodeFilter.SHOW_TEXT,
+                            );
+                            const matches = [];
+                            let node = walker.nextNode();
+                            while (node) {
+                                const textNode = node;
+                                const value =
+                                    typeof textNode.nodeValue === "string"
+                                        ? textNode.nodeValue
+                                        : "";
+                                const parent = textNode.parentElement;
+                                if (
+                                    value &&
+                                    value.toLowerCase().indexOf("[an:") !==
+                                        -1 &&
+                                    parent &&
+                                    !parent.closest("a, .annotation-marker")
+                                ) {
+                                    matches.push(textNode);
+                                }
+                                node = walker.nextNode();
+                            }
+
+                            matches.forEach(replaceAnnotationTextNode);
+                        });
+                    });
+                };
+
+                const MATHJAX_CDN_URL =
+                    "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js";
+
+                const waitForFonts = async () => {
+                    if ("fonts" in document) {
+                        try {
+                            await document.fonts.ready;
+                        } catch {}
+                    }
+                };
+
+                const waitForPaint = async () => {
+                    await new Promise((resolve) =>
+                        requestAnimationFrame(() =>
+                            requestAnimationFrame(resolve),
+                        ),
+                    );
+                };
+
+                const extractMathFallbackTex = (text, displayMode) => {
+                    const source = typeof text === "string" ? text.trim() : "";
+                    if (!source) return "";
+
+                    if (displayMode) {
+                        if (
+                            source.startsWith("$$") &&
+                            source.endsWith("$$") &&
+                            source.length >= 4
+                        ) {
+                            return source.slice(2, -2).trim();
+                        }
+                        if (
+                            source.startsWith("\\[") &&
+                            source.endsWith("\\]") &&
+                            source.length >= 4
+                        ) {
+                            return source.slice(2, -2).trim();
+                        }
+                        return source;
+                    }
+
+                    if (
+                        source.startsWith("\\(") &&
+                        source.endsWith("\\)") &&
+                        source.length >= 4
+                    ) {
+                        return source.slice(2, -2).trim();
+                    }
+                    if (
+                        source.startsWith("$") &&
+                        source.endsWith("$") &&
+                        source.length >= 2
+                    ) {
+                        return source.slice(1, -1).trim();
+                    }
+                    return source;
+                };
+
+                const collectMathFallbackTargets = (root) => {
+                    if (!root) return [];
+                    const nodes = Array.from(
+                        root.querySelectorAll(".math.display, .math.inline"),
+                    );
+                    const targets = [];
+                    const seenTargets = new Set();
+
+                    nodes.forEach((node) => {
+                        const displayMode = node.classList.contains("display");
+                        const rawText =
+                            typeof node.textContent === "string"
+                                ? node.textContent
+                                : "";
+                        const tex = extractMathFallbackTex(
+                            rawText,
+                            displayMode,
+                        );
+                        if (!tex) return;
+
+                        let renderTarget = node;
+                        if (displayMode) {
+                            const parent = node.parentElement;
+                            const parentText =
+                                parent && typeof parent.textContent === "string"
+                                    ? parent.textContent.trim()
+                                    : "";
+                            if (
+                                parent &&
+                                parent.tagName === "P" &&
+                                parentText === rawText.trim()
+                            ) {
+                                renderTarget = parent;
+                            }
+                        }
+
+                        if (seenTargets.has(renderTarget)) return;
+                        seenTargets.add(renderTarget);
+                        targets.push({ renderTarget, displayMode, tex });
+                    });
+
+                    return targets;
+                };
+
+                let mathJaxPromise = null;
+                const ensureMathJax = () => {
+                    if (
+                        window.MathJax &&
+                        typeof window.MathJax.typesetPromise === "function"
+                    ) {
+                        return Promise.resolve(window.MathJax);
+                    }
+                    if (mathJaxPromise) return mathJaxPromise;
+
+                    mathJaxPromise = new Promise((resolve, reject) => {
+                        window.MathJax = {
+                            loader: {
+                                load: [
+                                    "[tex]/ams",
+                                    "[tex]/noerrors",
+                                    "[tex]/noundefined",
+                                ],
+                            },
+                            tex: {
+                                inlineMath: [
+                                    ["\\(", "\\)"],
+                                    ["$", "$"],
+                                ],
+                                displayMath: [
+                                    ["\\[", "\\]"],
+                                    ["$$", "$$"],
+                                ],
+                                packages: {
+                                    "[+]": ["ams", "noerrors", "noundefined"],
+                                },
+                            },
+                            options: {
+                                skipHtmlTags: [
+                                    "script",
+                                    "noscript",
+                                    "style",
+                                    "textarea",
+                                    "pre",
+                                    "code",
+                                ],
+                            },
+                            startup: { typeset: false },
+                        };
+
+                        const script = document.createElement("script");
+                        script.src = MATHJAX_CDN_URL;
+                        script.async = true;
+                        script.onload = () => {
+                            const api = window.MathJax;
+                            if (
+                                api &&
+                                api.startup &&
+                                api.startup.promise &&
+                                typeof api.startup.promise.then === "function"
+                            ) {
+                                api.startup.promise
+                                    .then(() => resolve(api))
+                                    .catch(reject);
+                                return;
+                            }
+                            if (
+                                api &&
+                                typeof api.typesetPromise === "function"
+                            ) {
+                                resolve(api);
+                                return;
+                            }
+                            reject(new Error("MathJax did not initialize."));
+                        };
+                        script.onerror = () =>
+                            reject(new Error("Failed to load MathJax."));
+                        document.head.appendChild(script);
+                    }).catch((error) => {
+                        mathJaxPromise = null;
+                        throw error;
+                    });
+
+                    return mathJaxPromise;
+                };
+
+                const markerNeedsMath = (text) => {
+                    const source = typeof text === "string" ? text : "";
+                    if (!source) return false;
+                    const backslash = String.fromCharCode(92);
+                    if (
+                        source.includes(backslash + "(") ||
+                        source.includes(backslash + "[") ||
+                        source.includes("$$")
+                    )
+                        return true;
+                    for (let index = 0; index < source.length - 1; index += 1) {
+                        const char = source[index];
+                        const next = source[index + 1] || "";
+                        if (char === "$" && next.trim() !== "") return true;
+                        if (char === backslash && /[A-Za-z]/.test(next))
+                            return true;
+                    }
+                    return false;
+                };
+
+                const renderAnnotationMarkerMath = async (root) => {
+                    if (!root) return;
+                    const markers = Array.from(
+                        root.querySelectorAll(".annotation-marker"),
+                    ).filter((marker) => {
+                        if (!(marker instanceof HTMLElement)) return false;
+                        if (marker.querySelector("math, mjx-container"))
+                            return false;
+                        const text =
+                            typeof marker.textContent === "string"
+                                ? marker.textContent
+                                : "";
+                        return markerNeedsMath(text);
+                    });
+                    if (markers.length === 0) return;
+
+                    let mathJax;
+                    try {
+                        mathJax = await ensureMathJax();
+                    } catch (e) {
+                        console.error("MathJax load failed:", e);
+                        return;
+                    }
+
+                    try {
+                        await mathJax.typesetPromise(markers);
+                    } catch (e) {
+                        console.error("Annotation math render failed:", e);
+                    }
+                };
+
+                const renderMathFallback = async (root) => {
+                    const fallbackTargets = collectMathFallbackTargets(root);
+                    if (fallbackTargets.length === 0) return;
+
+                    let mathJax;
+                    try {
+                        mathJax = await ensureMathJax();
+                    } catch (e) {
+                        console.error("MathJax load failed:", e);
+                        return;
+                    }
+
+                    fallbackTargets.forEach(
+                        ({ renderTarget, displayMode, tex }) => {
+                            renderTarget.textContent = displayMode
+                                ? "\\[\n" + tex + "\n\\]"
+                                : "\\(" + tex + "\\)";
+                        },
+                    );
+
+                    try {
+                        await mathJax.typesetPromise(
+                            fallbackTargets.map(
+                                ({ renderTarget }) => renderTarget,
+                            ),
+                        );
+                    } catch (e) {
+                        console.error("MathJax render failed:", e);
+                    }
+                };
+
+                const setMermaidRenderResult = (status, error) => {
+                    window.__mermaidRenderResult = error
+                        ? { status, error }
+                        : { status };
+                };
+                const renderMermaidFailure = (wrappers, message) => {
+                    wrappers.forEach((wrapper) => {
+                        const failure = document.createElement("pre");
+                        failure.className = "mermaid-error";
+                        failure.setAttribute("role", "alert");
+                        failure.style.cssText =
+                            "margin:0;padding:12px 14px;border:1px solid var(--error,#cf222e);border-radius:8px;background:var(--panel-2,#f8fafc);color:var(--error,#cf222e);text-align:left;white-space:pre-wrap;overflow-wrap:anywhere;";
+                        failure.textContent =
+                            "Mermaid render failed: " + message;
+                        wrapper.replaceChildren(failure);
+                    });
+                };
+                const renderMermaid = async () => {
+                    const mermaidBlocks =
+                        document.querySelectorAll("pre.mermaid");
+                    if (mermaidBlocks.length === 0) {
+                        setMermaidRenderResult("skipped");
+                        return;
+                    }
+
+                    setMermaidRenderResult("pending");
+                    const wrappers = Array.from(mermaidBlocks).map((pre) => {
+                        const code = pre.querySelector("code");
+                        const src = code ? code.textContent : pre.textContent;
+                        const wrapper = document.createElement("div");
+                        wrapper.className = "mermaid-container";
+                        const div = document.createElement("div");
+                        div.className = "mermaid";
+                        div.textContent = src;
+                        wrapper.appendChild(div);
+                        pre.replaceWith(wrapper);
+                        return wrapper;
+                    });
+
+                    try {
+                        const { default: mermaid } =
+                            await import("https://cdn.jsdelivr.net/npm/mermaid@11.16.0/dist/mermaid.esm.min.mjs");
+                        const packs = [
+                            {
+                                name: "lucide",
+                                url: "https://unpkg.com/@iconify-json/lucide@1/icons.json",
+                            },
+                            {
+                                name: "logos",
+                                url: "https://unpkg.com/@iconify-json/logos@1/icons.json",
+                            },
+                        ];
+                        const pending = new Map();
+                        let iconPackError = null;
+                        const load = (pack) => {
+                            if (!pending.has(pack.name)) {
+                                pending.set(
+                                    pack.name,
+                                    fetch(pack.url)
+                                        .then((response) => {
+                                            if (!response.ok)
+                                                throw new Error(
+                                                    "Failed to load Mermaid icon pack " +
+                                                        pack.name +
+                                                        ": HTTP " +
+                                                        response.status,
+                                                );
+                                            return response.json();
+                                        })
+                                        .catch((error) => {
+                                            iconPackError ??=
+                                                error instanceof Error
+                                                    ? error
+                                                    : new Error(String(error));
+                                            throw error;
+                                        }),
+                                );
+                            }
+                            return pending.get(pack.name);
+                        };
+                        mermaid.registerIconPacks(
+                            packs.map((pack) => ({
+                                name: pack.name,
+                                loader: () => load(pack),
+                            })),
+                        );
+                        mermaid.initialize({
+                            startOnLoad: false,
+                            theme: "base",
+                            themeVariables: {
+                                background: "#11111b",
+                                primaryColor: "#232431",
+                                primaryTextColor: "#cdd6f4",
+                                primaryBorderColor: "#9399b2",
+                                secondaryColor: "#1e1e2e",
+                                secondaryTextColor: "#cdd6f4",
+                                secondaryBorderColor: "#9399b2",
+                                tertiaryColor: "#1e1e2e",
+                                tertiaryTextColor: "#cdd6f4",
+                                tertiaryBorderColor: "#9399b2",
+                                lineColor: "#f5c2e7",
+                                textColor: "#cdd6f4",
+                                edgeLabelBackground: "#232431",
+                                nodeBorder: "#9399b2",
+                                clusterBkg: "#1e1e2e",
+                                clusterBorder: "#9399b2",
+                                titleColor: "#f38ba8",
+                            },
+                        });
+                        await mermaid.run();
+                        if (iconPackError) throw iconPackError;
+                        const parseRgb = (value) => {
+                            const match = value.match(
+                                /^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)/,
+                            );
+                            return match
+                                ? [
+                                      Number(match[1]),
+                                      Number(match[2]),
+                                      Number(match[3]),
+                                  ]
+                                : null;
+                        };
+                        const isOpaqueColor = (value) => {
+                            if (!parseRgb(value)) return false;
+                            const alphaMatch = value.match(
+                                /^rgba\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+\s*,\s*([\d.]+)\s*\)$/,
+                            );
+                            return !alphaMatch || Number(alphaMatch[1]) >= 1;
+                        };
+                        const findOpaqueFill = (root) => {
+                            if (!(root instanceof Element)) return null;
+                            const shape = Array.from(
+                                root.querySelectorAll(
+                                    "rect, polygon, path, circle, ellipse",
+                                ),
+                            ).find((candidate) => {
+                                const fill = getComputedStyle(candidate).fill;
+                                return isOpaqueColor(fill);
+                            });
+                            return shape ? getComputedStyle(shape).fill : null;
+                        };
+                        const findOpaqueBackground = (element, fallback) => {
+                            let current =
+                                element instanceof Element ? element : null;
+                            while (current) {
+                                const background =
+                                    getComputedStyle(current).backgroundColor;
+                                if (
+                                    current instanceof HTMLElement &&
+                                    isOpaqueColor(background)
+                                )
+                                    return background;
+                                current = current.parentElement;
+                            }
+                            return fallback;
+                        };
+                        const relativeLuminance = (color) => {
+                            const linear = color.map((channel) => {
+                                const value = channel / 255;
+                                return value <= 0.04045
+                                    ? value / 12.92
+                                    : Math.pow((value + 0.055) / 1.055, 2.4);
+                            });
+                            return (
+                                0.2126 * linear[0] +
+                                0.7152 * linear[1] +
+                                0.0722 * linear[2]
+                            );
+                        };
+                        const contrastRatio = (foreground, background) => {
+                            const lighter = Math.max(
+                                relativeLuminance(foreground),
+                                relativeLuminance(background),
+                            );
+                            const darker = Math.min(
+                                relativeLuminance(foreground),
+                                relativeLuminance(background),
+                            );
+                            return (lighter + 0.05) / (darker + 0.05);
+                        };
+                        const toRgb = (color) =>
+                            "rgb(" +
+                            color
+                                .map((channel) => Math.round(channel))
+                                .join(", ") +
+                            ")";
+                        const ensureReadableColor = (
+                            foregroundCss,
+                            backgroundCss,
+                        ) => {
+                            const foreground = parseRgb(foregroundCss);
+                            const background = parseRgb(backgroundCss);
+                            if (
+                                !foreground ||
+                                !background ||
+                                contrastRatio(foreground, background) >= 4.5
+                            )
+                                return foregroundCss;
+                            const readableCandidates = [
+                                [0, 0, 0],
+                                [255, 255, 255],
+                            ].flatMap((target) => {
+                                for (let step = 1; step <= 20; step += 1) {
+                                    const amount = step / 20;
+                                    const color = foreground.map(
+                                        (channel, index) =>
+                                            channel +
+                                            (target[index] - channel) * amount,
+                                    );
+                                    if (contrastRatio(color, background) >= 4.5)
+                                        return [{ amount, color }];
+                                }
+                                return [];
+                            });
+                            readableCandidates.sort(
+                                (left, right) => left.amount - right.amount,
+                            );
+                            if (readableCandidates.length > 0)
+                                return toRgb(readableCandidates[0].color);
+                            const black = [0, 0, 0];
+                            const white = [255, 255, 255];
+                            return toRgb(
+                                contrastRatio(black, background) >=
+                                    contrastRatio(white, background)
+                                    ? black
+                                    : white,
+                            );
+                        };
+                        const pageBackground = getComputedStyle(
+                            document.body,
+                        ).backgroundColor;
+                        document
+                            .querySelectorAll(".mermaid-container .icon-shape")
+                            .forEach((node) => {
+                                const icon = node.querySelector("svg");
+                                if (!icon) return;
+                                const semanticColor =
+                                    getComputedStyle(icon).color;
+                                const iconSurface =
+                                    findOpaqueFill(node.firstElementChild) ||
+                                    findOpaqueBackground(icon, pageBackground);
+                                const iconColor = ensureReadableColor(
+                                    semanticColor,
+                                    iconSurface,
+                                );
+                                icon.style.setProperty(
+                                    "color",
+                                    iconColor,
+                                    "important",
+                                );
+                                node.querySelectorAll(
+                                    ".labelBkg, .nodeLabel",
+                                ).forEach((label) => {
+                                    if (!(label instanceof HTMLElement)) return;
+                                    const labelSurface = findOpaqueBackground(
+                                        label,
+                                        pageBackground,
+                                    );
+                                    const labelColor = ensureReadableColor(
+                                        semanticColor,
+                                        labelSurface,
+                                    );
+                                    label.style.setProperty(
+                                        "color",
+                                        labelColor,
+                                        "important",
+                                    );
+                                });
+                            });
+                        document
+                            .querySelectorAll(
+                                ".mermaid-container .node:not(.icon-shape)",
+                            )
+                            .forEach((node) => {
+                                const shape = Array.from(
+                                    node.querySelectorAll(
+                                        "rect, polygon, path, circle, ellipse",
+                                    ),
+                                ).find((candidate) => {
+                                    const fill =
+                                        getComputedStyle(candidate).fill;
+                                    return (
+                                        fill &&
+                                        fill !== "none" &&
+                                        fill !== "rgba(0, 0, 0, 0)"
+                                    );
+                                });
+                                if (!shape) return;
+                                const shapeFill = getComputedStyle(shape).fill;
+                                node.querySelectorAll(".nodeLabel").forEach(
+                                    (label) => {
+                                        if (!(label instanceof HTMLElement))
+                                            return;
+                                        const labelColor = ensureReadableColor(
+                                            getComputedStyle(label).color,
+                                            shapeFill,
+                                        );
+                                        label.style.setProperty(
+                                            "color",
+                                            labelColor,
+                                            "important",
+                                        );
+                                    },
+                                );
+                            });
+                        setMermaidRenderResult("success");
+                    } catch (error) {
+                        const message =
+                            error instanceof Error
+                                ? error.message
+                                : String(error);
+                        setMermaidRenderResult("failed", message);
+                        renderMermaidFailure(wrappers, message);
+                        console.error("Mermaid render failed:", error);
+                    }
+                };
+
+                const root = document.getElementById("preview-root");
+                try {
+                    await renderMermaid();
+                    applyPreviewAnnotationPlaceholders(root);
+                    decorateDiffCodeBlocks(root);
+                    await renderAnnotationMarkerMath(root);
+                    await renderMathFallback(root);
+                    await waitForFonts();
+                    await waitForPaint();
+                } finally {
+                    window.__mermaidDone = true;
+                }
+            })();
+        </script>
+    </body>
+</html>

@@ -11,7 +11,7 @@ source "$here/monitor-watcher-state-machine.sh"
 
 failures=0
 
-run_test () {
+run_test() {
     local name=$1
     shift
     if ("$@"); then
@@ -22,7 +22,7 @@ run_test () {
     fi
 }
 
-has_action () {
+has_action() {
     local wanted=$1 action
     for action in "${SM_ACTIONS[@]}"; do
         [[ $action == "$wanted" ]] && return 0
@@ -30,7 +30,7 @@ has_action () {
     return 1
 }
 
-has_action_prefix () {
+has_action_prefix() {
     local wanted=$1 action
     for action in "${SM_ACTIONS[@]}"; do
         [[ $action == "$wanted"* ]] && return 0
@@ -38,7 +38,7 @@ has_action_prefix () {
     return 1
 }
 
-journal_count () {
+journal_count() {
     local wanted=$1 action count=0
     for action in "${SM_ACTION_JOURNAL[@]}"; do
         [[ $action == "$wanted"* ]] && count=$((count + 1))
@@ -46,32 +46,32 @@ journal_count () {
     printf '%s\n' "$count"
 }
 
-observe () {
-    # now key physical external target scope exact current [valid]
+observe() {
+    # now key physical external target scope exact current [valid [identity_profile]]
     sm_observe "$@"
 }
 
-admit_and_complete_application () {
+admit_and_complete_application() {
     local now_ms=$1
     [[ $SM_PHASE == APPLY_PENDING ]] || return 1
     sm_application_dispatched "$now_ms" || return 1
     sm_application_done "$((now_ms + 1))" 0
 }
 
-admit_finalizer () {
+admit_finalizer() {
     local now_ms=$1
     [[ $SM_PHASE == FINALIZE_PENDING ]] || return 1
     sm_finalization_dispatched "$now_ms"
 }
 
-complete_finalizer_and_revalidate () {
+complete_finalizer_and_revalidate() {
     local now_ms=$1 key=$2 physical=$3 external=$4 profile=$5
     sm_finalization_done "$now_ms" 0 || return 1
     observe "$((now_ms + 1))" "$key" "$physical" "$external" \
         "$profile" external "$profile" "$profile"
 }
 
-test_laptop_startup_adopts_baseline () {
+test_laptop_startup_adopts_baseline() {
     sm_init
     observe 0 laptop p-laptop none celtic internal celtic celtic
     observe 10000 laptop p-laptop none celtic internal celtic celtic
@@ -82,7 +82,7 @@ test_laptop_startup_adopts_baseline () {
         [[ $(journal_count FINALIZE) -eq 0 ]]
 }
 
-test_genuine_external_plug_applies_and_finalizes_once () {
+test_genuine_external_plug_applies_and_finalizes_once() {
     sm_init celtic
     observe 0 ready p-samsung known samsung external - celtic
     [[ $SM_PHASE == APPLY_PENDING ]] && has_action_prefix 'APPLY samsung ' || return 1
@@ -100,7 +100,94 @@ test_genuine_external_plug_applies_and_finalizes_once () {
         [[ $(journal_count FINALIZE\ ) -eq 1 ]]
 }
 
-test_readiness_after_fast_deadline_needs_no_event () {
+test_probeable_identity_probes_then_requires_full_match() {
+    sm_init celtic
+    observe 0 broken p-samsung probeable - - - celtic 1 samsung DisplayPort-1 eDP 3440x1440
+    [[ $SM_PHASE == PROBE_PENDING ]] && has_action_prefix 'PROBE samsung ' || return 1
+    local probe_key=$SM_PENDING_PROBE_KEY
+    sm_probe_dispatched 1 || return 1
+    sm_probe_done 2 0 || return 1
+
+    observe 3 broken p-samsung probeable - - - celtic 1 samsung DisplayPort-1 eDP 3440x1440
+    ! has_action_prefix 'PROBE ' && [[ $(journal_count PROBE\ ) -eq 1 ]] || return 1
+
+    observe 4 ready p-samsung known samsung external - celtic
+    [[ $SM_PHASE == APPLY_PENDING ]] && has_action_prefix 'APPLY samsung ' &&
+        sm_probe_key_seen "$probe_key"
+}
+
+test_invalid_observation_never_authorizes_probe() {
+    sm_init celtic
+    observe 0 torn p-samsung probeable - - - celtic 0 samsung DisplayPort-1 eDP 3440x1440
+    ! has_action_prefix 'PROBE ' && [[ $SM_PHASE == DISCOVER_FAST ]]
+}
+
+test_event_before_probe_dispatch_reemits_admission() {
+    sm_init celtic
+    observe 0 broken p-samsung probeable - - - celtic 1 samsung DisplayPort-1 eDP 3440x1440
+    local key=$SM_PENDING_PROBE_KEY
+    sm_drm_event 1
+    [[ $SM_PHASE == PROBE_PENDING ]] || return 1
+
+    observe 1 broken p-samsung probeable - - - celtic 1 samsung DisplayPort-1 eDP 3440x1440
+    [[ $SM_PHASE == PROBE_PENDING ]] &&
+        has_action "PROBE samsung DisplayPort-1 eDP 3440x1440 $key" &&
+        [[ $SM_ATTEMPTED_PROBE_KEYS != *";$key;"* ]]
+}
+
+test_restart_after_dispatched_probe_does_not_repeat() {
+    sm_init celtic
+    observe 0 broken p-samsung probeable - - - celtic 1 samsung DisplayPort-1 eDP 3440x1440
+    sm_probe_dispatched 1 || return 1
+    sm_recover 2 test-boot -
+    observe 2 broken p-samsung probeable - - - celtic 1 samsung DisplayPort-1 eDP 3440x1440
+    [[ $SM_PHASE == PROBE_FAILED ]] && ! has_action_prefix 'PROBE '
+}
+
+test_event_during_probe_cannot_start_application() {
+    sm_init celtic
+    observe 0 broken p-samsung probeable - - - celtic 1 samsung DisplayPort-1 eDP 3440x1440
+    sm_probe_dispatched 1 || return 1
+    sm_drm_event 2
+    observe 2 ready p-samsung known samsung external - celtic
+    [[ $SM_PHASE == PROBING ]] &&
+        has_action_prefix 'PROBE_IN_FLIGHT ' &&
+        ! has_action_prefix 'APPLY ' || return 1
+
+    sm_probe_done 3 0 || return 1
+    observe 4 ready p-samsung known samsung external - celtic
+    [[ $SM_PHASE == APPLY_PENDING ]] && has_action_prefix 'APPLY samsung '
+}
+
+test_physical_change_during_probe_stops_before_new_action() {
+    sm_init celtic
+    observe 0 broken p-samsung probeable - - - celtic 1 samsung DisplayPort-1 eDP 3440x1440
+    sm_probe_dispatched 1 || return 1
+    local key=$SM_PENDING_PROBE_KEY epoch=$SM_PHYSICAL_EPOCH
+
+    observe 2 ready p-other known other external - celtic
+    [[ $SM_PHASE == PROBING ]] &&
+        [[ $SM_PHYSICAL_EPOCH -eq epoch ]] &&
+        has_action "STOP_PROBE $key" &&
+        ! has_action_prefix 'APPLY ' || return 1
+
+    sm_probe_done 3 0 || return 1
+    observe 4 ready p-other known other external - celtic
+    [[ $SM_PHYSICAL_EPOCH -gt epoch ]] &&
+        [[ $SM_PHASE == APPLY_PENDING ]] && has_action_prefix 'APPLY other '
+}
+
+test_probe_failure_is_explicit_terminal_state() {
+    sm_init celtic
+    observe 0 broken p-samsung probeable - - - celtic 1 samsung DisplayPort-1 eDP 3440x1440
+    sm_probe_dispatched 1 || return 1
+    sm_probe_done 2 1 || return 1
+    [[ $SM_PHASE == PROBE_FAILED ]] &&
+        [[ $SM_PROBE_STATUS == failed ]] &&
+        has_action 'PROBE_FAILED samsung 1'
+}
+
+test_readiness_after_fast_deadline_needs_no_event() {
     sm_init celtic
     observe 0 missing p-samsung unresolved - - - celtic
     observe 30000 missing p-samsung unresolved - - - celtic
@@ -110,7 +197,7 @@ test_readiness_after_fast_deadline_needs_no_event () {
     [[ $SM_PHASE == APPLY_PENDING ]] && has_action_prefix 'APPLY samsung '
 }
 
-test_edid_loss_retains_candidate_without_fallback () {
+test_edid_loss_retains_candidate_without_fallback() {
     sm_init celtic
     observe 0 ready p-samsung known samsung external - celtic
     admit_and_complete_application 1 || return 1
@@ -127,13 +214,13 @@ test_edid_loss_retains_candidate_without_fallback () {
         [[ $(journal_count APPLY) -eq 1 ]]
 }
 
-test_transient_internal_detection_never_applies_with_external () {
+test_transient_internal_detection_never_applies_with_external() {
     sm_init celtic
     observe 0 training p-samsung unresolved celtic internal - celtic
-    ! has_action_prefix 'APPLY ' && (( SM_NEXT_TIMER_MS >= 0 ))
+    ! has_action_prefix 'APPLY ' && ((SM_NEXT_TIMER_MS >= 0))
 }
 
-test_unchanged_application_evidence_is_deduplicated () {
+test_unchanged_application_evidence_is_deduplicated() {
     sm_init celtic
     observe 0 ready p-samsung known samsung external - celtic
     admit_and_complete_application 1 || return 1
@@ -141,7 +228,7 @@ test_unchanged_application_evidence_is_deduplicated () {
     ! has_action_prefix 'APPLY ' && [[ $(journal_count APPLY) -eq 1 ]]
 }
 
-test_event_between_application_admission_and_dispatch_reemits () {
+test_event_between_application_admission_and_dispatch_reemits() {
     sm_init celtic
     observe 0 ready p-samsung known samsung external - celtic
     local key=$SM_PENDING_APPLICATION_KEY
@@ -154,7 +241,7 @@ test_event_between_application_admission_and_dispatch_reemits () {
         [[ $SM_ATTEMPTED_APPLICATION_KEYS != *";$key;"* ]]
 }
 
-test_event_between_finalization_admission_and_dispatch_reemits () {
+test_event_between_finalization_admission_and_dispatch_reemits() {
     sm_init celtic
     observe 0 active p-samsung known samsung external samsung samsung
     observe 10000 active p-samsung known samsung external samsung samsung
@@ -168,7 +255,7 @@ test_event_between_finalization_admission_and_dispatch_reemits () {
         [[ $SM_FINALIZATION_STATUS == admitted ]]
 }
 
-test_interrupted_verification_restarts_full_window () {
+test_interrupted_verification_restarts_full_window() {
     sm_init celtic
     observe 0 active p-samsung known samsung external samsung samsung
     observe 9000 invalid p-samsung unresolved - - - celtic 0
@@ -177,7 +264,7 @@ test_interrupted_verification_restarts_full_window () {
     [[ $SM_PHASE == VERIFYING ]] && ! has_action_prefix 'FINALIZE '
 }
 
-test_unplug_requires_two_samples_spanning_one_second () {
+test_unplug_requires_two_samples_spanning_one_second() {
     sm_init samsung
     SM_PHASE=QUIESCENT
     SM_PHYSICAL_TOKEN=p-samsung
@@ -196,7 +283,7 @@ test_unplug_requires_two_samples_spanning_one_second () {
         [[ $(journal_count FINALIZE\ ) -eq 1 ]]
 }
 
-test_drm_event_resets_unplug_proof () {
+test_drm_event_resets_unplug_proof() {
     sm_init samsung
     SM_PHASE=QUIESCENT
     SM_PHYSICAL_TOKEN=p-samsung
@@ -212,7 +299,7 @@ test_drm_event_resets_unplug_proof () {
     [[ $SM_PHASE == VERIFYING ]]
 }
 
-test_resume_to_same_profile_skips_finalization () {
+test_resume_to_same_profile_skips_finalization() {
     sm_init samsung
     SM_PHASE=QUIESCENT
     SM_PHYSICAL_TOKEN=p-samsung
@@ -227,7 +314,7 @@ test_resume_to_same_profile_skips_finalization () {
         [[ $(journal_count FINALIZE\ ) -eq 0 ]]
 }
 
-test_automatic_x_transition_finalizes_without_apply () {
+test_automatic_x_transition_finalizes_without_apply() {
     sm_init celtic
     SM_PHASE=QUIESCENT
     SM_PHYSICAL_TOKEN=p-laptop
@@ -238,7 +325,7 @@ test_automatic_x_transition_finalizes_without_apply () {
         [[ $(journal_count APPLY) -eq 0 ]]
 }
 
-test_connector_rename_keeps_profile_identity () {
+test_connector_rename_keeps_profile_identity() {
     sm_init samsung
     SM_PHASE=QUIESCENT
     SM_PHYSICAL_TOKEN=connector-dp1
@@ -250,15 +337,15 @@ test_connector_rename_keeps_profile_identity () {
     [[ $SM_PHASE == QUIESCENT ]] && [[ $(journal_count FINALIZE\ ) -eq 0 ]]
 }
 
-test_unknown_external_becomes_terminal_but_health_checked () {
+test_unknown_external_becomes_terminal_but_health_checked() {
     sm_init celtic
     observe 0 mystery p-mystery unknown - - - celtic
     observe 10000 mystery p-mystery unknown - - - celtic
     [[ $SM_PHASE == UNSUPPORTED ]] && has_action 'UNSUPPORTED mystery' &&
-        (( SM_NEXT_TIMER_MS > 10000 ))
+        ((SM_NEXT_TIMER_MS > 10000))
 }
 
-test_changed_evidence_restarts_fast_discovery_after_slow_wait () {
+test_changed_evidence_restarts_fast_discovery_after_slow_wait() {
     sm_init celtic
     observe 0 missing-a p-samsung unresolved - - - celtic
     observe 30000 missing-a p-samsung unresolved - - - celtic
@@ -269,7 +356,7 @@ test_changed_evidence_restarts_fast_discovery_after_slow_wait () {
         [[ $SM_AGGRESSIVE_DEADLINE_MS -eq 65000 ]]
 }
 
-test_fast_timer_does_not_cross_aggressive_deadline () {
+test_fast_timer_does_not_cross_aggressive_deadline() {
     sm_init celtic
     observe 0 missing p-samsung unresolved - - - celtic
     SM_BACKOFF_INDEX=4
@@ -277,7 +364,7 @@ test_fast_timer_does_not_cross_aggressive_deadline () {
     [[ $SM_PHASE == DISCOVER_FAST ]] && [[ $SM_NEXT_TIMER_MS -eq 30000 ]]
 }
 
-test_overdue_fast_recovery_fires_immediately () {
+test_overdue_fast_recovery_fires_immediately() {
     sm_init celtic
     SM_PHASE=DISCOVER_FAST
     SM_AGGRESSIVE_DEADLINE_MS=30000
@@ -286,7 +373,7 @@ test_overdue_fast_recovery_fires_immediately () {
     has_action 'SCHEDULE 0'
 }
 
-test_restart_from_apply_pending_requires_fresh_observation () {
+test_restart_from_apply_pending_requires_fresh_observation() {
     sm_init celtic
     observe 0 ready p-samsung known samsung external - celtic
     local key=$SM_PENDING_APPLICATION_KEY
@@ -298,7 +385,7 @@ test_restart_from_apply_pending_requires_fresh_observation () {
         [[ $SM_ATTEMPTED_APPLICATION_KEYS != *";$key;"* ]]
 }
 
-test_restart_from_dispatched_application_does_not_repeat () {
+test_restart_from_dispatched_application_does_not_repeat() {
     sm_init celtic
     observe 0 ready p-samsung known samsung external - celtic
     sm_application_dispatched 1 || return 1
@@ -307,7 +394,7 @@ test_restart_from_dispatched_application_does_not_repeat () {
     ! has_action_prefix 'APPLY '
 }
 
-test_restart_from_verifying_resets_proof () {
+test_restart_from_verifying_resets_proof() {
     sm_init celtic
     observe 0 active p-samsung known samsung external samsung samsung
     sm_recover 9000 test-boot -
@@ -316,7 +403,7 @@ test_restart_from_verifying_resets_proof () {
     [[ $SM_PHASE == VERIFYING ]] && ! has_action_prefix 'FINALIZE '
 }
 
-test_restart_from_finalize_pending_requires_fresh_observation () {
+test_restart_from_finalize_pending_requires_fresh_observation() {
     sm_init celtic
     observe 0 active p-samsung known samsung external samsung samsung
     observe 10000 active p-samsung known samsung external samsung samsung
@@ -329,7 +416,7 @@ test_restart_from_finalize_pending_requires_fresh_observation () {
     has_action "FINALIZE $transaction samsung"
 }
 
-test_restart_during_finalizer_reattaches () {
+test_restart_during_finalizer_reattaches() {
     sm_init celtic
     observe 0 active p-samsung known samsung external samsung samsung
     observe 10000 active p-samsung known samsung external samsung samsung
@@ -340,7 +427,40 @@ test_restart_during_finalizer_reattaches () {
         [[ $(journal_count FINALIZE\ ) -eq 1 ]]
 }
 
-test_application_failure_is_terminal_not_silently_deduplicated () {
+test_event_during_application_cannot_advance_state() {
+    sm_init celtic
+    observe 0 ready p-samsung known samsung external - celtic
+    sm_application_dispatched 1 || return 1
+    sm_drm_event 2
+    observe 2 active p-samsung known samsung external samsung samsung
+    [[ $SM_PHASE == APPLYING ]] &&
+        has_action_prefix 'APPLICATION_IN_FLIGHT ' &&
+        ! has_action_prefix 'FINALIZE ' || return 1
+
+    sm_application_done 3 0 || return 1
+    observe 4 active p-samsung known samsung external samsung samsung
+    [[ $SM_PHASE == VERIFYING ]]
+}
+
+test_physical_change_during_application_stops_before_new_action() {
+    sm_init celtic
+    observe 0 ready p-samsung known samsung external - celtic
+    sm_application_dispatched 1 || return 1
+    local key=$SM_PENDING_APPLICATION_KEY epoch=$SM_PHYSICAL_EPOCH
+
+    observe 2 ready-aoc p-aoc known aoc external - celtic
+    [[ $SM_PHASE == APPLYING ]] &&
+        [[ $SM_PHYSICAL_EPOCH -eq epoch ]] &&
+        has_action "STOP_APPLICATION $key" &&
+        ! has_action_prefix 'APPLY aoc ' || return 1
+
+    sm_application_done 3 0 || return 1
+    observe 4 ready-aoc p-aoc known aoc external - celtic
+    [[ $SM_PHYSICAL_EPOCH -gt epoch ]] &&
+        [[ $SM_PHASE == APPLY_PENDING ]] && has_action_prefix 'APPLY aoc '
+}
+
+test_application_failure_is_terminal_not_silently_deduplicated() {
     sm_init celtic
     observe 0 ready p-samsung known samsung external - celtic
     sm_application_dispatched 1 || return 1
@@ -350,7 +470,7 @@ test_application_failure_is_terminal_not_silently_deduplicated () {
         has_action 'APPLICATION_FAILED samsung 1'
 }
 
-test_finalizer_success_requires_fresh_valid_observation () {
+test_finalizer_success_requires_fresh_valid_observation() {
     sm_init celtic
     observe 0 active p-samsung known samsung external samsung samsung
     observe 10000 active p-samsung known samsung external samsung samsung
@@ -366,7 +486,7 @@ test_finalizer_success_requires_fresh_valid_observation () {
         [[ $(journal_count FINALIZE\ ) -eq 1 ]]
 }
 
-test_topology_change_stops_running_finalizer () {
+test_topology_change_stops_running_finalizer() {
     sm_init celtic
     observe 0 active p-samsung known samsung external samsung samsung
     observe 10000 active p-samsung known samsung external samsung samsung
@@ -377,7 +497,7 @@ test_topology_change_stops_running_finalizer () {
         [[ $SM_DESKTOP_FINALIZED_PROFILE == celtic ]]
 }
 
-test_failed_transition_allows_different_profile_same_topology () {
+test_failed_transition_allows_different_profile_same_topology() {
     sm_init celtic
     SM_PHASE=FINALIZE_FAILED
     SM_FINALIZATION_PROFILE=samsung
@@ -387,7 +507,32 @@ test_failed_transition_allows_different_profile_same_topology () {
     [[ $SM_PHASE == VERIFYING ]] && [[ $SM_CANDIDATE_PROFILE == aoc ]]
 }
 
-test_persistence_round_trip_multiple_application_keys () {
+test_persistence_rejects_inconsistent_probe_relationships() {
+    local tmp key
+    tmp=$(mktemp)
+    trap 'rm -f "$tmp"' RETURN
+
+    sm_init celtic
+    observe 0 broken p-samsung probeable - - - celtic 1 samsung DisplayPort-1 eDP 3440x1440
+    key=$SM_PENDING_PROBE_KEY
+    sm_remember_probe_key "$key"
+    ! sm_save_state "$tmp" || return 1
+
+    sm_init celtic
+    observe 0 broken p-samsung probeable - - - celtic 1 samsung DisplayPort-1 eDP 3440x1440
+    sm_probe_dispatched 1 || return 1
+    SM_PENDING_PROBE_MODE=-
+    ! sm_save_state "$tmp" || return 1
+
+    sm_init celtic
+    observe 0 broken p-samsung probeable - - - celtic 1 samsung DisplayPort-1 eDP 3440x1440
+    sm_probe_dispatched 1 || return 1
+    sm_probe_done 2 1 || return 1
+    SM_ATTEMPTED_PROBE_KEYS=
+    ! sm_save_state "$tmp"
+}
+
+test_persistence_round_trip_multiple_application_keys() {
     local tmp
     tmp=$(mktemp)
     trap 'rm -f "$tmp"' RETURN
@@ -401,24 +546,24 @@ test_persistence_round_trip_multiple_application_keys () {
         sm_application_key_seen '1|samsung|second'
 }
 
-test_persistence_rejects_truncation_without_partial_mutation () {
+test_persistence_rejects_truncation_without_partial_mutation() {
     local tmp old_phase
     tmp=$(mktemp)
     trap 'rm -f "$tmp"' RETURN
     sm_init celtic
     old_phase=$SM_PHASE
-    printf '%s\n' $'schema_version\t2' $'SM_PHASE\tFINALIZING' > "$tmp"
+    printf '%s\n' $'schema_version\t3' $'SM_PHASE\tFINALIZING' >"$tmp"
     ! sm_load_state "$tmp" && [[ $SM_PHASE == "$old_phase" ]]
 }
 
-test_persistence_rejects_duplicate_and_arithmetic_payload () {
+test_persistence_rejects_duplicate_and_arithmetic_payload() {
     local tmp marker
     tmp=$(mktemp)
     marker=${tmp}.executed
     trap 'rm -f "$tmp" "$marker"' RETURN
     sm_init celtic
     sm_save_state "$tmp" || return 1
-    printf 'SM_PHASE\tQUIESCENT\n' >> "$tmp"
+    printf 'SM_PHASE\tQUIESCENT\n' >>"$tmp"
     ! sm_load_state "$tmp" || return 1
 
     sm_save_state "$tmp" || return 1
@@ -427,7 +572,7 @@ test_persistence_rejects_duplicate_and_arithmetic_payload () {
     ! sm_load_state "$tmp" && [[ ! -e $marker ]]
 }
 
-test_new_epoch_gets_new_finalization_id () {
+test_new_epoch_gets_new_finalization_id() {
     sm_init celtic
     observe 0 active p-samsung known samsung external samsung samsung
     observe 10000 active p-samsung known samsung external samsung samsung
@@ -443,7 +588,7 @@ test_new_epoch_gets_new_finalization_id () {
         [[ $SM_FINALIZATION_ID == etest-boot-3-* ]]
 }
 
-test_invalid_changed_token_preserves_running_finalizer () {
+test_invalid_changed_token_preserves_running_finalizer() {
     sm_init celtic
     observe 0 active p-samsung known samsung external samsung samsung
     observe 10000 active p-samsung known samsung external samsung samsung
@@ -458,7 +603,7 @@ test_invalid_changed_token_preserves_running_finalizer () {
         ! has_action_prefix 'STOP_FINALIZER '
 }
 
-test_invalid_changed_token_preserves_completed_tombstone () {
+test_invalid_changed_token_preserves_completed_tombstone() {
     sm_init celtic
     observe 0 active p-samsung known samsung external samsung samsung
     observe 10000 active p-samsung known samsung external samsung samsung
@@ -473,7 +618,7 @@ test_invalid_changed_token_preserves_completed_tombstone () {
         [[ $SM_FINALIZATION_ID == "$transaction" ]]
 }
 
-test_invalid_changed_token_preserves_application_dedup () {
+test_invalid_changed_token_preserves_application_dedup() {
     sm_init celtic
     observe 0 ready p-samsung known samsung external - celtic
     sm_application_dispatched 1 || return 1
@@ -487,7 +632,7 @@ test_invalid_changed_token_preserves_application_dedup () {
     ! has_action_prefix 'APPLY '
 }
 
-test_failed_away_back_allocates_new_finalization_id () {
+test_failed_away_back_allocates_new_finalization_id() {
     sm_init celtic
     observe 0 active p-samsung known samsung external samsung samsung
     observe 10000 active p-samsung known samsung external samsung samsung
@@ -508,7 +653,7 @@ test_failed_away_back_allocates_new_finalization_id () {
         [[ $SM_FINALIZATION_ID != "$failed_id" ]]
 }
 
-test_finalizer_admission_requires_same_transition_key () {
+test_finalizer_admission_requires_same_transition_key() {
     sm_init celtic
     observe 0 active-a p-samsung known samsung external samsung samsung
     observe 10000 active-a p-samsung known samsung external samsung samsung
@@ -520,7 +665,7 @@ test_finalizer_admission_requires_same_transition_key () {
         ! has_action_prefix 'FINALIZE '
 }
 
-test_semantically_invalid_numeric_state_is_rejected () {
+test_semantically_invalid_numeric_state_is_rejected() {
     local tmp
     tmp=$(mktemp)
     trap 'rm -f "$tmp"' RETURN
@@ -529,7 +674,7 @@ test_semantically_invalid_numeric_state_is_rejected () {
     ! sm_save_state "$tmp"
 }
 
-test_recovery_matrix_preserves_progress_without_actions () {
+test_recovery_matrix_preserves_progress_without_actions() {
     local phase expected
     while read -r phase expected; do
         sm_init celtic
@@ -538,18 +683,29 @@ test_recovery_matrix_preserves_progress_without_actions () {
         SM_AGGRESSIVE_DEADLINE_MS=30000
         SM_NEXT_TIMER_MS=40000
         case $phase in
-            APPLY_FAILED)
-                SM_APPLICATION_STATUS=failed
-                SM_APPLICATION_EXIT_STATUS=1
-                SM_PENDING_APPLICATION_KEY='1|samsung|ready'
-                SM_PENDING_APPLICATION_PROFILE=samsung
-                SM_PENDING_APPLICATION_SCOPE=external
-                ;;
-            FINALIZE_FAILED)
-                SM_FINALIZATION_STATUS=failed
-                SM_FINALIZATION_PROFILE=samsung
-                SM_FINALIZATION_ID=e1
-                ;;
+        PROBE_FAILED)
+            SM_PROBE_STATUS=failed
+            SM_PROBE_EXIT_STATUS=1
+            SM_LAST_OBSERVATION_KEY=broken
+            SM_PENDING_PROBE_KEY='0|samsung|broken'
+            SM_PENDING_PROBE_PROFILE=samsung
+            SM_PENDING_PROBE_OUTPUT=DisplayPort-1
+            SM_PENDING_PROBE_INTERNAL_OUTPUT=eDP
+            SM_PENDING_PROBE_MODE=3440x1440
+            SM_ATTEMPTED_PROBE_KEYS=';0|samsung|broken;'
+            ;;
+        APPLY_FAILED)
+            SM_APPLICATION_STATUS=failed
+            SM_APPLICATION_EXIT_STATUS=1
+            SM_PENDING_APPLICATION_KEY='1|samsung|ready'
+            SM_PENDING_APPLICATION_PROFILE=samsung
+            SM_PENDING_APPLICATION_SCOPE=external
+            ;;
+        FINALIZE_FAILED)
+            SM_FINALIZATION_STATUS=failed
+            SM_FINALIZATION_PROFILE=samsung
+            SM_FINALIZATION_ID=e1
+            ;;
         esac
         sm_recover 1000 test-boot - || return 1
         [[ $SM_PHASE == "$expected" ]] || return 1
@@ -558,13 +714,14 @@ test_recovery_matrix_preserves_progress_without_actions () {
     done <<'EOF'
 DISCOVER_FAST DISCOVER_FAST
 WAIT_SLOW WAIT_SLOW
+PROBE_FAILED PROBE_FAILED
 UNSUPPORTED UNSUPPORTED
 APPLY_FAILED APPLY_FAILED
 FINALIZE_FAILED FINALIZE_FAILED
 EOF
 }
 
-test_boot_mismatch_discards_monotonic_wait () {
+test_boot_mismatch_discards_monotonic_wait() {
     sm_init celtic old-boot
     SM_PHASE=WAIT_SLOW
     SM_NEXT_TIMER_MS=999999
@@ -575,6 +732,13 @@ test_boot_mismatch_discards_monotonic_wait () {
 
 run_test 'laptop startup adopts current profile as baseline' test_laptop_startup_adopts_baseline
 run_test 'genuine external plug applies and finalizes once' test_genuine_external_plug_applies_and_finalizes_once
+run_test 'known base with broken extensions probes before full match' test_probeable_identity_probes_then_requires_full_match
+run_test 'invalid observation never authorizes activation probe' test_invalid_observation_never_authorizes_probe
+run_test 'event before probe dispatch re-emits admission' test_event_before_probe_dispatch_reemits_admission
+run_test 'restart after dispatched probe does not repeat it' test_restart_after_dispatched_probe_does_not_repeat
+run_test 'event during probe cannot start profile application' test_event_during_probe_cannot_start_application
+run_test 'physical change during probe stops before new action' test_physical_change_during_probe_stops_before_new_action
+run_test 'probe failure is explicit terminal state' test_probe_failure_is_explicit_terminal_state
 run_test 'readiness after fast deadline progresses without DRM event' test_readiness_after_fast_deadline_needs_no_event
 run_test 'EDID loss retains external candidate without fallback' test_edid_loss_retains_candidate_without_fallback
 run_test 'transient internal detection never applies with external present' test_transient_internal_detection_never_applies_with_external
@@ -596,10 +760,13 @@ run_test 'restart after dispatch does not repeat apply' test_restart_from_dispat
 run_test 'restart from verifying resets proof' test_restart_from_verifying_resets_proof
 run_test 'restart from finalizer admission requires fresh observation' test_restart_from_finalize_pending_requires_fresh_observation
 run_test 'restart during finalizer reattaches' test_restart_during_finalizer_reattaches
+run_test 'event during application cannot advance state' test_event_during_application_cannot_advance_state
+run_test 'physical change during application stops before new action' test_physical_change_during_application_stops_before_new_action
 run_test 'application failure is explicit terminal state' test_application_failure_is_terminal_not_silently_deduplicated
 run_test 'finalizer success requires fresh valid observation' test_finalizer_success_requires_fresh_valid_observation
 run_test 'topology change stops running finalizer' test_topology_change_stops_running_finalizer
 run_test 'failed transition allows different profile on same topology' test_failed_transition_allows_different_profile_same_topology
+run_test 'persistence rejects inconsistent probe relationships' test_persistence_rejects_inconsistent_probe_relationships
 run_test 'persistence round-trips multiple application keys' test_persistence_round_trip_multiple_application_keys
 run_test 'persistence rejects truncation without mutation' test_persistence_rejects_truncation_without_partial_mutation
 run_test 'persistence rejects duplicate and arithmetic payload' test_persistence_rejects_duplicate_and_arithmetic_payload
