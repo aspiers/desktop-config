@@ -6,6 +6,11 @@
 watcher or its systemd unit. The executable reducer and synthetic trace tests
 live under `specs/spikes/` so GNU Stow will not install them.
 
+The accepted production technology and process architecture is documented in
+`monitor-controller-python-architecture.md`. Production will use a typed Python
+controller with systemd-supervised action workers; the Bash reducer remains an
+executable specification only.
+
 Tracked by `dc-a5y` — **Replace monitor watcher loop with a persistent state
 machine**.
 
@@ -109,9 +114,11 @@ invalid. A mixed/torn sample whose facts cannot safely be classified has
 `valid=0` and may schedule another observation but can never authorize a probe,
 application, or finalization.
 
-Before every action, the runtime adapter drains queued DRM input. If it drains
-anything, it re-observes instead of acting. After a blocking action it drains
-and re-observes again.
+Before every action, the runtime adapter compares the admitted observation's
+udev event generation with the current generation and drains queued DRM input.
+If either changed, it re-observes instead of acting. The keyed worker repeats
+its immutable topology guard immediately before mutation. After a blocking
+action the controller drains and re-observes again.
 
 ## Profile-to-output mapping
 
@@ -127,10 +134,22 @@ retain it within that epoch; a usable contradictory EDID revokes it
 immediately. A physical topology change increments the epoch and invalidates
 all prior mapping proof.
 
+Application does not let autorandr independently recompute this admitted
+bijection. The controller materializes a transaction-local copy of the selected
+profile with output names rewritten consistently in both `config` and `setup`
+to the proven live connectors and hashes both files into the action request.
+The worker validates the hash and exact
+topology, then explicitly loads the remapped profile without `--match-edid`.
+`AUTORANDR_MONITORS` may confirm the enabled post-action output set but is not a
+rename mapping API.
+
 ## Persisted controller state
 
-The production implementation should atomically write a whitelist-parsed TSV
-record; it must never `source` state as shell code.
+The production Python implementation atomically writes a strict, versioned
+JSON object. Its codec accepts only an explicit field whitelist and validates
+enums, ranges, identifiers, record size, and cross-field relationships before
+replacing in-memory state. State is data and must never be executed or
+implicitly coerced.
 
 ```text
 schema_version
@@ -158,6 +177,18 @@ pending_probe_internal_output
 pending_probe_mode
 probe_status
 probe_exit_status
+planning_state
+planning_id
+planning_input_key
+planning_plan_hash
+planning_status
+planning_exit_status
+preparation_state
+preparation_id
+preparation_transition_key
+preparation_plan_hash
+preparation_status
+preparation_exit_status
 attempted_application_keys
 pending_application_key
 pending_application_profile
@@ -176,7 +207,10 @@ unknown_since_ms
 unplug_since_ms
 ```
 
-A schema mismatch or corrupt record is safely discarded. A boot-ID mismatch
+A schema mismatch or corrupt record enters fail-closed recovery. On the same
+boot, the controller scans its transaction namespace and matching systemd units
+to reconstruct surviving worker exclusions and ID high-water marks; it refuses
+action authority if any relationship remains ambiguous. A boot-ID mismatch
 keeps only durable desktop-finalization facts whose transaction status can be
 verified independently.
 
@@ -198,7 +232,18 @@ verified independently.
 | `UNSUPPORTED` | A complete stable external identity matches no saved profile. | DRM or 60s health tick |
 | `FINALIZE_PENDING` | A durable desktop transition is admitted but not yet acknowledged as dispatched. | clean observation or dispatch acknowledgement |
 | `FINALIZING` | One acknowledged durable desktop transition is running. | DRM or 1s status tick |
+| `FINALIZE_STOPPING` | A stale finalizer has been asked to stop; its mutation exclusion remains held. | worker status tick |
 | `FINALIZE_FAILED` | The transition failed; automatic duplicate execution is barred. | DRM or 60s health tick |
+
+Desktop planning and preparation have orthogonal persisted lifecycles because
+they may run while the main phase remains `VERIFYING`. Planning is
+`PLAN_IDLE`, `PLAN_PENDING`, `PLANNING`, `PLAN_READY`, or `PLAN_FAILED`, keyed
+by physical epoch, exact target/layout, resolved mapping, and configuration
+hashes; completion returns the staged plan hash. Preparation is
+`PREPARE_IDLE`, `PREPARE_PENDING`, `PREPARING`, `PREPARED`,
+`PREPARE_STOPPING`, or `PREPARE_FAILED`, keyed by transition and completed plan
+hash. Baseline adoption forbids both. A probe or profile application and a
+preparation mutation are never acknowledged in flight concurrently.
 
 The aggressive deadline is a true deadline for *aggressive work*. It changes
 retry policy from `DISCOVER_FAST` to `WAIT_SLOW`; it does not pretend that an
@@ -247,6 +292,14 @@ transition:
    least one second with no queued event.
 11. **No implicit abandonment.** Every unresolved connected external topology
     has a scheduled timer.
+12. **Preparation is subordinate and keyed.** Preparation may start only after
+    two seconds of clean exact/current/active proof and after probe/application
+    completion. It cannot authorize finalization. Contradiction stops it, and
+    finalization requires `PREPARED` for the same transition and plan hash.
+13. **One display mutation boundary.** Probe, application, preparation, and
+    finalization mutations cannot overlap. Each acknowledged worker remains
+    represented, including an explicit stopping state, until completion or
+    cancellation is acknowledged.
 
 ## Transition table
 
@@ -260,7 +313,8 @@ prevents action until re-probed.
 | `RECOVERING` | Finalizer transaction still running | Reattach; do not launch again | `FINALIZING` |
 | `RECOVERING` | Persisted candidate is exact/current | Reset stability start | `VERIFYING` |
 | `RECOVERING` | External topology unresolved | Restore deadline/backoff | `DISCOVER_FAST` or `WAIT_SLOW` |
-| `RECOVERING` | Exact current profile, no pending transaction | Adopt as restart baseline without desktop work | `VERIFYING` |
+| `RECOVERING` | Exact current profile, no pending transaction, and no trusted `desktop_finalized_profile` | Adopt as restart baseline without desktop work | `VERIFYING` |
+| `RECOVERING` | Exact current profile differs from trusted `desktop_finalized_profile` | Verify as a real desktop transition | `VERIFYING` |
 | `QUIESCENT` | Same exact stable profile | No action | `QUIESCENT` |
 | `QUIESCENT` | Candidate EDID disappears but mapped output remains | Preserve intent, do not load internal profile | `DISCOVER_FAST` |
 | `QUIESCENT` | Another exact/current eligible profile appears | Start stability proof | `VERIFYING` |
@@ -285,7 +339,8 @@ prevents action until re-probed.
 | `WAIT_SLOW` | Same unresolved observation | Increase capped backoff | `WAIT_SLOW` |
 | `WAIT_SLOW` | Evidence changes | Reset fast backoff, retain epoch/candidate as valid | `DISCOVER_FAST` |
 | `WAIT_SLOW` | A unique probe candidate appears | Admit safe activation | `PROBE_PENDING` |
-| `WAIT_SLOW` | Candidate becomes eligible/exact | Apply or verify | `APPLYING` or `VERIFYING` |
+| `WAIT_SLOW` | Candidate becomes eligible but is not exact/current | Persist durable application admission | `APPLY_PENDING` |
+| `WAIT_SLOW` | Candidate is already exact/current/active | Start continuous proof | `VERIFYING` |
 | `APPLYING` | Same worker still running and observation changes | Preserve admission; do not classify or dispatch another display action | `APPLYING` |
 | `APPLYING` | Physical topology changes while worker may still mutate X | Request idempotent stop; preserve worker admission until completion callback | `APPLYING` |
 | `APPLYING` | Command completes | Drain events and re-observe | classify into discovery/verification |
@@ -293,15 +348,27 @@ prevents action until re-probed.
 | `APPLYING` | Command fails or restart makes outcome unknowable | Preserve terminal attempt evidence; do not silently deduplicate it into waiting | `APPLY_FAILED` |
 | `APPLY_FAILED` | Same evidence | Report only; never repeat side effects automatically | `APPLY_FAILED` |
 | `APPLY_FAILED` | Genuinely changed target/evidence | Clear terminal context and classify anew | `DISCOVER_FAST` |
-| `VERIFYING` | Event, contradiction, inactive/extra output, or no longer current | Reset proof; revoke only on contradiction/topology change | `DISCOVER_FAST` |
-| `VERIFYING` | Exact proof younger than 10s | Continue proof | `VERIFYING` |
-| `VERIFYING` | Proof complete; target equals finalized desktop profile | Record stable X profile only | `QUIESCENT` |
+| `VERIFYING` | Event, contradiction, inactive/extra output, or no longer current | Reset proof; stop keyed preparation on contradiction | `DISCOVER_FAST` |
+| `VERIFYING` | Startup baseline adoption | Forbid planning/preparation; continue proof only | `VERIFYING` |
+| `VERIFYING` | Exact plausible changed target; no plan for current input key | Persist keyed planning admission | `VERIFYING` + `PLAN_PENDING` |
+| `VERIFYING` + `PLAN_PENDING` | Planning task accepted | Persist task identity | `VERIFYING` + `PLANNING` |
+| `VERIFYING` + `PLANNING` | Pure staged plan completes for same input key | Persist and validate plan hash | `VERIFYING` + `PLAN_READY` |
+| `VERIFYING` | Exact proof younger than 2s or plan not ready | Continue proof; no desktop mutation | `VERIFYING` |
+| `VERIFYING` + `PLAN_READY` | Exact proof reaches 2s; target differs from finalized desktop; no other mutation in flight | Persist keyed preparation admission using returned plan hash | `VERIFYING` + `PREPARE_PENDING` |
+| `VERIFYING` + `PREPARE_PENDING` | Preparation worker accepted after dirty-event fence | Persist running worker identity | `VERIFYING` + `PREPARING` |
+| `VERIFYING` + `PREPARING` | Worker completes for same plan hash and fresh topology remains exact | Validate staged artifacts | `VERIFYING` + `PREPARED` |
+| `VERIFYING` + `PREPARING` | Topology/identity contradiction | Request idempotent stop; preserve worker identity until completion | discovery + `PREPARE_STOPPING` |
+| discovery + `PREPARE_STOPPING` | Preparation cancellation/completion acknowledged | Discard stale plan artifacts and re-observe before any mutation | `DISCOVER_FAST` + `PREPARE_IDLE` |
+| `VERIFYING` | Exact proof younger than 10s | Continue proof and preparation lifecycle | `VERIFYING` |
+| `VERIFYING` | Proof complete; target equals finalized desktop profile | Cancel/discard unnecessary preparation; record stable X profile only | `QUIESCENT` |
 | `VERIFYING` | Proof complete during startup baseline adoption | Adopt desktop baseline without relayout | `QUIESCENT` |
-| `VERIFYING` | Proof complete; target differs from finalized desktop profile | Admit durable transaction | `FINALIZE_PENDING` |
+| `VERIFYING` | Proof complete; target differs from finalized desktop; preparation not ready | Wait or report explicit preparation failure; do not finalize | `VERIFYING` or `PREPARE_FAILED` |
+| `VERIFYING` | Proof complete; target differs from finalized desktop; same plan is `PREPARED` | Admit durable transaction | `FINALIZE_PENDING` |
 | `FINALIZE_PENDING` | Queued event dirties observation before dispatch | Re-observe; leave transaction re-emittable | `FINALIZE_PENDING` or discovery state |
 | `FINALIZE_PENDING` | Adapter acknowledges dispatch | Persist running status | `FINALIZING` |
 | `FINALIZING` | Same unit still running and topology valid | No duplicate launch | `FINALIZING` |
-| `FINALIZING` | Topology changes | Stop stale unit; keep prior finalized profile | `DISCOVER_FAST` |
+| `FINALIZING` | Topology changes | Request idempotent stop; retain mutation exclusion and prior finalized profile | `FINALIZE_STOPPING` |
+| `FINALIZE_STOPPING` | Worker cancellation/completion acknowledged | Re-observe before admitting any new mutation | `DISCOVER_FAST` |
 | `FINALIZING` | Unit succeeds | Preserve a result-pending tombstone and re-observe | `FINALIZING` |
 | `FINALIZING` | Fresh valid observation confirms the completed transaction | Persist finalized profile and acknowledge transaction | `QUIESCENT` |
 | `FINALIZING` | Observation is temporarily invalid after completion | Keep the tombstone and continue probing; never rerun desktop work | `FINALIZING` |
@@ -366,12 +433,13 @@ most disruptive work for a separately authorized commit.
 
 ### Phase 1: preflight and planning
 
-Start immediately for a plausible exact target. Determine the layout, bind the
-work to its transition and physical epoch, load display data, validate screen
-counts, refresh libdpy caches, and calculate the intended overlay, panel
-properties, DPI, and other configuration. Prefer staging calculated values
-under the transition ID so cancellation before mutation only removes that
-transaction directory.
+For a plausible exact changed target outside startup baseline adoption, admit a
+keyed pure planning task. Determine the layout, bind the work to its transition
+and physical epoch, parse an immutable display snapshot, validate screen
+counts, and calculate the intended overlay, panel properties, DPI, and other
+configuration. Stage calculated values privately under the planning ID and
+return a content hash; do not refresh shared libdpy caches or mutate live state.
+Preparation admission uses only that completed plan hash.
 
 ### Phase 2: optimistic soft application
 
@@ -422,21 +490,27 @@ Autorandr postswitch must cease being authoritative. After stable proof, create
 a durable transition ID only when `candidate_profile !=
 desktop_finalized_profile`.
 
-The production implementation should run `setup-monitor` synchronously in a
-dedicated oneshot systemd unit keyed by that ID. The unit is outside the
-watcher's cgroup and remains discoverable after watcher restart. Repeated starts
-of the same active instance are no-ops. Admission, dispatch acknowledgement,
-and completion are separate persisted steps. Even after a successful unit
-exit, the watcher updates `desktop_finalized_profile` only after a fresh valid
-observation proves that the transaction still describes the current topology.
-Pending admissions require that same fresh observation before dispatch after a
-watcher restart; acknowledged running units are reattached instead. Each new
-admission receives a monotonically increasing transaction sequence, so failed
-or cancelled IDs are never reused after an away-and-back transition.
+The production implementation runs a Python-orchestrated finalization worker in
+a dedicated oneshot systemd unit keyed by that ID and completed plan hash. It
+may invoke bounded shell leaf operations, but it does not invoke the monolithic
+`setup-monitor` workflow. Persistent desktop children belong to their own
+systemd user units/scopes rather than the finalizer cgroup.
+
+The unit remains discoverable after controller restart. Repeated starts of the
+same active instance are no-ops. Admission, dispatch acknowledgement,
+completion, and cancellation acknowledgement are separate persisted steps.
+Even after a successful unit exit, the controller updates
+`desktop_finalized_profile` only after a fresh valid observation proves that
+the transaction still describes the current topology. Pending admissions
+require that same fresh observation before dispatch after a controller restart;
+acknowledged running or stopping units are reattached instead. Each new
+admission receives a monotonically increasing transaction sequence and
+instance UUID, so failed or cancelled IDs are never reused after an
+away-and-back transition.
 
 Strict exactly-once completion across arbitrary power loss is impossible
-because `setup-monitor` is not transactional. This protocol provides
-exactly-once admission/launch across watcher restarts and prevents automatic
+because live desktop mutations are not transactional. This protocol provides
+exactly-once admission/launch across controller restarts and prevents automatic
 rerun of a failed transaction under the same ID.
 
 ## Spike interface
@@ -465,7 +539,10 @@ STOP_APPLICATION application_key
 STOP_FINALIZER transition_id
 ```
 
-It never executes autorandr, xrandr, systemd, or `setup-monitor`. The repository's
+The production reducer vocabulary additionally includes `PREPARE ...`,
+`STOP_PREPARATION ...`, and a finalization plan hash; the Bash spike does not
+yet model that orthogonal lifecycle. Neither reducer
+executes autorandr, xrandr, systemd, or `setup-monitor`. The repository's
 `.stow-local-ignore` anchors `^specs$`, and a Stow dry run must confirm that the
 spike is not linked into `$HOME`.
 
