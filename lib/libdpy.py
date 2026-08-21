@@ -22,7 +22,7 @@ from typing import Any
 # Global constants
 GLOBAL_CACHE_DIR = os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache")
 CACHE_DIR = os.path.join(GLOBAL_CACHE_DIR, "libdpy")
-DEBUG = False
+_debug_enabled = False
 
 # Resolved layout path written by `get-layout` after each successful resolve
 # and consumed by subsequent `get-layout` runs (without --state, --no-cache)
@@ -40,7 +40,7 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 
 
 def debug(msg):
-    if DEBUG:
+    if _debug_enabled:
         print("[DEBUG] %s" % msg, file=sys.stderr)
 
 
@@ -947,8 +947,8 @@ def _parse_args():
 def main():
     args = _parse_args()
 
-    global DEBUG
-    DEBUG = args.debug
+    global _debug_enabled
+    _debug_enabled = args.debug
 
     if args.find_xrandr_primary:
         _cmd_find_primary("xrandr", args.use_cache)

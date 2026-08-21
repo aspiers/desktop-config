@@ -11,7 +11,25 @@ read_localhost_nickname
 ~/lib/libdpy.py
 ~/lib/libdpy.py --inxi-json --no-use-cache
 ~/lib/libdpy.py --inxi-json
+PYTHONPATH="$HOME/lib${PYTHONPATH:+:$PYTHONPATH}" python3 - <<'PY'
+import json
+import libdpy
 
+monitors = libdpy.get_hybrid_monitors(use_cache=False)
+invalid = [
+    monitor for monitor in monitors
+    if "x" not in str(monitor.get("res", ""))
+]
+if invalid:
+    raise SystemExit(
+        "hybrid monitor data has no live resolution: "
+        + json.dumps(invalid, sort_keys=True)
+    )
+print(json.dumps(monitors, indent=2))
+PY
+
+# Populated by read_localhost_nickname() from libhost.sh.
+# shellcheck disable=SC2154
 case "$localhost_nickname" in
     celtic)
         ~/lib/libdpy.py --find-by-model BOE
@@ -117,8 +135,8 @@ test_cache_md5_stability() {
 
 echo "Testing MD5 stability for JSON caches..."
 
-test_cache_md5_stability "XrandrJsonCache" "~/lib/libdpy.py" "~/.cache/libdpy/xrandr.json.md5" "true"
+test_cache_md5_stability "XrandrJsonCache" "$HOME/lib/libdpy.py" "$HOME/.cache/libdpy/xrandr.json.md5" "true"
 echo "SKIP: InxiJsonCache contains dynamic temperature data - MD5 instability expected"
-test_cache_md5_stability "HwinfoMonitorJsonCache" "~/lib/libdpy.py --find-by-model BOE" "~/.cache/libdpy/hwinfo-monitor.json.md5" "false"
+test_cache_md5_stability "HwinfoMonitorJsonCache" "$HOME/lib/libdpy.py --find-by-model BOE" "$HOME/.cache/libdpy/hwinfo-monitor.json.md5" "false"
 
 echo "All MD5 stability tests passed!"

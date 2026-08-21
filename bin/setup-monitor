@@ -257,7 +257,13 @@ setup_xrandr() {
 }
 
 refresh_display_cache() {
-    ~/lib/libdpy.py --inxi-json
+    # Keep the raw inxi cache warm for legacy fallback/identity diagnostics,
+    # but never present its stale connector names or res=N/A values as the
+    # authoritative live topology. The hybrid path resolves hwinfo identities
+    # onto current XRandR outputs and geometries.
+    ~/lib/libdpy.py --inxi-json >/dev/null
+    PYTHONPATH="$HOME/lib${PYTHONPATH:+:$PYTHONPATH}" python3 -c \
+        'import json, libdpy; print(json.dumps(libdpy.get_hybrid_monitors(use_cache=False), indent=2))'
     eval "$(~/lib/libdpy.py)"
 }
 
