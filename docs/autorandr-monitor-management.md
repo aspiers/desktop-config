@@ -302,6 +302,12 @@ path never depended on any of it.
   need one profile per input used. Its DisplayPort profile wildcards
   volatile bytes 352–383 while retaining the stable manufacturer,
   model, serial, timing data, and final 16-byte suffix.
+- The G75F DisplayPort EDID itself marks its first detailed timing,
+  `3440x1440@59.97`, as preferred even though CTA VIC 126/193 advertise
+  `5120x2160@60/120` and the same EDID advertises VESA DSC 1.2a. Therefore
+  `xrandr --auto` correctly follows a sink firmware/EDID quirk rather than an
+  amdgpu or negotiated-bandwidth failure. Saved autorandr geometry and the
+  known-good replay path must select `5120x2160` explicitly.
 - During staged dock bring-up, outputs stay dark until the full
   topology matches — the legacy system force-enabled them earlier but
   then had to guess about settling.
