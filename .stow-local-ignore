@@ -80,6 +80,10 @@ nohup\.out
 
 ^specs$
 ^/\.beads
+# The monitor controller is source-only until its explicit shadow-deployment
+# bead installs the locked runtime and removes this guard.
+^/\.local/lib/monitor-controller$
+^/pyrightconfig\.json$
 # Per-repository opt-in marker, read from the repo root -- it means
 # nothing in ~, and stowing it collides with ai-config, which also
 # provides one and owns ~/.beads-solo.  The collision aborted stow for

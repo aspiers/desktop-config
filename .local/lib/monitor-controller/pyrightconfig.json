@@ -1,0 +1,8 @@
+{
+  "include": ["monitor_controller", "tests"],
+  "extraPaths": ["."],
+  "pythonVersion": "3.13",
+  "typeCheckingMode": "strict",
+  "venvPath": ".",
+  "venv": ".venv"
+}

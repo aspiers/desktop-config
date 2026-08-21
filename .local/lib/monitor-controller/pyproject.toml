@@ -1,0 +1,48 @@
+[project]
+name = "monitor-controller"
+version = "0.1.0"
+description = "Typed domain core for the persistent monitor controller"
+requires-python = ">=3.13,<3.14"
+dependencies = []
+
+[project.scripts]
+monitor-controller = "monitor_controller.cli:main"
+
+[build-system]
+requires = ["hatchling>=1.27,<1.28"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+build-constraint-dependencies = ["hatchling==1.27.0"]
+
+[dependency-groups]
+dev = [
+  "hypothesis>=6.130",
+  "pyright>=1.1.396",
+  "pytest>=8.3",
+  "ruff>=0.11",
+]
+
+[tool.pytest.ini_options]
+addopts = "--strict-config --strict-markers"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+  "COM812",
+  "CPY001",
+  "D105",
+  "D203",
+  "D213",
+  "FBT001",
+  "T201",
+  "TC003",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["D103", "INP001", "PLR2004", "S101"]
