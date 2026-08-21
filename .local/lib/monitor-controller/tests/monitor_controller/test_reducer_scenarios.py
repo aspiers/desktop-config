@@ -1,4 +1,4 @@
-"""Parametrized reducer parity, strict-loader, and determinism tests."""
+"""Exercise reducer parity, strict loading, and determinism."""
 
 from __future__ import annotations
 
@@ -69,19 +69,24 @@ def test_parity_manifest_classifies_every_bash_test_honestly() -> None:
     divergence = cast(
         "dict[str, dict[str, str]]", manifest["intentional_safety_divergence"]
     )
-    deferred = cast("dict[str, dict[str, str]]", manifest["deferred_codec"])
+    codec = cast("dict[str, dict[str, list[str]]]", manifest["codec_behavior"])
     scenario_names = {scenario.name for scenario in _SCENARIOS}
+    codec_source = (_TEST_ROOT / "test_codec.py").read_text()
+    codec_test_names = set(
+        re.findall(r"^def (test_[a-z0-9_]+)\(", codec_source, re.MULTILINE)
+    )
 
-    assert manifest["schema_version"] == 2
+    assert manifest["schema_version"] == 3
     assert manifest["bash_test_count"] == len(bash_names) == 49
-    assert set(executable) | set(divergence) | set(deferred) == bash_names
+    assert set(executable) | set(divergence) | set(codec) == bash_names
     assert not (set(executable) & set(divergence))
-    assert not (set(executable) & set(deferred))
-    assert not (set(divergence) & set(deferred))
+    assert not (set(executable) & set(codec))
+    assert not (set(divergence) & set(codec))
     assert {entry["scenario"] for entry in executable.values()} <= scenario_names
     assert {entry["scenario"] for entry in divergence.values()} <= scenario_names
-    assert {entry["deferred_to"] for entry in deferred.values()} == {"dc-a5y.4"}
-    assert all("codec" in entry["reason"] for entry in deferred.values())
+    assert {
+        test_name for entry in codec.values() for test_name in entry["python_tests"]
+    } <= codec_test_names
 
 
 def test_executable_bash_oracle_passes_all_classified_behavior_cases() -> None:

@@ -1,26 +1,33 @@
 {
   "bash_source": "specs/spikes/test-monitor-watcher-state-machine.sh",
   "bash_test_count": 49,
-  "deferred_codec": {
+  "codec_behavior": {
     "test_persistence_rejects_duplicate_and_arithmetic_payload": {
-      "deferred_to": "dc-a5y.4",
-      "reason": "requires the strict authoritative-state codec; reducer/scenario JSON is not persistence parity"
+      "python_tests": [
+        "test_duplicate_fields_are_rejected_before_construction",
+        "test_schema_enums_uuid_and_numeric_types_are_strict"
+      ]
     },
     "test_persistence_rejects_inconsistent_probe_relationships": {
-      "deferred_to": "dc-a5y.4",
-      "reason": "requires the strict authoritative-state codec; reducer/scenario JSON is not persistence parity"
+      "python_tests": [
+        "test_cross_field_lifecycle_corruption_is_rejected"
+      ]
     },
     "test_persistence_rejects_truncation_without_partial_mutation": {
-      "deferred_to": "dc-a5y.4",
-      "reason": "requires the strict authoritative-state codec; reducer/scenario JSON is not persistence parity"
+      "python_tests": [
+        "test_truncation_invalid_utf8_float_and_oversize_are_rejected",
+        "test_failed_decode_cannot_partially_mutate_existing_state"
+      ]
     },
     "test_persistence_round_trip_multiple_application_keys": {
-      "deferred_to": "dc-a5y.4",
-      "reason": "requires the strict authoritative-state codec; reducer/scenario JSON is not persistence parity"
+      "python_tests": [
+        "test_codec_round_trips_multiple_application_attempt_keys"
+      ]
     },
     "test_semantically_invalid_numeric_state_is_rejected": {
-      "deferred_to": "dc-a5y.4",
-      "reason": "requires the strict authoritative-state codec; reducer/scenario JSON is not persistence parity"
+      "python_tests": [
+        "test_schema_enums_uuid_and_numeric_types_are_strict"
+      ]
     }
   },
   "executable_behavior": {
@@ -230,5 +237,5 @@
     "unknown_worker_status": "production_worker_status_unknown",
     "worker_timeout": "production_worker_timeout"
   },
-  "schema_version": 2
+  "schema_version": 3
 }
