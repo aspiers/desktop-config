@@ -184,9 +184,11 @@ Key differences from the legacy system:
   unplug. A matched profile is retained across a bounded timeout/service
   restart so the next cycle can resume recovery. The 5s quiet interval covers
   the observed final Samsung/hub event at 4.3s.
-- **Gamma is ignored for convergence comparisons** because Redshift owns the
-  live CRTC gamma ramps; gamma differences do not make a display profile
-  inactive.
+- **Gamma is ignored globally for detection and application** via
+  `.config/autorandr/settings.ini` (`skip-options=gamma`) because Redshift owns
+  the live CRTC gamma ramps. The watcher also passes the option explicitly so
+  transaction-local/future isolated config roots retain the same safety rule;
+  gamma differences do not make a display profile inactive or get reapplied.
 - **`setup-monitor --skip-xrandr`** reuses the entire non-xrandr
   pipeline unchanged after autorandr has converged.
 - **Staleness protection remains the final safety net**: `setup-monitor`'s

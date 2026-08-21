@@ -14,7 +14,6 @@ output DisplayPort-7
 off
 output eDP
 crtc 1
-gamma 1.25:1.0:0.833
 mode 2880x1920
 pos 0x0
 rate 60.00
@@ -28,7 +27,6 @@ x-prop-underscan_hborder 0
 x-prop-underscan_vborder 0
 output DisplayPort-1
 crtc 0
-gamma 1.0:0.833:0.714
 mode 5120x2160
 pos 2880x0
 primary
