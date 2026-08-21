@@ -72,6 +72,36 @@ else
     assert_equal "desktop PID must match the recorded unit MainPID" 2 "$?"
 fi
 
+# Polling rechecks the condition after every sleep and caps the final interval
+# to the remaining timeout. A unit which exits after one second therefore
+# succeeds at the 1.4s poll instead of being misreported as a timeout.
+typeset fake_elapsed stop_at
+fake_elapsed=0
+stop_at=1.0
+info () { :; }
+debug () { :; }
+unit_main_pid () { print 1234; }
+unit_is_running () {
+    (( $(echo "$fake_elapsed < $stop_at" | bc -l) ))
+}
+sleep () {
+    fake_elapsed=$(echo "$fake_elapsed + $1" | bc -l)
+}
+if ensure_unit_stopped fluxbox-desktop.service 3; then
+    pass "rechecks a stopped unit before declaring timeout"
+else
+    fail "rechecks a stopped unit before declaring timeout"
+fi
+assert_equal "successful polling records the actual final poll" 1.4 "$fake_elapsed"
+
+fake_elapsed=0
+stop_at=99
+if ensure_unit_stopped fluxbox-desktop.service 1; then
+    fail "times out a unit which remains running"
+else
+    assert_equal "timeout uses the exact configured budget" 1.0 "$fake_elapsed"
+fi
+
 # Exercise the complete escalation path with mocks. Every signal must retain
 # the captured desktop unit; an unrelated process named fluxbox has no role.
 typeset -ga calls
@@ -102,4 +132,4 @@ if [ "$failures" -ne 0 ]; then
     exit 1
 fi
 
-print "1..6"
+print "1..9"

@@ -27,10 +27,18 @@ ensure_stopped () {
     local timeout="${2:-20}"
     local secs=$INITIAL_SLEEP
     local waited=0
+    local remaining
     while pid=$( is_running "$proc" ); do
+        remaining=$(echo "$timeout - $waited" | bc -l)
+        if (( $(echo "$secs > $remaining" | bc -l) )); then
+            secs=$remaining
+        fi
         debug "Waiting ${secs}s for $proc (pid $pid) to stop running (waited ${waited}s, timeout ${timeout}s)"
-        sleep $secs
+        sleep "$secs"
         waited=$(echo "$waited + $secs" | bc -l)
+        if ! is_running "$proc"; then
+            return 0
+        fi
         if (( $(echo "$waited >= $timeout" | bc -l) )); then
             error "Timeout waiting for $proc to stop (waited $waited >= $timeout seconds)"
             return 1
@@ -144,13 +152,20 @@ ensure_unit_stopped () {
     local timeout="${2:-20}"
     local secs=$INITIAL_SLEEP
     local waited=0
-    local pid
+    local pid remaining
 
     while unit_is_running "$unit"; do
+        remaining=$(echo "$timeout - $waited" | bc -l)
+        if (( $(echo "$secs > $remaining" | bc -l) )); then
+            secs=$remaining
+        fi
         pid=$(unit_main_pid "$unit")
         debug "Waiting ${secs}s for $unit (pid $pid) to stop running (waited ${waited}s, timeout ${timeout}s)"
-        sleep $secs
+        sleep "$secs"
         waited=$(echo "$waited + $secs" | bc -l)
+        if ! unit_is_running "$unit"; then
+            return 0
+        fi
         if (( $(echo "$waited >= $timeout" | bc -l) )); then
             error "Timeout waiting for $unit to stop (waited $waited >= $timeout seconds)"
             return 1
@@ -167,11 +182,19 @@ ensure_unit_started () {
     local timeout="${2:-20}"
     local secs=$INITIAL_SLEEP
     local waited=0
+    local remaining
 
     while ! unit_is_running "$unit"; do
+        remaining=$(echo "$timeout - $waited" | bc -l)
+        if (( $(echo "$secs > $remaining" | bc -l) )); then
+            secs=$remaining
+        fi
         info "Waiting ${secs}s for $unit to start (waited ${waited}s, timeout ${timeout}s)"
-        sleep $secs
+        sleep "$secs"
         waited=$(echo "$waited + $secs" | bc -l)
+        if unit_is_running "$unit"; then
+            break
+        fi
         if (( $(echo "$waited >= $timeout" | bc -l) )); then
             error "Timeout waiting for $unit to start (waited $waited >= $timeout seconds)"
             return 1
@@ -215,10 +238,18 @@ ensure_started () {
     local timeout="${2:-20}"
     local secs=$INITIAL_SLEEP
     local waited=0
+    local remaining
     while ! pid=$( is_running "$proc" ); do
+        remaining=$(echo "$timeout - $waited" | bc -l)
+        if (( $(echo "$secs > $remaining" | bc -l) )); then
+            secs=$remaining
+        fi
         info "Waiting ${secs}s for $proc to start (waited ${waited}s, timeout ${timeout}s)"
-        sleep $secs
+        sleep "$secs"
         waited=$(echo "$waited + $secs" | bc -l)
+        if is_running "$proc"; then
+            break
+        fi
         if (( $(echo "$waited >= $timeout" | bc -l) )); then
             error "Timeout waiting for $proc to start (waited $waited >= $timeout seconds)"
             exit 1
