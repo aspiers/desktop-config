@@ -31,6 +31,17 @@ assert_equal () {
     fi
 }
 
+pgrep () {
+    printf '%s\n' 123 456
+}
+assert_equal "renders multiple process IDs compactly" '123,456' "$(is_running fluxbox)"
+pgrep () { return 1; }
+if is_running fluxbox >/dev/null; then
+    fail "reports an absent process as running"
+else
+    pass "preserves pgrep failure for an absent process"
+fi
+
 # Unit discovery requires the identity recorded by the launcher as well as a
 # live Fluxbox desktop and a matching unit MainPID/cgroup. It never infers the
 # desktop owner from process or unit names alone.
@@ -132,4 +143,4 @@ if [ "$failures" -ne 0 ]; then
     exit 1
 fi
 
-print "1..9"
+print "1..11"

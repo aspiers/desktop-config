@@ -19,7 +19,10 @@ info () {
 }
 
 is_running () {
-    pgrep -x "$1" >/dev/null
+    local pids
+
+    pids=$(pgrep -x "$1") || return 1
+    printf '%s\n' "$pids" | paste -sd, -
 }
 
 ensure_stopped () {
