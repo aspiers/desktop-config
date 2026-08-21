@@ -2,7 +2,7 @@
 # Same physical topology as celtic+external (celtic left, external primary
 # right) but the primary screen defines a third column so the 3col / middle /
 # 3cols-6cells sublayouts have geometry to place windows into.
-# See get-layout: chosen when the external width is >= 3440px.
+# See get-layout: chosen when the external aspect ratio is wider than 2:1.
 
 # This is good for home external
 # ui_scale: 1.0
