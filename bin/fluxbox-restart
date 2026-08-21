@@ -2,6 +2,8 @@
 
 INITIAL_SLEEP=0.2
 MAX_SLEEP=4
+FLUXBOX_DISPLAY_KEY=$(printf '%s' "${DISPLAY:-unknown}" | tr -c 'A-Za-z0-9_.-' '_')
+FLUXBOX_DESKTOP_UNIT_FILE=${FLUXBOX_DESKTOP_UNIT_FILE:-${XDG_RUNTIME_DIR:-/run/user/$UID}/fluxbox-desktop-unit.$FLUXBOX_DISPLAY_KEY}
 
 debug () {
     echo "\e[1;33m$*\e[0m"
@@ -40,26 +42,171 @@ ensure_stopped () {
     done
 }
 
+desktop_fluxbox_window () {
+    local wm_window
+
+    wm_window=$(xprop -root _NET_SUPPORTING_WM_CHECK 2>/dev/null |
+        awk '/window id/ { print $NF }')
+    [ -n "$wm_window" ] || return 1
+    xprop -id "$wm_window" _NET_WM_NAME 2>/dev/null |
+        grep -q '= "Fluxbox"$' || return 1
+    print -r -- "$wm_window"
+}
+
+desktop_is_fluxbox () {
+    desktop_fluxbox_window >/dev/null
+}
+
+desktop_fluxbox_pid () {
+    local wm_window current_pid base mask
+
+    wm_window=$(desktop_fluxbox_window) || return 1
+    while read -r current_pid base mask; do
+        if (( (wm_window & ~mask) == base )); then
+            print -r -- "$current_pid"
+            return 0
+        fi
+    done < <(
+        xrestop -b -m 1 2>/dev/null |
+            awk '
+                /\( PID:[0-9]+ \):$/ {
+                    pid = $0
+                    sub(/^.*\( PID:/, "", pid)
+                    sub(/ \):$/, "", pid)
+                    base = ""
+                }
+                /res_base[[:space:]]*:/ { base = $3 }
+                /res_mask[[:space:]]*:/ && pid != "" && base != "" {
+                    print pid, base, $3
+                }
+            '
+    )
+    return 1
+}
+
+find_desktop_fluxbox_unit () {
+    local unit wm_pid unit_pid
+
+    wm_pid=$(desktop_fluxbox_pid) || return 1
+    [ -r "$FLUXBOX_DESKTOP_UNIT_FILE" ] || return 1
+    unit=$(<"$FLUXBOX_DESKTOP_UNIT_FILE")
+    case "$unit" in
+        fluxbox-[0-9]*.service) ;;
+        *)
+            error "Invalid desktop Fluxbox unit record: $unit"
+            return 2
+            ;;
+    esac
+    systemctl --user is-active --quiet "$unit" || return 1
+    unit_has_fluxbox_main_process "$unit" || return 1
+    unit_pid=$(unit_main_pid "$unit")
+    if [ "$unit_pid" != "$wm_pid" ]; then
+        error "Recorded unit $unit owns PID $unit_pid, not desktop Fluxbox PID $wm_pid"
+        return 2
+    fi
+    print -r -- "$unit"
+}
+
+record_desktop_fluxbox_unit () {
+    local unit="$1"
+    local tmp="${FLUXBOX_DESKTOP_UNIT_FILE}.$$"
+
+    print -r -- "$unit" > "$tmp" || return 1
+    mv -f "$tmp" "$FLUXBOX_DESKTOP_UNIT_FILE"
+}
+
+unit_main_pid () {
+    systemctl --user show "$1" --property=MainPID --value 2>/dev/null
+}
+
+unit_is_running () {
+    local pid
+
+    pid=$(unit_main_pid "$1")
+    case "$pid" in
+        ''|*[!0-9]*) return 1 ;;
+    esac
+    [ "$pid" -gt 0 ] && kill -0 "$pid" 2>/dev/null
+}
+
+unit_has_fluxbox_main_process () {
+    local unit="$1"
+    local pid
+
+    pid=$(unit_main_pid "$unit")
+    unit_is_running "$unit" || return 1
+    [ "$(<"/proc/$pid/comm")" = fluxbox ] || return 1
+    grep -Fq "/$unit" "/proc/$pid/cgroup"
+}
+
+ensure_unit_stopped () {
+    local unit="$1"
+    local timeout="${2:-20}"
+    local secs=$INITIAL_SLEEP
+    local waited=0
+    local pid
+
+    while unit_is_running "$unit"; do
+        pid=$(unit_main_pid "$unit")
+        debug "Waiting ${secs}s for $unit (pid $pid) to stop running (waited ${waited}s, timeout ${timeout}s)"
+        sleep $secs
+        waited=$(echo "$waited + $secs" | bc -l)
+        if (( $(echo "$waited >= $timeout" | bc -l) )); then
+            error "Timeout waiting for $unit to stop (waited $waited >= $timeout seconds)"
+            return 1
+        fi
+        if (( $(echo "$secs < $MAX_SLEEP" | bc -l) )); then
+            secs=$(echo "$secs * 2" | bc)
+            debug "Doubled sleep to $secs seconds"
+        fi
+    done
+}
+
+ensure_unit_started () {
+    local unit="$1"
+    local timeout="${2:-20}"
+    local secs=$INITIAL_SLEEP
+    local waited=0
+
+    while ! unit_is_running "$unit"; do
+        info "Waiting ${secs}s for $unit to start (waited ${waited}s, timeout ${timeout}s)"
+        sleep $secs
+        waited=$(echo "$waited + $secs" | bc -l)
+        if (( $(echo "$waited >= $timeout" | bc -l) )); then
+            error "Timeout waiting for $unit to start (waited $waited >= $timeout seconds)"
+            return 1
+        fi
+        if (( $(echo "$secs < $MAX_SLEEP" | bc -l) )); then
+            secs=$(echo "$secs * 2" | bc)
+            debug "Doubled sleep to $secs seconds"
+        fi
+    done
+    info "$unit started (pid $(unit_main_pid "$unit"))"
+}
+
+signal_fluxbox_unit () {
+    local unit="$1"
+    local signal="$2"
+
+    systemctl --user kill --kill-whom=main --signal="$signal" "$unit"
+}
+
 ensure_fluxbox_stopped () {
-    info "Attempting to stop fluxbox via fluxbox-remote Exit"
-    fluxbox-remote Exit
-    if ensure_stopped fluxbox 1; then
+    local unit="$1"
+
+    info "Attempting to stop $unit via systemd-scoped SIGTERM"
+    signal_fluxbox_unit "$unit" TERM
+    if ensure_unit_stopped "$unit" 3; then
         return 0
     fi
 
-    info "Attempting to stop fluxbox via pkill -x fluxbox"
-    pkill -x fluxbox
-    if ensure_stopped fluxbox 3; then
+    info "Attempting to stop $unit via systemd-scoped SIGKILL"
+    signal_fluxbox_unit "$unit" KILL
+    if ensure_unit_stopped "$unit" 10; then
         return 0
     fi
 
-    info "Attempting to stop fluxbox via pkill -9x fluxbox"
-    pkill -9x fluxbox
-    if ensure_stopped fluxbox 10; then
-        return 0
-    fi
-
-    error "Failed to stop fluxbox via multiple methods"
+    error "Failed to stop $unit via multiple methods"
     exit 1
 }
 
@@ -110,6 +257,8 @@ retry_with_backoff () {
 }
 
 main () {
+    local fluxbox_unit
+
     me=$(basename $0)
 
     : $0 pid is $$
@@ -123,14 +272,17 @@ main () {
     # reconfiguration.  Solution is to switch back to xfwm4 for a
     # second, then back to fluxbox.
 
-    if is_running fluxbox; then
-        ensure_fluxbox_stopped
+    if fluxbox_unit=$(find_desktop_fluxbox_unit); then
+        ensure_fluxbox_stopped "$fluxbox_unit"
 
         if [ -z "$no_xfwm" ]; then
             info "Replacing fluxbox with xfwm4"
             ( xfwm4 >& ~/.log/fluxbox-restart-xfwm4.log & )
             ensure_started xfwm4 10
         fi
+    elif desktop_is_fluxbox; then
+        error "Fluxbox owns the desktop but its exact recorded systemd unit could not be verified"
+        exit 1
     fi
 
     if is_running xfwm4; then
@@ -156,10 +308,16 @@ main () {
     # stopping the unit kills that entire cgroup, so every layout change took
     # Chrome and friends down with the window manager. KillMode=process kills
     # only fluxbox itself and leaves its children running across the restart.
-    systemd-run --user --unit=fluxbox-$$ \
+    fluxbox_unit="fluxbox-$$.service"
+    systemd-run --user --unit="${fluxbox_unit%.service}" \
         -p StandardOutput=journal -p StandardError=journal \
         -p KillMode=process \
         fluxbox -log ~/.log/fluxbox.log
+    ensure_unit_started "$fluxbox_unit" 10 || exit 1
+    record_desktop_fluxbox_unit "$fluxbox_unit" || {
+        error "Failed to record desktop Fluxbox unit $fluxbox_unit"
+        exit 1
+    }
 
     sleep 1
     dismiss_panel_plugin_dialogs
@@ -218,4 +376,6 @@ dismiss_panel_plugin_dialogs () {
         done
 }
 
-main "$@"
+if [ -z "$FLUXBOX_RESTART_LIB_ONLY" ]; then
+    main "$@"
+fi

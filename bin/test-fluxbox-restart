@@ -1,0 +1,105 @@
+#!/bin/zsh
+
+set -eu
+
+repo_root=${0:A:h:h}
+tmp_dir=$(mktemp -d)
+trap 'rm -rf "$tmp_dir"' EXIT
+FLUXBOX_DESKTOP_UNIT_FILE="$tmp_dir/fluxbox-desktop-unit"
+FLUXBOX_RESTART_LIB_ONLY=1 source "$repo_root/bin/fluxbox-restart"
+
+failures=0
+
+pass () {
+    print "ok - $1"
+}
+
+fail () {
+    print -u2 "not ok - $1"
+    failures=$((failures + 1))
+}
+
+assert_equal () {
+    local description="$1"
+    local expected="$2"
+    local actual="$3"
+
+    if [ "$actual" = "$expected" ]; then
+        pass "$description"
+    else
+        fail "$description (expected '$expected', got '$actual')"
+    fi
+}
+
+# Unit discovery requires the identity recorded by the launcher as well as a
+# live Fluxbox desktop and a matching unit MainPID/cgroup. It never infers the
+# desktop owner from process or unit names alone.
+desktop_fluxbox_pid () { print 1234; }
+systemctl () { return 0; }
+unit_has_fluxbox_main_process () { return 0; }
+unit_main_pid () { print 1234; }
+print 'fluxbox-123.service' > "$FLUXBOX_DESKTOP_UNIT_FILE"
+assert_equal "finds the recorded live desktop unit" \
+    'fluxbox-123.service' "$(find_desktop_fluxbox_unit)"
+
+rm -f "$FLUXBOX_DESKTOP_UNIT_FILE"
+desktop_fluxbox_pid () { return 1; }
+systemctl () {
+    # This unrelated matching unit would have been selected by the old
+    # name/count heuristic, but the new protocol never lists candidates.
+    print 'fluxbox-999.service loaded active running Unrelated'
+}
+if find_desktop_fluxbox_unit >/dev/null; then
+    fail "ignores a sole unrelated matching unit"
+else
+    assert_equal "unrelated unit is not adopted" 1 "$?"
+fi
+
+print 'not-a-safe-unit.service' > "$FLUXBOX_DESKTOP_UNIT_FILE"
+desktop_fluxbox_pid () { print 1234; }
+error () { :; }
+if find_desktop_fluxbox_unit >/dev/null; then
+    fail "rejects an invalid recorded unit name"
+else
+    assert_equal "invalid unit record has a distinct failure" 2 "$?"
+fi
+
+print 'fluxbox-123.service' > "$FLUXBOX_DESKTOP_UNIT_FILE"
+unit_main_pid () { print 9999; }
+if find_desktop_fluxbox_unit >/dev/null; then
+    fail "rejects a recorded unit belonging to another Fluxbox client"
+else
+    assert_equal "desktop PID must match the recorded unit MainPID" 2 "$?"
+fi
+
+# Exercise the complete escalation path with mocks. Every signal must retain
+# the captured desktop unit; an unrelated process named fluxbox has no role.
+typeset -ga calls
+calls=()
+integer stop_checks=0
+info () { :; }
+debug () { :; }
+ensure_unit_stopped () {
+    stop_checks=$((stop_checks + 1))
+    [ "$stop_checks" -ge 2 ]
+}
+signal_fluxbox_unit () { calls+=("signal:$1:$2"); }
+ensure_fluxbox_stopped fluxbox-desktop.service
+actual_calls=$(printf '%s\n' "${calls[@]}")
+assert_equal "termination and escalation stay unit-scoped" \
+    $'signal:fluxbox-desktop.service:TERM\nsignal:fluxbox-desktop.service:KILL' \
+    "$actual_calls"
+
+if grep -Eq 'pkill([[:space:]]+-[^[:space:]]*)*[[:space:]]+fluxbox' \
+    "$repo_root/bin/fluxbox-restart"; then
+    fail "contains no process-name-scoped Fluxbox kill"
+else
+    pass "contains no process-name-scoped Fluxbox kill"
+fi
+
+if [ "$failures" -ne 0 ]; then
+    print -u2 "$failures test(s) failed"
+    exit 1
+fi
+
+print "1..6"

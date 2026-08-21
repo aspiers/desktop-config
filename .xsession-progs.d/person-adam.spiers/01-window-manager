@@ -15,10 +15,25 @@ if pgrep xfwm4; then
         # in this unit's cgroup -- alive when the unit is stopped. The
         # default control-group mode killed Chrome on every layout change,
         # since each one restarts the window manager.
-        systemd-run --user --unit=fluxbox-$$ \
+        fluxbox_unit="fluxbox-$$.service"
+        if systemd-run --user --unit="${fluxbox_unit%.service}" \
             -p StandardOutput=journal -p StandardError=journal \
             -p KillMode=process \
-            fluxbox -log ~/.log/fluxbox.log
+            fluxbox -log ~/.log/fluxbox.log; then
+            display_key=$(printf '%s' "${DISPLAY:-unknown}" | tr -c 'A-Za-z0-9_.-' '_')
+            unit_file="${XDG_RUNTIME_DIR:-/run/user/$UID}/fluxbox-desktop-unit.$display_key"
+            unit_file_tmp="$unit_file.$$"
+            if printf '%s\n' "$fluxbox_unit" > "$unit_file_tmp" &&
+                mv -f "$unit_file_tmp" "$unit_file"; then
+                :
+            else
+                echo >&2 "Failed to record desktop Fluxbox unit $fluxbox_unit"
+                exit 1
+            fi
+        else
+            echo >&2 "Failed to start desktop Fluxbox unit $fluxbox_unit"
+            exit 1
+        fi
 
         # Stop xfdesktop grabbing mouse clicks away from fluxbox
         xfdesktop -Q &
