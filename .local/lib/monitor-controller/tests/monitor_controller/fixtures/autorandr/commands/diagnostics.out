@@ -1,0 +1,3 @@
+celtic+Samsung-Odyssey-G75F: renaming display DisplayPort-1 to DisplayPort-9
+AUTORANDR_MONITORS=DisplayPort-9:eDP
+celtic (current)

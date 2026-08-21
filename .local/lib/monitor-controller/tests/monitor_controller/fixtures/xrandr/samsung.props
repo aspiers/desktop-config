@@ -1,0 +1,12 @@
+Screen 0: minimum 320 x 200, current 8000 x 2160, maximum 16384 x 16384
+eDP connected 2880x1920+0+0 (normal left inverted right x axis y axis) 286mm x 191mm
+	CONNECTOR_ID: 73
+	EDID:
+		00ffffffffffff00
+DisplayPort-9 connected primary 5120x2160+2880+0 (normal left inverted right x axis y axis) 1480mm x 620mm
+	Connector ID: 91
+	link-status: Good
+	EDID:
+		00ffffffffffff00
+DisplayPort-8 disconnected (normal left inverted right x axis y axis)
+	connector_id: 90
