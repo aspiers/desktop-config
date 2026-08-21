@@ -7,8 +7,8 @@ from dataclasses import dataclass, replace
 from enum import StrEnum
 from typing import Protocol
 
-from monitor_controller.model import RawEvidenceReference, RawEvidenceSource
-from monitor_controller.observer.evidence import (
+from ..model import RawEvidenceReference, RawEvidenceSource  # noqa: TID252
+from .evidence import (
     MAX_PARSE_ISSUES,
     IssueCollector,
     ParseIssue,

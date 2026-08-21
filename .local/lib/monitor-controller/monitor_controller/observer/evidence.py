@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from hashlib import sha256
 
-from monitor_controller.model import RawEvidenceReference, RawEvidenceSource
+from ..model import RawEvidenceReference, RawEvidenceSource  # noqa: TID252
 
 MAX_COMMAND_BYTES: int = 1 << 20
 MAX_PARSE_ISSUES: int = 16

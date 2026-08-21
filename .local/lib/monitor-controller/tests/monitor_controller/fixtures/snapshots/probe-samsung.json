@@ -1,0 +1,23 @@
+{
+  "sysfs": [
+    {
+      "kernel_name": "card0-eDP-1",
+      "connector_id": 73,
+      "edid_from": "autorandr/profiles/celtic+Samsung-Odyssey-G75F/setup",
+      "fingerprint_output": "eDP"
+    },
+    {
+      "kernel_name": "card0-DP-3",
+      "connector_id": 91,
+      "edid_file": "edid/samsung-broken-captured.hex"
+    }
+  ],
+  "commands": {
+    "xrandr --query": "xrandr/inactive.query",
+    "xrandr --props": "xrandr/inactive.props",
+    "autorandr --fingerprint": "snapshots/probe-samsung.fingerprint",
+    "autorandr --detected": "autorandr/commands/empty.out",
+    "autorandr --current": "autorandr/commands/empty.out"
+  },
+  "profiles": ["celtic+Samsung-Odyssey-G75F"]
+}

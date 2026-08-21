@@ -1,0 +1,24 @@
+{
+  "sysfs": [
+    {
+      "kernel_name": "card0-eDP-1",
+      "connector_id": 73,
+      "edid_from": "autorandr/commands/aoc-renamed.fingerprint",
+      "fingerprint_output": "eDP"
+    },
+    {
+      "kernel_name": "card0-DP-3",
+      "connector_id": 107,
+      "edid_from": "autorandr/commands/aoc-renamed.fingerprint",
+      "fingerprint_output": "DisplayPort-7"
+    }
+  ],
+  "commands": {
+    "xrandr --query": "xrandr/aoc-rename.query",
+    "xrandr --props": "xrandr/aoc-rename.props",
+    "autorandr --fingerprint": "autorandr/commands/aoc-renamed.fingerprint",
+    "autorandr --detected": "snapshots/exact-aoc.detected",
+    "autorandr --current": "snapshots/exact-aoc.current"
+  },
+  "profiles": ["celtic+AOC-U28G2G6B"]
+}
