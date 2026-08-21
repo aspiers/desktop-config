@@ -1,0 +1,65 @@
+#!/bin/sh
+
+# Build a pinned bluetuith 0.2.7 with the bluetooth-classic Optional JSON
+# decoder fix tracked in this repository. The resulting ~/.local/bin binary
+# takes precedence over Tumbleweed's /usr/bin package and can be removed to
+# return immediately to the packaged version.
+
+set -eu
+
+bluetuith_repo=https://github.com/bluetuith-org/bluetuith.git
+bluetuith_commit=02e063468656612fa4e3be8f394134863871a5e1
+backend_repo=https://github.com/bluetuith-org/bluetooth-classic.git
+backend_commit=fc86ce311e9691c35fae3ab555af67d562f43ae5
+script_path=$(readlink -f "$0")
+repo_root=$(dirname "$(dirname "$script_path")")
+patch_file=${BLUETUITH_PATCH_FILE:-$repo_root/lib/bluetuith/bluetooth-classic-quoted-optional.patch}
+install_dir=${BLUETUITH_INSTALL_DIR:-$HOME/.local/bin}
+
+[ -r "$patch_file" ] || {
+    echo "Cannot read patch: $patch_file" >&2
+    exit 1
+}
+command -v git >/dev/null
+command -v go >/dev/null
+
+tmp_dir=$(mktemp -d)
+trap 'rm -rf "$tmp_dir"' EXIT INT TERM
+bluetuith_dir=$tmp_dir/bluetuith
+backend_dir=$tmp_dir/bluetooth-classic
+
+fetch_commit() {
+    repo=$1
+    commit=$2
+    destination=$3
+    git init -q "$destination"
+    git -C "$destination" remote add origin "$repo"
+    git -C "$destination" fetch -q --depth 1 origin "$commit"
+    git -C "$destination" checkout -q --detach FETCH_HEAD
+    [ "$(git -C "$destination" rev-parse HEAD)" = "$commit" ]
+}
+
+fetch_commit "$backend_repo" "$backend_commit" "$backend_dir"
+git -C "$backend_dir" apply --check "$patch_file"
+git -C "$backend_dir" apply "$patch_file"
+(
+    cd "$backend_dir"
+    go test ./api/optional ./internal/bluez/internal/dbushelper
+)
+
+fetch_commit "$bluetuith_repo" "$bluetuith_commit" "$bluetuith_dir"
+(
+    cd "$bluetuith_dir"
+    go mod edit -replace \
+        "github.com/bluetuith-org/bluetooth-classic=$backend_dir"
+    go test ./...
+    go build -trimpath \
+        -ldflags "-X github.com/darkhz/bluetuith/cmd.Version=0.2.7-local-quoted-names -X github.com/darkhz/bluetuith/cmd.Revision=$bluetuith_commit" \
+        -o "$tmp_dir/bluetuith.bin" .
+)
+
+mkdir -p "$install_dir"
+install -m 0755 "$tmp_dir/bluetuith.bin" "$install_dir/bluetuith.new"
+mv -f "$install_dir/bluetuith.new" "$install_dir/bluetuith"
+echo "Installed $install_dir/bluetuith"
+"$install_dir/bluetuith" --version

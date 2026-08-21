@@ -1,0 +1,125 @@
+diff --git a/api/optional/optional.go b/api/optional/optional.go
+index e71363d..9c9b0df 100644
+--- a/api/optional/optional.go
++++ b/api/optional/optional.go
+@@ -1,7 +1,9 @@
+ package optional
+ 
+ import (
++	"bytes"
+ 	"cmp"
++	"encoding/json"
+ 	"fmt"
+ 	"strconv"
+ )
+@@ -45,12 +47,21 @@ func (o Optional[T]) IsZero() bool {
+ 
+ // MarshalJSON implements the json.Marshaler interface.
+ func (o Optional[T]) MarshalJSON() (data []byte, err error) {
+-	return o.MarshalText()
++	return json.Marshal(o.value)
+ }
+ 
+ // UnmarshalJSON implements the json.Unmarshaler interface.
+ func (o *Optional[T]) UnmarshalJSON(data []byte) error {
+-	return o.UnmarshalText(data)
++	if bytes.Equal(bytes.TrimSpace(data), []byte("null")) {
++		return fmt.Errorf("unmarshalling null into an optional value is not supported")
++	}
++
++	var value T
++	if err := json.Unmarshal(data, &value); err != nil {
++		return err
++	}
++	o.Set(value)
++	return nil
+ }
+ 
+ // MarshalText implements the encoding.TextMarshaler interface.
+diff --git a/api/optional/optional_test.go b/api/optional/optional_test.go
+new file mode 100644
+index 0000000..bc029bb
+--- /dev/null
++++ b/api/optional/optional_test.go
+@@ -0,0 +1,46 @@
++package optional
++
++import (
++	"encoding/json"
++	"testing"
++)
++
++func TestStringJSONRoundTripDoesNotRetainLexicalQuotes(t *testing.T) {
++	want := `Living "Room" Speaker`
++	var got Optional[string]
++	if err := json.Unmarshal([]byte(`"Living \"Room\" Speaker"`), &got); err != nil {
++		t.Fatal(err)
++	}
++	if got.Value() != want {
++		t.Fatalf("got %q, want %q", got.Value(), want)
++	}
++
++	encoded, err := json.Marshal(got)
++	if err != nil {
++		t.Fatal(err)
++	}
++	if string(encoded) != `"Living \"Room\" Speaker"` {
++		t.Fatalf("encoded %s", encoded)
++	}
++}
++
++func TestPrimitiveJSONRoundTrip(t *testing.T) {
++	var got Optional[bool]
++	if err := json.Unmarshal([]byte(`true`), &got); err != nil {
++		t.Fatal(err)
++	}
++	if !got.Value() {
++		t.Fatal("decoded false, want true")
++	}
++}
++
++func TestJSONNullIsRejectedWithoutMutation(t *testing.T) {
++	got := New(true)
++	if err := json.Unmarshal([]byte(`null`), &got); err == nil {
++		t.Fatal("expected null to be rejected")
++	}
++	value, present := got.Get()
++	if !present || !value {
++		t.Fatalf("optional mutated after null: value=%v present=%v", value, present)
++	}
++}
+diff --git a/internal/bluez/internal/dbushelper/variantdecoder_test.go b/internal/bluez/internal/dbushelper/variantdecoder_test.go
+new file mode 100644
+index 0000000..11c41a0
+--- /dev/null
++++ b/internal/bluez/internal/dbushelper/variantdecoder_test.go
+@@ -0,0 +1,29 @@
++//go:build linux
++
++package dbushelper
++
++import (
++	"testing"
++
++	"github.com/bluetuith-org/bluetooth-classic/api/optional"
++	"github.com/godbus/dbus/v5"
++)
++
++func TestDecodeVariantMapPreservesStringContentWithoutLexicalQuotes(t *testing.T) {
++	type properties struct {
++		Name optional.Optional[string] `codec:"Name,omitempty"`
++	}
++
++	want := `Living "Room" Speaker`
++	var got properties
++	if err := DecodeVariantMap(
++		map[string]dbus.Variant{"Name": dbus.MakeVariant(want)},
++		&got,
++		"Name",
++	); err != nil {
++		t.Fatal(err)
++	}
++	if got.Name.Value() != want {
++		t.Fatalf("got %q, want %q", got.Name.Value(), want)
++	}
++}
