@@ -1,4 +1,4 @@
-# ruff: noqa: EM101, EM102, TRY003, PLR0912
+# ruff: noqa: EM101, EM102, TRY003, PLR0912, TID252
 """Strict language-neutral JSON scenario loader and reducer runner."""
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import NoReturn, cast
 from uuid import UUID
 
-from monitor_controller.model import (
+from ..model import (
     ActionId,
     ActionKind,
     ActivateProbe,
@@ -75,9 +75,9 @@ from monitor_controller.model import (
     WorkerTimedOut,
     WorkerUnit,
 )
-from monitor_controller.reducer import reduce
+from ..reducer import reduce
 
-SCENARIO_SCHEMA_VERSION = 1
+SCENARIO_SCHEMA_VERSION: int = 1
 DEFAULT_BOOT_ID = BootId(UUID("11111111-1111-1111-1111-111111111111"))
 DEFAULT_INSTANCE_ID = ControllerInstanceId(UUID("22222222-2222-2222-2222-222222222222"))
 

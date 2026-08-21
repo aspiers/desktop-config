@@ -10,8 +10,8 @@ from enum import Enum
 from typing import Any, Never, cast, get_args, get_origin, get_type_hints
 from uuid import UUID
 
-from monitor_controller.invariants import assert_controller_invariants
-from monitor_controller.model import (
+from .invariants import assert_controller_invariants
+from .model import (
     ActionId,
     ActionLifecycle,
     ActionRecord,
@@ -22,8 +22,8 @@ from monitor_controller.model import (
     State,
 )
 
-MAX_STATE_BYTES = 1_048_576
-MAX_JSON_INTEGER = (1 << 53) - 1
+MAX_STATE_BYTES: int = 1_048_576
+MAX_JSON_INTEGER: int = (1 << 53) - 1
 MAX_STRING_LENGTH = 65_536
 MAX_TOMBSTONES = 1_024
 MAX_RECOVERY_UNITS = 256
@@ -48,7 +48,11 @@ def _object_from_pairs(pairs: list[tuple[str, object]]) -> dict[str, object]:
 
 
 def _parse_integer(value: str) -> int:
-    parsed = int(value)
+    try:
+        parsed = int(value)
+    except ValueError as error:  # JSON invokes parse_int only for integer tokens.
+        message = "JSON integer token is invalid"
+        raise StateCodecError(message) from error
     if not -MAX_JSON_INTEGER <= parsed <= MAX_JSON_INTEGER:
         _fail("JSON integer is outside the supported range")
     return parsed
@@ -253,6 +257,16 @@ def _encode_value(value: object, path: str) -> object:  # noqa: PLR0911
     _fail(f"{path} contains a value outside the state schema")
 
 
+def encode_schema_value(value: object) -> object:
+    """Encode one typed domain value into deterministic JSON-compatible data."""
+    return _encode_value(value, "value")
+
+
+def decode_schema_value(value: object, expected: object) -> object:
+    """Strictly decode JSON-compatible data against an explicit domain type."""
+    return _decode_value(value, expected, "value")
+
+
 def _state_actions(state: State) -> tuple[ActionRecord, ...]:
     return tuple(
         action
@@ -298,8 +312,17 @@ def _validate_persistence_relationships(state: State) -> None:
     action_ids = {action.action_id for action in actions}
     tombstone_ids = {item.action_id for item in state.action_tombstones}
     recovery_unit_ids = {item.action_id for item in state.recovery_units}
-    if action_ids & tombstone_ids:
-        _fail("active action cannot also have a terminal tombstone")
+    actions_by_id = {action.action_id: action for action in actions}
+    tombstones_by_id = {item.action_id: item for item in state.action_tombstones}
+    for action_id in action_ids & tombstone_ids:
+        action = actions_by_id[action_id]
+        tombstone = tombstones_by_id[action_id]
+        if action.lifecycle is not tombstone.lifecycle or action.lifecycle not in {
+            ActionLifecycle.FAILED,
+            ActionLifecycle.UNKNOWN,
+            ActionLifecycle.TIMED_OUT,
+        }:
+            _fail("retained terminal action must match its failure tombstone lifecycle")
     if recovery_unit_ids & tombstone_ids:
         _fail("surviving worker cannot also have a terminal tombstone")
 

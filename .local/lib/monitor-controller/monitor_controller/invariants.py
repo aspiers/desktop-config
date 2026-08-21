@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from monitor_controller.model import (
+from .model import (
     ActionId,
     ActionKind,
     ActionLifecycle,
@@ -16,17 +16,17 @@ from monitor_controller.model import (
     TransitionId,
 )
 
-_MUTATING_IN_FLIGHT = {
+_MUTATING_IN_FLIGHT: set[ActionLifecycle] = {
     ActionLifecycle.DISPATCHED,
     ActionLifecycle.STOPPING,
     ActionLifecycle.RESULT_PENDING,
 }
-_FAILED_LIFECYCLES = {
+_FAILED_LIFECYCLES: set[ActionLifecycle] = {
     ActionLifecycle.FAILED,
     ActionLifecycle.UNKNOWN,
     ActionLifecycle.TIMED_OUT,
 }
-_PROFILE_STABILITY_MS = 10_000
+_PROFILE_STABILITY_MS: int = 10_000
 _PREPARATION_STABILITY_MS = 2_000
 
 NUMBERED_INVARIANTS: tuple[str, ...] = (

@@ -10,8 +10,8 @@ from __future__ import annotations
 
 from dataclasses import replace
 
-from monitor_controller.invariants import assert_controller_invariants
-from monitor_controller.model import (
+from .invariants import assert_controller_invariants
+from .model import (
     EVENT_TYPES,
     ActionId,
     ActionKind,
@@ -79,12 +79,12 @@ from monitor_controller.model import (
     WorkerUnit,
 )
 
-AGGRESSIVE_BUDGET_MS = 30_000
+AGGRESSIVE_BUDGET_MS: int = 30_000
 FAST_DELAYS_MS = (0, 250, 500, 1_000, 2_000)
 SLOW_DELAYS_MS = (5_000, 10_000, 20_000, 30_000)
-PROFILE_STABILITY_MS = 10_000
-PREPARATION_STABILITY_MS = 2_000
-EVENT_QUIET_MS = 5_000
+PROFILE_STABILITY_MS: int = 10_000
+PREPARATION_STABILITY_MS: int = 2_000
+EVENT_QUIET_MS: int = 5_000
 UNKNOWN_STABILITY_MS = 10_000
 UNPLUG_STABILITY_MS = 1_000
 UNPLUG_REQUIRED_SAMPLES = 2
@@ -284,6 +284,7 @@ def _admit_probe(state: State, observation: CanonicalObservation) -> Decision:
     )
     if key in state.attempted_probe_keys:
         return _enter_wait(state, observation.observed_at_ms)
+    state, discard_effects = _discard_planning(state)
     state, action_id = _allocate_action(state, ActionKind.PROBE)
     action = ProbeAction(
         action_id=action_id,
@@ -296,12 +297,15 @@ def _admit_probe(state: State, observation: CanonicalObservation) -> Decision:
     state = replace(
         state,
         phase=ControllerPhase.PROBE_PENDING,
+        candidate=None,
         probe=action,
         baseline_adoption=False,
+        verify_since_ms=None,
         next_timer_ms=observation.observed_at_ms,
     )
     return _decision(
         state,
+        *discard_effects,
         ActivateProbe(
             action_id=action_id,
             key=key,
@@ -713,8 +717,22 @@ def _handle_unplug(
 
 def _classify_observation(state: State, observation: CanonicalObservation) -> Decision:
     now_ms = observation.observed_at_ms
+    pending = _observe_pending_action(state, observation)
+    if pending is not None:
+        return pending
+
     if observation.has_external_hardware:
-        state = replace(state, external_intent=True, unplug_proof=None)
+        internal_candidate = (
+            state.candidate is not None
+            and state.candidate.scope is ProfileScope.INTERNAL_ONLY
+        )
+        state = replace(
+            state,
+            external_intent=True,
+            unplug_proof=None,
+            candidate=None if internal_candidate else state.candidate,
+            verify_since_ms=None if internal_candidate else state.verify_since_ms,
+        )
     else:
         state, unplug_complete = _handle_unplug(state, observation)
         if not unplug_complete:
@@ -724,10 +742,6 @@ def _classify_observation(state: State, observation: CanonicalObservation) -> De
                 if state.unplug_proof is not None
                 else now_ms + 1,
             )
-
-    pending = _observe_pending_action(state, observation)
-    if pending is not None:
-        return pending
 
     if state.phase is ControllerPhase.PROBE_FAILED and state.probe is not None:
         same = (
@@ -848,42 +862,98 @@ def _observe(state: State, event: ObservationCompleted) -> Decision:
             unplug_proof=None,
             verify_since_ms=None,
         )
+        invalid_effects: tuple[Effect, ...] = ()
+        if (
+            state.probe is not None
+            and state.probe.lifecycle is ActionLifecycle.ADMITTED
+        ):
+            state = _append_tombstone(state, state.probe, ActionLifecycle.CANCELLED)
+            state = replace(
+                state,
+                phase=ControllerPhase.DISCOVER_FAST,
+                probe=None,
+            )
+        if (
+            state.application is not None
+            and state.application.lifecycle is ActionLifecycle.ADMITTED
+        ):
+            state = _append_tombstone(
+                state, state.application, ActionLifecycle.CANCELLED
+            )
+            state = replace(
+                state,
+                phase=ControllerPhase.DISCOVER_FAST,
+                application=None,
+            )
+        if (
+            state.preparation is not None
+            and state.preparation.lifecycle is ActionLifecycle.ADMITTED
+        ):
+            state = _append_tombstone(
+                state, state.preparation, ActionLifecycle.CANCELLED
+            )
+            state, invalid_effects = _discard_planning(
+                replace(
+                    state,
+                    phase=ControllerPhase.DISCOVER_FAST,
+                    preparation_state=PreparationState.PREPARE_IDLE,
+                    preparation=None,
+                )
+            )
+        if (
+            state.finalization is not None
+            and state.finalization.lifecycle is ActionLifecycle.ADMITTED
+        ):
+            state = _append_tombstone(
+                state, state.finalization, ActionLifecycle.CANCELLED
+            )
+            state = replace(
+                state,
+                phase=ControllerPhase.DISCOVER_FAST,
+                finalization=None,
+            )
         if (
             invalid_external
             and state.application is not None
             and state.application.scope is ProfileScope.INTERNAL_ONLY
+            and state.application.lifecycle
+            in {ActionLifecycle.DISPATCHED, ActionLifecycle.STOPPING}
         ):
-            action = state.application
-            if action.lifecycle is ActionLifecycle.ADMITTED:
-                state = _append_tombstone(state, action, ActionLifecycle.CANCELLED)
-                state = replace(
-                    state,
-                    phase=ControllerPhase.DISCOVER_FAST,
-                    application=None,
-                )
-            elif action.lifecycle in {
-                ActionLifecycle.DISPATCHED,
-                ActionLifecycle.STOPPING,
-            }:
-                action = replace(action, lifecycle=ActionLifecycle.STOPPING)
-                state = replace(state, application=action)
-                return _schedule(
-                    state,
-                    now_ms + 1_000,
-                    StopAction(action.action_id),
-                )
+            action = replace(state.application, lifecycle=ActionLifecycle.STOPPING)
+            state = replace(state, application=action)
+            return _schedule(
+                state,
+                now_ms + 1_000,
+                *invalid_effects,
+                StopAction(action.action_id),
+            )
         if state.phase not in {
             ControllerPhase.PROBING,
             ControllerPhase.PROBE_FAILED,
             ControllerPhase.APPLYING,
             ControllerPhase.APPLY_FAILED,
-            ControllerPhase.FINALIZE_PENDING,
             ControllerPhase.FINALIZING,
             ControllerPhase.FINALIZE_STOPPING,
             ControllerPhase.FINALIZE_FAILED,
         }:
             state = replace(state, phase=ControllerPhase.DISCOVER_FAST)
-        return _schedule(state, now_ms + 1_000)
+        return _schedule(state, now_ms + 1_000, *invalid_effects)
+
+    if (
+        observation.has_external_hardware
+        and state.application is not None
+        and state.application.scope is ProfileScope.INTERNAL_ONLY
+        and state.application.lifecycle is ActionLifecycle.DISPATCHED
+    ):
+        action = replace(state.application, lifecycle=ActionLifecycle.STOPPING)
+        state = replace(
+            state,
+            phase=ControllerPhase.APPLYING,
+            application=action,
+            candidate=None,
+            verify_since_ms=None,
+        )
+        return _schedule(state, now_ms + 1_000, StopAction(action.action_id))
 
     # Stopping is a display-mutation exclusion. No observation may erase it
     # or admit another mutation before cancellation is acknowledged.
@@ -1286,6 +1356,8 @@ def _finished(
         if (
             action is None
             or action.action_id != action_id
+            or action.lifecycle
+            not in {ActionLifecycle.DISPATCHED, ActionLifecycle.STOPPING}
             or state.preparation_state
             not in {PreparationState.PREPARING, PreparationState.PREPARE_STOPPING}
         ):
@@ -1355,6 +1427,8 @@ def _finished(
         if (
             action is None
             or action.action_id != action_id
+            or action.lifecycle
+            not in {ActionLifecycle.DISPATCHED, ActionLifecycle.STOPPING}
             or state.phase
             not in {ControllerPhase.FINALIZING, ControllerPhase.FINALIZE_STOPPING}
         ):
@@ -1661,6 +1735,26 @@ def _cancellation_acknowledged(
 
 def _controller_started(state: State, event: ControllerStarted) -> Decision:
     state = replace(state, controller_instance=event.controller_instance)
+    if (
+        state.preparation_state is PreparationState.PREPARE_PENDING
+        and state.preparation is not None
+    ):
+        state = _append_tombstone(state, state.preparation, ActionLifecycle.CANCELLED)
+        state, discard_effects = _discard_planning(
+            replace(
+                state,
+                phase=ControllerPhase.DISCOVER_FAST,
+                preparation_state=PreparationState.PREPARE_IDLE,
+                preparation=None,
+                verify_since_ms=None,
+            )
+        )
+        return _schedule(
+            state,
+            event.metadata.processed_at_ms,
+            *discard_effects,
+            RequestObservation(WakeReason.STARTUP),
+        )
     if state.phase is ControllerPhase.VERIFYING:
         state = replace(state, verify_since_ms=None)
     if state.phase is ControllerPhase.PROBING and state.probe is not None:
