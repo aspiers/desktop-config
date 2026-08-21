@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# See .xsession-progs.d/person-adam.spiers/50-keyboard and
-# .config/systemd/user/keyboard-watcher.service for how this gets run.
+# See .config/systemd/user/keyboard-watcher.service for how this gets run.
 # (Nothing relevant in .cfg-post.d/desktop-config.)
 #
 # See also the other *-watcher services.
@@ -20,6 +19,12 @@ if ! which $SETUP >&/dev/null; then
 fi
 
 log=~/.log/udev-hid.log
+
+# Apply the keymap once at startup before watching for changes. Reacting only
+# to hotplug would leave the keyboard attached at login unconfigured, which is
+# why this previously needed a separate call from the X session.
+echo "Applying initial keymap ..."
+$SETUP
 
 # Property-mode monitor: each event is a block of KEY=VALUE lines
 # terminated by a blank line. -s input restricts to input subsystem.

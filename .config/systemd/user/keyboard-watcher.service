@@ -1,3 +1,14 @@
+[Unit]
+Description=Apply the keyboard map and reapply it when keyboards are plugged in
+
+# setup-keyboard ends up in keymap-menu, which runs xmodmap, so this needs a
+# graphical session. graphical-session.target rather than a window-manager
+# specific target: every desktop environment raises it (gnome-session.target
+# and plasma-workspace.target bind to it, as does fluxbox-session.target
+# here), so this watcher follows whichever desktop is in use.
+PartOf=graphical-session.target
+After=graphical-session.target
+
 [Service]
 SyslogIdentifier=keyboard-watcher
 ExecStart=/bin/sh -c ${HOME}/bin/keyboard-watcher
@@ -7,4 +18,4 @@ StandardOutput=journal
 StandardError=journal
 
 [Install]
-# WantedBy=default.target
+WantedBy=graphical-session.target

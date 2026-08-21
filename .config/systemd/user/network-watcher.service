@@ -1,3 +1,11 @@
+[Unit]
+Description=Run the network handler hooks when the network changes
+
+# No graphical dependency: the hooks talk to xfconf and PipeWire over the
+# session bus, and both xfconf-query and wpctl work with no DISPLAY set. So
+# this hangs off default.target and keeps handling network changes whether or
+# not a desktop is running.
+
 [Service]
 SyslogIdentifier=network-watcher
 ExecStart=/bin/sh -c ${HOME}/bin/network-watcher
@@ -7,4 +15,4 @@ StandardOutput=journal
 StandardError=journal
 
 [Install]
-# WantedBy=default.target
+WantedBy=default.target
