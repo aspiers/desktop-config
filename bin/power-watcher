@@ -1,0 +1,99 @@
+#!/bin/bash
+
+# Reapply the screen lock profile when the machine moves between AC and
+# battery.
+#
+# .network-handler.d/screen-lock chooses the lock and suspend timeouts from
+# both the network and the power source, but network-watcher only runs it on
+# network changes. Plugging or unplugging the AC adapter without changing
+# network therefore left the previous profile in place -- notably, going onto
+# battery at home kept the relaxed 4 hour lock.
+#
+# See also the other *-watcher services.
+#
+# UPower is watched as a wake-up only, not as a source of values. Two
+# observations drove that:
+#
+#   - A measured unplug emitted PropertiesChanged for battery_BAT1 and
+#     DisplayDevice, but nothing carrying the top-level OnBattery property.
+#     Matching on OnBattery in the signal stream would never have fired.
+#   - Immediately after a replug, OnBattery said false while BAT1 State still
+#     said discharging. The daemon takes a moment to settle.
+#
+# So any UPower signal simply triggers a fresh authoritative read of
+# OnBattery, and the hook runs only when that value actually changes. This
+# needs no fixed debounce interval: a burst of signals collapses naturally
+# because only the first one that changes the state does any work.
+
+HOOK=$HOME/.network-handler.d/screen-lock
+
+check_deps () {
+    local cmd
+    for cmd in gdbus nm-current-connection; do
+        if ! command -v "$cmd" >&/dev/null; then
+            echo "ERROR: Couldn't find $cmd; aborting." >&2
+            exit 1
+        fi
+    done
+
+    if ! [ -x "$HOOK" ]; then
+        echo "ERROR: $HOOK is not executable; aborting." >&2
+        exit 1
+    fi
+}
+
+on_battery () {
+    local reply
+    reply=$(
+        gdbus call --system \
+              --dest org.freedesktop.UPower \
+              --object-path /org/freedesktop/UPower \
+              --method org.freedesktop.DBus.Properties.Get \
+              org.freedesktop.UPower OnBattery 2>/dev/null
+    ) || return 2     # unknown; caller leaves the state untouched
+
+    case "$reply" in
+        *true*)  return 0 ;;
+        *false*) return 1 ;;
+        *)       return 2 ;;
+    esac
+}
+
+# Reports the current power source as a stable string, or nothing if UPower
+# cannot be reached, so that a transient failure does not look like a change.
+power_state () {
+    on_battery
+    case $? in
+        0) echo battery ;;
+        1) echo ac ;;
+        *) echo ;;
+    esac
+}
+
+run_hook () {
+    # The hook ignores $1 and detects the network itself, but pass the
+    # connection name anyway so the journal shows the same context as when
+    # network-watcher invokes it.
+    echo "Power source is now $1; reapplying screen lock profile"
+    "$HOOK" "$(nm-current-connection 2>/dev/null)"
+}
+
+check_deps
+
+last=$(power_state)
+echo "Monitoring power source via UPower (currently ${last:-unknown}) ..."
+
+# Reading the property on every signal makes this correct whichever device
+# object carries the transition, so match broadly rather than guessing.
+gdbus monitor --system --dest org.freedesktop.UPower | while IFS= read -r _; do
+    current=$(power_state)
+
+    [ -n "$current" ]          || continue    # UPower unreachable; keep last
+    [ "$current" != "$last" ]  || continue    # no actual transition
+
+    last=$current
+    run_hook "$current"
+done
+
+echo "ERROR: gdbus monitor exited" >&2
+exit 1

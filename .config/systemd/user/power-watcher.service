@@ -1,0 +1,22 @@
+[Unit]
+Description=Reapply screen lock profile when switching between AC and battery
+
+# The hook this runs calls xfconf-query, which needs DISPLAY in the
+# systemd --user environment. That only exists once the X session has pushed
+# it in (see 00-systemd-user-env), and fluxbox-session.target is raised after
+# that, so ordering after it is what makes WantedBy= safe here --
+# default.target would be too early. PartOf= additionally stops this watcher
+# when the session ends.
+PartOf=fluxbox-session.target
+After=fluxbox-session.target
+
+[Service]
+SyslogIdentifier=power-watcher
+ExecStart=/bin/sh -c ${HOME}/bin/power-watcher
+Restart=always
+NoNewPrivileges=true
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=fluxbox-session.target
