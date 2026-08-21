@@ -265,13 +265,65 @@ class PlanHash:
 
 
 @dataclass(frozen=True, slots=True)
-class PlanningInputKey:
-    """Identity of all inputs from which a desktop plan is derived."""
+class ConfigurationContentHash:
+    """Digest of one configuration input which can change a desktop plan."""
 
-    value: str
+    path: str
+    sha256: str
 
     def __post_init__(self) -> None:
-        _require_nonempty(self.value, "planning input key")
+        _require_nonempty(self.path, "configuration path")
+        _require_nonempty(self.sha256, "configuration content hash")
+
+
+@dataclass(frozen=True, slots=True)
+class PlanningInputKey:
+    """Complete identity of all inputs from which a desktop plan is derived."""
+
+    physical_epoch: int
+    profile: str
+    layout: str
+    observation_key: ObservationKey
+    mapping: tuple[OutputMapping, ...]
+    configuration_hashes: tuple[ConfigurationContentHash, ...]
+
+    def __post_init__(self) -> None:
+        _require_nonnegative(self.physical_epoch, "planning physical epoch")
+        _require_nonempty(self.profile, "planning profile")
+        _require_nonempty(self.layout, "planning layout")
+        if not self.mapping:
+            msg = "planning input mapping must not be empty"
+            raise ValueError(msg)
+        mapping_keys = tuple(
+            f"{item.saved_output}\0{item.live_output}" for item in self.mapping
+        )
+        _require_sorted_unique_keys(mapping_keys, "planning input mapping")
+        saved = tuple(item.saved_output for item in self.mapping)
+        live = tuple(item.live_output for item in self.mapping)
+        if len(set(saved)) != len(saved) or len(set(live)) != len(live):
+            msg = "planning input mapping must be a bijection"
+            raise ValueError(msg)
+        if not self.configuration_hashes:
+            msg = "planning input requires configuration content hashes"
+            raise ValueError(msg)
+        hash_keys = tuple(
+            f"{item.path}\0{item.sha256}" for item in self.configuration_hashes
+        )
+        _require_sorted_unique_keys(hash_keys, "planning configuration hashes")
+
+    @property
+    def value(self) -> str:
+        """Return a stable language-neutral representation for diagnostics."""
+        mapping = ",".join(
+            f"{item.saved_output}>{item.live_output}" for item in self.mapping
+        )
+        hashes = ",".join(
+            f"{item.path}={item.sha256}" for item in self.configuration_hashes
+        )
+        return (
+            f"{self.physical_epoch}|{self.profile}|{self.layout}|"
+            f"{self.observation_key.value}|{mapping}|{hashes}"
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -423,21 +475,36 @@ class RawEvidenceReference:
 
 @dataclass(frozen=True, slots=True)
 class ProfileMatch:
-    """Eligible or current profile and its uniquely resolved output mapping."""
+    """Eligible profile, exact layout, mapping, and planning configuration inputs."""
 
     profile: str
     scope: ProfileScope
+    layout: str
     mapping: tuple[OutputMapping, ...]
+    active_outputs: tuple[str, ...]
+    configuration_hashes: tuple[ConfigurationContentHash, ...]
 
     def __post_init__(self) -> None:
         _require_nonempty(self.profile, "profile")
+        _require_nonempty(self.layout, "profile layout")
+        if not self.configuration_hashes:
+            msg = "profile match requires configuration content hashes"
+            raise ValueError(msg)
+        hash_keys = tuple(
+            f"{item.path}\0{item.sha256}" for item in self.configuration_hashes
+        )
+        _require_sorted_unique_keys(hash_keys, "profile configuration hashes")
         if not self.mapping:
             msg = "profile mapping must not be empty"
             raise ValueError(msg)
+        _require_sorted_unique_strings(self.active_outputs, "profile active outputs")
         saved = tuple(item.saved_output for item in self.mapping)
         live = tuple(item.live_output for item in self.mapping)
         if len(set(saved)) != len(saved) or len(set(live)) != len(live):
             msg = "profile mapping must be a bijection"
+            raise ValueError(msg)
+        if not set(self.active_outputs) <= set(live):
+            msg = "profile active outputs must be included in its mapping"
             raise ValueError(msg)
         mapping_keys = tuple(
             f"{item.saved_output}\0{item.live_output}" for item in self.mapping
@@ -564,9 +631,15 @@ class CanonicalObservation:
                         (
                             item.profile,
                             item.scope.value,
+                            item.layout,
                             ";".join(
                                 f"{mapping.saved_output}>{mapping.live_output}"
                                 for mapping in item.mapping
+                            ),
+                            ";".join(item.active_outputs),
+                            ";".join(
+                                f"{config.path}={config.sha256}"
+                                for config in item.configuration_hashes
                             ),
                         )
                     )
@@ -682,20 +755,85 @@ class CanonicalObservation:
                 raise ValueError(msg)
         if self.exact_profile is not None:
             _require_nonempty(self.exact_profile, "exact profile")
-            eligible_names = {match.profile for match in self.eligible_profiles}
-            if self.exact_profile not in eligible_names:
+            match = next(
+                (
+                    item
+                    for item in self.eligible_profiles
+                    if item.profile == self.exact_profile
+                ),
+                None,
+            )
+            if match is None:
                 msg = "exact profile must also be eligible"
+                raise ValueError(msg)
+            connected = set(self.kernel_connected_outputs)
+            mapped = {item.live_output for item in match.mapping}
+            if not (
+                connected == set(self.x_connected_outputs) == mapped
+                and set(self.x_active_outputs) == set(match.active_outputs)
+            ):
+                msg = "exact profile requires a full connected/active mapping bijection"
+                raise ValueError(msg)
+            if self.exact_profile not in self.current_profiles:
+                msg = "exact profile must be reported current"
+                raise ValueError(msg)
+            external = set(self.kernel_external_outputs) | set(self.x_external_outputs)
+            complete_edid = {
+                item.output
+                for item in self.edid_integrity
+                if item.integrity is EdidIntegrity.COMPLETE
+            }
+            base_matches = {
+                item.output
+                for item in self.base_identity_profiles
+                if item.profile == self.exact_profile
+            }
+            identified = {
+                item.output
+                for item in self.connector_identities
+                if item.x_connector_id is not None
+            }
+            if not external <= complete_edid & base_matches & identified:
+                msg = (
+                    "exact external outputs require complete EDID, base identity, "
+                    "and connector correspondence"
+                )
                 raise ValueError(msg)
         if self.probe_candidate is not None:
             probe = self.probe_candidate
-            if probe.output not in self.kernel_external_outputs:
-                msg = "probe output must be a connected external output"
-                raise ValueError(msg)
-            if probe.output in self.x_active_outputs:
-                msg = "probe output must be inactive"
-                raise ValueError(msg)
-            if probe.internal_output not in self.x_active_outputs:
-                msg = "probe internal output must be active"
+            external = {probe.output}
+            internal = {probe.internal_output}
+            matching_base = tuple(
+                item
+                for item in self.base_identity_profiles
+                if item.profile == probe.profile and item.output == probe.output
+            )
+            probe_edid = next(
+                (item for item in self.edid_integrity if item.output == probe.output),
+                None,
+            )
+            identified = any(
+                item.output == probe.output and item.x_connector_id is not None
+                for item in self.connector_identities
+            )
+            if not (
+                set(self.kernel_external_outputs)
+                == set(self.x_external_outputs)
+                == external
+                and set(self.kernel_connected_outputs)
+                == set(self.x_connected_outputs)
+                == external | internal
+                and set(self.x_active_outputs) == internal
+                and len(matching_base) == 1
+                and probe_edid is not None
+                and probe_edid.integrity
+                not in {EdidIntegrity.ABSENT, EdidIntegrity.BASE_INVALID}
+                and identified
+            ):
+                msg = (
+                    "probe candidate requires one exact base identity and exact "
+                    "external/inactive plus internal/active topology"
+                )
                 raise ValueError(msg)
             if self.eligible_profiles:
                 msg = "probe candidate requires no full eligible profile"
@@ -771,6 +909,7 @@ class ProbeAction:
     lifecycle: ActionLifecycle = ActionLifecycle.ADMITTED
     unit: WorkerUnit | None = None
     exit_status: int | None = None
+    terminal_after_stop: ActionLifecycle | None = None
 
     def __post_init__(self) -> None:
         if self.action_id.kind is not ActionKind.PROBE:
@@ -780,6 +919,7 @@ class ProbeAction:
         _require_nonempty(self.internal_output, "probe internal output")
         _require_nonempty(self.preferred_mode, "probe preferred mode")
         _validate_action_unit(self.action_id, self.unit)
+        _validate_terminal_after_stop(self.lifecycle, self.terminal_after_stop)
 
 
 @dataclass(frozen=True, slots=True)
@@ -795,6 +935,7 @@ class ApplicationAction:
     lifecycle: ActionLifecycle = ActionLifecycle.ADMITTED
     unit: WorkerUnit | None = None
     exit_status: int | None = None
+    terminal_after_stop: ActionLifecycle | None = None
 
     def __post_init__(self) -> None:
         if self.action_id.kind is not ActionKind.APPLICATION:
@@ -805,6 +946,7 @@ class ApplicationAction:
             msg = "application identity profiles must match"
             raise ValueError(msg)
         _validate_action_unit(self.action_id, self.unit)
+        _validate_terminal_after_stop(self.lifecycle, self.terminal_after_stop)
 
 
 @dataclass(frozen=True, slots=True)
@@ -824,6 +966,9 @@ class PlanningAction:
             msg = "planning action ID has the wrong kind"
             raise ValueError(msg)
         _require_nonempty(self.profile, "planning profile")
+        if self.input_key.profile != self.profile:
+            msg = "planning action and input-key profiles must match"
+            raise ValueError(msg)
 
 
 @dataclass(frozen=True, slots=True)
@@ -840,6 +985,7 @@ class PreparationAction:
     lifecycle: ActionLifecycle = ActionLifecycle.ADMITTED
     unit: WorkerUnit | None = None
     exit_status: int | None = None
+    terminal_after_stop: ActionLifecycle | None = None
 
     def __post_init__(self) -> None:
         if self.action_id.kind is not ActionKind.PREPARATION:
@@ -847,6 +993,7 @@ class PreparationAction:
             raise ValueError(msg)
         _require_nonempty(self.profile, "preparation profile")
         _validate_action_unit(self.action_id, self.unit)
+        _validate_terminal_after_stop(self.lifecycle, self.terminal_after_stop)
 
 
 @dataclass(frozen=True, slots=True)
@@ -863,6 +1010,7 @@ class FinalizationAction:
     lifecycle: ActionLifecycle = ActionLifecycle.ADMITTED
     unit: WorkerUnit | None = None
     exit_status: int | None = None
+    terminal_after_stop: ActionLifecycle | None = None
 
     def __post_init__(self) -> None:
         if self.action_id.kind is not ActionKind.FINALIZATION:
@@ -870,6 +1018,21 @@ class FinalizationAction:
             raise ValueError(msg)
         _require_nonempty(self.profile, "finalization profile")
         _validate_action_unit(self.action_id, self.unit)
+        _validate_terminal_after_stop(self.lifecycle, self.terminal_after_stop)
+
+
+def _validate_terminal_after_stop(
+    lifecycle: ActionLifecycle, terminal_after_stop: ActionLifecycle | None
+) -> None:
+    if terminal_after_stop is not None and terminal_after_stop not in {
+        ActionLifecycle.UNKNOWN,
+        ActionLifecycle.TIMED_OUT,
+    }:
+        msg = "post-stop terminal lifecycle must be unknown or timed out"
+        raise ValueError(msg)
+    if terminal_after_stop is not None and lifecycle is not ActionLifecycle.STOPPING:
+        msg = "post-stop terminal lifecycle requires stopping exclusion"
+        raise ValueError(msg)
 
 
 def _validate_action_unit(action_id: ActionId, unit: WorkerUnit | None) -> None:
@@ -951,6 +1114,7 @@ class State:
     last_drm_at_ms: int | None = None
     stable_x_profile: str | None = None
     desktop_finalized_profile: str | None = None
+    external_intent: bool = False
     baseline_adoption: bool = False
     attempted_probe_keys: frozenset[ProbeAttemptKey] = frozenset()
     probe: ProbeAction | None = None

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .model import (
+from monitor_controller.model import (
     ActionId,
     ActionKind,
     ActionLifecycle,
@@ -28,6 +28,22 @@ _FAILED_LIFECYCLES = {
 }
 _PROFILE_STABILITY_MS = 10_000
 _PREPARATION_STABILITY_MS = 2_000
+
+NUMBERED_INVARIANTS: tuple[str, ...] = (
+    "no_laptop_fallback_with_external_hardware",
+    "probe_is_not_profile_authorization",
+    "explicit_applications_only",
+    "no_duplicate_probe_or_application",
+    "edid_absence_is_uncertainty_not_unplug",
+    "continuous_final_proof",
+    "durable_action_dispatch",
+    "independent_desktop_state",
+    "profile_transition_finalization",
+    "explicit_unplug_proof",
+    "no_implicit_abandonment",
+    "preparation_is_subordinate_and_keyed",
+    "one_display_mutation_boundary",
+)
 
 
 class ControllerInvariantError(ValueError):
@@ -453,10 +469,103 @@ def _check_action_authorization(state: State) -> None:
             )
 
 
+def _check_numbered_safety_rules(state: State) -> None:  # noqa: C901
+    """Enforce the cross-cutting parts of all thirteen numbered v2 rules."""
+    observation = state.latest_observation
+
+    # 1 and 5: external evidence/intent can never authorize internal fallback.
+    if observation is not None and observation.has_external_hardware:
+        if state.candidate is not None:
+            _require(
+                state.candidate.scope is not ProfileScope.INTERNAL_ONLY,
+                "external hardware forbids an internal-only candidate",
+            )
+        if state.application is not None:
+            _require(
+                state.application.scope is not ProfileScope.INTERNAL_ONLY,
+                "external hardware forbids an internal-only application",
+            )
+
+    # 2: a probe remains a hardware-only action and cannot coexist with a
+    # selected candidate or any desktop lifecycle.
+    if state.probe is not None and state.phase is not ControllerPhase.RECOVERING:
+        _require(state.candidate is None, "probe cannot select a profile candidate")
+        _require(state.planning is None, "probe cannot authorize desktop planning")
+        _require(
+            state.preparation is None and state.finalization is None,
+            "probe cannot authorize desktop mutation",
+        )
+
+    # 3 and 4: every application is a selected, mapped, uniquely keyed load.
+    if state.application is not None:
+        _require(
+            state.application.profile == state.application.mapping.profile
+            and state.application.key.profile == state.application.profile,
+            "application must explicitly load its selected mapped profile",
+        )
+    _require(
+        len(state.attempted_probe_keys) == len(set(state.attempted_probe_keys)),
+        "probe attempt keys must be unique",
+    )
+    _require(
+        len(state.attempted_application_keys)
+        == len(set(state.attempted_application_keys)),
+        "application attempt keys must be unique",
+    )
+
+    # 6: verification is bound continuously to the latest exact/current proof.
+    if state.phase is ControllerPhase.VERIFYING and state.verify_since_ms is not None:
+        _require(
+            observation is not None
+            and observation.valid
+            and state.candidate is not None
+            and observation.exact_profile == state.candidate.profile
+            and state.candidate.profile in observation.current_profiles
+            and observation.observation_key == state.candidate.observation_key,
+            "verification requires continuous exact/current matching evidence",
+        )
+
+    # 7: durable dispatch acknowledgement retains keyed worker identity. The
+    # detailed lifecycle/unit relationships are checked separately below.
+    actions = (
+        state.probe,
+        state.application,
+        state.preparation,
+        state.finalization,
+    )
+    for action in actions:
+        if action is not None and action.lifecycle in _MUTATING_IN_FLIGHT:
+            _require(action.unit is not None, "mutating worker must retain its unit")
+
+    # 8 and 9: desktop completion is independent, and same-profile transitions
+    # never reach finalization.
+    if state.finalization is not None:
+        _require(
+            state.finalization.profile != state.desktop_finalized_profile,
+            "already-finalized profile cannot be finalized again",
+        )
+
+    # 10: while explicit unplug proof is incomplete, external intent remains.
+    if state.unplug_proof is not None:
+        _require(
+            state.external_intent,
+            "unplug proof requires retained external intent",
+        )
+        _require(
+            state.unplug_proof.observation_count >= 1,
+            "unplug proof requires at least one observation",
+        )
+
+    # 11 is checked in _check_observation_authority. 12 is checked in
+    # _check_planning_relationships/_check_action_authorization. 13 is checked
+    # in _check_worker_acknowledgements, including stopping/result-pending.
+
+
 def _check_attempt_history(state: State) -> None:
     if (
         state.probe is not None
         and state.probe.lifecycle is not ActionLifecycle.ADMITTED
+        and state.probe.unit is not None
     ):
         _require(
             state.probe.key in state.attempted_probe_keys,
@@ -465,6 +574,7 @@ def _check_attempt_history(state: State) -> None:
     if (
         state.application is not None
         and state.application.lifecycle is not ActionLifecycle.ADMITTED
+        and state.application.unit is not None
     ):
         _require(
             state.application.key in state.attempted_application_keys,
@@ -481,6 +591,7 @@ def assert_controller_invariants(state: State) -> None:
         _check_worker_acknowledgements,
         _check_observation_authority,
         _check_action_authorization,
+        _check_numbered_safety_rules,
         _check_attempt_history,
     )
     for check in checks:

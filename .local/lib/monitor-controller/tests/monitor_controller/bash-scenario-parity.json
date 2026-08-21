@@ -1,0 +1,234 @@
+{
+  "bash_source": "specs/spikes/test-monitor-watcher-state-machine.sh",
+  "bash_test_count": 49,
+  "deferred_codec": {
+    "test_persistence_rejects_duplicate_and_arithmetic_payload": {
+      "deferred_to": "dc-a5y.4",
+      "reason": "requires the strict authoritative-state codec; reducer/scenario JSON is not persistence parity"
+    },
+    "test_persistence_rejects_inconsistent_probe_relationships": {
+      "deferred_to": "dc-a5y.4",
+      "reason": "requires the strict authoritative-state codec; reducer/scenario JSON is not persistence parity"
+    },
+    "test_persistence_rejects_truncation_without_partial_mutation": {
+      "deferred_to": "dc-a5y.4",
+      "reason": "requires the strict authoritative-state codec; reducer/scenario JSON is not persistence parity"
+    },
+    "test_persistence_round_trip_multiple_application_keys": {
+      "deferred_to": "dc-a5y.4",
+      "reason": "requires the strict authoritative-state codec; reducer/scenario JSON is not persistence parity"
+    },
+    "test_semantically_invalid_numeric_state_is_rejected": {
+      "deferred_to": "dc-a5y.4",
+      "reason": "requires the strict authoritative-state codec; reducer/scenario JSON is not persistence parity"
+    }
+  },
+  "executable_behavior": {
+    "test_application_failure_is_terminal_not_silently_deduplicated": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_application_failure_is_terminal_not_silently_deduplicated"
+    },
+    "test_automatic_x_transition_finalizes_without_apply": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_automatic_x_transition_finalizes_without_apply"
+    },
+    "test_boot_mismatch_discards_monotonic_wait": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_boot_mismatch_discards_monotonic_wait"
+    },
+    "test_changed_evidence_restarts_fast_discovery_after_slow_wait": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_changed_evidence_restarts_fast_discovery_after_slow_wait"
+    },
+    "test_connector_rename_keeps_profile_identity": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_connector_rename_keeps_profile_identity"
+    },
+    "test_drm_event_resets_unplug_proof": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_drm_event_resets_unplug_proof"
+    },
+    "test_edid_loss_retains_candidate_without_fallback": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_edid_loss_retains_candidate_without_fallback"
+    },
+    "test_event_before_probe_dispatch_reemits_admission": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_event_before_probe_dispatch_reemits_admission"
+    },
+    "test_event_between_application_admission_and_dispatch_reemits": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_event_between_application_admission_and_dispatch_reemits"
+    },
+    "test_event_during_application_cannot_advance_state": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_event_during_application_cannot_advance_state"
+    },
+    "test_event_during_probe_cannot_start_application": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_event_during_probe_cannot_start_application"
+    },
+    "test_failed_away_back_allocates_new_finalization_id": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_failed_away_back_allocates_new_finalization_id"
+    },
+    "test_failed_transition_allows_different_profile_same_topology": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_failed_transition_allows_different_profile_same_topology"
+    },
+    "test_fast_timer_does_not_cross_aggressive_deadline": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_fast_timer_does_not_cross_aggressive_deadline"
+    },
+    "test_finalizer_admission_requires_same_transition_key": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_finalizer_admission_requires_same_transition_key"
+    },
+    "test_finalizer_success_requires_fresh_valid_observation": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_finalizer_success_requires_fresh_valid_observation"
+    },
+    "test_genuine_external_plug_applies_and_finalizes_once": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_genuine_external_plug_applies_and_finalizes_once"
+    },
+    "test_interrupted_verification_restarts_full_window": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_interrupted_verification_restarts_full_window"
+    },
+    "test_invalid_changed_token_preserves_application_dedup": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_invalid_changed_token_preserves_application_dedup"
+    },
+    "test_invalid_changed_token_preserves_completed_tombstone": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_invalid_changed_token_preserves_completed_tombstone"
+    },
+    "test_invalid_changed_token_preserves_running_finalizer": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_invalid_changed_token_preserves_running_finalizer"
+    },
+    "test_invalid_observation_never_authorizes_probe": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_invalid_observation_never_authorizes_probe"
+    },
+    "test_laptop_startup_adopts_baseline": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_laptop_startup_adopts_baseline"
+    },
+    "test_new_epoch_gets_new_finalization_id": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_new_epoch_gets_new_finalization_id"
+    },
+    "test_overdue_fast_recovery_fires_immediately": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_overdue_fast_recovery_fires_immediately"
+    },
+    "test_physical_change_during_application_stops_before_new_action": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_physical_change_during_application_stops_before_new_action"
+    },
+    "test_physical_change_during_probe_stops_before_new_action": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_physical_change_during_probe_stops_before_new_action"
+    },
+    "test_probe_failure_is_explicit_terminal_state": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_probe_failure_is_explicit_terminal_state"
+    },
+    "test_probeable_identity_probes_then_requires_full_match": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_probeable_identity_probes_then_requires_full_match"
+    },
+    "test_readiness_after_fast_deadline_needs_no_event": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_readiness_after_fast_deadline_needs_no_event"
+    },
+    "test_recovery_matrix_preserves_progress_without_actions": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_recovery_matrix_preserves_progress_without_actions"
+    },
+    "test_restart_after_dispatched_probe_does_not_repeat": {
+      "comparison": "Bash treats an undiscoverable worker as unknown immediately; Python reattaches its keyed unit, then the explicit unknown-status and stop-ack path reaches the equivalent failed/no-repeat outcome",
+      "scenario": "test_restart_after_dispatched_probe_does_not_repeat"
+    },
+    "test_restart_during_finalizer_reattaches": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_restart_during_finalizer_reattaches"
+    },
+    "test_restart_from_apply_pending_requires_fresh_observation": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_restart_from_apply_pending_requires_fresh_observation"
+    },
+    "test_restart_from_dispatched_application_does_not_repeat": {
+      "comparison": "Bash treats an undiscoverable worker as unknown immediately; Python reattaches its keyed unit, then the explicit unknown-status and stop-ack path reaches the equivalent failed/no-repeat outcome",
+      "scenario": "test_restart_from_dispatched_application_does_not_repeat"
+    },
+    "test_restart_from_finalize_pending_requires_fresh_observation": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_restart_from_finalize_pending_requires_fresh_observation"
+    },
+    "test_restart_from_verifying_resets_proof": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_restart_from_verifying_resets_proof"
+    },
+    "test_resume_to_same_profile_skips_finalization": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_resume_to_same_profile_skips_finalization"
+    },
+    "test_topology_change_stops_running_finalizer": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_topology_change_stops_running_finalizer"
+    },
+    "test_transient_internal_detection_never_applies_with_external": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_transient_internal_detection_never_applies_with_external"
+    },
+    "test_unchanged_application_evidence_is_deduplicated": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_unchanged_application_evidence_is_deduplicated"
+    },
+    "test_unknown_external_becomes_terminal_but_health_checked": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_unknown_external_becomes_terminal_but_health_checked"
+    },
+    "test_unplug_requires_two_samples_spanning_one_second": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_unplug_requires_two_samples_spanning_one_second"
+    }
+  },
+  "intentional_safety_divergence": {
+    "test_event_between_finalization_admission_and_dispatch_reemits": {
+      "reason": "production safety rule resets proof and quietness after dirty finalization admission instead of immediately re-emitting the Bash spike action",
+      "scenario": "safety_dirty_finalization_admission_resets_proof"
+    }
+  },
+  "production_only": {
+    "FINALIZE_STOPPING": "test_topology_change_stops_running_finalizer",
+    "PLANNING": "production_plan_pending_planning_ready",
+    "PLAN_FAILED": "production_plan_failed",
+    "PLAN_PENDING": "production_plan_pending_planning_ready",
+    "PLAN_READY": "production_plan_pending_planning_ready",
+    "PREPARED": "production_prepare_pending_preparing_prepared",
+    "PREPARE_FAILED": "production_prepare_failed",
+    "PREPARE_PENDING": "production_prepare_pending_preparing_prepared",
+    "PREPARE_STOPPING": "production_prepare_stopping_and_ack",
+    "PREPARING": "production_prepare_pending_preparing_prepared",
+    "application_failure": "test_application_failure_is_terminal_not_silently_deduplicated",
+    "deterministic_replay": "production_replay_is_deterministic",
+    "dirty_application_admission": "test_event_between_application_admission_and_dispatch_reemits",
+    "dirty_finalization_admission": "safety_dirty_finalization_admission_resets_proof",
+    "dirty_preparation_admission": "production_dirty_preparation_admission",
+    "dirty_probe_admission": "test_event_before_probe_dispatch_reemits_admission",
+    "dispatch_rejection": "production_dispatch_rejection",
+    "finalization_failure": "test_failed_transition_allows_different_profile_same_topology",
+    "invalid_event_fail_closed": "production_invalid_event_is_noop",
+    "planning_failure": "production_plan_failed",
+    "preparation_failure": "production_prepare_failed",
+    "probe_failure": "test_probe_failure_is_explicit_terminal_state",
+    "startup_baseline_exclusion": "test_laptop_startup_adopts_baseline",
+    "unknown_worker_status": "production_worker_status_unknown",
+    "worker_timeout": "production_worker_timeout"
+  },
+  "schema_version": 2
+}
