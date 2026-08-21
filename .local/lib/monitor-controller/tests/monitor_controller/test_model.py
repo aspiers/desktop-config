@@ -35,6 +35,7 @@ from monitor_controller.model import (
     BootId,
     CandidateSelection,
     CanonicalObservation,
+    ConfigurationContentHash,
     ConnectorIdentityEvidence,
     ControllerInstanceId,
     ControllerPhase,
@@ -105,6 +106,20 @@ _OLD_INSTANCE = ControllerInstanceId(UUID("33333333-3333-3333-3333-333333333333"
 _DISPLAY = DisplayIdentity(":0")
 _KEY = ObservationKey("observation-1")
 _META = EventMetadata(processed_at_ms=110, boot_id=_BOOT)
+_CONFIG_HASHES = (ConfigurationContentHash("layouts/external.yaml", "sha256:layout"),)
+
+
+def _planning_key(
+    profile: str = "external", observation_key: ObservationKey = _KEY
+) -> PlanningInputKey:
+    return PlanningInputKey(
+        physical_epoch=1,
+        profile=profile,
+        layout=f"layouts/{profile}.yaml",
+        observation_key=observation_key,
+        mapping=(OutputMapping("DP-1", "DP-3"),),
+        configuration_hashes=_CONFIG_HASHES,
+    )
 
 
 def _mapping(
@@ -137,7 +152,13 @@ def _observation(  # noqa: PLR0913
             ProfileMatch(
                 profile=exact_profile,
                 scope=ProfileScope.MIXED,
-                mapping=(OutputMapping("DP-1", "DP-3"),),
+                layout="layouts/external.yaml",
+                mapping=(
+                    OutputMapping("DP-1", "DP-3"),
+                    OutputMapping("eDP-1", "eDP-1"),
+                ),
+                active_outputs=kernel_connected,
+                configuration_hashes=_CONFIG_HASHES,
             ),
         )
         if exact_profile is not None
@@ -199,7 +220,7 @@ def _all_events() -> tuple[EventEnvelope, ...]:
     apply_id = ActionId(_INSTANCE, ActionKind.APPLICATION, 3)
     prepare_id = ActionId(_INSTANCE, ActionKind.PREPARATION, 4)
     finalize_id = ActionId(_INSTANCE, ActionKind.FINALIZATION, 5)
-    input_key = PlanningInputKey("input")
+    input_key = _planning_key()
     plan_hash = PlanHash("plan")
     return (
         ObservationCompleted(_META, _observation()),
@@ -423,6 +444,89 @@ def test_x_only_external_evidence_blocks_internal_fallback() -> None:
     assert observation.has_external_hardware
 
 
+def test_exact_profile_requires_complete_topology_identity_proof() -> None:
+    observation = _observation()
+    match = observation.eligible_profiles[0]
+
+    with pytest.raises(ValueError, match="connected/active mapping bijection"):
+        replace(
+            observation,
+            eligible_profiles=(
+                replace(
+                    match,
+                    mapping=match.mapping[:1],
+                    active_outputs=("DP-3",),
+                ),
+            ),
+        )
+
+    with pytest.raises(ValueError, match="complete EDID, base identity"):
+        replace(
+            observation,
+            edid_integrity=(
+                EdidEvidence(
+                    "DP-3",
+                    EdidIntegrity.BASE_VALID_EXTENSIONS_INCOMPLETE,
+                    "base-hash",
+                ),
+            ),
+        )
+
+    with pytest.raises(ValueError, match="complete EDID, base identity"):
+        replace(observation, base_identity_profiles=())
+
+
+def test_probe_candidate_rejects_extra_external_or_active_outputs() -> None:
+    probe_observation = replace(
+        _observation(exact_profile=None),
+        x_active_outputs=("eDP-1",),
+        probe_candidate=ProbeCandidate("external", "DP-3", "eDP-1", "4k"),
+    )
+    assert probe_observation.probe_candidate is not None
+
+    with pytest.raises(ValueError, match="exact external/inactive"):
+        replace(
+            probe_observation,
+            kernel_connected_outputs=("DP-3", "DP-4", "eDP-1"),
+            kernel_external_outputs=("DP-3", "DP-4"),
+            x_connected_outputs=("DP-3", "DP-4", "eDP-1"),
+            x_external_outputs=("DP-3", "DP-4"),
+            connector_identities=(
+                *probe_observation.connector_identities,
+                ConnectorIdentityEvidence("DP-4", "card0-DP-4", 74, 74),
+            ),
+            edid_integrity=(
+                *probe_observation.edid_integrity,
+                EdidEvidence("DP-4", EdidIntegrity.ABSENT),
+            ),
+        )
+
+
+def test_planning_input_key_covers_layout_mapping_and_configuration_hashes() -> None:
+    first = _planning_key()
+    changed_layout = replace(first, layout="layouts/renamed.yaml")
+    changed_mapping = replace(
+        first,
+        mapping=(OutputMapping("DP-1", "DP-4"),),
+    )
+    changed_hash = replace(
+        first,
+        configuration_hashes=(
+            ConfigurationContentHash("layouts/external.yaml", "sha256:changed"),
+        ),
+    )
+
+    identities = {
+        first.value,
+        changed_layout.value,
+        changed_mapping.value,
+        changed_hash.value,
+    }
+    assert len(identities) == 4
+    with pytest.raises(ValueError, match="configuration content hashes"):
+        replace(first, configuration_hashes=())
+
+
 def test_output_mapping_requires_a_nonempty_bijection() -> None:
     with pytest.raises(ValueError, match="must not be empty"):
         MappingProof(
@@ -604,7 +708,7 @@ def test_recovery_retains_prior_instance_ids_transitions_and_worker_units() -> N
         planning=PlanningAction(
             action_id=old_plan_id,
             transition_id=old_transition_id,
-            input_key=PlanningInputKey("old-input"),
+            input_key=_planning_key(),
             profile="external",
         ),
         action_tombstones=(
@@ -648,7 +752,7 @@ def test_high_water_marks_only_constrain_current_instance_allocator() -> None:
         planning=PlanningAction(
             action_id=plan_id,
             transition_id=TransitionId(_INSTANCE, 2),
-            input_key=PlanningInputKey("current-input"),
+            input_key=_planning_key(),
             profile="external",
         ),
     )
