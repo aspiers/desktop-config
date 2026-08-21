@@ -1,0 +1,153 @@
+#!/bin/sh
+
+# Keep the user-session target bounded by real logind graphical sessions. The
+# system and user managers cannot express a cross-manager BindsTo= edge, so
+# this helper registers logind sessions in a flocked runtime namespace and a
+# supervised watcher translates terminal logind state into one user-target
+# stop. The same lock serializes target stop against a concurrent new login;
+# registration always starts the target after any in-progress stop completes.
+
+set -eu
+
+mode=${1:-}
+session_id=${2:-}
+poll_seconds=${FLUXBOX_SESSION_POLL_SECONDS:-2}
+exit_after_stop=${FLUXBOX_SESSION_EXIT_AFTER_STOP:-0}
+loginctl_command=${LOGINCTL_COMMAND:-loginctl}
+systemctl_command=${SYSTEMCTL_COMMAND:-systemctl}
+user_id=$(id -u)
+runtime_dir=${FLUXBOX_SESSION_RUNTIME_DIR:-${XDG_RUNTIME_DIR:-/run/user/$user_id}/fluxbox-session-lifetime}
+lock="$runtime_dir/lock"
+
+valid_session_id() {
+    case "$1" in
+        ''|*[!A-Za-z0-9_.-]*) return 1 ;;
+        *) return 0 ;;
+    esac
+}
+
+case "$poll_seconds" in
+    ''|*[!0-9.]*|.*|*.*.*)
+        echo "Invalid poll interval: $poll_seconds" >&2
+        exit 2
+        ;;
+esac
+case "$exit_after_stop" in
+    0|1) ;;
+    *)
+        echo "Invalid exit-after-stop flag: $exit_after_stop" >&2
+        exit 2
+        ;;
+esac
+
+mkdir -p "$runtime_dir"
+exec 9>"$lock"
+
+session_state() {
+    state=$("$loginctl_command" show-session "$1" \
+        --property=State --value 2>/dev/null) && {
+        printf '%s\n' "$state"
+        return 0
+    }
+
+    # A failed show-session is not proof of logout. Only a successful complete
+    # session listing which omits the ID proves removal; D-Bus/loginctl failure
+    # remains unknown and is retried fail-closed.
+    sessions=$("$loginctl_command" list-sessions --no-legend --no-pager \
+        2>/dev/null) || {
+        echo unknown
+        return 0
+    }
+    if printf '%s\n' "$sessions" | awk -v id="$1" '$1 == id { found = 1 } END { exit !found }'; then
+        echo unknown
+    else
+        echo missing
+    fi
+}
+
+register_session() {
+    valid_session_id "$session_id" || {
+        echo "Invalid logind session ID: $session_id" >&2
+        return 2
+    }
+    marker="$runtime_dir/session.$session_id"
+
+    flock 9
+    printf '%s\n' "$$" > "$marker.tmp"
+    mv -f "$marker.tmp" "$marker"
+    if ! "$systemctl_command" --user start fluxbox-session.target; then
+        rm -f "$marker"
+        flock -u 9
+        return 1
+    fi
+    flock -u 9
+}
+
+unregister_session() {
+    valid_session_id "$session_id" || {
+        echo "Invalid logind session ID: $session_id" >&2
+        return 2
+    }
+
+    # The persistent supervised watcher owns target teardown and retry. This
+    # command only withdraws the session reference.
+    flock 9
+    rm -f "$runtime_dir/session.$session_id" \
+        "$runtime_dir/session.$session_id.tmp"
+    flock -u 9
+}
+
+watch_sessions() {
+    # Restart=always keeps one supervisor alive across target stops and closes
+    # the registration/start handoff race. Markers describe logind sessions
+    # rather than this process, so a watcher restart loses no intent.
+    target_stopped=0
+    trap 'exit 0' INT TERM
+    while :; do
+        flock 9
+        live_references=0
+        for marker in "$runtime_dir"/session.*; do
+            [ -e "$marker" ] || continue
+            other_id=${marker##*/session.}
+            other_state=$(session_state "$other_id")
+            case "$other_state" in
+                closing|missing)
+                    rm -f "$marker"
+                    ;;
+                *)
+                    # active, online, unknown, and unrecognised states retain
+                    # the reference. Ambiguity can delay teardown but can never
+                    # tear down a live session.
+                    live_references=$((live_references + 1))
+                    ;;
+            esac
+        done
+
+        if [ "$live_references" -eq 0 ] && [ "$target_stopped" -eq 0 ]; then
+            echo "Last Fluxbox logind session ended; stopping fluxbox-session.target"
+            # Hold the lock through the completed stop. A concurrent register
+            # waits, then starts the target again after publishing its marker.
+            # Failure exits nonzero under set -e and systemd restarts us.
+            "$systemctl_command" --user stop fluxbox-session.target
+            target_stopped=1
+            flock -u 9
+            if [ "$exit_after_stop" -eq 1 ]; then
+                return 0
+            fi
+        else
+            [ "$live_references" -eq 0 ] || target_stopped=0
+            flock -u 9
+        fi
+        sleep "$poll_seconds"
+    done
+}
+
+case "$mode" in
+    register) register_session ;;
+    unregister) unregister_session ;;
+    watch) watch_sessions ;;
+    *)
+        echo "Usage: ${0##*/} {register|unregister SESSION_ID|watch}" >&2
+        exit 2
+        ;;
+esac

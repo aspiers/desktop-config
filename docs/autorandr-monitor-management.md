@@ -223,12 +223,19 @@ verification.
 
 ### Login
 
-`01-window-manager` starts `fluxbox-session.target`, which both watcher
-units are `WantedBy=`, so whichever one is enabled starts there. The
-target must be started from the X session because it has to follow
-`00-systemd-user-env` putting `DISPLAY` into the systemd `--user`
-environment; `default.target` would be too early. Both units are also
-`PartOf=` it, so the watcher stops when the session ends.
+After `00-systemd-user-env` has put `DISPLAY` into the systemd `--user`
+environment, `01-window-manager` registers its exact `XDG_SESSION_ID`; a
+user-global fallback is deliberately forbidden because it could identify a
+different concurrent session. Registration starts `fluxbox-session.target`,
+which both watcher units are `WantedBy=`, so whichever one is enabled starts
+there. The separately supervised `fluxbox-session-lifetime@watch.service`
+reference-counts registered logind sessions under a lock and stops the target
+only after the last session is authoritatively closing or removed. The watcher
+is started before registration and remains supervised even while no graphical
+target is active. The same lock is held through target stop, so a concurrent
+login registers and restarts the target afterward; a failed stop restarts the
+watcher and retries. This logs out the watchers without coupling target
+lifetime to routine Fluxbox process restarts.
 At startup the ng watcher runs one `autorandr --change` to reconcile;
 if the matching profile is already active this is a no-op (hooks
 included).

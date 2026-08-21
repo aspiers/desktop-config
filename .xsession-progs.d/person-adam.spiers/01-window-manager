@@ -48,14 +48,28 @@ here=`dirname $0`
 . $here/00-systemd-user-env
 
 # Raise graphical-session.target, which is RefuseManualStart=yes and so
-# can only be activated via a session target that BindsTo= it.  Desktop
-# environments ship their own; fluxbox has none, so without this nothing
-# raises it and units with PartOf=graphical-session.target never start
-# (and never get stopped when the session ends).  Must follow
-# 00-systemd-user-env so DISPLAY is already in the systemd --user
-# environment when session units start.
+# can only be activated via a per-session target that BindsTo= it. Desktop
+# environments ship their own; Fluxbox has none. Register this script's exact
+# logind session only after 00-systemd-user-env has published DISPLAY; a
+# user-global show-user fallback could bind the wrong concurrent session.
 #
-# The monitor watchers are WantedBy= this target, so whichever one is
-# enabled starts here -- no separate resume step, and no mode file:
-# systemctl --user enable/disable is the switch.
-systemctl --user start fluxbox-session.target
+# The supervised watcher reference-counts registered Fluxbox sessions and
+# stops fluxbox-session.target after the last one closes. Its flock serializes
+# teardown with concurrent registration, and routine Fluxbox WM restarts are
+# deliberately outside this lifecycle.
+session_id=${XDG_SESSION_ID:-}
+case "$session_id" in
+    ''|*[!A-Za-z0-9_.-]*)
+        echo >&2 "Cannot determine a safe XDG_SESSION_ID: $session_id"
+        exit 1
+        ;;
+esac
+lifetime_unit=fluxbox-session-lifetime@watch.service
+if ! systemctl --user start "$lifetime_unit"; then
+    echo >&2 "Failed to start $lifetime_unit"
+    exit 1
+fi
+if ! ~/bin/fluxbox-session-lifetime register "$session_id"; then
+    echo >&2 "Failed to register Fluxbox logind session $session_id"
+    exit 1
+fi

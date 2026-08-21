@@ -1,0 +1,148 @@
+#!/bin/bash
+
+set -euo pipefail
+
+repo_root=$(cd "$(dirname "$0")/.." && pwd)
+tmp_dir=$(mktemp -d)
+trap 'rm -rf "$tmp_dir"' EXIT
+
+cat > "$tmp_dir/loginctl" <<'EOF'
+#!/bin/sh
+command=$1
+shift
+case "$command" in
+    show-session)
+        session_id=$1
+        state_file=$FAKE_STATE_DIR/state-$session_id
+        count_file=$FAKE_STATE_DIR/count-$session_id
+        count=0
+        [ ! -f "$count_file" ] || count=$(cat "$count_file")
+        printf '%s\n' "$((count + 1))" > "$count_file"
+        [ -s "$state_file" ] || exit 1
+        state=$(head -n 1 "$state_file")
+        tail -n +2 "$state_file" > "$state_file.next"
+        mv -f "$state_file.next" "$state_file"
+        [ "$state" != FAIL ] || exit 1
+        printf '%s\n' "$state"
+        ;;
+    list-sessions)
+        [ "${FAKE_LIST_FAIL:-0}" != 1 ] || exit 1
+        cat "$FAKE_STATE_DIR/sessions"
+        ;;
+    *)
+        exit 2
+        ;;
+esac
+EOF
+
+cat > "$tmp_dir/systemctl" <<'EOF'
+#!/bin/sh
+printf '%s\n' "$*" >> "$FAKE_STATE_DIR/systemctl-calls"
+if [ "${FAKE_FAIL_STOP_ONCE:-0}" = 1 ] &&
+    [ "$*" = '--user stop fluxbox-session.target' ] &&
+    [ ! -e "$FAKE_STATE_DIR/stop-failed" ]; then
+    : > "$FAKE_STATE_DIR/stop-failed"
+    exit 1
+fi
+EOF
+
+chmod +x "$tmp_dir/loginctl" "$tmp_dir/systemctl"
+
+reset_state() {
+    rm -rf "$tmp_dir/runtime"
+    rm -f "$tmp_dir"/state-* "$tmp_dir"/count-* \
+        "$tmp_dir/systemctl-calls" "$tmp_dir/stop-failed"
+    : > "$tmp_dir/sessions"
+}
+
+run_helper() {
+    FAKE_STATE_DIR="$tmp_dir" \
+    LOGINCTL_COMMAND="$tmp_dir/loginctl" \
+    SYSTEMCTL_COMMAND="$tmp_dir/systemctl" \
+    FLUXBOX_SESSION_RUNTIME_DIR="$tmp_dir/runtime" \
+    FLUXBOX_SESSION_POLL_SECONDS=0 \
+    FLUXBOX_SESSION_EXIT_AFTER_STOP=1 \
+        "$repo_root/bin/fluxbox-session-lifetime" "$@" >/dev/null
+}
+
+assert_calls() {
+    local expected=$1
+    [ "$(cat "$tmp_dir/systemctl-calls")" = "$expected" ]
+}
+
+reset_state
+printf '%s\n' active online closing > "$tmp_dir/state-3"
+run_helper register 3
+[ -e "$tmp_dir/runtime/session.3" ]
+assert_calls '--user start fluxbox-session.target'
+: > "$tmp_dir/systemctl-calls"
+run_helper watch
+[ "$(cat "$tmp_dir/count-3")" = 3 ]
+assert_calls '--user stop fluxbox-session.target'
+echo "ok - active and online sessions are watched until explicit closing"
+
+reset_state
+printf '%s\n' FAIL active closing > "$tmp_dir/state-3"
+printf '%s\n' '3 1000 user seat0 tty2' > "$tmp_dir/sessions"
+run_helper register 3
+: > "$tmp_dir/systemctl-calls"
+run_helper watch
+[ "$(cat "$tmp_dir/count-3")" = 3 ]
+assert_calls '--user stop fluxbox-session.target'
+echo "ok - transient show-session failure is retried without teardown"
+
+reset_state
+printf '%s\n' FAIL > "$tmp_dir/state-3"
+run_helper register 3
+: > "$tmp_dir/systemctl-calls"
+run_helper watch
+assert_calls '--user stop fluxbox-session.target'
+echo "ok - successful session listing proves a removed session"
+
+reset_state
+printf '%s\n' closing > "$tmp_dir/state-3"
+printf '%s\n' active online closing > "$tmp_dir/state-4"
+run_helper register 3
+run_helper register 4
+: > "$tmp_dir/systemctl-calls"
+run_helper watch
+[ "$(cat "$tmp_dir/count-4")" = 3 ]
+assert_calls '--user stop fluxbox-session.target'
+echo "ok - one closing session cannot stop another live Fluxbox session"
+
+reset_state
+run_helper register 3
+run_helper unregister 3
+assert_calls '--user start fluxbox-session.target'
+[ ! -e "$tmp_dir/runtime/session.3" ]
+: > "$tmp_dir/systemctl-calls"
+run_helper watch
+assert_calls '--user stop fluxbox-session.target'
+echo "ok - unregister leaves supervised target cleanup retryable"
+
+reset_state
+if FAKE_FAIL_STOP_ONCE=1 run_helper watch; then
+    echo "not ok - failed target stop was reported as success" >&2
+    exit 1
+fi
+FAKE_FAIL_STOP_ONCE=1 run_helper watch
+assert_calls $'--user stop fluxbox-session.target\n--user stop fluxbox-session.target'
+echo "ok - failed target stop remains retryable without session markers"
+
+reset_state
+if run_helper register '../unsafe' >/dev/null 2>&1; then
+    echo "not ok - unsafe session ID was accepted" >&2
+    exit 1
+fi
+echo "ok - unsafe systemd instance/session IDs are rejected"
+
+unit="$repo_root/.config/systemd/user/fluxbox-session-lifetime@.service"
+grep -qx 'ExecStart=%h/bin/fluxbox-session-lifetime watch' "$unit"
+grep -qx 'Restart=always' "$unit"
+if grep -Eq '^(PartOf|Requires)=fluxbox-session.target' "$unit"; then
+    echo "not ok - watcher must survive long enough to stop the target" >&2
+    exit 1
+fi
+echo "ok - persistent independent watcher retries and closes handoffs"
+
+echo '1..8'

@@ -1,0 +1,11 @@
+[Unit]
+Description=Track logind sessions for the Fluxbox graphical target (%i)
+Documentation=man:systemd.special(7) man:loginctl(1)
+After=fluxbox-session.target
+
+[Service]
+Type=simple
+ExecStart=%h/bin/fluxbox-session-lifetime watch
+Restart=always
+RestartSec=2s
+TimeoutStopSec=5s
