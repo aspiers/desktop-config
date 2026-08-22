@@ -18,10 +18,12 @@ from monitor_controller.model import (
     BaseIdentityMatch,
     BootId,
     CanonicalObservation,
+    CompletedPlan,
     ConfigurationContentHash,
     ConnectorIdentityEvidence,
     ControllerInstanceId,
     ControllerPhase,
+    DiscardPlan,
     DisplayIdentity,
     EdidEvidence,
     EdidIntegrity,
@@ -174,15 +176,26 @@ class _Planner:
     def __init__(self, failure: Exception | None = None) -> None:
         self.failure = failure
         self.requests: list[RequestPlan] = []
+        self.revocations: list[DiscardPlan] = []
         self.discards: list[object] = []
         self.hang_discard = False
         self.on_discard: Callable[[], None] | None = None
+        self.completion_hashes: tuple[ConfigurationContentHash, ...] | None = None
 
-    async def create_plan(self, request: RequestPlan) -> PlanHash:
+    async def create_plan(self, request: RequestPlan) -> CompletedPlan:
         self.requests.append(request)
         if self.failure is not None:
             raise self.failure
-        return PlanHash("plan-hash")
+        input_key = request.input_key
+        if self.completion_hashes is not None:
+            input_key = replace(
+                input_key,
+                configuration_hashes=self.completion_hashes,
+            )
+        return CompletedPlan(PlanHash("plan-hash"), input_key)
+
+    async def revoke_plan(self, request: DiscardPlan) -> None:
+        self.revocations.append(request)
 
     async def discard_plan(self, request: object) -> None:
         self.discards.append(request)
@@ -190,6 +203,23 @@ class _Planner:
             self.on_discard()
         if self.hang_discard:
             await asyncio.Event().wait()
+
+
+class _BlockingPlanner(_Planner):
+    def __init__(self) -> None:
+        super().__init__()
+        self.started = asyncio.Event()
+        self.cancelled: list[ActionId] = []
+
+    async def create_plan(self, request: RequestPlan) -> CompletedPlan:
+        self.requests.append(request)
+        self.started.set()
+        try:
+            await asyncio.Event().wait()
+        finally:
+            self.cancelled.append(request.action_id)
+        message = "unreachable after planning cancellation"
+        raise AssertionError(message)
 
 
 class _Dispatcher:
@@ -910,6 +940,69 @@ def test_planner_crash_enqueues_plan_failed_and_cannot_wait_forever(
         assert controller.state.planning_state.value == "plan_failed"
         assert controller.state.planning is not None
         assert controller.state.planning.lifecycle is ActionLifecycle.FAILED
+        await controller.close()
+
+    asyncio.run(exercise())
+
+
+def test_planner_cannot_change_the_exact_admitted_configuration_key(
+    tmp_path: Path,
+) -> None:
+    async def exercise() -> None:
+        planner = _Planner()
+        planner.completion_hashes = (
+            ConfigurationContentHash("layouts/dock.yaml", "sha256:changed"),
+        )
+        controller, _store, _observer, _planner, _dispatcher, _clock = _controller(
+            tmp_path,
+            state=_state(finalized="laptop"),
+            planner=planner,
+        )
+
+        await controller.consume(_event(_observation(exact=True)))
+        await controller.process_next()
+
+        assert controller.state.planning_state.value == "plan_failed"
+        assert controller.state.planning is not None
+        assert controller.state.planning.input_key.configuration_hashes == _CONFIG
+        await controller.close()
+
+    asyncio.run(exercise())
+
+
+def test_superseded_key_cancels_planning_before_private_discard(
+    tmp_path: Path,
+) -> None:
+    async def exercise() -> None:
+        planner = _BlockingPlanner()
+        controller, _store, _observer, _planner, _dispatcher, _clock = _controller(
+            tmp_path,
+            state=_state(finalized="laptop"),
+            planner=planner,
+        )
+
+        await controller.consume(_event(_observation(exact=True)))
+        await planner.started.wait()
+        original = controller.state.planning
+        assert original is not None
+        changed = replace(
+            _observation(exact=True, observation_generation=2, at_ms=1),
+            physical_token=PhysicalToken("different-physical-dock"),
+            observation_key=ObservationKey("different-dock-key"),
+        )
+
+        await controller.consume(_event(changed))
+
+        assert original.action_id in planner.cancelled
+        assert planner.revocations
+        assert planner.discards
+        assert planner.revocations[0].action_id == original.action_id
+        discard = planner.discards[0]
+        assert isinstance(discard, DiscardPlan)
+        assert discard.action_id == original.action_id
+        assert all(
+            request.action_id != original.action_id for request in planner.requests[1:]
+        )
         await controller.close()
 
     asyncio.run(exercise())

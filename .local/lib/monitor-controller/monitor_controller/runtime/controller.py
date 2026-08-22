@@ -18,6 +18,7 @@ from monitor_controller.model import (
     BootChanged,
     BootId,
     CanonicalObservation,
+    CompletedPlan,
     ControllerStarted,
     Decision,
     DiscardPlan,
@@ -34,7 +35,6 @@ from monitor_controller.model import (
     ObservationFailed,
     PlanCompleted,
     PlanFailed,
-    PlanHash,
     PlanRequested,
     PreparationDispatched,
     PreparationFinished,
@@ -99,8 +99,12 @@ class ObservationAdapter(Protocol):
 class PlanningAdapter(Protocol):
     """Injected transaction-local pure planning boundary."""
 
-    async def create_plan(self, request: RequestPlan) -> PlanHash:
-        """Compute and stage an immutable plan without changing live desktop state."""
+    async def create_plan(self, request: RequestPlan) -> CompletedPlan:
+        """Stage a plan and return its final full-manifest identity."""
+        ...
+
+    async def revoke_plan(self, request: DiscardPlan) -> None:
+        """Durably revoke this keyed publication before cancellation."""
         ...
 
     async def discard_plan(self, request: DiscardPlan) -> None:
@@ -296,18 +300,56 @@ class SerializedController:
         return count
 
     async def close(self) -> None:
-        """Cancel local planning, monitor, and timer producers only."""
-        tasks = (
-            *self._planning_tasks.values(),
-            *self._worker_monitor_tasks.values(),
-        )
+        """Revoke publishers, then cancel local planning, monitors, and timers."""
+        planning_tasks = tuple(self._planning_tasks.items())
+        revocation_failure: Exception | None = None
+        revoked_tasks: list[asyncio.Task[None]] = []
+        for action_id, task in planning_tasks:
+            planning = self._state.planning
+            expected_hash = (
+                planning.plan_hash
+                if planning is not None and planning.action_id == action_id
+                else None
+            )
+            try:
+                await asyncio.wait_for(
+                    self._planner.revoke_plan(DiscardPlan(action_id, expected_hash)),
+                    timeout=self._adapter_timeout_seconds,
+                )
+            except Exception as error:  # noqa: BLE001 - shutdown safety boundary
+                self._audit.append_runtime_failure(
+                    boundary="revoke_plan_on_close",
+                    detail=_exception_detail(error),
+                    recorded_at_ms=self._clock.monotonic_ms(),
+                    action_id=action_id.value,
+                )
+                revocation_failure = error
+                continue
+            task.cancel()
+            revoked_tasks.append(task)
+        monitor_tasks = tuple(self._worker_monitor_tasks.values())
+        for task in monitor_tasks:
+            task.cancel()
         self._planning_tasks.clear()
         self._worker_monitor_tasks.clear()
-        for task in tasks:
-            task.cancel()
-        if tasks:
-            await asyncio.gather(*tasks, return_exceptions=True)
+        cancelled = (*revoked_tasks, *monitor_tasks)
+        pending: set[asyncio.Task[None]] = set()
+        if cancelled:
+            done, pending = await asyncio.wait(
+                cancelled,
+                timeout=self._adapter_timeout_seconds,
+            )
+            for task in done:
+                _consume_task_result(task)
+            for task in pending:
+                task.add_done_callback(_consume_task_result)
         await self._scheduler.close()
+        if revocation_failure is not None:
+            msg = "cannot safely cancel planning after revocation failure"
+            raise RuntimeAuthorityError(msg) from revocation_failure
+        if pending:
+            msg = "controller tasks did not acknowledge bounded cancellation"
+            raise RuntimeAuthorityError(msg)
 
     def _claim_consumer(self) -> None:
         current = asyncio.current_task()
@@ -479,15 +521,16 @@ class SerializedController:
 
     async def _run_plan(self, request: RequestPlan, boot_id: BootId) -> None:
         try:
-            plan_hash = await asyncio.wait_for(
+            completed = await asyncio.wait_for(
                 self._planner.create_plan(request),
                 timeout=self._planning_timeout_seconds,
             )
+            _validate_plan_completion(request, completed)
             event: Event = PlanCompleted(
                 EventMetadata(self._clock.monotonic_ms(), boot_id),
                 request.action_id,
-                request.input_key,
-                plan_hash,
+                completed.input_key,
+                completed.plan_hash,
             )
         except Exception as error:  # noqa: BLE001 - explicit adapter trust boundary
             event = PlanFailed(
@@ -1028,6 +1071,28 @@ class SerializedController:
         )
 
     async def _discard_plan(self, effect: DiscardPlan) -> None:
+        # Reducer state (including its cancellation tombstone) is persisted before
+        # effects run.  Add a durable store-level revocation before cancellation so
+        # a cancellation-suppressing thread/coroutine cannot publish late.
+        try:
+            await asyncio.wait_for(
+                self._planner.revoke_plan(effect),
+                timeout=self._adapter_timeout_seconds,
+            )
+        except Exception as error:  # noqa: BLE001 - safety boundary
+            self._audit.append_runtime_failure(
+                boundary="revoke_plan",
+                detail=_exception_detail(error),
+                recorded_at_ms=self._clock.monotonic_ms(),
+                action_id=effect.action_id.value,
+            )
+            return
+        task = self._planning_tasks.get(effect.action_id)
+        if task is not None:
+            task.cancel()
+            # asyncio.wait is bounded even when the task suppresses cancellation;
+            # wait_for would cancel it again and can wait indefinitely for ack.
+            await asyncio.wait({task}, timeout=self._adapter_timeout_seconds)
         try:
             await asyncio.wait_for(
                 self._planner.discard_plan(effect),
@@ -1263,6 +1328,20 @@ def _dispatched_event(
     if isinstance(effect, PrepareDesktop):
         return PreparationDispatched(metadata, effect.action_id, unit)
     return FinalizationDispatched(metadata, effect.action_id, unit)
+
+
+def _validate_plan_completion(
+    request: RequestPlan,
+    completed: CompletedPlan,
+) -> None:
+    if request.input_key != completed.input_key:
+        msg = "planner completion changed its exact admitted input key"
+        raise ValueError(msg)
+
+
+def _consume_task_result(task: asyncio.Task[None]) -> None:
+    if not task.cancelled():
+        task.exception()
 
 
 def _exception_detail(error: Exception) -> str:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import threading
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from hashlib import sha256
@@ -67,6 +68,7 @@ DEFAULT_OBSERVER_TIMEOUT_SECONDS: float = 5.0
 EDID_BASE_HEX_CHARS: int = 256
 MAX_MAPPING_SOLUTIONS: int = 2
 ZERO_OBSERVATION_GENERATION = ObservationGeneration(0)
+MAX_PLANNING_CAPTURES = 16
 
 
 class BootIdSource(Protocol):
@@ -99,6 +101,14 @@ class SavedProfileSource(Protocol):
     def saved_profiles(self) -> tuple[SavedAutorandrProfile, ...]:
         """Return every profile available to identity classification."""
         ...
+
+
+@dataclass(frozen=True, slots=True)
+class CanonicalPlanningCapture:
+    """Canonical observation paired with its exact parsed XRandR snapshot."""
+
+    observation: CanonicalObservation
+    xrandr: XrandrSnapshot
 
 
 @dataclass(frozen=True, slots=True)
@@ -263,6 +273,8 @@ class CanonicalSnapshotCoordinator:
         self._clock = clock
         self._event_generation_source = event_generation_source
         self._observation_generation = initial_observation_generation
+        self._planning_capture_lock = threading.Lock()
+        self._planning_captures: dict[ObservationKey, CanonicalPlanningCapture] = {}
         self._xrandr_source = _CommandXrandrSource(
             command_runner, commands, command_timeout_seconds
         )
@@ -306,13 +318,14 @@ class CanonicalSnapshotCoordinator:
             boot_id=boot_id,
             physical_token=facts.physical_token,
             facts=facts,
+            xrandr=xrandr,
             live_fingerprints=autorandr.fingerprints,
             exact=exact,
             probe=probe,
             validity=validity_value,
             invalidity_reason=None if reason is None else reason.value,
         )
-        return CanonicalObservation(
+        observation = CanonicalObservation(
             observed_at_ms=observed_at_ms,
             observation_generation=self._observation_generation,
             boot_id=boot_id,
@@ -341,6 +354,23 @@ class CanonicalSnapshotCoordinator:
             invalidity_reason=reason,
             raw_evidence=facts.raw_evidence,
         )
+        with self._planning_capture_lock:
+            self._planning_captures[observation.observation_key] = (
+                CanonicalPlanningCapture(observation, xrandr)
+            )
+            while len(self._planning_captures) > MAX_PLANNING_CAPTURES:
+                oldest = next(iter(self._planning_captures))
+                del self._planning_captures[oldest]
+        return observation
+
+    def planning_capture(self, key: ObservationKey) -> CanonicalPlanningCapture:
+        """Return retained display evidence for one admitted observation key."""
+        with self._planning_capture_lock:
+            try:
+                return self._planning_captures[key]
+            except KeyError as error:
+                msg = f"no retained planning capture for observation {key.value!r}"
+                raise KeyError(msg) from error
 
     def _normalized_profiles(self) -> tuple[SavedAutorandrProfile, ...]:
         profiles = tuple(
@@ -813,6 +843,7 @@ def _observation_key_payload(  # noqa: PLR0913
     boot_id: BootId,
     physical_token: PhysicalToken,
     facts: _CanonicalFacts,
+    xrandr: XrandrSnapshot,
     live_fingerprints: tuple[Fingerprint, ...],
     exact: str | None,
     probe: ProbeCandidate | None,
@@ -827,6 +858,20 @@ def _observation_key_payload(  # noqa: PLR0913
         "x_connected_outputs": facts.x_connected,
         "x_active_outputs": facts.x_active,
         "x_external_outputs": facts.x_external,
+        "x_geometry": [
+            {
+                "output": item.name,
+                "width": item.geometry.width,
+                "height": item.geometry.height,
+                "x": item.geometry.x,
+                "y": item.geometry.y,
+                "primary": item.primary,
+                "width_mm": item.width_mm,
+                "height_mm": item.height_mm,
+            }
+            for item in xrandr.outputs
+            if item.geometry is not None
+        ],
         "connector_identities": [asdict(item) for item in facts.connector_identities],
         "live_fingerprints": [asdict(item) for item in live_fingerprints],
         "base_identity_profiles": [asdict(item) for item in facts.base_matches],

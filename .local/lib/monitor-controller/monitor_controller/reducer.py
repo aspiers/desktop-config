@@ -1593,7 +1593,10 @@ def _plan_completed(state: State, event: PlanCompleted) -> Decision:
     ):
         return _no_op(state)
     action = replace(
-        action, lifecycle=ActionLifecycle.COMPLETED, plan_hash=event.plan_hash
+        action,
+        lifecycle=ActionLifecycle.COMPLETED,
+        plan_hash=event.plan_hash,
+        input_key=event.input_key,
     )
     state = _append_tombstone(state, action, ActionLifecycle.COMPLETED)
     state = replace(state, planning_state=PlanningState.PLAN_READY, planning=action)

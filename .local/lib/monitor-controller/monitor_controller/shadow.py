@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import configparser
 import fcntl
-import json
 import os
 import shutil
 import socket
@@ -13,20 +12,30 @@ import stat
 import sys
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, replace
-from hashlib import sha256
 from pathlib import Path
 from types import TracebackType
 from typing import Protocol, Self
 from uuid import UUID, uuid4
 
-from monitor_controller.codec import StateCodecError, encode_schema_value
+from monitor_controller.codec import StateCodecError
+from monitor_controller.desktop.layout import DisplayScreenSnapshot
+from monitor_controller.desktop.plan_codec import AtomicPlanStore, PlannedTopology
+from monitor_controller.desktop.planner import (
+    AtomicDesktopPlanningAdapter,
+    DesktopContext,
+    DesktopDisplaySnapshot,
+    DesktopDisplaySnapshotSource,
+    DesktopPlanningError,
+    DesktopPlanningInputSource,
+    FilesystemDesktopPlanningInputSource,
+    ProfileMonitorIdentity,
+)
 from monitor_controller.model import (
     BootId,
     CanonicalObservation,
     ControllerInstanceId,
     DisplayIdentity,
     EventGeneration,
-    PlanHash,
     RawEvidenceSource,
     RequestPlan,
     State,
@@ -96,6 +105,7 @@ class ShadowPaths:
     state_home: Path
     runtime_dir: Path
     config_home: Path
+    desktop_configuration_root: Path
 
     def __post_init__(self) -> None:
         for name, path in (
@@ -103,6 +113,7 @@ class ShadowPaths:
             ("state home", self.state_home),
             ("runtime directory", self.runtime_dir),
             ("config home", self.config_home),
+            ("desktop configuration root", self.desktop_configuration_root),
         ):
             if not path.is_absolute():
                 msg = f"shadow {name} must be absolute: {path}"
@@ -132,6 +143,11 @@ class ShadowPaths:
     def transaction_namespace(self) -> Path:
         """Reserve a shadow-only path which the null dispatcher never creates."""
         return self.runtime_dir / "monitor-controller" / "shadow" / "transactions"
+
+    @property
+    def plan_store(self) -> Path:
+        """Return the private shadow namespace for immutable plan bundles."""
+        return self.runtime_dir / "monitor-controller" / "shadow" / "plans"
 
     @property
     def autorandr_profiles(self) -> Path:
@@ -172,6 +188,12 @@ class ShadowPaths:
             state_home=Path(values.get("XDG_STATE_HOME", home / ".local" / "state")),
             runtime_dir=Path(runtime_value),
             config_home=Path(values.get("XDG_CONFIG_HOME", home / ".config")),
+            desktop_configuration_root=Path(
+                values.get(
+                    "MONITOR_CONTROLLER_DESKTOP_CONFIG_ROOT",
+                    home / ".STOW" / "desktop-config",
+                )
+            ),
         )
 
 
@@ -294,23 +316,115 @@ class AsyncSnapshotObserver:
             task.exception()
 
 
-class AuditOnlyPlanner:
-    """Return deterministic plan identity without staging transaction artifacts."""
+class SnapshotDesktopDisplaySource:
+    """Convert one retained canonical/XRandR capture into planning evidence."""
 
-    async def create_plan(self, request: RequestPlan) -> PlanHash:
-        """Hash immutable planning inputs and perform no filesystem operation."""
-        payload = json.dumps(
-            encode_schema_value(request),
-            allow_nan=False,
-            ensure_ascii=True,
-            separators=(",", ":"),
-            sort_keys=True,
-        ).encode("utf-8")
-        return PlanHash(f"shadow:{sha256(payload).hexdigest()}")
+    def __init__(self, coordinator: CanonicalSnapshotCoordinator) -> None:
+        """Bind the coordinator which retains admitted planning captures."""
+        self._coordinator = coordinator
 
-    async def discard_plan(self, request: object) -> None:
-        """Discard nothing because shadow planning never stages artifacts."""
-        del request
+    def display_for(self, request: RequestPlan) -> DesktopDisplaySnapshot:
+        """Return geometry and topology from the request's exact observation."""
+        try:
+            capture = self._coordinator.planning_capture(
+                request.input_key.observation_key
+            )
+        except KeyError as error:
+            raise DesktopPlanningError(str(error)) from error
+        observation = capture.observation
+        if observation.observation_key != request.input_key.observation_key:
+            msg = "planning capture observation key differs"
+            raise DesktopPlanningError(msg)
+        matching = tuple(
+            profile
+            for profile in observation.eligible_profiles
+            if profile.profile == request.profile
+            and profile.layout == request.input_key.layout
+            and profile.mapping == request.input_key.mapping
+            and profile.configuration_hashes == request.input_key.configuration_hashes
+        )
+        if len(matching) != 1:
+            msg = "planning request is absent from its canonical observation"
+            raise DesktopPlanningError(msg)
+        screens = tuple(
+            DisplayScreenSnapshot(
+                output=output.name,
+                width=output.geometry.width,
+                height=output.geometry.height,
+                x=output.geometry.x,
+                y=output.geometry.y,
+                width_mm=output.width_mm,
+                height_mm=output.height_mm,
+                primary=output.primary,
+            )
+            for output in capture.xrandr.outputs
+            if output.geometry is not None
+        )
+        return DesktopDisplaySnapshot(
+            physical_epoch=request.input_key.physical_epoch,
+            physical_token=observation.physical_token,
+            admitted_event_generation=observation.end_event_generation,
+            observation_key=observation.observation_key,
+            topology=PlannedTopology(
+                kernel_connected_outputs=observation.kernel_connected_outputs,
+                kernel_external_outputs=observation.kernel_external_outputs,
+                x_connected_outputs=observation.x_connected_outputs,
+                x_active_outputs=observation.x_active_outputs,
+            ),
+            screens=screens,
+        )
+
+
+class PlanningDisplayBridge:
+    """Bind capture-backed display facts after the coordinator is assembled."""
+
+    def __init__(self) -> None:
+        """Create an unbound bridge for composition-cycle construction."""
+        self._source: DesktopDisplaySnapshotSource | None = None
+
+    def bind(self, source: DesktopDisplaySnapshotSource) -> None:
+        """Bind the completed capture-backed source exactly once at startup."""
+        if self._source is not None:
+            msg = "planning display bridge is already bound"
+            raise DesktopPlanningError(msg)
+        self._source = source
+
+    def display_for(self, request: RequestPlan) -> DesktopDisplaySnapshot:
+        """Delegate to the bound capture-backed display source."""
+        if self._source is None:
+            msg = "planning display bridge is not bound"
+            raise DesktopPlanningError(msg)
+        return self._source.display_for(request)
+
+
+@dataclass(frozen=True, slots=True)
+class ShadowDesktopContextSource:
+    """Personal host policy captured without shell or mutable display queries."""
+
+    host_name: str
+    theme: str
+
+    def context_for(
+        self,
+        profile: str,
+        layout: str,
+        monitor_identity: ProfileMonitorIdentity,
+    ) -> DesktopContext:
+        """Bind host policy only to immutable saved-EDID model evidence."""
+        del profile, layout
+        primary = monitor_identity.primary
+        return DesktopContext(
+            host_name=self.host_name,
+            is_laptop=self.host_name == "celtic",
+            theme=self.theme,
+            reference_dpi=96,
+            primary_monitor_output=primary.output,
+            primary_monitor_model=primary.model,
+            primary_monitor_identity_hash=primary.evidence_hash,
+            benq_connected=any(
+                item.model == "BenQ BL3200" for item in monitor_identity.monitors
+            ),
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -319,6 +433,7 @@ class ShadowControllerAdapters:
 
     store: AtomicStateStore
     observer: ObservationAdapter
+    planning_source: DesktopPlanningInputSource
     audit: RotatingAuditLog
     clock: SchedulerClock
     generation_bridge: GenerationBridge | None = None
@@ -332,7 +447,8 @@ class ShadowComposition:
     paths: ShadowPaths
     controller: SerializedController
     dispatcher: NullDispatcher
-    planner: AuditOnlyPlanner
+    planner: AtomicDesktopPlanningAdapter
+    plan_store: AtomicPlanStore
     store: AtomicStateStore
     audit: RotatingAuditLog
 
@@ -345,7 +461,8 @@ def compose_shadow_controller(
 ) -> ShadowComposition:
     """Compose shadow mode with no parameter capable of supplying a dispatcher."""
     dispatcher = NullDispatcher()
-    planner = AuditOnlyPlanner()
+    plan_store = AtomicPlanStore(paths.plan_store)
+    planner = AtomicDesktopPlanningAdapter(adapters.planning_source, plan_store)
     controller = SerializedController(
         initial_state=initial_state,
         store=adapters.store,
@@ -363,6 +480,7 @@ def compose_shadow_controller(
         controller=controller,
         dispatcher=dispatcher,
         planner=planner,
+        plan_store=plan_store,
         store=adapters.store,
         audit=adapters.audit,
     )
@@ -626,6 +744,29 @@ def load_shadow_state(
     return replace(persisted, controller_instance=controller_instance)
 
 
+def _shadow_theme(paths: ShadowPaths) -> str:
+    path = paths.config_home / "theme"
+    if not path.exists():
+        return "dark"
+    value = _bounded_text_evidence(path, "desktop:theme").stdout.strip()
+    if value not in {"dark", "light"}:
+        msg = "desktop theme must be exactly dark or light"
+        raise ShadowStartupError(msg)
+    return value
+
+
+def _desktop_configuration_root(paths: ShadowPaths) -> Path:
+    try:
+        root = paths.desktop_configuration_root.resolve(strict=True)
+    except OSError as error:
+        msg = "desktop configuration root cannot be resolved"
+        raise ShadowStartupError(msg) from error
+    if not root.is_dir():
+        msg = "desktop configuration root is not a directory"
+        raise ShadowStartupError(msg)
+    return root
+
+
 def build_shadow_composition(
     paths: ShadowPaths,
     environ: Mapping[str, str] | None = None,
@@ -652,10 +793,22 @@ def build_shadow_composition(
     )
     clock = AsyncioMonotonicClock()
     bridge = GenerationBridge(initial.event_generation)
+    display_bridge = PlanningDisplayBridge()
+    planning_source = FilesystemDesktopPlanningInputSource(
+        root=_desktop_configuration_root(paths),
+        display=display_bridge,
+        context=ShadowDesktopContextSource(
+            host_name=socket.gethostname().split(".", maxsplit=1)[0],
+            theme=_shadow_theme(paths),
+        ),
+    )
     profiles = StaticSavedProfiles(
-        prepare_isolated_autorandr_namespace(
-            paths.autorandr_profiles,
-            paths.autorandr_isolation_root,
+        tuple(
+            planning_source.complete_profile(profile)
+            for profile in prepare_isolated_autorandr_namespace(
+                paths.autorandr_profiles,
+                paths.autorandr_isolation_root,
+            )
         )
     )
     coordinator = CanonicalSnapshotCoordinator(
@@ -671,6 +824,7 @@ def build_shadow_composition(
             values,
         ),
     )
+    display_bridge.bind(SnapshotDesktopDisplaySource(coordinator))
     audit = RotatingAuditLog(paths.audit_log, initial)
     return compose_shadow_controller(
         paths=paths,
@@ -678,6 +832,7 @@ def build_shadow_composition(
         adapters=ShadowControllerAdapters(
             store=store,
             observer=AsyncSnapshotObserver(coordinator),
+            planning_source=planning_source,
             audit=audit,
             clock=clock,
             generation_bridge=bridge,
@@ -755,6 +910,7 @@ async def run_shadow(
             task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
         await composition.controller.close()
+        composition.planner.close()
 
 
 def _require_shadow_namespace(environ: Mapping[str, str]) -> None:

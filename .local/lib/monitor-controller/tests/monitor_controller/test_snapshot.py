@@ -191,6 +191,32 @@ def coordinator(
     )
 
 
+def test_observation_key_is_derived_from_exact_x_geometry(tmp_path: Path) -> None:
+    root, commands, profiles = load_manifest(tmp_path, "exact-aoc")
+    baseline = coordinator(
+        RootedSysfsReader(root), _FixtureRunner(commands), profiles
+    ).observe()
+    changed_commands: dict[str, Path] = {}
+    for index, (name, source) in enumerate(commands.items()):
+        destination = tmp_path / "changed" / str(index)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        text = source.read_text(encoding="utf-8")
+        if name in {"xrandr --query", "xrandr --props"}:
+            assert "3840x2160+2880+0" in text
+            text = text.replace("3840x2160+2880+0", "3840x2160+2881+0")
+        destination.write_text(text, encoding="utf-8")
+        changed_commands[name] = destination
+    moved = coordinator(
+        RootedSysfsReader(root), _FixtureRunner(changed_commands), profiles
+    ).observe()
+
+    assert baseline.valid
+    assert moved.valid
+    assert baseline.exact_profile == moved.exact_profile
+    assert baseline.x_active_outputs == moved.x_active_outputs
+    assert baseline.observation_key != moved.observation_key
+
+
 def test_exact_profile_requires_complete_current_unique_mapping(tmp_path: Path) -> None:
     root, commands, profiles = load_manifest(tmp_path, "exact-aoc")
     runner = _FixtureRunner(commands)

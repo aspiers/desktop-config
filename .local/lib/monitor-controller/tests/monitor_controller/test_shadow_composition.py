@@ -21,7 +21,9 @@ import pytest
 import monitor_controller.shadow as shadow_module
 
 if TYPE_CHECKING:
+    from monitor_controller.desktop.planner import DesktopPlanningInputs
     from monitor_controller.observer.evidence import TextCommandEvidence
+
 from monitor_controller.model import (
     ActionId,
     ActionKind,
@@ -56,6 +58,7 @@ from monitor_controller.model import (
     ProfileScope,
     RawEvidenceReference,
     RawEvidenceSource,
+    RequestPlan,
     State,
     TransitionId,
     TransitionKey,
@@ -107,12 +110,20 @@ class _UnusedObserver:
         raise AssertionError(message)
 
 
+class _UnusedPlanningSource:
+    def load(self, request: RequestPlan) -> DesktopPlanningInputs:
+        del request
+        message = "planner should not be called in this test"
+        raise AssertionError(message)
+
+
 def _paths(tmp_path: Path) -> ShadowPaths:
     return ShadowPaths(
         data_home=tmp_path / "data",
         state_home=tmp_path / "state",
         runtime_dir=tmp_path / "runtime",
         config_home=tmp_path / "config",
+        desktop_configuration_root=tmp_path / "desktop-config",
     )
 
 
@@ -140,6 +151,7 @@ def _composition(
         adapters=ShadowControllerAdapters(
             store=store,
             observer=_UnusedObserver(),
+            planning_source=_UnusedPlanningSource(),
             audit=audit,
             clock=_Clock() if clock is None else clock,
         ),
@@ -265,6 +277,9 @@ def test_all_deployed_paths_are_fixed_to_shadow_namespaces(tmp_path: Path) -> No
     assert paths.transaction_namespace == (
         tmp_path / "runtime" / "monitor-controller" / "shadow" / "transactions"
     )
+    assert paths.plan_store == (
+        tmp_path / "runtime" / "monitor-controller" / "shadow" / "plans"
+    )
     assert all(
         "active" not in path.parts
         for path in (
@@ -291,6 +306,10 @@ def test_composition_api_cannot_accept_dispatch_or_transaction_adapters() -> Non
     source = inspect.getsource(shadow_module)
     assert "systemctl" not in source
     assert "request.json" not in source
+    assert "AuditOnlyPlanner" not in source
+    assert "complete_profile" in inspect.getsource(
+        shadow_module.build_shadow_composition
+    )
 
 
 def test_composition_hard_wires_null_dispatch_and_creates_no_transactions(
@@ -299,6 +318,9 @@ def test_composition_hard_wires_null_dispatch_and_creates_no_transactions(
     composition = _composition(tmp_path)
 
     assert type(composition.dispatcher) is NullDispatcher
+    assert isinstance(composition.planner, shadow_module.AtomicDesktopPlanningAdapter)
+    assert composition.plan_store.root == composition.paths.plan_store
+    assert not composition.paths.plan_store.exists()
     assert composition.paths.transaction_namespace.parent == (
         composition.paths.runtime_dir / "monitor-controller" / "shadow"
     )
@@ -393,6 +415,7 @@ def test_restart_loads_persisted_shadow_timer_and_rotates_audit(
             adapters=ShadowControllerAdapters(
                 store=store,
                 observer=_UnusedObserver(),
+                planning_source=_UnusedPlanningSource(),
                 audit=audit,
                 clock=_Clock(),
             ),
@@ -773,6 +796,7 @@ def test_cross_boot_state_resets_monotonic_deadlines_before_startup(
             adapters=ShadowControllerAdapters(
                 store=store,
                 observer=observer,
+                planning_source=_UnusedPlanningSource(),
                 audit=RotatingAuditLog(paths.audit_log, loaded),
                 clock=_Clock(),
                 adapter_timeout_seconds=0.05,
@@ -827,7 +851,10 @@ def test_run_shadow_forwards_uevent_notification_and_cleans_up_tasks() -> None:
     async def exercise() -> None:
         controller = Controller()
         monitor = Monitor()
-        composition = SimpleNamespace(controller=controller)
+        composition = SimpleNamespace(
+            controller=controller,
+            planner=SimpleNamespace(close=lambda: None),
+        )
 
         with pytest.raises(RuntimeError, match="monitor failure"):
             await run_shadow(composition, monitor)  # type: ignore[arg-type]

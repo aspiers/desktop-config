@@ -21,6 +21,7 @@ MAX_OUTPUTS: int = 128
 MAX_MODES_PER_OUTPUT: int = 512
 MAX_OUTPUT_NAME_CHARS: int = 128
 MAX_CONNECTOR_ID: int = (1 << 32) - 1
+MAX_PHYSICAL_SIZE_MM: int = 1_000_000
 MIN_MODE_LINE_PARTS: int = 2
 _MODE_INDENT = "   "
 _PREFERRED_MARKER = "+"
@@ -32,6 +33,9 @@ _OUTPUT_HEADER = re.compile(
 _GEOMETRY = re.compile(
     r"(?<!\S)(?P<width>[0-9]+)x(?P<height>[0-9]+)"
     r"\+(?P<x>-?[0-9]+)\+(?P<y>-?[0-9]+)(?!\S)"
+)
+_PHYSICAL_SIZE = re.compile(
+    r"(?<!\S)(?P<width>[0-9]+)mm\s+x\s+(?P<height>[0-9]+)mm(?!\S)"
 )
 # ``xrandr --query`` renders current/preferred as two fixed columns after each
 # rate.  A preferred-only rate consequently splits as ``60.00 +`` when generic
@@ -91,6 +95,8 @@ class XrandrOutput:
     primary: bool
     modes: tuple[XrandrMode, ...]
     connector_id: int | None = None
+    width_mm: int = 0
+    height_mm: int = 0
 
     def __post_init__(self) -> None:
         if not self.name or len(self.name) > MAX_OUTPUT_NAME_CHARS:
@@ -106,6 +112,12 @@ class XrandrOutput:
             and not 0 <= self.connector_id <= MAX_CONNECTOR_ID
         ):
             msg = "XRandR connector ID is outside the unsigned 32-bit range"
+            raise ValueError(msg)
+        if not (
+            0 <= self.width_mm <= MAX_PHYSICAL_SIZE_MM
+            and 0 <= self.height_mm <= MAX_PHYSICAL_SIZE_MM
+        ):
+            msg = "XRandR physical dimensions are outside accepted bounds"
             raise ValueError(msg)
 
     @property
@@ -153,6 +165,8 @@ class XrandrPropertyOutput:
     primary: bool
     modes: tuple[XrandrMode, ...]
     connector_id: int | None
+    width_mm: int = 0
+    height_mm: int = 0
 
     @property
     def connected(self) -> bool:
@@ -288,6 +302,7 @@ def parse_xrandr_query(  # noqa: C901, PLR0912, PLR0915
                     else None
                 )
                 primary = re.search(r"(?<!\S)primary(?!\S)", rest) is not None
+                width_mm, height_mm = _parse_physical_size(rest, line_number, collector)
                 if connection is not XConnectionState.CONNECTED and (
                     geometry is not None or primary
                 ):
@@ -298,7 +313,17 @@ def parse_xrandr_query(  # noqa: C901, PLR0912, PLR0915
                     )
                     geometry = None
                     primary = False
-                outputs.append(XrandrOutput(name, connection, geometry, primary, ()))
+                outputs.append(
+                    XrandrOutput(
+                        name,
+                        connection,
+                        geometry,
+                        primary,
+                        (),
+                        width_mm=width_mm,
+                        height_mm=height_mm,
+                    )
+                )
                 current_index = len(outputs) - 1
                 mode_names = set()
                 continue
@@ -395,6 +420,7 @@ def parse_xrandr_properties(  # noqa: C901, PLR0912, PLR0915
                     else None
                 )
                 primary = re.search(r"(?<!\S)primary(?!\S)", rest) is not None
+                width_mm, height_mm = _parse_physical_size(rest, line_number, collector)
                 if connection is not XConnectionState.CONNECTED and (
                     geometry is not None or primary
                 ):
@@ -413,6 +439,8 @@ def parse_xrandr_properties(  # noqa: C901, PLR0912, PLR0915
                         primary=primary,
                         modes=(),
                         connector_id=None,
+                        width_mm=width_mm,
+                        height_mm=height_mm,
                     )
                 )
                 current_index = len(outputs) - 1
@@ -499,11 +527,25 @@ def sample_xrandr(source: XrandrEvidenceSource) -> XrandrSnapshot:
     properties = parse_xrandr_properties(source.properties())
     issues = [*query.issues, *properties.issues]
     query_topology = tuple(
-        (item.name, item.connection, item.geometry, item.primary)
+        (
+            item.name,
+            item.connection,
+            item.geometry,
+            item.primary,
+            item.width_mm,
+            item.height_mm,
+        )
         for item in query.outputs
     )
     property_topology = tuple(
-        (item.name, item.connection, item.geometry, item.primary)
+        (
+            item.name,
+            item.connection,
+            item.geometry,
+            item.primary,
+            item.width_mm,
+            item.height_mm,
+        )
         for item in properties.outputs
     )
     if query_topology != property_topology and len(issues) < MAX_PARSE_ISSUES:
@@ -556,6 +598,34 @@ def _connection_state(value: str) -> XConnectionState:
     if value == XConnectionState.DISCONNECTED.value:
         return XConnectionState.DISCONNECTED
     return XConnectionState.UNKNOWN
+
+
+def _parse_physical_size(
+    value: str,
+    line_number: int,
+    collector: IssueCollector,
+) -> tuple[int, int]:
+    match = _PHYSICAL_SIZE.search(value)
+    if match is None:
+        return 0, 0
+    try:
+        width = int(match.group("width"))
+        height = int(match.group("height"))
+    except ValueError:
+        collector.add(
+            ParseIssueCode.MALFORMED_LINE,
+            "XRandR physical dimensions are outside the integer range",
+            line_number,
+        )
+        return 0, 0
+    if width > MAX_PHYSICAL_SIZE_MM or height > MAX_PHYSICAL_SIZE_MM:
+        collector.add(
+            ParseIssueCode.MALFORMED_LINE,
+            "XRandR physical dimensions exceed accepted bounds",
+            line_number,
+        )
+        return 0, 0
+    return width, height
 
 
 def _parse_geometry(

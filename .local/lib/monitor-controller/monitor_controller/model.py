@@ -300,7 +300,7 @@ class ConfigurationContentHash:
 
 @dataclass(frozen=True, slots=True)
 class PlanningInputKey:
-    """Complete identity of all inputs from which a desktop plan is derived."""
+    """Identity of a planning proof, including its current config manifest."""
 
     physical_epoch: int
     profile: str
@@ -346,6 +346,14 @@ class PlanningInputKey:
             f"{self.physical_epoch}|{self.profile}|{self.layout}|"
             f"{self.observation_key.value}|{mapping}|{hashes}"
         )
+
+
+@dataclass(frozen=True, slots=True)
+class CompletedPlan:
+    """Planner result carrying the final full-manifest key and bundle digest."""
+
+    plan_hash: PlanHash
+    input_key: PlanningInputKey
 
 
 @dataclass(frozen=True, slots=True)
@@ -978,7 +986,7 @@ class ApplicationAction:
 
 @dataclass(frozen=True, slots=True)
 class PlanningAction:
-    """Persisted pure desktop-planning action."""
+    """Persisted planning action carrying its current exact input manifest."""
 
     action_id: ActionId
     transition_id: TransitionId
@@ -1289,7 +1297,7 @@ class PlanRequested(EventEnvelope):
 
 @dataclass(frozen=True, slots=True)
 class PlanCompleted(EventEnvelope):
-    """A planning task returned immutable staged artifacts."""
+    """A planning task returned immutable artifacts and its full manifest key."""
 
     action_id: ActionId
     input_key: PlanningInputKey
