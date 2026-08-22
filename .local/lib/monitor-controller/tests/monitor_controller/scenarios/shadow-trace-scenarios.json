@@ -1,0 +1,3224 @@
+{
+  "scenarios": [
+    {
+      "covers": [
+        "policy-regression:dc-a5y.11:laptop-startup",
+        "invariant:explicit_applications_only",
+        "invariant:profile_transition_finalization"
+      ],
+      "description": "Synthetic policy regression (not live acceptance): laptop-only startup already current; baseline adoption emits no display or desktop intent.",
+      "initial": {
+        "desktop_finalized_profile": null
+      },
+      "name": "shadow_laptop_startup",
+      "steps": [
+        {
+          "event": {
+            "at_ms": 0,
+            "base_identity_outputs": [],
+            "complete_edid_outputs": [],
+            "configuration_hashes": {
+              "desktop/common.conf": "sha256:desktop:common",
+              "layouts/celtic.yaml": "sha256:layout:celtic"
+            },
+            "current_profile": "celtic",
+            "event_generation": 0,
+            "exact_profile": "celtic",
+            "external_outputs": [],
+            "external_state": "none",
+            "identity_profile": null,
+            "internal_edid_complete": false,
+            "key": "laptop",
+            "observation_generation": 1,
+            "physical_token": "p-laptop",
+            "probe_internal_output": null,
+            "probe_mode": null,
+            "probe_output": null,
+            "target_layout": "layouts/celtic.yaml",
+            "target_profile": "celtic",
+            "target_scope": "internal",
+            "type": "observation",
+            "valid": true
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 0,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 0,
+              "request_observation": 0,
+              "request_plan": 0,
+              "schedule": 1,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "deadline_ms": 1000,
+                "type": "schedule"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 0,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 0,
+              "attempted_probe_count": 0,
+              "baseline_adoption": true,
+              "candidate_profile": "celtic",
+              "desktop_finalized_profile": null,
+              "external_intent": false,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 1000,
+              "phase": "verifying",
+              "physical_epoch": 1,
+              "planning_action_id": null,
+              "planning_lifecycle": null,
+              "planning_state": "plan_idle",
+              "preparation_action_id": null,
+              "preparation_lifecycle": null,
+              "preparation_state": "prepare_idle",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": null,
+              "tombstone_count": 0,
+              "transition_sequence_high_water": 0,
+              "verify_since_ms": 0
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 10000,
+            "base_identity_outputs": [],
+            "complete_edid_outputs": [],
+            "configuration_hashes": {
+              "desktop/common.conf": "sha256:desktop:common",
+              "layouts/celtic.yaml": "sha256:layout:celtic"
+            },
+            "current_profile": "celtic",
+            "event_generation": 0,
+            "exact_profile": "celtic",
+            "external_outputs": [],
+            "external_state": "none",
+            "identity_profile": null,
+            "internal_edid_complete": false,
+            "key": "laptop",
+            "observation_generation": 2,
+            "physical_token": "p-laptop",
+            "probe_internal_output": null,
+            "probe_mode": null,
+            "probe_output": null,
+            "target_layout": "layouts/celtic.yaml",
+            "target_profile": "celtic",
+            "target_scope": "internal",
+            "type": "observation",
+            "valid": true
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 0,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 0,
+              "request_observation": 0,
+              "request_plan": 0,
+              "schedule": 2,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "deadline_ms": 70000,
+                "type": "schedule"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 0,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 0,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": "celtic",
+              "desktop_finalized_profile": "celtic",
+              "external_intent": false,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 70000,
+              "phase": "quiescent",
+              "physical_epoch": 1,
+              "planning_action_id": null,
+              "planning_lifecycle": null,
+              "planning_state": "plan_idle",
+              "preparation_action_id": null,
+              "preparation_lifecycle": null,
+              "preparation_state": "prepare_idle",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": "celtic",
+              "tombstone_count": 0,
+              "transition_sequence_high_water": 0,
+              "verify_since_ms": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "covers": [
+        "policy-regression:dc-a5y.11:samsung-plug",
+        "invariant:explicit_applications_only",
+        "invariant:no_duplicate_probe_or_application",
+        "invariant:independent_desktop_state",
+        "invariant:preparation_is_subordinate_and_keyed",
+        "invariant:one_display_mutation_boundary"
+      ],
+      "description": "Synthetic policy regression (not live acceptance): Samsung plug converges through one explicit application, keyed planning/preparation, stable proof, and one finalization.",
+      "initial": {
+        "desktop_finalized_profile": "celtic"
+      },
+      "name": "shadow_samsung_plug",
+      "steps": [
+        {
+          "event": {
+            "at_ms": 0,
+            "base_identity_outputs": [
+              "DP-1"
+            ],
+            "complete_edid_outputs": [
+              "DP-1"
+            ],
+            "configuration_hashes": {
+              "desktop/common.conf": "sha256:desktop:common",
+              "layouts/samsung.yaml": "sha256:layout:samsung"
+            },
+            "current_profile": "celtic",
+            "event_generation": 0,
+            "exact_profile": null,
+            "external_outputs": [
+              "DP-1"
+            ],
+            "external_state": "known",
+            "identity_profile": null,
+            "internal_edid_complete": false,
+            "key": "ready",
+            "observation_generation": 1,
+            "physical_token": "p-samsung",
+            "probe_internal_output": null,
+            "probe_mode": null,
+            "probe_output": null,
+            "target_layout": "layouts/samsung.yaml",
+            "target_profile": "samsung",
+            "target_scope": "external",
+            "type": "observation",
+            "valid": true
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 1,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 0,
+              "request_observation": 0,
+              "request_plan": 0,
+              "schedule": 0,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "action_id": "application-22222222222222222222222222222222-1",
+                "event_generation": 0,
+                "key": "1|samsung|ready",
+                "observation_key": "ready",
+                "profile": "samsung",
+                "type": "apply_profile"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 1,
+              "application_action_id": "application-22222222222222222222222222222222-1",
+              "application_lifecycle": "admitted",
+              "attempted_application_count": 0,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": "samsung",
+              "desktop_finalized_profile": "celtic",
+              "external_intent": true,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 0,
+              "phase": "apply_pending",
+              "physical_epoch": 1,
+              "planning_action_id": null,
+              "planning_lifecycle": null,
+              "planning_state": "plan_idle",
+              "preparation_action_id": null,
+              "preparation_lifecycle": null,
+              "preparation_state": "prepare_idle",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": null,
+              "tombstone_count": 0,
+              "transition_sequence_high_water": 0,
+              "verify_since_ms": null
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 1,
+            "kind": "application",
+            "type": "dispatch",
+            "unit": "monitor-application@scenario.service"
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 1,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 0,
+              "request_observation": 0,
+              "request_plan": 0,
+              "schedule": 0,
+              "stop_action": 0
+            },
+            "effects": [],
+            "state": {
+              "action_sequence_high_water": 1,
+              "application_action_id": "application-22222222222222222222222222222222-1",
+              "application_lifecycle": "dispatched",
+              "attempted_application_count": 1,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": "samsung",
+              "desktop_finalized_profile": "celtic",
+              "external_intent": true,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": null,
+              "phase": "applying",
+              "physical_epoch": 1,
+              "planning_action_id": null,
+              "planning_lifecycle": null,
+              "planning_state": "plan_idle",
+              "preparation_action_id": null,
+              "preparation_lifecycle": null,
+              "preparation_state": "prepare_idle",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": null,
+              "tombstone_count": 0,
+              "transition_sequence_high_water": 0,
+              "verify_since_ms": null
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 2,
+            "exit_status": 0,
+            "kind": "application",
+            "outcome": "succeeded",
+            "plan_hash": null,
+            "type": "finished"
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 1,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 0,
+              "request_observation": 1,
+              "request_plan": 0,
+              "schedule": 1,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "reason": "worker_completed",
+                "type": "request_observation"
+              },
+              {
+                "deadline_ms": 2,
+                "type": "schedule"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 1,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 1,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": "samsung",
+              "desktop_finalized_profile": "celtic",
+              "external_intent": true,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 2,
+              "phase": "discover_fast",
+              "physical_epoch": 1,
+              "planning_action_id": null,
+              "planning_lifecycle": null,
+              "planning_state": "plan_idle",
+              "preparation_action_id": null,
+              "preparation_lifecycle": null,
+              "preparation_state": "prepare_idle",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": null,
+              "tombstone_count": 1,
+              "transition_sequence_high_water": 0,
+              "verify_since_ms": null
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 1000,
+            "base_identity_outputs": [
+              "DP-1"
+            ],
+            "complete_edid_outputs": [
+              "DP-1"
+            ],
+            "configuration_hashes": {
+              "desktop/common.conf": "sha256:desktop:common",
+              "layouts/samsung.yaml": "sha256:layout:samsung"
+            },
+            "current_profile": "samsung",
+            "event_generation": 0,
+            "exact_profile": "samsung",
+            "external_outputs": [
+              "DP-1"
+            ],
+            "external_state": "known",
+            "identity_profile": null,
+            "internal_edid_complete": false,
+            "key": "active",
+            "observation_generation": 2,
+            "physical_token": "p-samsung",
+            "probe_internal_output": null,
+            "probe_mode": null,
+            "probe_output": null,
+            "target_layout": "layouts/samsung.yaml",
+            "target_profile": "samsung",
+            "target_scope": "external",
+            "type": "observation",
+            "valid": true
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 1,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 0,
+              "request_observation": 1,
+              "request_plan": 1,
+              "schedule": 2,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "action_id": "plan-22222222222222222222222222222222-2",
+                "input_key": "1|samsung|layouts/samsung.yaml|active|DP-SAVED-1>DP-1,eDP-1>eDP-1|desktop/common.conf=sha256:desktop:common,layouts/samsung.yaml=sha256:layout:samsung",
+                "profile": "samsung",
+                "transition_id": "transition-22222222222222222222222222222222-1",
+                "type": "request_plan"
+              },
+              {
+                "deadline_ms": 2000,
+                "type": "schedule"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 2,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 1,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": "samsung",
+              "desktop_finalized_profile": "celtic",
+              "external_intent": true,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 2000,
+              "phase": "verifying",
+              "physical_epoch": 1,
+              "planning_action_id": "plan-22222222222222222222222222222222-2",
+              "planning_lifecycle": "admitted",
+              "planning_state": "plan_pending",
+              "preparation_action_id": null,
+              "preparation_lifecycle": null,
+              "preparation_state": "prepare_idle",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": null,
+              "tombstone_count": 1,
+              "transition_sequence_high_water": 1,
+              "verify_since_ms": 1000
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 1001,
+            "type": "plan_requested"
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 1,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 0,
+              "request_observation": 1,
+              "request_plan": 1,
+              "schedule": 2,
+              "stop_action": 0
+            },
+            "effects": [],
+            "state": {
+              "action_sequence_high_water": 2,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 1,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": "samsung",
+              "desktop_finalized_profile": "celtic",
+              "external_intent": true,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 2000,
+              "phase": "verifying",
+              "physical_epoch": 1,
+              "planning_action_id": "plan-22222222222222222222222222222222-2",
+              "planning_lifecycle": "dispatched",
+              "planning_state": "planning",
+              "preparation_action_id": null,
+              "preparation_lifecycle": null,
+              "preparation_state": "prepare_idle",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": null,
+              "tombstone_count": 1,
+              "transition_sequence_high_water": 1,
+              "verify_since_ms": 1000
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 1002,
+            "plan_hash": "plan-v1",
+            "type": "plan_completed"
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 1,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 0,
+              "request_observation": 2,
+              "request_plan": 1,
+              "schedule": 3,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "reason": "worker_completed",
+                "type": "request_observation"
+              },
+              {
+                "deadline_ms": 1002,
+                "type": "schedule"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 2,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 1,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": "samsung",
+              "desktop_finalized_profile": "celtic",
+              "external_intent": true,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 1002,
+              "phase": "verifying",
+              "physical_epoch": 1,
+              "planning_action_id": "plan-22222222222222222222222222222222-2",
+              "planning_lifecycle": "completed",
+              "planning_state": "plan_ready",
+              "preparation_action_id": null,
+              "preparation_lifecycle": null,
+              "preparation_state": "prepare_idle",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": null,
+              "tombstone_count": 2,
+              "transition_sequence_high_water": 1,
+              "verify_since_ms": 1000
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 3000,
+            "base_identity_outputs": [
+              "DP-1"
+            ],
+            "complete_edid_outputs": [
+              "DP-1"
+            ],
+            "configuration_hashes": {
+              "desktop/common.conf": "sha256:desktop:common",
+              "layouts/samsung.yaml": "sha256:layout:samsung"
+            },
+            "current_profile": "samsung",
+            "event_generation": 0,
+            "exact_profile": "samsung",
+            "external_outputs": [
+              "DP-1"
+            ],
+            "external_state": "known",
+            "identity_profile": null,
+            "internal_edid_complete": false,
+            "key": "active",
+            "observation_generation": 3,
+            "physical_token": "p-samsung",
+            "probe_internal_output": null,
+            "probe_mode": null,
+            "probe_output": null,
+            "target_layout": "layouts/samsung.yaml",
+            "target_profile": "samsung",
+            "target_scope": "external",
+            "type": "observation",
+            "valid": true
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 1,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 1,
+              "request_observation": 2,
+              "request_plan": 1,
+              "schedule": 4,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "action_id": "preparation-22222222222222222222222222222222-3",
+                "event_generation": 0,
+                "observation_key": "active",
+                "plan_hash": "plan-v1",
+                "profile": "samsung",
+                "transition_id": "transition-22222222222222222222222222222222-1",
+                "transition_key": "1|samsung|active",
+                "type": "prepare_desktop"
+              },
+              {
+                "deadline_ms": 4000,
+                "type": "schedule"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 3,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 1,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": "samsung",
+              "desktop_finalized_profile": "celtic",
+              "external_intent": true,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 4000,
+              "phase": "verifying",
+              "physical_epoch": 1,
+              "planning_action_id": "plan-22222222222222222222222222222222-2",
+              "planning_lifecycle": "completed",
+              "planning_state": "plan_ready",
+              "preparation_action_id": "preparation-22222222222222222222222222222222-3",
+              "preparation_lifecycle": "admitted",
+              "preparation_state": "prepare_pending",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": null,
+              "tombstone_count": 2,
+              "transition_sequence_high_water": 1,
+              "verify_since_ms": 1000
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 3001,
+            "kind": "preparation",
+            "type": "dispatch",
+            "unit": "monitor-preparation@scenario.service"
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 1,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 1,
+              "request_observation": 2,
+              "request_plan": 1,
+              "schedule": 4,
+              "stop_action": 0
+            },
+            "effects": [],
+            "state": {
+              "action_sequence_high_water": 3,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 1,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": "samsung",
+              "desktop_finalized_profile": "celtic",
+              "external_intent": true,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 4000,
+              "phase": "verifying",
+              "physical_epoch": 1,
+              "planning_action_id": "plan-22222222222222222222222222222222-2",
+              "planning_lifecycle": "completed",
+              "planning_state": "plan_ready",
+              "preparation_action_id": "preparation-22222222222222222222222222222222-3",
+              "preparation_lifecycle": "dispatched",
+              "preparation_state": "preparing",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": null,
+              "tombstone_count": 2,
+              "transition_sequence_high_water": 1,
+              "verify_since_ms": 1000
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 3002,
+            "exit_status": 0,
+            "kind": "preparation",
+            "outcome": "succeeded",
+            "plan_hash": "plan-v1",
+            "type": "finished"
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 1,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 1,
+              "request_observation": 3,
+              "request_plan": 1,
+              "schedule": 5,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "reason": "worker_completed",
+                "type": "request_observation"
+              },
+              {
+                "deadline_ms": 3002,
+                "type": "schedule"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 3,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 1,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": "samsung",
+              "desktop_finalized_profile": "celtic",
+              "external_intent": true,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 3002,
+              "phase": "verifying",
+              "physical_epoch": 1,
+              "planning_action_id": "plan-22222222222222222222222222222222-2",
+              "planning_lifecycle": "completed",
+              "planning_state": "plan_ready",
+              "preparation_action_id": "preparation-22222222222222222222222222222222-3",
+              "preparation_lifecycle": "result_pending",
+              "preparation_state": "preparing",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": null,
+              "tombstone_count": 2,
+              "transition_sequence_high_water": 1,
+              "verify_since_ms": 1000
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 4000,
+            "base_identity_outputs": [
+              "DP-1"
+            ],
+            "complete_edid_outputs": [
+              "DP-1"
+            ],
+            "configuration_hashes": {
+              "desktop/common.conf": "sha256:desktop:common",
+              "layouts/samsung.yaml": "sha256:layout:samsung"
+            },
+            "current_profile": "samsung",
+            "event_generation": 0,
+            "exact_profile": "samsung",
+            "external_outputs": [
+              "DP-1"
+            ],
+            "external_state": "known",
+            "identity_profile": null,
+            "internal_edid_complete": false,
+            "key": "active",
+            "observation_generation": 4,
+            "physical_token": "p-samsung",
+            "probe_internal_output": null,
+            "probe_mode": null,
+            "probe_output": null,
+            "target_layout": "layouts/samsung.yaml",
+            "target_profile": "samsung",
+            "target_scope": "external",
+            "type": "observation",
+            "valid": true
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 1,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 1,
+              "request_observation": 3,
+              "request_plan": 1,
+              "schedule": 6,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "deadline_ms": 5000,
+                "type": "schedule"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 3,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 1,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": "samsung",
+              "desktop_finalized_profile": "celtic",
+              "external_intent": true,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 5000,
+              "phase": "verifying",
+              "physical_epoch": 1,
+              "planning_action_id": "plan-22222222222222222222222222222222-2",
+              "planning_lifecycle": "completed",
+              "planning_state": "plan_ready",
+              "preparation_action_id": "preparation-22222222222222222222222222222222-3",
+              "preparation_lifecycle": "completed",
+              "preparation_state": "prepared",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": null,
+              "tombstone_count": 3,
+              "transition_sequence_high_water": 1,
+              "verify_since_ms": 1000
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 11000,
+            "base_identity_outputs": [
+              "DP-1"
+            ],
+            "complete_edid_outputs": [
+              "DP-1"
+            ],
+            "configuration_hashes": {
+              "desktop/common.conf": "sha256:desktop:common",
+              "layouts/samsung.yaml": "sha256:layout:samsung"
+            },
+            "current_profile": "samsung",
+            "event_generation": 0,
+            "exact_profile": "samsung",
+            "external_outputs": [
+              "DP-1"
+            ],
+            "external_state": "known",
+            "identity_profile": null,
+            "internal_edid_complete": false,
+            "key": "active",
+            "observation_generation": 5,
+            "physical_token": "p-samsung",
+            "probe_internal_output": null,
+            "probe_mode": null,
+            "probe_output": null,
+            "target_layout": "layouts/samsung.yaml",
+            "target_profile": "samsung",
+            "target_scope": "external",
+            "type": "observation",
+            "valid": true
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 1,
+              "discard_plan": 0,
+              "finalize_desktop": 1,
+              "prepare_desktop": 1,
+              "request_observation": 3,
+              "request_plan": 1,
+              "schedule": 6,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "action_id": "finalization-22222222222222222222222222222222-4",
+                "event_generation": 0,
+                "observation_key": "active",
+                "plan_hash": "plan-v1",
+                "profile": "samsung",
+                "transition_id": "transition-22222222222222222222222222222222-1",
+                "transition_key": "1|samsung|active",
+                "type": "finalize_desktop"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 4,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 1,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": "samsung",
+              "desktop_finalized_profile": "celtic",
+              "external_intent": true,
+              "finalization_action_id": "finalization-22222222222222222222222222222222-4",
+              "finalization_lifecycle": "admitted",
+              "next_timer_ms": 11000,
+              "phase": "finalize_pending",
+              "physical_epoch": 1,
+              "planning_action_id": "plan-22222222222222222222222222222222-2",
+              "planning_lifecycle": "completed",
+              "planning_state": "plan_ready",
+              "preparation_action_id": "preparation-22222222222222222222222222222222-3",
+              "preparation_lifecycle": "completed",
+              "preparation_state": "prepared",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": null,
+              "tombstone_count": 3,
+              "transition_sequence_high_water": 1,
+              "verify_since_ms": 1000
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 11001,
+            "kind": "finalization",
+            "type": "dispatch",
+            "unit": "monitor-finalization@scenario.service"
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 1,
+              "discard_plan": 0,
+              "finalize_desktop": 1,
+              "prepare_desktop": 1,
+              "request_observation": 3,
+              "request_plan": 1,
+              "schedule": 6,
+              "stop_action": 0
+            },
+            "effects": [],
+            "state": {
+              "action_sequence_high_water": 4,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 1,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": "samsung",
+              "desktop_finalized_profile": "celtic",
+              "external_intent": true,
+              "finalization_action_id": "finalization-22222222222222222222222222222222-4",
+              "finalization_lifecycle": "dispatched",
+              "next_timer_ms": 11000,
+              "phase": "finalizing",
+              "physical_epoch": 1,
+              "planning_action_id": "plan-22222222222222222222222222222222-2",
+              "planning_lifecycle": "completed",
+              "planning_state": "plan_ready",
+              "preparation_action_id": "preparation-22222222222222222222222222222222-3",
+              "preparation_lifecycle": "completed",
+              "preparation_state": "prepared",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": null,
+              "tombstone_count": 3,
+              "transition_sequence_high_water": 1,
+              "verify_since_ms": 1000
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 12000,
+            "exit_status": 0,
+            "kind": "finalization",
+            "outcome": "succeeded",
+            "plan_hash": null,
+            "type": "finished"
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 1,
+              "discard_plan": 0,
+              "finalize_desktop": 1,
+              "prepare_desktop": 1,
+              "request_observation": 4,
+              "request_plan": 1,
+              "schedule": 7,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "reason": "worker_completed",
+                "type": "request_observation"
+              },
+              {
+                "deadline_ms": 12000,
+                "type": "schedule"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 4,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 1,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": "samsung",
+              "desktop_finalized_profile": "celtic",
+              "external_intent": true,
+              "finalization_action_id": "finalization-22222222222222222222222222222222-4",
+              "finalization_lifecycle": "result_pending",
+              "next_timer_ms": 12000,
+              "phase": "finalizing",
+              "physical_epoch": 1,
+              "planning_action_id": "plan-22222222222222222222222222222222-2",
+              "planning_lifecycle": "completed",
+              "planning_state": "plan_ready",
+              "preparation_action_id": "preparation-22222222222222222222222222222222-3",
+              "preparation_lifecycle": "completed",
+              "preparation_state": "prepared",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": null,
+              "tombstone_count": 3,
+              "transition_sequence_high_water": 1,
+              "verify_since_ms": 1000
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 12001,
+            "base_identity_outputs": [
+              "DP-1"
+            ],
+            "complete_edid_outputs": [
+              "DP-1"
+            ],
+            "configuration_hashes": {
+              "desktop/common.conf": "sha256:desktop:common",
+              "layouts/samsung.yaml": "sha256:layout:samsung"
+            },
+            "current_profile": "samsung",
+            "event_generation": 0,
+            "exact_profile": "samsung",
+            "external_outputs": [
+              "DP-1"
+            ],
+            "external_state": "known",
+            "identity_profile": null,
+            "internal_edid_complete": false,
+            "key": "active",
+            "observation_generation": 6,
+            "physical_token": "p-samsung",
+            "probe_internal_output": null,
+            "probe_mode": null,
+            "probe_output": null,
+            "target_layout": "layouts/samsung.yaml",
+            "target_profile": "samsung",
+            "target_scope": "external",
+            "type": "observation",
+            "valid": true
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 1,
+              "discard_plan": 1,
+              "finalize_desktop": 1,
+              "prepare_desktop": 1,
+              "request_observation": 4,
+              "request_plan": 1,
+              "schedule": 8,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "action_id": "plan-22222222222222222222222222222222-2",
+                "plan_hash": "plan-v1",
+                "type": "discard_plan"
+              },
+              {
+                "deadline_ms": 72001,
+                "type": "schedule"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 4,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 1,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": "samsung",
+              "desktop_finalized_profile": "samsung",
+              "external_intent": true,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 72001,
+              "phase": "quiescent",
+              "physical_epoch": 1,
+              "planning_action_id": null,
+              "planning_lifecycle": null,
+              "planning_state": "plan_idle",
+              "preparation_action_id": null,
+              "preparation_lifecycle": null,
+              "preparation_state": "prepare_idle",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": "samsung",
+              "tombstone_count": 4,
+              "transition_sequence_high_water": 1,
+              "verify_since_ms": 1000
+            }
+          }
+        }
+      ]
+    },
+    {
+      "covers": [
+        "policy-regression:dc-a5y.11:samsung-slow-broken-edid",
+        "invariant:probe_is_not_profile_authorization",
+        "invariant:no_duplicate_probe_or_application",
+        "invariant:edid_absence_is_uncertainty_not_unplug",
+        "invariant:no_implicit_abandonment"
+      ],
+      "description": "Synthetic policy regression (not live acceptance) combining the retained checksum-valid Samsung base identity with broken extensions and the >30s timer scenario: one safe probe, no duplicate probe, WAIT_SLOW at 30s, and timer-driven readiness at 35s without a DRM event.",
+      "initial": {
+        "desktop_finalized_profile": "celtic"
+      },
+      "name": "shadow_samsung_broken_edid_beyond_30_seconds",
+      "steps": [
+        {
+          "event": {
+            "at_ms": 0,
+            "base_identity_outputs": [
+              "DP-1"
+            ],
+            "complete_edid_outputs": [],
+            "configuration_hashes": {},
+            "current_profile": "celtic",
+            "event_generation": 0,
+            "exact_profile": null,
+            "external_outputs": [
+              "DP-1"
+            ],
+            "external_state": "probeable",
+            "identity_profile": "samsung",
+            "internal_edid_complete": false,
+            "key": "broken",
+            "observation_generation": 1,
+            "physical_token": "p-samsung",
+            "probe_internal_output": "eDP-1",
+            "probe_mode": "3440x1440",
+            "probe_output": "DP-1",
+            "target_layout": null,
+            "target_profile": null,
+            "target_scope": null,
+            "type": "observation",
+            "valid": true
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 1,
+              "apply_profile": 0,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 0,
+              "request_observation": 0,
+              "request_plan": 0,
+              "schedule": 0,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "action_id": "probe-22222222222222222222222222222222-1",
+                "event_generation": 0,
+                "internal_output": "eDP-1",
+                "key": "1|samsung|broken",
+                "observation_key": "broken",
+                "output": "DP-1",
+                "preferred_mode": "3440x1440",
+                "type": "activate_probe"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 1,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 0,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": null,
+              "desktop_finalized_profile": "celtic",
+              "external_intent": true,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 0,
+              "phase": "probe_pending",
+              "physical_epoch": 1,
+              "planning_action_id": null,
+              "planning_lifecycle": null,
+              "planning_state": "plan_idle",
+              "preparation_action_id": null,
+              "preparation_lifecycle": null,
+              "preparation_state": "prepare_idle",
+              "probe_action_id": "probe-22222222222222222222222222222222-1",
+              "probe_lifecycle": "admitted",
+              "stable_x_profile": null,
+              "tombstone_count": 0,
+              "transition_sequence_high_water": 0,
+              "verify_since_ms": null
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 1,
+            "kind": "probe",
+            "type": "dispatch",
+            "unit": "monitor-probe@scenario.service"
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 1,
+              "apply_profile": 0,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 0,
+              "request_observation": 0,
+              "request_plan": 0,
+              "schedule": 0,
+              "stop_action": 0
+            },
+            "effects": [],
+            "state": {
+              "action_sequence_high_water": 1,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 0,
+              "attempted_probe_count": 1,
+              "baseline_adoption": false,
+              "candidate_profile": null,
+              "desktop_finalized_profile": "celtic",
+              "external_intent": true,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": null,
+              "phase": "probing",
+              "physical_epoch": 1,
+              "planning_action_id": null,
+              "planning_lifecycle": null,
+              "planning_state": "plan_idle",
+              "preparation_action_id": null,
+              "preparation_lifecycle": null,
+              "preparation_state": "prepare_idle",
+              "probe_action_id": "probe-22222222222222222222222222222222-1",
+              "probe_lifecycle": "dispatched",
+              "stable_x_profile": null,
+              "tombstone_count": 0,
+              "transition_sequence_high_water": 0,
+              "verify_since_ms": null
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 2,
+            "exit_status": 0,
+            "kind": "probe",
+            "outcome": "succeeded",
+            "plan_hash": null,
+            "type": "finished"
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 1,
+              "apply_profile": 0,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 0,
+              "request_observation": 1,
+              "request_plan": 0,
+              "schedule": 1,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "reason": "worker_completed",
+                "type": "request_observation"
+              },
+              {
+                "deadline_ms": 2,
+                "type": "schedule"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 1,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 0,
+              "attempted_probe_count": 1,
+              "baseline_adoption": false,
+              "candidate_profile": null,
+              "desktop_finalized_profile": "celtic",
+              "external_intent": true,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 2,
+              "phase": "discover_fast",
+              "physical_epoch": 1,
+              "planning_action_id": null,
+              "planning_lifecycle": null,
+              "planning_state": "plan_idle",
+              "preparation_action_id": null,
+              "preparation_lifecycle": null,
+              "preparation_state": "prepare_idle",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": null,
+              "tombstone_count": 1,
+              "transition_sequence_high_water": 0,
+              "verify_since_ms": null
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 30000,
+            "base_identity_outputs": [
+              "DP-1"
+            ],
+            "complete_edid_outputs": [],
+            "configuration_hashes": {},
+            "current_profile": "celtic",
+            "event_generation": 0,
+            "exact_profile": null,
+            "external_outputs": [
+              "DP-1"
+            ],
+            "external_state": "probeable",
+            "identity_profile": "samsung",
+            "internal_edid_complete": false,
+            "key": "broken",
+            "observation_generation": 2,
+            "physical_token": "p-samsung",
+            "probe_internal_output": "eDP-1",
+            "probe_mode": "3440x1440",
+            "probe_output": "DP-1",
+            "target_layout": null,
+            "target_profile": null,
+            "target_scope": null,
+            "type": "observation",
+            "valid": true
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 1,
+              "apply_profile": 0,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 0,
+              "request_observation": 1,
+              "request_plan": 0,
+              "schedule": 2,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "deadline_ms": 35000,
+                "type": "schedule"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 1,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 0,
+              "attempted_probe_count": 1,
+              "baseline_adoption": false,
+              "candidate_profile": null,
+              "desktop_finalized_profile": "celtic",
+              "external_intent": true,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 35000,
+              "phase": "wait_slow",
+              "physical_epoch": 1,
+              "planning_action_id": null,
+              "planning_lifecycle": null,
+              "planning_state": "plan_idle",
+              "preparation_action_id": null,
+              "preparation_lifecycle": null,
+              "preparation_state": "prepare_idle",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": null,
+              "tombstone_count": 1,
+              "transition_sequence_high_water": 0,
+              "verify_since_ms": null
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 35000,
+            "deadline_ms": "$next_timer",
+            "type": "timer"
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 1,
+              "apply_profile": 0,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 0,
+              "request_observation": 2,
+              "request_plan": 0,
+              "schedule": 3,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "reason": "timer",
+                "type": "request_observation"
+              },
+              {
+                "deadline_ms": 35000,
+                "type": "schedule"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 1,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 0,
+              "attempted_probe_count": 1,
+              "baseline_adoption": false,
+              "candidate_profile": null,
+              "desktop_finalized_profile": "celtic",
+              "external_intent": true,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 35000,
+              "phase": "wait_slow",
+              "physical_epoch": 1,
+              "planning_action_id": null,
+              "planning_lifecycle": null,
+              "planning_state": "plan_idle",
+              "preparation_action_id": null,
+              "preparation_lifecycle": null,
+              "preparation_state": "prepare_idle",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": null,
+              "tombstone_count": 1,
+              "transition_sequence_high_water": 0,
+              "verify_since_ms": null
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 35000,
+            "base_identity_outputs": [
+              "DP-1"
+            ],
+            "complete_edid_outputs": [
+              "DP-1"
+            ],
+            "configuration_hashes": {
+              "desktop/common.conf": "sha256:desktop:common",
+              "layouts/samsung.yaml": "sha256:layout:samsung"
+            },
+            "current_profile": "celtic",
+            "event_generation": 0,
+            "exact_profile": null,
+            "external_outputs": [
+              "DP-1"
+            ],
+            "external_state": "known",
+            "identity_profile": null,
+            "internal_edid_complete": false,
+            "key": "ready",
+            "observation_generation": 3,
+            "physical_token": "p-samsung",
+            "probe_internal_output": null,
+            "probe_mode": null,
+            "probe_output": null,
+            "target_layout": "layouts/samsung.yaml",
+            "target_profile": "samsung",
+            "target_scope": "external",
+            "type": "observation",
+            "valid": true
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 1,
+              "apply_profile": 1,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 0,
+              "request_observation": 2,
+              "request_plan": 0,
+              "schedule": 3,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "action_id": "application-22222222222222222222222222222222-2",
+                "event_generation": 0,
+                "key": "1|samsung|ready",
+                "observation_key": "ready",
+                "profile": "samsung",
+                "type": "apply_profile"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 2,
+              "application_action_id": "application-22222222222222222222222222222222-2",
+              "application_lifecycle": "admitted",
+              "attempted_application_count": 0,
+              "attempted_probe_count": 1,
+              "baseline_adoption": false,
+              "candidate_profile": "samsung",
+              "desktop_finalized_profile": "celtic",
+              "external_intent": true,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 35000,
+              "phase": "apply_pending",
+              "physical_epoch": 1,
+              "planning_action_id": null,
+              "planning_lifecycle": null,
+              "planning_state": "plan_idle",
+              "preparation_action_id": null,
+              "preparation_lifecycle": null,
+              "preparation_state": "prepare_idle",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": null,
+              "tombstone_count": 1,
+              "transition_sequence_high_water": 0,
+              "verify_since_ms": null
+            }
+          }
+        }
+      ]
+    },
+    {
+      "covers": [
+        "policy-regression:dc-a5y.11:genuine-unplug",
+        "invariant:edid_absence_is_uncertainty_not_unplug",
+        "invariant:explicit_unplug_proof"
+      ],
+      "description": "Synthetic policy regression (not live acceptance): internal-only selection waits for two clean no-external samples spanning one second before planning desktop convergence.",
+      "initial": {
+        "desktop_finalized_profile": "samsung",
+        "external_intent": true,
+        "phase": "quiescent",
+        "physical_token": "p-samsung",
+        "stable_x_profile": "samsung"
+      },
+      "name": "shadow_genuine_unplug",
+      "steps": [
+        {
+          "event": {
+            "at_ms": 0,
+            "base_identity_outputs": [],
+            "complete_edid_outputs": [],
+            "configuration_hashes": {
+              "desktop/common.conf": "sha256:desktop:common",
+              "layouts/celtic.yaml": "sha256:layout:celtic"
+            },
+            "current_profile": "celtic",
+            "event_generation": 0,
+            "exact_profile": "celtic",
+            "external_outputs": [],
+            "external_state": "none",
+            "identity_profile": null,
+            "internal_edid_complete": false,
+            "key": "laptop",
+            "observation_generation": 1,
+            "physical_token": "p-laptop",
+            "probe_internal_output": null,
+            "probe_mode": null,
+            "probe_output": null,
+            "target_layout": "layouts/celtic.yaml",
+            "target_profile": "celtic",
+            "target_scope": "internal",
+            "type": "observation",
+            "valid": true
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 0,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 0,
+              "request_observation": 0,
+              "request_plan": 0,
+              "schedule": 1,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "deadline_ms": 1000,
+                "type": "schedule"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 0,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 0,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": null,
+              "desktop_finalized_profile": "samsung",
+              "external_intent": true,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 1000,
+              "phase": "discover_fast",
+              "physical_epoch": 1,
+              "planning_action_id": null,
+              "planning_lifecycle": null,
+              "planning_state": "plan_idle",
+              "preparation_action_id": null,
+              "preparation_lifecycle": null,
+              "preparation_state": "prepare_idle",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": null,
+              "tombstone_count": 0,
+              "transition_sequence_high_water": 0,
+              "verify_since_ms": null
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 1,
+            "base_identity_outputs": [],
+            "complete_edid_outputs": [],
+            "configuration_hashes": {
+              "desktop/common.conf": "sha256:desktop:common",
+              "layouts/celtic.yaml": "sha256:layout:celtic"
+            },
+            "current_profile": "celtic",
+            "event_generation": 0,
+            "exact_profile": "celtic",
+            "external_outputs": [],
+            "external_state": "none",
+            "identity_profile": null,
+            "internal_edid_complete": false,
+            "key": "laptop",
+            "observation_generation": 2,
+            "physical_token": "p-laptop",
+            "probe_internal_output": null,
+            "probe_mode": null,
+            "probe_output": null,
+            "target_layout": "layouts/celtic.yaml",
+            "target_profile": "celtic",
+            "target_scope": "internal",
+            "type": "observation",
+            "valid": true
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 0,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 0,
+              "request_observation": 0,
+              "request_plan": 0,
+              "schedule": 2,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "deadline_ms": 1000,
+                "type": "schedule"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 0,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 0,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": null,
+              "desktop_finalized_profile": "samsung",
+              "external_intent": true,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 1000,
+              "phase": "discover_fast",
+              "physical_epoch": 1,
+              "planning_action_id": null,
+              "planning_lifecycle": null,
+              "planning_state": "plan_idle",
+              "preparation_action_id": null,
+              "preparation_lifecycle": null,
+              "preparation_state": "prepare_idle",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": null,
+              "tombstone_count": 0,
+              "transition_sequence_high_water": 0,
+              "verify_since_ms": null
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 1000,
+            "base_identity_outputs": [],
+            "complete_edid_outputs": [],
+            "configuration_hashes": {
+              "desktop/common.conf": "sha256:desktop:common",
+              "layouts/celtic.yaml": "sha256:layout:celtic"
+            },
+            "current_profile": "celtic",
+            "event_generation": 0,
+            "exact_profile": "celtic",
+            "external_outputs": [],
+            "external_state": "none",
+            "identity_profile": null,
+            "internal_edid_complete": false,
+            "key": "laptop",
+            "observation_generation": 3,
+            "physical_token": "p-laptop",
+            "probe_internal_output": null,
+            "probe_mode": null,
+            "probe_output": null,
+            "target_layout": "layouts/celtic.yaml",
+            "target_profile": "celtic",
+            "target_scope": "internal",
+            "type": "observation",
+            "valid": true
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 0,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 0,
+              "request_observation": 0,
+              "request_plan": 1,
+              "schedule": 3,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "action_id": "plan-22222222222222222222222222222222-1",
+                "input_key": "1|celtic|layouts/celtic.yaml|laptop|eDP-1>eDP-1|desktop/common.conf=sha256:desktop:common,layouts/celtic.yaml=sha256:layout:celtic",
+                "profile": "celtic",
+                "transition_id": "transition-22222222222222222222222222222222-1",
+                "type": "request_plan"
+              },
+              {
+                "deadline_ms": 2000,
+                "type": "schedule"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 1,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 0,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": "celtic",
+              "desktop_finalized_profile": "samsung",
+              "external_intent": false,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 2000,
+              "phase": "verifying",
+              "physical_epoch": 1,
+              "planning_action_id": "plan-22222222222222222222222222222222-1",
+              "planning_lifecycle": "admitted",
+              "planning_state": "plan_pending",
+              "preparation_action_id": null,
+              "preparation_lifecycle": null,
+              "preparation_state": "prepare_idle",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": null,
+              "tombstone_count": 0,
+              "transition_sequence_high_water": 1,
+              "verify_since_ms": 1000
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 1001,
+            "type": "plan_requested"
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 0,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 0,
+              "request_observation": 0,
+              "request_plan": 1,
+              "schedule": 3,
+              "stop_action": 0
+            },
+            "effects": [],
+            "state": {
+              "action_sequence_high_water": 1,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 0,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": "celtic",
+              "desktop_finalized_profile": "samsung",
+              "external_intent": false,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 2000,
+              "phase": "verifying",
+              "physical_epoch": 1,
+              "planning_action_id": "plan-22222222222222222222222222222222-1",
+              "planning_lifecycle": "dispatched",
+              "planning_state": "planning",
+              "preparation_action_id": null,
+              "preparation_lifecycle": null,
+              "preparation_state": "prepare_idle",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": null,
+              "tombstone_count": 0,
+              "transition_sequence_high_water": 1,
+              "verify_since_ms": 1000
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 1002,
+            "plan_hash": "plan-unplug",
+            "type": "plan_completed"
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 0,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 0,
+              "request_observation": 1,
+              "request_plan": 1,
+              "schedule": 4,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "reason": "worker_completed",
+                "type": "request_observation"
+              },
+              {
+                "deadline_ms": 1002,
+                "type": "schedule"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 1,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 0,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": "celtic",
+              "desktop_finalized_profile": "samsung",
+              "external_intent": false,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 1002,
+              "phase": "verifying",
+              "physical_epoch": 1,
+              "planning_action_id": "plan-22222222222222222222222222222222-1",
+              "planning_lifecycle": "completed",
+              "planning_state": "plan_ready",
+              "preparation_action_id": null,
+              "preparation_lifecycle": null,
+              "preparation_state": "prepare_idle",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": null,
+              "tombstone_count": 1,
+              "transition_sequence_high_water": 1,
+              "verify_since_ms": 1000
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 3000,
+            "base_identity_outputs": [],
+            "complete_edid_outputs": [],
+            "configuration_hashes": {
+              "desktop/common.conf": "sha256:desktop:common",
+              "layouts/celtic.yaml": "sha256:layout:celtic"
+            },
+            "current_profile": "celtic",
+            "event_generation": 0,
+            "exact_profile": "celtic",
+            "external_outputs": [],
+            "external_state": "none",
+            "identity_profile": null,
+            "internal_edid_complete": false,
+            "key": "laptop",
+            "observation_generation": 4,
+            "physical_token": "p-laptop",
+            "probe_internal_output": null,
+            "probe_mode": null,
+            "probe_output": null,
+            "target_layout": "layouts/celtic.yaml",
+            "target_profile": "celtic",
+            "target_scope": "internal",
+            "type": "observation",
+            "valid": true
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 0,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 1,
+              "request_observation": 1,
+              "request_plan": 1,
+              "schedule": 5,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "action_id": "preparation-22222222222222222222222222222222-2",
+                "event_generation": 0,
+                "observation_key": "laptop",
+                "plan_hash": "plan-unplug",
+                "profile": "celtic",
+                "transition_id": "transition-22222222222222222222222222222222-1",
+                "transition_key": "1|celtic|laptop",
+                "type": "prepare_desktop"
+              },
+              {
+                "deadline_ms": 4000,
+                "type": "schedule"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 2,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 0,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": "celtic",
+              "desktop_finalized_profile": "samsung",
+              "external_intent": false,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 4000,
+              "phase": "verifying",
+              "physical_epoch": 1,
+              "planning_action_id": "plan-22222222222222222222222222222222-1",
+              "planning_lifecycle": "completed",
+              "planning_state": "plan_ready",
+              "preparation_action_id": "preparation-22222222222222222222222222222222-2",
+              "preparation_lifecycle": "admitted",
+              "preparation_state": "prepare_pending",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": null,
+              "tombstone_count": 1,
+              "transition_sequence_high_water": 1,
+              "verify_since_ms": 1000
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 3001,
+            "kind": "preparation",
+            "type": "dispatch",
+            "unit": "monitor-preparation@scenario.service"
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 0,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 1,
+              "request_observation": 1,
+              "request_plan": 1,
+              "schedule": 5,
+              "stop_action": 0
+            },
+            "effects": [],
+            "state": {
+              "action_sequence_high_water": 2,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 0,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": "celtic",
+              "desktop_finalized_profile": "samsung",
+              "external_intent": false,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 4000,
+              "phase": "verifying",
+              "physical_epoch": 1,
+              "planning_action_id": "plan-22222222222222222222222222222222-1",
+              "planning_lifecycle": "completed",
+              "planning_state": "plan_ready",
+              "preparation_action_id": "preparation-22222222222222222222222222222222-2",
+              "preparation_lifecycle": "dispatched",
+              "preparation_state": "preparing",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": null,
+              "tombstone_count": 1,
+              "transition_sequence_high_water": 1,
+              "verify_since_ms": 1000
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 3002,
+            "exit_status": 0,
+            "kind": "preparation",
+            "outcome": "succeeded",
+            "plan_hash": "plan-unplug",
+            "type": "finished"
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 0,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 1,
+              "request_observation": 2,
+              "request_plan": 1,
+              "schedule": 6,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "reason": "worker_completed",
+                "type": "request_observation"
+              },
+              {
+                "deadline_ms": 3002,
+                "type": "schedule"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 2,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 0,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": "celtic",
+              "desktop_finalized_profile": "samsung",
+              "external_intent": false,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 3002,
+              "phase": "verifying",
+              "physical_epoch": 1,
+              "planning_action_id": "plan-22222222222222222222222222222222-1",
+              "planning_lifecycle": "completed",
+              "planning_state": "plan_ready",
+              "preparation_action_id": "preparation-22222222222222222222222222222222-2",
+              "preparation_lifecycle": "result_pending",
+              "preparation_state": "preparing",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": null,
+              "tombstone_count": 1,
+              "transition_sequence_high_water": 1,
+              "verify_since_ms": 1000
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 4000,
+            "base_identity_outputs": [],
+            "complete_edid_outputs": [],
+            "configuration_hashes": {
+              "desktop/common.conf": "sha256:desktop:common",
+              "layouts/celtic.yaml": "sha256:layout:celtic"
+            },
+            "current_profile": "celtic",
+            "event_generation": 0,
+            "exact_profile": "celtic",
+            "external_outputs": [],
+            "external_state": "none",
+            "identity_profile": null,
+            "internal_edid_complete": false,
+            "key": "laptop",
+            "observation_generation": 5,
+            "physical_token": "p-laptop",
+            "probe_internal_output": null,
+            "probe_mode": null,
+            "probe_output": null,
+            "target_layout": "layouts/celtic.yaml",
+            "target_profile": "celtic",
+            "target_scope": "internal",
+            "type": "observation",
+            "valid": true
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 0,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 1,
+              "request_observation": 2,
+              "request_plan": 1,
+              "schedule": 7,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "deadline_ms": 5000,
+                "type": "schedule"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 2,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 0,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": "celtic",
+              "desktop_finalized_profile": "samsung",
+              "external_intent": false,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 5000,
+              "phase": "verifying",
+              "physical_epoch": 1,
+              "planning_action_id": "plan-22222222222222222222222222222222-1",
+              "planning_lifecycle": "completed",
+              "planning_state": "plan_ready",
+              "preparation_action_id": "preparation-22222222222222222222222222222222-2",
+              "preparation_lifecycle": "completed",
+              "preparation_state": "prepared",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": null,
+              "tombstone_count": 2,
+              "transition_sequence_high_water": 1,
+              "verify_since_ms": 1000
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 11000,
+            "base_identity_outputs": [],
+            "complete_edid_outputs": [],
+            "configuration_hashes": {
+              "desktop/common.conf": "sha256:desktop:common",
+              "layouts/celtic.yaml": "sha256:layout:celtic"
+            },
+            "current_profile": "celtic",
+            "event_generation": 0,
+            "exact_profile": "celtic",
+            "external_outputs": [],
+            "external_state": "none",
+            "identity_profile": null,
+            "internal_edid_complete": false,
+            "key": "laptop",
+            "observation_generation": 6,
+            "physical_token": "p-laptop",
+            "probe_internal_output": null,
+            "probe_mode": null,
+            "probe_output": null,
+            "target_layout": "layouts/celtic.yaml",
+            "target_profile": "celtic",
+            "target_scope": "internal",
+            "type": "observation",
+            "valid": true
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 0,
+              "discard_plan": 0,
+              "finalize_desktop": 1,
+              "prepare_desktop": 1,
+              "request_observation": 2,
+              "request_plan": 1,
+              "schedule": 7,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "action_id": "finalization-22222222222222222222222222222222-3",
+                "event_generation": 0,
+                "observation_key": "laptop",
+                "plan_hash": "plan-unplug",
+                "profile": "celtic",
+                "transition_id": "transition-22222222222222222222222222222222-1",
+                "transition_key": "1|celtic|laptop",
+                "type": "finalize_desktop"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 3,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 0,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": "celtic",
+              "desktop_finalized_profile": "samsung",
+              "external_intent": false,
+              "finalization_action_id": "finalization-22222222222222222222222222222222-3",
+              "finalization_lifecycle": "admitted",
+              "next_timer_ms": 11000,
+              "phase": "finalize_pending",
+              "physical_epoch": 1,
+              "planning_action_id": "plan-22222222222222222222222222222222-1",
+              "planning_lifecycle": "completed",
+              "planning_state": "plan_ready",
+              "preparation_action_id": "preparation-22222222222222222222222222222222-2",
+              "preparation_lifecycle": "completed",
+              "preparation_state": "prepared",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": null,
+              "tombstone_count": 2,
+              "transition_sequence_high_water": 1,
+              "verify_since_ms": 1000
+            }
+          }
+        }
+      ]
+    },
+    {
+      "covers": [
+        "policy-regression:dc-a5y.11:same-profile-suspend-resume",
+        "invariant:explicit_applications_only",
+        "invariant:continuous_final_proof",
+        "invariant:profile_transition_finalization"
+      ],
+      "description": "Synthetic policy regression (not live acceptance): resume returns to the already finalized Samsung identity and performs neither application nor desktop finalization.",
+      "initial": {
+        "desktop_finalized_profile": "samsung",
+        "external_intent": true,
+        "phase": "quiescent",
+        "physical_token": "p-samsung",
+        "stable_x_profile": "samsung"
+      },
+      "name": "shadow_same_profile_suspend_resume",
+      "steps": [
+        {
+          "event": {
+            "at_ms": 100,
+            "event_generation": 1,
+            "type": "drm_hint"
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 0,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 0,
+              "request_observation": 1,
+              "request_plan": 0,
+              "schedule": 1,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "reason": "drm_hint",
+                "type": "request_observation"
+              },
+              {
+                "deadline_ms": 100,
+                "type": "schedule"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 0,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 0,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": null,
+              "desktop_finalized_profile": "samsung",
+              "external_intent": true,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 100,
+              "phase": "discover_fast",
+              "physical_epoch": 0,
+              "planning_action_id": null,
+              "planning_lifecycle": null,
+              "planning_state": "plan_idle",
+              "preparation_action_id": null,
+              "preparation_lifecycle": null,
+              "preparation_state": "prepare_idle",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": "samsung",
+              "tombstone_count": 0,
+              "transition_sequence_high_water": 0,
+              "verify_since_ms": null
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 100,
+            "base_identity_outputs": [
+              "DP-1"
+            ],
+            "complete_edid_outputs": [
+              "DP-1"
+            ],
+            "configuration_hashes": {
+              "desktop/common.conf": "sha256:desktop:common",
+              "layouts/samsung.yaml": "sha256:layout:samsung"
+            },
+            "current_profile": "samsung",
+            "event_generation": 1,
+            "exact_profile": "samsung",
+            "external_outputs": [
+              "DP-1"
+            ],
+            "external_state": "known",
+            "identity_profile": null,
+            "internal_edid_complete": false,
+            "key": "active",
+            "observation_generation": 1,
+            "physical_token": "p-samsung",
+            "probe_internal_output": null,
+            "probe_mode": null,
+            "probe_output": null,
+            "target_layout": "layouts/samsung.yaml",
+            "target_profile": "samsung",
+            "target_scope": "external",
+            "type": "observation",
+            "valid": true
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 0,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 0,
+              "request_observation": 1,
+              "request_plan": 0,
+              "schedule": 2,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "deadline_ms": 1100,
+                "type": "schedule"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 0,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 0,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": "samsung",
+              "desktop_finalized_profile": "samsung",
+              "external_intent": true,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 1100,
+              "phase": "verifying",
+              "physical_epoch": 0,
+              "planning_action_id": null,
+              "planning_lifecycle": null,
+              "planning_state": "plan_idle",
+              "preparation_action_id": null,
+              "preparation_lifecycle": null,
+              "preparation_state": "prepare_idle",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": "samsung",
+              "tombstone_count": 0,
+              "transition_sequence_high_water": 0,
+              "verify_since_ms": 100
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 10100,
+            "base_identity_outputs": [
+              "DP-1"
+            ],
+            "complete_edid_outputs": [
+              "DP-1"
+            ],
+            "configuration_hashes": {
+              "desktop/common.conf": "sha256:desktop:common",
+              "layouts/samsung.yaml": "sha256:layout:samsung"
+            },
+            "current_profile": "samsung",
+            "event_generation": 1,
+            "exact_profile": "samsung",
+            "external_outputs": [
+              "DP-1"
+            ],
+            "external_state": "known",
+            "identity_profile": null,
+            "internal_edid_complete": false,
+            "key": "active",
+            "observation_generation": 2,
+            "physical_token": "p-samsung",
+            "probe_internal_output": null,
+            "probe_mode": null,
+            "probe_output": null,
+            "target_layout": "layouts/samsung.yaml",
+            "target_profile": "samsung",
+            "target_scope": "external",
+            "type": "observation",
+            "valid": true
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 0,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 0,
+              "request_observation": 1,
+              "request_plan": 0,
+              "schedule": 3,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "deadline_ms": 70100,
+                "type": "schedule"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 0,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 0,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": "samsung",
+              "desktop_finalized_profile": "samsung",
+              "external_intent": true,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 70100,
+              "phase": "quiescent",
+              "physical_epoch": 0,
+              "planning_action_id": null,
+              "planning_lifecycle": null,
+              "planning_state": "plan_idle",
+              "preparation_action_id": null,
+              "preparation_lifecycle": null,
+              "preparation_state": "prepare_idle",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": "samsung",
+              "tombstone_count": 0,
+              "transition_sequence_high_water": 0,
+              "verify_since_ms": 100
+            }
+          }
+        }
+      ]
+    },
+    {
+      "covers": [
+        "policy-regression:dc-a5y.11:restart-unresolved",
+        "invariant:edid_absence_is_uncertainty_not_unplug",
+        "invariant:no_implicit_abandonment"
+      ],
+      "description": "Synthetic policy regression (not live acceptance): controller restart retains unresolved external intent and immediately schedules fresh observation without an action.",
+      "initial": {
+        "desktop_finalized_profile": "celtic"
+      },
+      "name": "shadow_restart_unresolved",
+      "steps": [
+        {
+          "event": {
+            "at_ms": 0,
+            "base_identity_outputs": [],
+            "complete_edid_outputs": [],
+            "configuration_hashes": {},
+            "current_profile": "celtic",
+            "event_generation": 0,
+            "exact_profile": null,
+            "external_outputs": [
+              "DP-1"
+            ],
+            "external_state": "unresolved",
+            "identity_profile": null,
+            "internal_edid_complete": false,
+            "key": "missing",
+            "observation_generation": 1,
+            "physical_token": "p-samsung",
+            "probe_internal_output": null,
+            "probe_mode": null,
+            "probe_output": null,
+            "target_layout": null,
+            "target_profile": null,
+            "target_scope": null,
+            "type": "observation",
+            "valid": true
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 0,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 0,
+              "request_observation": 0,
+              "request_plan": 0,
+              "schedule": 1,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "deadline_ms": 0,
+                "type": "schedule"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 0,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 0,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": null,
+              "desktop_finalized_profile": "celtic",
+              "external_intent": true,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 0,
+              "phase": "discover_fast",
+              "physical_epoch": 1,
+              "planning_action_id": null,
+              "planning_lifecycle": null,
+              "planning_state": "plan_idle",
+              "preparation_action_id": null,
+              "preparation_lifecycle": null,
+              "preparation_state": "prepare_idle",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": null,
+              "tombstone_count": 0,
+              "transition_sequence_high_water": 0,
+              "verify_since_ms": null
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 1000,
+            "instance_id": "33333333-3333-3333-3333-333333333333",
+            "type": "controller_started"
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 0,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 0,
+              "request_observation": 1,
+              "request_plan": 0,
+              "schedule": 2,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "reason": "startup",
+                "type": "request_observation"
+              },
+              {
+                "deadline_ms": 1000,
+                "type": "schedule"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 0,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 0,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": null,
+              "desktop_finalized_profile": "celtic",
+              "external_intent": true,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 1000,
+              "phase": "discover_fast",
+              "physical_epoch": 1,
+              "planning_action_id": null,
+              "planning_lifecycle": null,
+              "planning_state": "plan_idle",
+              "preparation_action_id": null,
+              "preparation_lifecycle": null,
+              "preparation_state": "prepare_idle",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": null,
+              "tombstone_count": 0,
+              "transition_sequence_high_water": 0,
+              "verify_since_ms": null
+            }
+          }
+        }
+      ]
+    },
+    {
+      "covers": [
+        "policy-regression:dc-a5y.11:restart-verification",
+        "invariant:continuous_final_proof",
+        "invariant:durable_action_dispatch",
+        "invariant:preparation_is_subordinate_and_keyed"
+      ],
+      "description": "Synthetic policy regression (not live acceptance): controller restart preserves candidate identity but resets continuous proof and replaces stale planning identity.",
+      "initial": {
+        "desktop_finalized_profile": "celtic"
+      },
+      "name": "shadow_restart_verification",
+      "steps": [
+        {
+          "event": {
+            "at_ms": 0,
+            "base_identity_outputs": [
+              "DP-1"
+            ],
+            "complete_edid_outputs": [
+              "DP-1"
+            ],
+            "configuration_hashes": {
+              "desktop/common.conf": "sha256:desktop:common",
+              "layouts/samsung.yaml": "sha256:layout:samsung"
+            },
+            "current_profile": "samsung",
+            "event_generation": 0,
+            "exact_profile": "samsung",
+            "external_outputs": [
+              "DP-1"
+            ],
+            "external_state": "known",
+            "identity_profile": null,
+            "internal_edid_complete": false,
+            "key": "active",
+            "observation_generation": 1,
+            "physical_token": "p-samsung",
+            "probe_internal_output": null,
+            "probe_mode": null,
+            "probe_output": null,
+            "target_layout": "layouts/samsung.yaml",
+            "target_profile": "samsung",
+            "target_scope": "external",
+            "type": "observation",
+            "valid": true
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 0,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 0,
+              "request_observation": 0,
+              "request_plan": 1,
+              "schedule": 1,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "action_id": "plan-22222222222222222222222222222222-1",
+                "input_key": "1|samsung|layouts/samsung.yaml|active|DP-SAVED-1>DP-1,eDP-1>eDP-1|desktop/common.conf=sha256:desktop:common,layouts/samsung.yaml=sha256:layout:samsung",
+                "profile": "samsung",
+                "transition_id": "transition-22222222222222222222222222222222-1",
+                "type": "request_plan"
+              },
+              {
+                "deadline_ms": 1000,
+                "type": "schedule"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 1,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 0,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": "samsung",
+              "desktop_finalized_profile": "celtic",
+              "external_intent": true,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 1000,
+              "phase": "verifying",
+              "physical_epoch": 1,
+              "planning_action_id": "plan-22222222222222222222222222222222-1",
+              "planning_lifecycle": "admitted",
+              "planning_state": "plan_pending",
+              "preparation_action_id": null,
+              "preparation_lifecycle": null,
+              "preparation_state": "prepare_idle",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": null,
+              "tombstone_count": 0,
+              "transition_sequence_high_water": 1,
+              "verify_since_ms": 0
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 9000,
+            "instance_id": "33333333-3333-3333-3333-333333333333",
+            "type": "controller_started"
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 0,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 0,
+              "request_observation": 1,
+              "request_plan": 1,
+              "schedule": 2,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "reason": "startup",
+                "type": "request_observation"
+              },
+              {
+                "deadline_ms": 9000,
+                "type": "schedule"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 1,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 0,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": "samsung",
+              "desktop_finalized_profile": "celtic",
+              "external_intent": true,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 9000,
+              "phase": "verifying",
+              "physical_epoch": 1,
+              "planning_action_id": "plan-22222222222222222222222222222222-1",
+              "planning_lifecycle": "admitted",
+              "planning_state": "plan_pending",
+              "preparation_action_id": null,
+              "preparation_lifecycle": null,
+              "preparation_state": "prepare_idle",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": null,
+              "tombstone_count": 0,
+              "transition_sequence_high_water": 1,
+              "verify_since_ms": null
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 9000,
+            "base_identity_outputs": [
+              "DP-1"
+            ],
+            "complete_edid_outputs": [
+              "DP-1"
+            ],
+            "configuration_hashes": {
+              "desktop/common.conf": "sha256:desktop:common",
+              "layouts/samsung.yaml": "sha256:layout:samsung"
+            },
+            "current_profile": "samsung",
+            "event_generation": 0,
+            "exact_profile": "samsung",
+            "external_outputs": [
+              "DP-1"
+            ],
+            "external_state": "known",
+            "identity_profile": null,
+            "internal_edid_complete": false,
+            "key": "active",
+            "observation_generation": 2,
+            "physical_token": "p-samsung",
+            "probe_internal_output": null,
+            "probe_mode": null,
+            "probe_output": null,
+            "target_layout": "layouts/samsung.yaml",
+            "target_profile": "samsung",
+            "target_scope": "external",
+            "type": "observation",
+            "valid": true
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 0,
+              "discard_plan": 1,
+              "finalize_desktop": 0,
+              "prepare_desktop": 0,
+              "request_observation": 1,
+              "request_plan": 2,
+              "schedule": 3,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "action_id": "plan-22222222222222222222222222222222-1",
+                "plan_hash": null,
+                "type": "discard_plan"
+              },
+              {
+                "action_id": "plan-33333333333333333333333333333333-2",
+                "input_key": "1|samsung|layouts/samsung.yaml|active|DP-SAVED-1>DP-1,eDP-1>eDP-1|desktop/common.conf=sha256:desktop:common,layouts/samsung.yaml=sha256:layout:samsung",
+                "profile": "samsung",
+                "transition_id": "transition-33333333333333333333333333333333-2",
+                "type": "request_plan"
+              },
+              {
+                "deadline_ms": 10000,
+                "type": "schedule"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 2,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 0,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": "samsung",
+              "desktop_finalized_profile": "celtic",
+              "external_intent": true,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 10000,
+              "phase": "verifying",
+              "physical_epoch": 1,
+              "planning_action_id": "plan-33333333333333333333333333333333-2",
+              "planning_lifecycle": "admitted",
+              "planning_state": "plan_pending",
+              "preparation_action_id": null,
+              "preparation_lifecycle": null,
+              "preparation_state": "prepare_idle",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": null,
+              "tombstone_count": 1,
+              "transition_sequence_high_water": 2,
+              "verify_since_ms": 9000
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 10000,
+            "base_identity_outputs": [
+              "DP-1"
+            ],
+            "complete_edid_outputs": [
+              "DP-1"
+            ],
+            "configuration_hashes": {
+              "desktop/common.conf": "sha256:desktop:common",
+              "layouts/samsung.yaml": "sha256:layout:samsung"
+            },
+            "current_profile": "samsung",
+            "event_generation": 0,
+            "exact_profile": "samsung",
+            "external_outputs": [
+              "DP-1"
+            ],
+            "external_state": "known",
+            "identity_profile": null,
+            "internal_edid_complete": false,
+            "key": "active",
+            "observation_generation": 3,
+            "physical_token": "p-samsung",
+            "probe_internal_output": null,
+            "probe_mode": null,
+            "probe_output": null,
+            "target_layout": "layouts/samsung.yaml",
+            "target_profile": "samsung",
+            "target_scope": "external",
+            "type": "observation",
+            "valid": true
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 0,
+              "discard_plan": 1,
+              "finalize_desktop": 0,
+              "prepare_desktop": 0,
+              "request_observation": 1,
+              "request_plan": 2,
+              "schedule": 4,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "deadline_ms": 11000,
+                "type": "schedule"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 2,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 0,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": "samsung",
+              "desktop_finalized_profile": "celtic",
+              "external_intent": true,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 11000,
+              "phase": "verifying",
+              "physical_epoch": 1,
+              "planning_action_id": "plan-33333333333333333333333333333333-2",
+              "planning_lifecycle": "admitted",
+              "planning_state": "plan_pending",
+              "preparation_action_id": null,
+              "preparation_lifecycle": null,
+              "preparation_state": "prepare_idle",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": null,
+              "tombstone_count": 1,
+              "transition_sequence_high_water": 2,
+              "verify_since_ms": 9000
+            }
+          }
+        }
+      ]
+    },
+    {
+      "covers": [
+        "policy-regression:dc-a5y.11:aoc-connector-rename",
+        "invariant:explicit_applications_only",
+        "invariant:profile_transition_finalization"
+      ],
+      "description": "Synthetic policy regression (not live acceptance): saved AOC DisplayPort-2 resolves live as DisplayPort-1 while profile identity remains celtic+AOC-U28G2G6B, so no desktop finalization repeats.",
+      "initial": {
+        "desktop_finalized_profile": "celtic+AOC-U28G2G6B",
+        "external_intent": true,
+        "phase": "quiescent",
+        "physical_token": "p-aoc",
+        "stable_x_profile": "celtic+AOC-U28G2G6B"
+      },
+      "name": "shadow_aoc_connector_rename",
+      "steps": [
+        {
+          "event": {
+            "at_ms": 0,
+            "base_identity_outputs": [
+              "DisplayPort-1"
+            ],
+            "complete_edid_outputs": [
+              "DisplayPort-1"
+            ],
+            "configuration_hashes": {
+              "desktop/common.conf": "sha256:desktop:common",
+              "layouts/celtic+external.yaml": "sha256:layout:celtic+AOC-U28G2G6B"
+            },
+            "current_profile": "celtic+AOC-U28G2G6B",
+            "event_generation": 0,
+            "exact_profile": "celtic+AOC-U28G2G6B",
+            "external_outputs": [
+              "DisplayPort-1"
+            ],
+            "external_state": "known",
+            "identity_profile": null,
+            "internal_edid_complete": false,
+            "key": "aoc-same-edid-renamed",
+            "observation_generation": 1,
+            "output_mappings": [
+              {
+                "live_output": "DisplayPort-1",
+                "saved_output": "DisplayPort-2"
+              },
+              {
+                "live_output": "eDP-1",
+                "saved_output": "eDP"
+              }
+            ],
+            "physical_token": "aoc-saved-DisplayPort-2-live-DisplayPort-1",
+            "probe_internal_output": null,
+            "probe_mode": null,
+            "probe_output": null,
+            "target_layout": "layouts/celtic+external.yaml",
+            "target_profile": "celtic+AOC-U28G2G6B",
+            "target_scope": "external",
+            "type": "observation",
+            "valid": true
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 0,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 0,
+              "request_observation": 0,
+              "request_plan": 0,
+              "schedule": 1,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "deadline_ms": 1000,
+                "type": "schedule"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 0,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 0,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": "celtic+AOC-U28G2G6B",
+              "desktop_finalized_profile": "celtic+AOC-U28G2G6B",
+              "external_intent": true,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 1000,
+              "phase": "verifying",
+              "physical_epoch": 1,
+              "planning_action_id": null,
+              "planning_lifecycle": null,
+              "planning_state": "plan_idle",
+              "preparation_action_id": null,
+              "preparation_lifecycle": null,
+              "preparation_state": "prepare_idle",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": null,
+              "tombstone_count": 0,
+              "transition_sequence_high_water": 0,
+              "verify_since_ms": 0
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 10000,
+            "base_identity_outputs": [
+              "DisplayPort-1"
+            ],
+            "complete_edid_outputs": [
+              "DisplayPort-1"
+            ],
+            "configuration_hashes": {
+              "desktop/common.conf": "sha256:desktop:common",
+              "layouts/celtic+external.yaml": "sha256:layout:celtic+AOC-U28G2G6B"
+            },
+            "current_profile": "celtic+AOC-U28G2G6B",
+            "event_generation": 0,
+            "exact_profile": "celtic+AOC-U28G2G6B",
+            "external_outputs": [
+              "DisplayPort-1"
+            ],
+            "external_state": "known",
+            "identity_profile": null,
+            "internal_edid_complete": false,
+            "key": "aoc-same-edid-renamed",
+            "observation_generation": 2,
+            "output_mappings": [
+              {
+                "live_output": "DisplayPort-1",
+                "saved_output": "DisplayPort-2"
+              },
+              {
+                "live_output": "eDP-1",
+                "saved_output": "eDP"
+              }
+            ],
+            "physical_token": "aoc-saved-DisplayPort-2-live-DisplayPort-1",
+            "probe_internal_output": null,
+            "probe_mode": null,
+            "probe_output": null,
+            "target_layout": "layouts/celtic+external.yaml",
+            "target_profile": "celtic+AOC-U28G2G6B",
+            "target_scope": "external",
+            "type": "observation",
+            "valid": true
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 0,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 0,
+              "request_observation": 0,
+              "request_plan": 0,
+              "schedule": 2,
+              "stop_action": 0
+            },
+            "effects": [
+              {
+                "deadline_ms": 70000,
+                "type": "schedule"
+              }
+            ],
+            "state": {
+              "action_sequence_high_water": 0,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 0,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": "celtic+AOC-U28G2G6B",
+              "desktop_finalized_profile": "celtic+AOC-U28G2G6B",
+              "external_intent": true,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": 70000,
+              "phase": "quiescent",
+              "physical_epoch": 1,
+              "planning_action_id": null,
+              "planning_lifecycle": null,
+              "planning_state": "plan_idle",
+              "preparation_action_id": null,
+              "preparation_lifecycle": null,
+              "preparation_state": "prepare_idle",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": "celtic+AOC-U28G2G6B",
+              "tombstone_count": 0,
+              "transition_sequence_high_water": 0,
+              "verify_since_ms": 0
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "schema_version": 1
+}

@@ -1,0 +1,358 @@
+{
+  "acceptance_limit": "These retained ng excerpts support policy comparison only. None is a live shadow trace and none satisfies dc-a5y.11 physical shadow acceptance.",
+  "cases": {
+    "aoc_connector_rename": {
+      "case_source_status": "available_retained_ng",
+      "excerpts": [
+        {
+          "line_count": 10,
+          "lines": [
+            "[259042.344150] celtic.linksys.moosehall monitor-watcher-ng[2734905]: DRM change: UDEV  [259042.343326] change   /devices/pci0000:00/0000:00:08.1/0000:c1:00.0/drm/card1 (drm)",
+            "[259042.349773] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Starting display reconciliation (DRM event)",
+            "[259042.350113] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reconciliation attempt 1/12",
+            "[259042.836926] celtic.linksys.moosehall monitor-watcher-ng[2734905]: DRM event received before autorandr application; re-observing",
+            "[259042.837218] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reconciliation attempt 2/12",
+            "[259043.371198] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reloading previously matched autorandr profile celtic+AOC-U28G2G6B (desktop postswitch deferred)",
+            "[259044.800248] celtic.linksys.moosehall monitor-watcher-ng[3709147]: celtic+AOC-U28G2G6B: renaming display DisplayPort-2 to DisplayPort-1",
+            "[259044.800248] celtic.linksys.moosehall monitor-watcher-ng[3709147]: postswitch: deferred desktop reconfiguration for profile celtic+AOC-U28G2G6B",
+            "[259050.096986] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Verifying autorandr profile celtic+AOC-U28G2G6B remains active for 10s",
+            "[259062.989023] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Converged on autorandr profile celtic+AOC-U28G2G6B; running desktop postswitch"
+          ],
+          "requested_monotonic_range": [
+            "259042.344150",
+            "259062.989023"
+          ],
+          "selected_monotonic_range": [
+            "259042.344150",
+            "259062.989023"
+          ],
+          "selection": {
+            "also_include_message_substrings": [
+              "renaming display DisplayPort-2 to DisplayPort-1",
+              "postswitch: deferred desktop reconfiguration"
+            ],
+            "always_include_process": "monitor-watcher-ng[2734905]:"
+          },
+          "sha256": "ff9bf7e8ec429d461daadc3561e51a61bbded3d56c337170192c5f887cb36f1d"
+        },
+        {
+          "line_count": 13,
+          "lines": [
+            "[259475.539077] celtic.linksys.moosehall monitor-watcher-ng[2734905]: DRM change: UDEV  [259475.537602] change   /devices/pci0000:00/0000:00:08.1/0000:c1:00.0/drm/card1 (drm)",
+            "[259475.544412] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Starting display reconciliation (DRM event)",
+            "[259475.544570] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reconciliation attempt 1/12",
+            "[259475.998192] celtic.linksys.moosehall monitor-watcher-ng[2734905]: DRM event received before autorandr application; re-observing",
+            "[259475.998404] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reconciliation attempt 2/12",
+            "[259476.502066] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reloading previously matched autorandr profile celtic+AOC-U28G2G6B (desktop postswitch deferred)",
+            "[259476.597576] celtic.linksys.moosehall monitor-watcher-ng[3754329]: celtic+AOC-U28G2G6B: renaming display DisplayPort-2 to DisplayPort-1",
+            "[259476.597576] celtic.linksys.moosehall monitor-watcher-ng[3754329]: Config already loaded",
+            "[259481.958782] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Verifying autorandr profile celtic+AOC-U28G2G6B remains active for 10s",
+            "[259494.777479] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Converged on autorandr profile celtic+AOC-U28G2G6B; running desktop postswitch",
+            "[259496.545118] celtic.linksys.moosehall monitor-watcher-ng[3758079]:     \"Monitor\": \"DP-2\",",
+            "[259496.545118] celtic.linksys.moosehall monitor-watcher-ng[3758079]:     \"mapped\": \"DisplayPort-1\",",
+            "[259496.545118] celtic.linksys.moosehall monitor-watcher-ng[3758079]:     \"model\": \"AOC U28G2G6B\","
+          ],
+          "requested_monotonic_range": [
+            "259475.539077",
+            "259496.545118"
+          ],
+          "selected_monotonic_range": [
+            "259475.539077",
+            "259496.545118"
+          ],
+          "selection": {
+            "also_include_message_substrings": [
+              "renaming display DisplayPort-2 to DisplayPort-1",
+              "Config already loaded",
+              "\"mapped\": \"DisplayPort-1\"",
+              "\"Monitor\": \"DP-2\"",
+              "\"model\": \"AOC U28G2G6B\""
+            ],
+            "always_include_process": "monitor-watcher-ng[2734905]:"
+          },
+          "sha256": "c183817fc01ff8c81f2595cef12784dd83017f919ac95217a3b6acf77ff99364"
+        }
+      ],
+      "note": "Exact ng connector rename from saved DisplayPort-2 to live DisplayPort-1; no simultaneous valid shadow AOC trace."
+    },
+    "controller_restart": {
+      "case_source_status": "unavailable",
+      "note": "ng PID 2734905 was unchanged; no ng controller-restart comparison exists for either synthetic restart policy variant."
+    },
+    "genuine_unplug": {
+      "case_source_status": "available_retained_ng",
+      "excerpts": [
+        {
+          "line_count": 13,
+          "lines": [
+            "[250211.745184] celtic.linksys.moosehall monitor-watcher-ng[2734905]: DRM change: UDEV  [250211.740958] change   /devices/pci0000:00/0000:00:08.1/0000:c1:00.0/drm/card1 (drm)",
+            "[250211.754901] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Starting display reconciliation (DRM event)",
+            "[250211.754901] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reconciliation attempt 1/12",
+            "[250212.050579] celtic.linksys.moosehall monitor-watcher-ng[2734905]: DRM event received before autorandr application; re-observing",
+            "[250212.050579] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reconciliation attempt 2/12",
+            "[250212.235295] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Running autorandr --change (desktop postswitch deferred)",
+            "[250213.465573] celtic.linksys.moosehall monitor-watcher-ng[2937150]: postswitch: deferred desktop reconfiguration for profile celtic",
+            "[250218.663046] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Detected profile(s) [celtic] not current after attempt 2",
+            "[250219.664217] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reconciliation attempt 3/12",
+            "[250219.828813] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reloading previously matched autorandr profile celtic (desktop postswitch deferred)",
+            "[250220.437276] celtic.linksys.moosehall monitor-watcher-ng[2939230]: postswitch: deferred desktop reconfiguration for profile celtic",
+            "[250225.712761] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Verifying autorandr profile celtic remains active for 10s",
+            "[250238.562997] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Converged on autorandr profile celtic; running desktop postswitch"
+          ],
+          "requested_monotonic_range": [
+            "250211.745184",
+            "250238.562997"
+          ],
+          "selected_monotonic_range": [
+            "250211.745184",
+            "250238.562997"
+          ],
+          "selection": {
+            "also_include_message_substrings": [
+              "postswitch: deferred desktop reconfiguration"
+            ],
+            "always_include_process": "monitor-watcher-ng[2734905]:"
+          },
+          "sha256": "407ae6c6f3c5b513645cc8a8196aa756986333f98dd50279e7b7ba2de4b5d42f"
+        },
+        {
+          "line_count": 11,
+          "lines": [
+            "[261340.735468] celtic.linksys.moosehall monitor-watcher-ng[2734905]: DRM change: UDEV  [261340.735194] change   /devices/pci0000:00/0000:00:08.1/0000:c1:00.0/drm/card1 (drm)",
+            "[261340.738657] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Starting display reconciliation (DRM event)",
+            "[261340.738814] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reconciliation attempt 1/12",
+            "[261340.848739] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Running autorandr --change (desktop postswitch deferred)",
+            "[261342.098590] celtic.linksys.moosehall monitor-watcher-ng[3935733]: postswitch: deferred desktop reconfiguration for profile celtic",
+            "[261347.287962] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Detected profile(s) [celtic] not current after attempt 1",
+            "[261348.289171] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reconciliation attempt 2/12",
+            "[261348.408482] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reloading previously matched autorandr profile celtic (desktop postswitch deferred)",
+            "[261348.881861] celtic.linksys.moosehall monitor-watcher-ng[3936540]: postswitch: deferred desktop reconfiguration for profile celtic",
+            "[261354.119857] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Verifying autorandr profile celtic remains active for 10s",
+            "[261366.103604] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Converged on autorandr profile celtic; running desktop postswitch"
+          ],
+          "requested_monotonic_range": [
+            "261340.735468",
+            "261366.103604"
+          ],
+          "selected_monotonic_range": [
+            "261340.735468",
+            "261366.103604"
+          ],
+          "selection": {
+            "also_include_message_substrings": [
+              "postswitch: deferred desktop reconfiguration"
+            ],
+            "always_include_process": "monitor-watcher-ng[2734905]:"
+          },
+          "sha256": "4673905fe08d8dc937c0b554726f401ea61e8c9a0a574dd1f20f238c176b493d"
+        }
+      ],
+      "note": "Two exact retained ng internal-only convergence cycles; no simultaneous valid shadow unplug trace."
+    },
+    "laptop_startup": {
+      "case_source_status": "available_retained_ng",
+      "excerpts": [
+        {
+          "line_count": 6,
+          "lines": [
+            "[202948.819723] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Loading /home/adam/.Xdisplay.celtic",
+            "[202948.827311] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Starting display reconciliation (service startup)",
+            "[202948.827468] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reconciliation attempt 1/12",
+            "[202949.191713] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reloading previously matched autorandr profile celtic+Samsung-Odyssey-G75F (desktop postswitch deferred)",
+            "[202954.608641] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Verifying autorandr profile celtic+Samsung-Odyssey-G75F remains active for 10s",
+            "[202966.875381] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Converged on autorandr profile celtic+Samsung-Odyssey-G75F; running desktop postswitch"
+          ],
+          "requested_monotonic_range": [
+            "202948.819723",
+            "202966.875381"
+          ],
+          "selected_monotonic_range": [
+            "202948.819723",
+            "202966.875381"
+          ],
+          "selection": {
+            "also_include_message_substrings": [],
+            "always_include_process": "monitor-watcher-ng[2734905]:"
+          },
+          "sha256": "749744ef6a06c0de9ac4a0d92499897322c310f3df20950f2b84de2a69f68c24"
+        }
+      ],
+      "note": "Exact ng service-start behavior; no simultaneous valid shadow trace."
+    },
+    "same_profile_suspend_resume": {
+      "case_source_status": "unavailable",
+      "note": "No retained Samsung same-profile suspend/resume range was identified. The included celtic internal same-profile cycle is an analogue only and does not satisfy this case.",
+      "retained_analogue_not_case_evidence": [
+        {
+          "line_count": 9,
+          "lines": [
+            "[298380.890762] celtic.linksys.moosehall monitor-watcher-ng[2734905]: DRM change: UDEV  [298380.890040] change   /devices/pci0000:00/0000:00:08.1/0000:c1:00.0/drm/card1 (drm)",
+            "[298380.895557] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Starting display reconciliation (DRM event)",
+            "[298380.895686] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reconciliation attempt 1/12",
+            "[298381.023682] celtic.linksys.moosehall monitor-watcher-ng[2734905]: DRM event received before autorandr application; re-observing",
+            "[298381.024062] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reconciliation attempt 2/12",
+            "[298381.229759] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Running autorandr --change (desktop postswitch deferred)",
+            "[298381.387516] celtic.linksys.moosehall monitor-watcher-ng[3122976]: Config already loaded",
+            "[298386.685990] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Verifying autorandr profile celtic remains active for 10s",
+            "[298399.055734] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Autorandr profile celtic is already current; no desktop relayout needed"
+          ],
+          "requested_monotonic_range": [
+            "298380.890762",
+            "298399.055734"
+          ],
+          "selected_monotonic_range": [
+            "298380.890762",
+            "298399.055734"
+          ],
+          "selection": {
+            "also_include_message_substrings": [
+              "Config already loaded"
+            ],
+            "always_include_process": "monitor-watcher-ng[2734905]:"
+          },
+          "sha256": "8104dda091d54f660120bbbbfd9e904e28f3b90aadd7953f3cb35f17a211149f"
+        }
+      ]
+    },
+    "samsung_broken_edid_beyond_30_seconds": {
+      "case_source_status": "available_retained_ng",
+      "excerpts": [
+        {
+          "line_count": 29,
+          "lines": [
+            "[275022.972112] celtic.linksys.moosehall monitor-watcher-ng[2734905]: DRM change: UDEV  [275022.971744] change   /devices/pci0000:00/0000:00:08.1/0000:c1:00.0/drm/card1 (drm)",
+            "[275022.974980] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Starting display reconciliation (DRM event)",
+            "[275022.975079] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reconciliation attempt 1/12",
+            "[275023.750706] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Activating known celtic+Samsung-Odyssey-G75F output DisplayPort-1 at preferred mode 3440x1440 to refresh incomplete EDID",
+            "[275024.944185] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reconciliation attempt 2/12",
+            "[275025.172219] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Waiting for checksum-valid celtic+Samsung-Odyssey-G75F EDID data after activation probe",
+            "[275026.173461] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reconciliation attempt 3/12",
+            "[275026.447074] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Waiting for checksum-valid celtic+Samsung-Odyssey-G75F EDID data after activation probe",
+            "[275027.448408] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reconciliation attempt 4/12",
+            "[275027.674269] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Waiting for checksum-valid celtic+Samsung-Odyssey-G75F EDID data after activation probe",
+            "[275027.775964] celtic.linksys.moosehall monitor-watcher-ng[2734905]: DRM event received while waiting to retry",
+            "[275027.776069] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reconciliation attempt 5/12",
+            "[275027.882634] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Running autorandr --change (desktop postswitch deferred)",
+            "[275029.301418] celtic.linksys.moosehall monitor-watcher-ng[2734905]: DRM event received before quiescence; retrying",
+            "[275029.351876] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reconciliation attempt 6/12",
+            "[275029.593410] celtic.linksys.moosehall monitor-watcher-ng[2734905]: External hardware is unresolved; refusing unrestricted autorandr fallback",
+            "[275030.594644] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reconciliation attempt 7/12",
+            "[275030.860574] celtic.linksys.moosehall monitor-watcher-ng[2734905]: External hardware is unresolved; refusing unrestricted autorandr fallback",
+            "[275031.861245] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reconciliation attempt 8/12",
+            "[275032.106566] celtic.linksys.moosehall monitor-watcher-ng[2734905]: External hardware is unresolved; refusing unrestricted autorandr fallback",
+            "[275033.107242] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reconciliation attempt 9/12",
+            "[275033.359438] celtic.linksys.moosehall monitor-watcher-ng[2734905]: External hardware is unresolved; refusing unrestricted autorandr fallback",
+            "[275034.360685] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reconciliation attempt 10/12",
+            "[275034.601128] celtic.linksys.moosehall monitor-watcher-ng[2734905]: External hardware is unresolved; refusing unrestricted autorandr fallback",
+            "[275035.602150] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reconciliation attempt 11/12",
+            "[275035.863457] celtic.linksys.moosehall monitor-watcher-ng[2734905]: External hardware is unresolved; refusing unrestricted autorandr fallback",
+            "[275036.864176] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reconciliation attempt 12/12",
+            "[275037.100733] celtic.linksys.moosehall monitor-watcher-ng[2734905]: External hardware is unresolved; refusing unrestricted autorandr fallback",
+            "[275038.101248] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Display did not converge within 30s/12 attempts; preserving any matched profile and waiting for the next DRM event"
+          ],
+          "requested_monotonic_range": [
+            "275022.972112",
+            "275038.101248"
+          ],
+          "selected_monotonic_range": [
+            "275022.972112",
+            "275038.101248"
+          ],
+          "selection": {
+            "also_include_message_substrings": [],
+            "always_include_process": "monitor-watcher-ng[2734905]:"
+          },
+          "sha256": "4085e1f5b072bf52a849ef600b231cb4f0882e312018e8fcd0affba70763fadb"
+        },
+        {
+          "line_count": 12,
+          "lines": [
+            "[275227.034904] celtic.linksys.moosehall monitor-watcher-ng[2734905]: DRM change: UDEV  [275227.034667] change   /devices/pci0000:00/0000:00:08.1/0000:c1:00.0/drm/card1 (drm)",
+            "[275227.037310] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Resuming previously matched autorandr profile celtic",
+            "[275227.037453] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Starting display reconciliation (DRM event)",
+            "[275227.037453] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reconciliation attempt 1/12",
+            "[275227.192927] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reloading previously matched autorandr profile celtic (desktop postswitch deferred)",
+            "[275227.528223] celtic.linksys.moosehall monitor-watcher-ng[1007404]: postswitch: deferred desktop reconfiguration for profile celtic",
+            "[275228.557815] celtic.linksys.moosehall monitor-watcher-ng[2734905]: DRM event received before quiescence; retrying",
+            "[275228.608224] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reconciliation attempt 2/12",
+            "[275228.969857] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reloading previously matched autorandr profile celtic+Samsung-Odyssey-G75F (desktop postswitch deferred)",
+            "[275230.116483] celtic.linksys.moosehall monitor-watcher-ng[1007788]: postswitch: deferred desktop reconfiguration for profile celtic+Samsung-Odyssey-G75F",
+            "[275235.380156] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Verifying autorandr profile celtic+Samsung-Odyssey-G75F remains active for 10s",
+            "[275247.438475] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Converged on autorandr profile celtic+Samsung-Odyssey-G75F; running desktop postswitch"
+          ],
+          "requested_monotonic_range": [
+            "275227.034904",
+            "275247.438475"
+          ],
+          "selected_monotonic_range": [
+            "275227.034904",
+            "275247.438475"
+          ],
+          "selection": {
+            "also_include_message_substrings": [
+              "postswitch: deferred desktop reconfiguration"
+            ],
+            "always_include_process": "monitor-watcher-ng[2734905]:"
+          },
+          "sha256": "55ddbfc931ee21fc38534074da9a702c3d309d2fa20c53fbf03fe5848ddb6757"
+        }
+      ],
+      "note": "Exact ng exhaustion and later DRM-event recovery; the synthetic 35-second policy continuation was not live."
+    },
+    "samsung_plug": {
+      "case_source_status": "available_retained_ng",
+      "excerpts": [
+        {
+          "line_count": 16,
+          "lines": [
+            "[333581.435547] celtic.linksys.moosehall monitor-watcher-ng[2734905]: DRM change: UDEV  [333581.435280] change   /devices/pci0000:00/0000:00:08.1/0000:c1:00.0/drm/card1 (drm)",
+            "[333581.437846] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Starting display reconciliation (DRM event)",
+            "[333581.437886] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reconciliation attempt 1/12",
+            "[333581.805916] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reloading previously matched autorandr profile celtic+Samsung-Odyssey-G75F (desktop postswitch deferred)",
+            "[333582.920787] celtic.linksys.moosehall monitor-watcher-ng[2667302]: postswitch: deferred desktop reconfiguration for profile celtic+Samsung-Odyssey-G75F",
+            "[333586.070212] celtic.linksys.moosehall monitor-watcher-ng[2734905]: DRM event received before quiescence; retrying",
+            "[333586.120511] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reconciliation attempt 2/12",
+            "[333586.141136] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Discarding stale pending profile celtic+Samsung-Odyssey-G75F after external topology disappeared",
+            "[333586.222555] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Running autorandr --change (desktop postswitch deferred)",
+            "[333587.704534] celtic.linksys.moosehall monitor-watcher-ng[2668115]: postswitch: deferred desktop reconfiguration for profile celtic",
+            "[333587.713189] celtic.linksys.moosehall monitor-watcher-ng[2734905]: DRM event received before quiescence; retrying",
+            "[333587.763544] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reconciliation attempt 3/12",
+            "[333588.214903] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Reloading previously matched autorandr profile celtic+Samsung-Odyssey-G75F (desktop postswitch deferred)",
+            "[333589.285482] celtic.linksys.moosehall monitor-watcher-ng[2668503]: postswitch: deferred desktop reconfiguration for profile celtic+Samsung-Odyssey-G75F",
+            "[333594.541527] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Verifying autorandr profile celtic+Samsung-Odyssey-G75F remains active for 10s",
+            "[333606.647589] celtic.linksys.moosehall monitor-watcher-ng[2734905]: Converged on autorandr profile celtic+Samsung-Odyssey-G75F; running desktop postswitch"
+          ],
+          "requested_monotonic_range": [
+            "333581.435547",
+            "333606.647589"
+          ],
+          "selected_monotonic_range": [
+            "333581.435547",
+            "333606.647589"
+          ],
+          "selection": {
+            "also_include_message_substrings": [
+              "postswitch: deferred desktop reconfiguration"
+            ],
+            "always_include_process": "monitor-watcher-ng[2734905]:"
+          },
+          "sha256": "958a02684065062ef03ee2cd69d56fc5e0c9e3ac1bfd3f11c610966cdffa96e7"
+        }
+      ],
+      "note": "Exact ng Samsung transition; no simultaneous valid shadow trace."
+    }
+  },
+  "provenance": "retained_raw_derived",
+  "sanitization": "Bounded case selection removes unrelated journal content. Selected lines contain no raw EDID bytes or secrets, so their text is otherwise retained byte-for-byte and each excerpt is hashed.",
+  "schema_version": 1,
+  "selection_policy": "For each exact inclusive monotonic range, retain every line from monitor-watcher-ng PID 2734905 plus only child-process lines containing a listed substring. Preserve rendered lines byte-for-byte, join with LF, and include one final LF before hashing.",
+  "source": {
+    "bounded_output_bytes": 775918,
+    "bounded_output_lines": 7137,
+    "bounded_output_sha256": "c2cffd319adcb5cf5e18200d36be3ef48e7053bc58b53ed89f3f1d9c6ccf4f26",
+    "command": "journalctl --user -t monitor-watcher-ng --since 2026-08-18 23:38:00 BST --until 2026-08-22 03:22:30 BST --no-pager -o short-monotonic",
+    "format": "journalctl short-monotonic rendered UTF-8",
+    "service_pid": 2734905,
+    "service_start": "Tue 2026-08-18 23:38:32 BST"
+  }
+}

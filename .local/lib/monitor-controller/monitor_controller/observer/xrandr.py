@@ -22,6 +22,8 @@ MAX_MODES_PER_OUTPUT: int = 512
 MAX_OUTPUT_NAME_CHARS: int = 128
 MAX_CONNECTOR_ID: int = (1 << 32) - 1
 MIN_MODE_LINE_PARTS: int = 2
+_MODE_INDENT = "   "
+_PREFERRED_MARKER = "+"
 
 _OUTPUT_HEADER = re.compile(
     r"^(?P<name>\S+)\s+(?P<state>connected|disconnected|unknown connection)"
@@ -31,7 +33,13 @@ _GEOMETRY = re.compile(
     r"(?<!\S)(?P<width>[0-9]+)x(?P<height>[0-9]+)"
     r"\+(?P<x>-?[0-9]+)\+(?P<y>-?[0-9]+)(?!\S)"
 )
-_RATE = re.compile(r"^(?P<rate>[0-9]+(?:\.[0-9]+)?)(?P<markers>[*+]*)$")
+# ``xrandr --query`` renders current/preferred as two fixed columns after each
+# rate.  A preferred-only rate consequently splits as ``60.00 +`` when generic
+# whitespace tokenization removes the blank current column; current and
+# current+preferred remain ``60.00*`` and ``60.00*+``.  Keep that grammar
+# narrow: duplicated/reversed markers and a detached current marker are not
+# valid XRandR output.
+_RATE = re.compile(r"^(?P<rate>[0-9]+(?:\.[0-9]+)?)(?P<markers>\*?\+?)$")
 _PROPERTY = re.compile(r"^[ \t]+(?P<name>[^:\n]+):[ \t]*(?P<value>.*?)[ \t]*$")
 
 
@@ -275,12 +283,7 @@ def parse_xrandr_query(  # noqa: C901, PLR0912, PLR0915
                 rest = header.group("rest")
                 geometry_match = _GEOMETRY.search(rest)
                 geometry = (
-                    XrandrGeometry(
-                        width=int(geometry_match.group("width")),
-                        height=int(geometry_match.group("height")),
-                        x=int(geometry_match.group("x")),
-                        y=int(geometry_match.group("y")),
-                    )
+                    _parse_geometry(geometry_match, line_number, collector)
                     if geometry_match is not None
                     else None
                 )
@@ -299,7 +302,7 @@ def parse_xrandr_query(  # noqa: C901, PLR0912, PLR0915
                 current_index = len(outputs) - 1
                 mode_names = set()
                 continue
-            if not line[0].isspace() or current_index is None:
+            if current_index is None or not _has_mode_indentation(line):
                 collector.add(
                     ParseIssueCode.MALFORMED_LINE,
                     "line is not an XRandR output header or mode",
@@ -387,12 +390,7 @@ def parse_xrandr_properties(  # noqa: C901, PLR0912, PLR0915
                 rest = header.group("rest")
                 geometry_match = _GEOMETRY.search(rest)
                 geometry = (
-                    XrandrGeometry(
-                        width=int(geometry_match.group("width")),
-                        height=int(geometry_match.group("height")),
-                        x=int(geometry_match.group("x")),
-                        y=int(geometry_match.group("y")),
-                    )
+                    _parse_geometry(geometry_match, line_number, collector)
                     if geometry_match is not None
                     else None
                 )
@@ -430,7 +428,11 @@ def parse_xrandr_properties(  # noqa: C901, PLR0912, PLR0915
             prop = _PROPERTY.fullmatch(line)
             if prop is None:
                 current = outputs[current_index]
-                if not current.connected or not _looks_like_mode_line(line):
+                # Property values and continuations are tab-indented.  XRandR
+                # output modes use exactly three leading spaces.  Distinguish
+                # those lexical forms before inspecting numeric tokens so CTM
+                # matrix rows cannot masquerade as duplicate mode names.
+                if not current.connected or not _has_mode_indentation(line):
                     continue
                 if len(current.modes) >= MAX_MODES_PER_OUTPUT:
                     collector.add(
@@ -534,12 +536,34 @@ def _connection_state(value: str) -> XConnectionState:
     return XConnectionState.UNKNOWN
 
 
-def _looks_like_mode_line(line: str) -> bool:
-    parts = line.split()
+def _parse_geometry(
+    match: re.Match[str],
+    line_number: int,
+    collector: IssueCollector,
+) -> XrandrGeometry | None:
+    """Convert one bounded geometry token and retain conversion failures."""
+    try:
+        return XrandrGeometry(
+            width=int(match.group("width")),
+            height=int(match.group("height")),
+            x=int(match.group("x")),
+            y=int(match.group("y")),
+        )
+    except ValueError:
+        collector.add(
+            ParseIssueCode.MALFORMED_LINE,
+            "XRandR output geometry is outside the accepted integer range",
+            line_number,
+        )
+        return None
+
+
+def _has_mode_indentation(line: str) -> bool:
+    """Recognize the fixed three-space prefix used for XRandR mode rows."""
     return (
-        len(parts) >= MIN_MODE_LINE_PARTS
-        and line[0].isspace()
-        and all(_RATE.fullmatch(token) is not None for token in parts[1:])
+        len(line) > len(_MODE_INDENT)
+        and line.startswith(_MODE_INDENT)
+        and not line[len(_MODE_INDENT)].isspace()
     )
 
 
@@ -559,7 +583,19 @@ def _parse_mode_line(
     rates: list[str] = []
     current = False
     preferred = False
+    previous_rate_has_marker = False
     for token in parts[1:]:
+        if token == _PREFERRED_MARKER:
+            if not rates or previous_rate_has_marker:
+                collector.add(
+                    ParseIssueCode.MALFORMED_LINE,
+                    "XRandR mode refresh marker is misplaced",
+                    line_number,
+                )
+                return None
+            preferred = True
+            previous_rate_has_marker = True
+            continue
         match = _RATE.fullmatch(token)
         if match is None:
             collector.add(
@@ -572,4 +608,5 @@ def _parse_mode_line(
         markers = match.group("markers")
         current = current or "*" in markers
         preferred = preferred or "+" in markers
+        previous_rate_has_marker = bool(markers)
     return XrandrMode(parts[0], tuple(rates), current, preferred)

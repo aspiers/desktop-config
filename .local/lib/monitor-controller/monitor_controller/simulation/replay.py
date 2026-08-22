@@ -30,6 +30,8 @@ from ..reducer import reduce
 
 REPLAY_SCHEMA_VERSION = 1
 MAX_REPLAY_BYTES = 16 * 1_048_576
+_POLICY_PROVENANCE = "synthetic_policy"
+_POLICY_TRACE_SEMANTICS = "scenario_replay_not_production_audit"
 
 _EVENT_BY_NAME: Mapping[str, type[EventEnvelope]] = {
     item.__name__: item for item in EVENT_TYPES
@@ -67,6 +69,17 @@ class ReplayTrace:
 
     initial_state: State
     steps: tuple[ReplayStep, ...]
+    provenance: str | None = None
+    trace_semantics: str | None = None
+
+    def __post_init__(self) -> None:
+        """Require the closed policy label pair when replay metadata is present."""
+        labels = (self.provenance, self.trace_semantics)
+        if labels == (None, None):
+            return
+        if labels != (_POLICY_PROVENANCE, _POLICY_TRACE_SEMANTICS):
+            msg = "replay provenance and trace semantics must use the policy pair"
+            raise ValueError(msg)
 
     @property
     def events(self) -> tuple[Event, ...]:
@@ -74,7 +87,13 @@ class ReplayTrace:
         return tuple(step.event for step in self.steps)
 
 
-def capture_replay(initial_state: State, events: Iterable[Event]) -> ReplayTrace:
+def capture_replay(
+    initial_state: State,
+    events: Iterable[Event],
+    *,
+    provenance: str | None = None,
+    trace_semantics: str | None = None,
+) -> ReplayTrace:
     """Reduce *events* once and retain every complete expected decision."""
     state = initial_state
     steps: list[ReplayStep] = []
@@ -82,7 +101,12 @@ def capture_replay(initial_state: State, events: Iterable[Event]) -> ReplayTrace
         decision = reduce(state, event)
         steps.append(ReplayStep(event, decision))
         state = decision.state
-    return ReplayTrace(initial_state, tuple(steps))
+    return ReplayTrace(
+        initial_state,
+        tuple(steps),
+        provenance=provenance,
+        trace_semantics=trace_semantics,
+    )
 
 
 def replay(trace: ReplayTrace) -> tuple[Decision, ...]:
@@ -107,13 +131,15 @@ def encode_replay(trace: ReplayTrace) -> bytes:
     _validate_state_for_replay(trace.initial_state, "initial_state")
     for index, step in enumerate(trace.steps, start=1):
         _validate_state_for_replay(step.expected.state, f"record {index}.state")
-    records: list[dict[str, object]] = [
-        {
-            "record": "header",
-            "schema_version": REPLAY_SCHEMA_VERSION,
-            "initial_state": encode_schema_value(trace.initial_state),
-        }
-    ]
+    header: dict[str, object] = {
+        "record": "header",
+        "schema_version": REPLAY_SCHEMA_VERSION,
+        "initial_state": encode_schema_value(trace.initial_state),
+    }
+    if trace.provenance is not None and trace.trace_semantics is not None:
+        header["provenance"] = trace.provenance
+        header["trace_semantics"] = trace.trace_semantics
+    records: list[dict[str, object]] = [header]
     records.extend(_encode_step(step) for step in trace.steps)
     payload = b"".join(
         json.dumps(
@@ -139,11 +165,10 @@ def decode_replay(data: bytes | str) -> ReplayTrace:
         raise ReplayFormatError("replay is empty")
     records = tuple(_decode_json_line(line, index) for index, line in enumerate(lines))
     header = records[0]
-    _exact_fields(
-        header,
-        frozenset({"record", "schema_version", "initial_state"}),
-        "header",
-    )
+    base_header_fields = frozenset({"record", "schema_version", "initial_state"})
+    policy_header_fields = base_header_fields | {"provenance", "trace_semantics"}
+    if frozenset(header) not in {base_header_fields, policy_header_fields}:
+        _exact_fields(header, base_header_fields, "header")
     if header["record"] != "header":
         raise ReplayFormatError("first replay record must be a header")
     if header["schema_version"] != REPLAY_SCHEMA_VERSION:
@@ -151,6 +176,8 @@ def decode_replay(data: bytes | str) -> ReplayTrace:
             f"replay schema_version must be {REPLAY_SCHEMA_VERSION}"
         )
     initial = _decode_replay_state(header["initial_state"], "initial_state")
+    provenance = cast("str | None", header.get("provenance"))
+    trace_semantics = cast("str | None", header.get("trace_semantics"))
     steps: list[ReplayStep] = []
     state = initial
     for index, record in enumerate(records[1:], start=1):
@@ -162,7 +189,15 @@ def decode_replay(data: bytes | str) -> ReplayTrace:
         _validate_audit_metadata(record.get("audit"), state, step, index)
         steps.append(step)
         state = step.expected.state
-    return ReplayTrace(initial, tuple(steps))
+    try:
+        return ReplayTrace(
+            initial,
+            tuple(steps),
+            provenance=provenance,
+            trace_semantics=trace_semantics,
+        )
+    except ValueError as error:
+        raise ReplayFormatError(f"invalid replay header metadata: {error}") from error
 
 
 def _encode_step(step: ReplayStep) -> dict[str, object]:

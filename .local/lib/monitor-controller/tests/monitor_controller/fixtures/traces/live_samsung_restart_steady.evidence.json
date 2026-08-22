@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "provenance": "live",
+  "case": "samsung_restart_steady",
+  "captured_at_local": "2026-08-22T03:27:16+01:00",
+  "scope": "One already-performed shadow restart followed by steady, physically unchanged Samsung observations. This is not evidence for plug, unplug, suspend/resume, broken-EDID, AOC, or restart-in-pending-action scenarios.",
+  "audit": {
+    "fixture": "live_samsung_restart_steady.audit.jsonl",
+    "fixture_bytes": 234776,
+    "fixture_sha256": "88419737878de0a47e9a3b993229f8155e963e4cc71dde878abd55d87c19a13d",
+    "source": "$XDG_STATE_HOME/monitor-controller/shadow/audit.jsonl (retained at sanitization as audit.jsonl.2)",
+    "source_file_bytes": 4185167,
+    "source_file_lines": 251,
+    "source_file_sha256": "0e43c88f2975ca724f8256baa9ce29868839ee9ef457df2391843a8e53403152",
+    "source_bounds": {
+      "first_line": 1,
+      "last_line_inclusive": 18,
+      "first_byte_offset": 0,
+      "last_byte_offset_exclusive": 268952,
+      "sha256": "b6d1aa8cb09787eaf07612dc22d671a7c4f87ab879e73b488c84036b402bd0a9"
+    },
+    "monotonic_bounds_ms": [347643578, 347706796],
+    "records": {
+      "header": 1,
+      "decision": 16,
+      "would_dispatch": 1
+    },
+    "valid_exact_current_observations": 5,
+    "profile": "celtic+Samsung-Odyssey-G75F",
+    "ordered_admitted_effects": ["RequestPlan", "PrepareDesktop"],
+    "would_dispatch_kinds": ["WOULD_PREPARE"],
+    "state_key_chain": "Every decision retains production audit.prior_state_key and audit.resulting_state_key; each decision's resulting key equals the next decision's prior key across the bounded source order (the intervening would_dispatch annotation has no state transition).",
+    "production_metadata_retained": ["monotonic_ms", "wake_reason", "prior_state_key", "resulting_state_key", "timing"]
+  },
+  "redaction": {
+    "input": "UTF-8 LF-delimited production audit records in the inclusive source line bounds above",
+    "deterministic_algorithm": [
+      "Parse each selected source line as one JSON object and retain its source line number plus SHA-256 of the complete source line including LF.",
+      "Retain header, decision, and would_dispatch record semantics. Retain complete decision audit metadata, event/effect payloads, and would_dispatch payloads.",
+      "Project state objects onto the field whitelist documented in fixtures/traces/README.md; project latest_observation with all production canonical-observation fields.",
+      "For every live_fingerprints item, decode its lowercase even-length hexadecimal value to bytes, replace value with value_redaction={sha256: SHA-256(decoded bytes), bytes: len(decoded bytes)}, and retain output unchanged.",
+      "Serialize every projected object with sorted keys, ASCII JSON, no insignificant whitespace, and one trailing LF. No timestamps, IDs, state keys, timings, wake reasons, effects, profiles, connector mappings, raw-evidence hashes, or non-EDID values are rewritten."
+    ],
+    "edids": {
+      "DisplayPort-1": {
+        "bytes": 400,
+        "sha256": "0dc9ed31bd18093d4e8feda96f2cfd10eb4e96eff08fccc15cb9a17f8eaa52fc"
+      },
+      "eDP": {
+        "bytes": 384,
+        "sha256": "64abdc84a830f9b8d8bc0a1496b251ea28c03f1942cb86d90e3889d03f23436b"
+      }
+    }
+  },
+  "service_evidence": {
+    "verified_at_local": "2026-08-22T03:27:16+01:00",
+    "query": "systemctl --user show UNIT -p ActiveState -p SubState -p MainPID -p NRestarts -p ExecMainStartTimestamp",
+    "shadow": {
+      "unit": "monitor-controller-shadow.service",
+      "active_state": "active",
+      "sub_state": "running",
+      "main_pid": 3975780,
+      "n_restarts": 0,
+      "exec_main_start_timestamp": "Sat 2026-08-22 03:22:04 BST"
+    },
+    "authoritative_ng": {
+      "unit": "monitor-watcher-ng.service",
+      "active_state": "active",
+      "sub_state": "running",
+      "main_pid": 2734905,
+      "n_restarts": 0,
+      "exec_main_start_timestamp": "Tue 2026-08-18 23:38:32 BST"
+    }
+  },
+  "zero_side_effect_evidence": {
+    "shadow_transaction_path": "/run/user/1000/monitor-controller/shadow/transactions",
+    "shadow_transaction_path_query": "/usr/bin/test ! -e /run/user/1000/monitor-controller/shadow/transactions",
+    "shadow_transaction_path_query_exit_status": 0,
+    "shadow_transaction_path_state": "absent",
+    "unit_query": "systemctl --user list-units --all --plain --no-legend 'monitor-controller-*'",
+    "unit_query_stdout": "monitor-controller-shadow.service loaded active running Non-authoritative monitor controller shadow\n",
+    "unit_query_stdout_bytes": 100,
+    "unit_query_stdout_sha256": "bcbf41052d85ed2e4a2ed762023dd787d8924cf843d28d1d267ff4167caf9933",
+    "monitor_worker_unit_count": 0,
+    "display_mutation_by_collection": false
+  },
+  "xrandr_query": {
+    "before_restart_sha256": "ad6770392a78362f09931cea88b8d5c2bf7768e4ee7c9593609b7d5d7910a3f6",
+    "after_restart_sha256": "ad6770392a78362f09931cea88b8d5c2bf7768e4ee7c9593609b7d5d7910a3f6",
+    "unchanged": true,
+    "before_source": "../xrandr/live-samsung-20260822.provenance.json retained read-only query capture",
+    "after_source": "command:xrandr --query raw_evidence reference on every valid observation in the bounded production audit"
+  }
+}

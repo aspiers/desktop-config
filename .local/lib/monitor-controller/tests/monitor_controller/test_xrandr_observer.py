@@ -108,6 +108,22 @@ def test_query_retains_all_rates_and_current_preferred_markers() -> None:
     assert samsung.modes[1].rates == ("60.00", "59.94")
 
 
+def test_sanitized_live_query_accepts_column_aligned_preferred_markers() -> None:
+    parsed = parse_xrandr_query(
+        evidence("live-samsung-20260822.query", RawEvidenceSource.XRANDR_QUERY)
+    )
+    internal = next(item for item in parsed.outputs if item.name == "eDP")
+    external = next(item for item in parsed.outputs if item.name == "DisplayPort-1")
+
+    assert parsed.valid
+    assert internal.current_modes == ("2880x1920",)
+    assert internal.preferred_modes == ("2880x1920",)
+    assert internal.modes[0].rates == ("120.00", "60.00")
+    assert external.current_modes == ("5120x2160",)
+    assert external.preferred_modes == ("3440x1440",)
+    assert external.modes[5].rates.count("60.00") == 2
+
+
 def test_inactive_output_retains_preferred_mode_without_becoming_active() -> None:
     parsed = parse_xrandr_query(
         evidence("inactive.query", RawEvidenceSource.XRANDR_QUERY)
@@ -160,6 +176,40 @@ def test_properties_retain_active_primary_and_mode_markers() -> None:
     assert internal.primary
     assert internal.current_modes == ("2880x1920",)
     assert internal.preferred_modes == ("2880x1920",)
+
+
+def test_sanitized_live_properties_ignore_numeric_property_continuations() -> None:
+    parsed = parse_xrandr_properties(
+        evidence("live-samsung-20260822.props", RawEvidenceSource.XRANDR_PROPERTIES)
+    )
+    internal = next(item for item in parsed.outputs if item.name == "eDP")
+    external = next(item for item in parsed.outputs if item.name == "DisplayPort-1")
+
+    assert parsed.valid
+    assert internal.connector_id == 438
+    assert internal.preferred_modes == ("2880x1920",)
+    assert external.connector_id == 453
+    assert external.current_modes == ("5120x2160",)
+    assert external.preferred_modes == ("3440x1440",)
+    parsed_mode_names = {
+        mode.name for output in parsed.outputs for mode in output.modes
+    }
+    assert not {"0.000000", "1.000000"} & parsed_mode_names
+
+
+def test_sanitized_live_query_and_properties_form_a_valid_snapshot() -> None:
+    source = InjectedXrandr(
+        "live-samsung-20260822.query",
+        "live-samsung-20260822.props",
+        [],
+    )
+
+    snapshot = sample_xrandr(source)
+
+    assert snapshot.valid
+    assert snapshot.connected_outputs == ("DisplayPort-1", "eDP")
+    assert snapshot.active_outputs == ("DisplayPort-1", "eDP")
+    assert snapshot.primary_output == "DisplayPort-1"
 
 
 def test_injected_pair_is_merged_without_any_live_command() -> None:
@@ -260,3 +310,46 @@ def test_unknown_connection_remains_uncertain_not_disconnected() -> None:
     assert parsed.valid
     assert parsed.outputs[0].connection is XConnectionState.UNKNOWN
     assert not parsed.outputs[0].connected
+
+
+@pytest.mark.parametrize(
+    "tokens",
+    [
+        "+ 60.00",
+        "60.00 + +",
+        "60.00+ +",
+        "60.00 *",
+        "60.00++",
+        "60.00+*",
+    ],
+)
+def test_query_rejects_marker_forms_outside_real_xrandr_rate_grammar(
+    tokens: str,
+) -> None:
+    parsed = parse_xrandr_query(
+        TextCommandEvidence(
+            RawEvidenceSource.XRANDR_QUERY,
+            "injected:malformed-markers",
+            f"DP-1 connected\n   1920x1080 {tokens}\n",
+        )
+    )
+
+    assert not parsed.valid
+    assert ParseIssueCode.MALFORMED_LINE in {item.code for item in parsed.issues}
+
+
+def test_properties_reject_malformed_mode_but_ignore_tab_continuation() -> None:
+    parsed = parse_xrandr_properties(
+        TextCommandEvidence(
+            RawEvidenceSource.XRANDR_PROPERTIES,
+            "injected:mode-vs-property-continuation",
+            "DP-1 connected\n"
+            "\tCTM: 1.000000 0.000000 0.000000\n"
+            "\t\t0.000000 1.000000 0.000000\n"
+            "   1920x1080 sixty\n",
+        )
+    )
+
+    assert tuple(item.code for item in parsed.issues) == (
+        ParseIssueCode.MALFORMED_LINE,
+    )

@@ -149,11 +149,14 @@ _OBSERVATION_FIELDS = frozenset(
         "target_layout",
         "configuration_hashes",
         "external_outputs",
+        "output_mappings",
         "complete_edid_outputs",
         "base_identity_outputs",
         "internal_edid_complete",
     }
 )
+_OBSERVATION_OPTIONAL_FIELDS = frozenset({"output_mappings"})
+_OUTPUT_MAPPING_FIELDS = frozenset({"saved_output", "live_output"})
 _EVENT_FIELDS: dict[str, frozenset[str]] = {
     "drm_hint": frozenset({"type", "at_ms", "event_generation"}),
     "timer": frozenset({"type", "at_ms", "deadline_ms"}),
@@ -411,7 +414,12 @@ def _decode_step(value: object, where: str) -> ScenarioStep:
     if allowed is None:
         raise ScenarioFormatError(f"{where}.event has unknown type: {event_type}")
     _exact_fields(event, allowed, f"{where}.event")
-    _required_fields(event, allowed, f"{where}.event")
+    required = (
+        allowed - _OBSERVATION_OPTIONAL_FIELDS
+        if event_type == "observation"
+        else allowed
+    )
+    _required_fields(event, required, f"{where}.event")
 
     expected = _object(data["expect"], f"{where}.expect")
     _exact_fields(expected, _EXPECT_FIELDS, f"{where}.expect")
@@ -500,6 +508,46 @@ def _scope(value: object) -> ProfileScope:
         raise ScenarioFormatError(f"unknown target_scope: {text}") from error
 
 
+def _output_mappings(
+    data: Mapping[str, object],
+    scope: ProfileScope | None,
+    external_outputs: tuple[str, ...],
+) -> tuple[OutputMapping, ...]:
+    """Decode an explicit saved/live mapping or build generic scenario data."""
+    mappings_data = data.get("output_mappings")
+    if mappings_data is None:
+        if scope is ProfileScope.INTERNAL_ONLY:
+            return (OutputMapping("eDP-1", "eDP-1"),)
+        return tuple(
+            sorted(
+                (
+                    *(
+                        OutputMapping(f"DP-SAVED-{index}", output)
+                        for index, output in enumerate(external_outputs, start=1)
+                    ),
+                    OutputMapping("eDP-1", "eDP-1"),
+                ),
+                key=lambda item: (item.saved_output, item.live_output),
+            )
+        )
+
+    mapping_items: list[OutputMapping] = []
+    for index, item in enumerate(_array(mappings_data, "observation.output_mappings")):
+        where = f"observation.output_mappings[{index}]"
+        fields = _object(item, where)
+        _exact_fields(fields, _OUTPUT_MAPPING_FIELDS, where)
+        _required_fields(fields, _OUTPUT_MAPPING_FIELDS, where)
+        mapping_items.append(
+            OutputMapping(
+                _string(fields["saved_output"], f"{where}.saved_output"),
+                _string(fields["live_output"], f"{where}.live_output"),
+            )
+        )
+    return tuple(
+        sorted(mapping_items, key=lambda item: (item.saved_output, item.live_output))
+    )
+
+
 def _observation(data: Mapping[str, object], state: State) -> CanonicalObservation:
     now_ms = _integer(data["at_ms"], "observation.at_ms")
     key = ObservationKey(_string(data["key"], "observation.key"))
@@ -525,22 +573,7 @@ def _observation(data: Mapping[str, object], state: State) -> CanonicalObservati
     connected = tuple(sorted((*external_outputs, "eDP-1")))
     active_external = external and exact_profile is not None
     active = connected if active_external else ("eDP-1",)
-    mapping = (
-        (OutputMapping("eDP-1", "eDP-1"),)
-        if scope is ProfileScope.INTERNAL_ONLY
-        else tuple(
-            sorted(
-                (
-                    *(
-                        OutputMapping(f"DP-SAVED-{index}", output)
-                        for index, output in enumerate(external_outputs, start=1)
-                    ),
-                    OutputMapping("eDP-1", "eDP-1"),
-                ),
-                key=lambda item: (item.saved_output, item.live_output),
-            )
-        )
-    )
+    mapping = _output_mappings(data, scope, external_outputs)
     target_layout = _nullable_string(data["target_layout"], "observation.target_layout")
     hashes_data = _object(
         data["configuration_hashes"], "observation.configuration_hashes"

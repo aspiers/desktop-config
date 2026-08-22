@@ -1,0 +1,23 @@
+{
+  "captured_at_local": "2026-08-22",
+  "classification": "sanitized retained parser-reproduction capture",
+  "provenance": "retained_raw_derived",
+  "acceptance_limit": "This pre-restart read-only capture reproduces the parser defect; it is not a physical transition trace and does not satisfy live shadow acceptance.",
+  "display_mutation": false,
+  "edids": {
+    "DisplayPort-1": {
+      "bytes": 400,
+      "sha256": "0dc9ed31bd18093d4e8feda96f2cfd10eb4e96eff08fccc15cb9a17f8eaa52fc"
+    },
+    "eDP": {
+      "bytes": 384,
+      "sha256": "64abdc84a830f9b8d8bc0a1496b251ea28c03f1942cb86d90e3889d03f23436b"
+    }
+  },
+  "raw_capture_sha256": {
+    "xrandr_props": "caca0482d014e051e8cdd071be71014aa04d96934c8f40d5b035f84e10c1f955",
+    "xrandr_query": "ad6770392a78362f09931cea88b8d5c2bf7768e4ee7c9593609b7d5d7910a3f6"
+  },
+  "sanitization": "Raw EDID property bytes were replaced by per-output SHA-256 and length; topology, connector IDs, CTM continuation grammar, mode names, refresh rates, and markers were retained.",
+  "source": "read-only xrandr --query and xrandr --props beside the pre-fix shadow process and unchanged monitor-watcher-ng PID 2734905"
+}

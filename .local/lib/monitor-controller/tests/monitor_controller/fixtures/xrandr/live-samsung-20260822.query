@@ -1,0 +1,38 @@
+Screen 0: minimum 320 x 200, current 8000 x 2160, maximum 16384 x 16384
+eDP connected 2880x1920+0+0 (normal left inverted right x axis y axis) 285mm x 190mm
+   2880x1920    120.00 +  60.00*+
+   1920x1200    120.00
+   1920x1080    120.00
+   1600x1200    120.00
+   1680x1050    120.00
+   1280x1024    120.00
+   1440x900     120.00
+   1280x800     120.00
+   1280x720     120.00
+   1024x768     120.00
+   800x600      120.00
+   640x480      120.00
+DisplayPort-0 disconnected (normal left inverted right x axis y axis)
+DisplayPort-1 connected primary 5120x2160+2880+0 (normal left inverted right x axis y axis) 930mm x 400mm
+   3440x1440     59.97 + 179.97
+   5120x2160    120.00   119.88    60.00*   59.94
+   3840x2160    120.00   119.88    60.00    59.94    30.00    29.97
+   2560x1440    180.00   120.00    59.95
+   2560x1080    179.94   120.00   119.88    60.00    59.94
+   1920x1080    179.92   120.00   119.88    60.00    60.00    59.94
+   1680x1050     59.88
+   1600x900      60.00
+   1280x1024     60.02
+   1440x900      59.90
+   1280x800      59.91
+   1280x720      60.00    59.94
+   1024x768      60.00
+   800x600       60.32
+   720x480       60.00    59.94
+   640x480       60.00    59.94
+DisplayPort-2 disconnected (normal left inverted right x axis y axis)
+DisplayPort-3 disconnected (normal left inverted right x axis y axis)
+DisplayPort-4 disconnected (normal left inverted right x axis y axis)
+DisplayPort-5 disconnected (normal left inverted right x axis y axis)
+DisplayPort-6 disconnected (normal left inverted right x axis y axis)
+DisplayPort-7 disconnected (normal left inverted right x axis y axis)
