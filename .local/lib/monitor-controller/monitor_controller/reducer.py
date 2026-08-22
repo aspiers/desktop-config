@@ -772,8 +772,29 @@ def _classify_observation(state: State, observation: CanonicalObservation) -> De
     else:
         state, unplug_complete = _handle_unplug(state, observation)
         if not unplug_complete:
+            # A terminal failure belongs to the old external topology.  Clear its
+            # retained identity before changing phase while the unplug proof is
+            # still accumulating; otherwise DISCOVER_FAST would violate the
+            # phase/action invariant on the first internal-only sample.
+            state = replace(
+                state,
+                phase=ControllerPhase.DISCOVER_FAST,
+                probe=(
+                    None if state.phase is ControllerPhase.PROBE_FAILED else state.probe
+                ),
+                application=(
+                    None
+                    if state.phase is ControllerPhase.APPLY_FAILED
+                    else state.application
+                ),
+                finalization=(
+                    None
+                    if state.phase is ControllerPhase.FINALIZE_FAILED
+                    else state.finalization
+                ),
+            )
             return _schedule(
-                replace(state, phase=ControllerPhase.DISCOVER_FAST),
+                state,
                 max(now_ms + 1, state.unplug_proof.first_observed_at_ms + 1_000)
                 if state.unplug_proof is not None
                 else now_ms + 1,

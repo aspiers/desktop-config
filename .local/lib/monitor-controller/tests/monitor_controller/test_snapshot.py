@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
+import sys
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import cast
@@ -365,7 +368,78 @@ def test_bounded_runner_uses_array_no_shell_and_preserves_stdout() -> None:
     assert evidence.stdout == "ok\n"
     assert calls[0][0] == ("xrandr", "--query")
     assert calls[0][1]["shell"] is False
+    assert calls[0][1]["start_new_session"] is True
     assert calls[0][1]["timeout"] == 0.25
+
+
+def test_autorandr_commands_always_receive_the_explicit_isolated_environment(
+    tmp_path: Path,
+) -> None:
+    root, commands, profiles = load_manifest(tmp_path, "exact-aoc")
+    runner = _FixtureRunner(commands)
+    isolated = {
+        "HOME": str(tmp_path / "isolated-home"),
+        "XDG_CONFIG_HOME": str(tmp_path / "isolated-config"),
+        "XDG_CONFIG_DIRS": str(tmp_path / "isolated-config-dirs"),
+    }
+
+    CanonicalSnapshotCoordinator(
+        drm_tree=RootedSysfsReader(root),
+        command_runner=runner,
+        profiles=StaticSavedProfiles(profiles),
+        boot_id_source=_FakeBoot(),
+        clock=_FakeClock(),
+        event_generation_source=_FakeGeneration(),
+        autorandr_environment=isolated,
+    ).observe()
+
+    xrandr_requests = runner.requests[:2]
+    autorandr_requests = runner.requests[2:]
+    assert all(request.environment is None for request in xrandr_requests)
+    assert all(
+        dict(request.environment or ()) == isolated for request in autorandr_requests
+    )
+
+
+def test_bounded_runner_kills_the_timed_out_command_process_group(
+    tmp_path: Path,
+) -> None:
+    child_pid = tmp_path / "child.pid"
+    program = tmp_path / "spawn-child.py"
+    program.write_text(
+        """\
+import pathlib
+import subprocess
+import sys
+import time
+child = subprocess.Popen([sys.executable, \"-c\", \"import time; time.sleep(60)\"])
+pathlib.Path(sys.argv[1]).write_text(str(child.pid), encoding=\"ascii\")
+time.sleep(60)
+""",
+        encoding="utf-8",
+    )
+
+    evidence = BoundedCommandRunner().run(
+        CommandRequest(
+            (sys.executable, str(program), str(child_pid)),
+            RawEvidenceSource.AUTORANDR_PROFILES,
+            "test:process-group-timeout",
+            0.5,
+        )
+    )
+
+    assert evidence.timed_out
+    assert child_pid.is_file()
+    pid = int(child_pid.read_text(encoding="ascii"))
+    deadline = time.monotonic() + 2
+    while time.monotonic() < deadline:
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            break
+        time.sleep(0.01)
+    else:
+        pytest.fail(f"timed-out command descendant survived as PID {pid}")
 
 
 def test_bounded_runner_converts_spawn_failure_to_command_evidence() -> None:

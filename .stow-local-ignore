@@ -61,6 +61,7 @@ COPYING
 \.autosync
 \.autocommit
 \.mypy_cache
+\.pytest_cache
 \.ruff_cache
 \.env
 \.env\..*
@@ -80,9 +81,10 @@ nohup\.out
 
 ^specs$
 ^/\.beads
-# The monitor controller is source-only until its explicit shadow-deployment
-# bead installs the locked runtime and removes this guard.
-^/\.local/lib/monitor-controller$
+\.beads\.gate\.lock
+# Deploy the monitor-controller source/install helper, but never Stow local
+# development environments, generated distributions, or test state.
+^/\.local/lib/monitor-controller/(\.venv|\.hypothesis|\.pytest_cache|dist|.*/__pycache__)$
 ^/pyrightconfig\.json$
 # Per-repository opt-in marker, read from the repo root -- it means
 # nothing in ~, and stowing it collides with ai-config, which also
@@ -95,4 +97,6 @@ nohup\.out
 # global one when that gains entries.
 ^/\.beads-solo
 ^/\.agents/skills/beads/
+\.agents/skills/beads
+\.claude/skills/beads
 \.perles

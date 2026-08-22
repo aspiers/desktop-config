@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import contextlib
+import os
+import signal
 import subprocess
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from subprocess import TimeoutExpired
 from typing import Protocol
 
 from ..observer.evidence import (  # noqa: TID252
@@ -25,6 +29,7 @@ class CommandRequest:
     source: RawEvidenceSource
     reference: str
     timeout_seconds: float = DEFAULT_COMMAND_TIMEOUT_SECONDS
+    environment: tuple[tuple[str, str], ...] | None = None
 
     def __post_init__(self) -> None:
         if not self.arguments or any(
@@ -38,6 +43,14 @@ class CommandRequest:
                 f"{MAX_COMMAND_TIMEOUT_SECONDS:g} seconds"
             )
             raise ValueError(msg)
+        if self.environment is not None:
+            names = tuple(name for name, _value in self.environment)
+            if len(names) != len(set(names)) or any(
+                not name or "=" in name or "\x00" in name or "\x00" in value
+                for name, value in self.environment
+            ):
+                msg = "command environment must contain unique valid names and values"
+                raise ValueError(msg)
 
 
 class CommandRunner(Protocol):
@@ -55,34 +68,43 @@ class _SubprocessRun(Protocol):
         *,
         capture_output: bool,
         check: bool,
+        env: Mapping[str, str] | None,
         shell: bool,
+        start_new_session: bool,
         text: bool,
         timeout: float,
     ) -> subprocess.CompletedProcess[str]: ...
 
 
 class BoundedCommandRunner:
-    """Run commands with arrays, a fixed timeout ceiling, and ``shell=False``."""
+    """Run command arrays in killable sessions with a fixed timeout ceiling."""
 
     def __init__(
         self,
-        executor: _SubprocessRun = subprocess.run,
+        executor: _SubprocessRun | None = None,
     ) -> None:
-        """Inject the subprocess primitive so contract tests never execute tools."""
+        """Optionally inject a run primitive; production owns the process group."""
         self._executor = executor
 
     def run(self, request: CommandRequest) -> TextCommandEvidence:
         """Return bounded parser evidence for success, failure, or timeout."""
+        environment = None if request.environment is None else dict(request.environment)
         try:
-            completed = self._executor(
-                request.arguments,
-                capture_output=True,
-                check=False,
-                shell=False,
-                text=True,
-                timeout=request.timeout_seconds,
+            completed = (
+                self._execute_process_group(request, environment)
+                if self._executor is None
+                else self._executor(
+                    request.arguments,
+                    capture_output=True,
+                    check=False,
+                    env=environment,
+                    shell=False,
+                    start_new_session=True,
+                    text=True,
+                    timeout=request.timeout_seconds,
+                )
             )
-        except subprocess.TimeoutExpired as error:
+        except TimeoutExpired as error:
             stdout = _timeout_stdout(error.stdout)
             return TextCommandEvidence(
                 source=request.source,
@@ -105,6 +127,42 @@ class BoundedCommandRunner:
             reference=request.reference,
             stdout=completed.stdout,
             exit_status=_bounded_exit_status(completed.returncode),
+        )
+
+    @staticmethod
+    def _execute_process_group(
+        request: CommandRequest,
+        environment: Mapping[str, str] | None,
+    ) -> subprocess.CompletedProcess[str]:
+        process = subprocess.Popen(  # noqa: S603
+            request.arguments,
+            env=environment,
+            shell=False,
+            start_new_session=True,
+            stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            text=True,
+        )
+        try:
+            stdout, stderr = process.communicate(timeout=request.timeout_seconds)
+        except TimeoutExpired:
+            # Autorandr can start hook descendants.  Killing the isolated session,
+            # rather than only its leader, guarantees a timed-out command cannot
+            # leave a hook or helper alive after observation cancellation.
+            with contextlib.suppress(ProcessLookupError):
+                os.killpg(process.pid, signal.SIGKILL)
+            stdout, stderr = process.communicate()
+            raise TimeoutExpired(
+                request.arguments,
+                request.timeout_seconds,
+                output=stdout,
+                stderr=stderr,
+            ) from None
+        return subprocess.CompletedProcess(
+            request.arguments,
+            process.returncode,
+            stdout,
+            stderr,
         )
 
 

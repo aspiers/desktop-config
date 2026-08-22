@@ -26,6 +26,7 @@ from monitor_controller.model import (
     FinalizationFinished,
     ObservationCompleted,
     ObservationGeneration,
+    ObservationKey,
     PreparationFinished,
     ProbeFinished,
     RequestObservation,
@@ -361,6 +362,63 @@ def test_late_finalizer_success_cannot_supersede_timeout_or_commit_profile() -> 
     )
     assert after_observation.state.phase is ControllerPhase.FINALIZE_FAILED
     assert after_observation.state.desktop_finalized_profile == "celtic"
+
+
+def test_first_unplug_sample_clears_failed_probe_before_discovery() -> None:
+    state = _scenario_state(
+        "production_worker_timeout",
+        ControllerPhase.PROBE_PENDING,
+        ActionLifecycle.ADMITTED,
+    )
+    action = state.probe
+    observation = state.latest_observation
+    assert action is not None
+    assert observation is not None
+    failed = reduce(
+        state,
+        DispatchRejected(
+            EventMetadata(1, state.boot_id),
+            action.action_id,
+            "null dispatcher",
+        ),
+    ).state
+    internal = replace(
+        observation,
+        observed_at_ms=2,
+        observation_generation=ObservationGeneration(
+            observation.observation_generation.value + 1
+        ),
+        kernel_connected_outputs=("eDP-1",),
+        kernel_external_outputs=(),
+        x_connected_outputs=("eDP-1",),
+        x_active_outputs=("eDP-1",),
+        x_external_outputs=(),
+        connector_identities=tuple(
+            item for item in observation.connector_identities if item.output == "eDP-1"
+        ),
+        live_fingerprints=tuple(
+            item for item in observation.live_fingerprints if item.output == "eDP-1"
+        ),
+        base_identity_profiles=(),
+        edid_integrity=tuple(
+            item for item in observation.edid_integrity if item.output == "eDP-1"
+        ),
+        probe_candidate=None,
+        eligible_profiles=(),
+        current_profiles=(),
+        exact_profile=None,
+        observation_key=ObservationKey("internal-after-failed-probe"),
+    )
+
+    decision = reduce(
+        failed,
+        ObservationCompleted(EventMetadata(2, state.boot_id), internal),
+    )
+
+    assert decision.state.phase is ControllerPhase.DISCOVER_FAST
+    assert decision.state.probe is None
+    assert decision.state.unplug_proof is not None
+    assert decision.state.next_timer_ms == 1_002
 
 
 def test_reducer_prunes_tombstones_and_preserves_failure_high_water() -> None:

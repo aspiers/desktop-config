@@ -1,0 +1,83 @@
+[Unit]
+Description=Non-authoritative monitor controller shadow
+# The existing ng watcher remains the sole display authority.  Shadow has no
+# Conflicts= with either watcher and stops with the same Fluxbox session.
+PartOf=fluxbox-session.target
+After=fluxbox-session.target
+StartLimitIntervalSec=60s
+StartLimitBurst=5
+
+[Service]
+Type=simple
+SyslogIdentifier=monitor-controller-shadow
+Environment=MONITOR_CONTROLLER_NAMESPACE=shadow
+Environment=PYTHONUNBUFFERED=1
+Environment=PATH=/usr/bin:/bin
+Environment=XDG_CONFIG_HOME=%h/.config
+Environment=XDG_DATA_HOME=%h/.local/share
+Environment=XDG_STATE_HOME=%h/.local/state
+Environment=XDG_RUNTIME_DIR=%t
+UnsetEnvironment=BASH_ENV ENV LD_LIBRARY_PATH LD_PRELOAD PYTHONHOME PYTHONINSPECT PYTHONPATH PYTHONSTARTUP PYTHONUSERBASE
+# Run the installed locked environment directly.  Service startup never invokes
+# uv, resolves packages, or gets AF_INET/AF_INET6 network access.
+ExecCondition=/usr/bin/test -x %h/.local/share/monitor-controller/venv/bin/python
+ExecStart=%h/.local/share/monitor-controller/venv/bin/python -I -m monitor_controller.shadow
+Restart=on-failure
+RestartSec=5s
+KillMode=control-group
+TimeoutStopSec=35s
+StandardOutput=journal
+StandardError=journal
+UMask=0077
+
+# Systemd creates exactly the two shadow-owned writable roots before applying
+# the read-only filesystem sandbox.  No active transaction or state root is
+# writable or even visible.
+StateDirectory=monitor-controller/shadow
+StateDirectoryMode=0700
+RuntimeDirectory=monitor-controller/shadow
+RuntimeDirectoryMode=0700
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=%h/.local/state/monitor-controller/shadow %t/monitor-controller/shadow
+ReadOnlyPaths=/sys/class/drm /proc/sys/kernel/random/boot_id
+InaccessiblePaths=-%h/.local/state/monitor-controller/active -%t/monitor-controller/active -%t/systemd/private -%t/bus
+
+# X11 observation unavoidably needs read access to the inherited XAUTHORITY
+# file (which may be in /tmp) and the host /tmp/.X11-unix socket.  Therefore
+# PrivateTmp cannot be enabled.  Home and temporary trees remain non-writable
+# and non-executable; only the fixed installed venv is executable under home.
+NoExecPaths=%h %t /tmp /var/tmp
+ExecPaths=%h/.local/share/monitor-controller/venv
+
+# PrivateUsers makes the compatible mount-namespace protections effective in a
+# user unit.  PrivateDevices is intentionally absent: this unprivileged user
+# manager cannot mount /dev/mqueue while constructing its private /dev and
+# exits at 226/NAMESPACE.  PrivateIPC is also intentionally absent because its
+# IPC namespace setup is unavailable here.  The remaining filesystem and
+# namespace restrictions retain the null-shadow boundary.
+# AF_UNIX is required only for X11; AF_NETLINK only for DRM kobject uevents.
+# That address-family allow-list excludes AF_INET/AF_INET6 without relying on
+# IPAddressDeny, whose IP firewall cannot be installed by this user manager.
+PrivateUsers=true
+ProtectClock=true
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectProc=invisible
+NoNewPrivileges=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+SystemCallArchitectures=native
+SystemCallFilter=~@mount @reboot @swap
+SystemCallErrorNumber=EPERM
+RestrictAddressFamilies=AF_UNIX AF_NETLINK
+
+[Install]
+WantedBy=fluxbox-session.target

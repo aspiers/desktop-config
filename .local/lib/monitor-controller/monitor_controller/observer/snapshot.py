@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from hashlib import sha256
 from typing import Protocol
@@ -162,10 +163,14 @@ class _CommandAutorandrSource(AutorandrEvidenceSource):
         runner: CommandRunner,
         commands: ObserverCommands,
         timeout_seconds: float,
+        environment: Mapping[str, str] | None,
     ) -> None:
         self._runner = runner
         self._commands = commands
         self._timeout = timeout_seconds
+        self._environment = (
+            None if environment is None else tuple(sorted(environment.items()))
+        )
 
     def fingerprint(self) -> TextCommandEvidence:
         return self._run(
@@ -195,7 +200,13 @@ class _CommandAutorandrSource(AutorandrEvidenceSource):
         reference: str,
     ) -> TextCommandEvidence:
         return self._runner.run(
-            CommandRequest(arguments, source, reference, self._timeout)
+            CommandRequest(
+                arguments,
+                source,
+                reference,
+                self._timeout,
+                self._environment,
+            )
         )
 
 
@@ -238,6 +249,7 @@ class CanonicalSnapshotCoordinator:
         ),
         commands: ObserverCommands = DEFAULT_OBSERVER_COMMANDS,
         command_timeout_seconds: float = DEFAULT_OBSERVER_TIMEOUT_SECONDS,
+        autorandr_environment: Mapping[str, str] | None = None,
     ) -> None:
         """Bind every I/O authority explicitly and retain only a local sequence."""
         if not 0 < command_timeout_seconds <= MAX_COMMAND_TIMEOUT_SECONDS:
@@ -253,7 +265,10 @@ class CanonicalSnapshotCoordinator:
             command_runner, commands, command_timeout_seconds
         )
         self._autorandr_source = _CommandAutorandrSource(
-            command_runner, commands, command_timeout_seconds
+            command_runner,
+            commands,
+            command_timeout_seconds,
+            autorandr_environment,
         )
 
     def observe(self) -> CanonicalObservation:
