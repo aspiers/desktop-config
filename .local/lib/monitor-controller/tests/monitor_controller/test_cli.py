@@ -57,6 +57,48 @@ def test_replay_uses_the_production_reducer(
     assert '"verified": true' in output
 
 
+def test_internal_probe_entry_point_passes_only_typed_worker_arguments(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seen: dict[str, object] = {}
+
+    def fake_probe_worker(**arguments: object) -> int:
+        seen.update(arguments)
+        return 23
+
+    monkeypatch.setattr(
+        "monitor_controller.cli.run_probe_worker",
+        fake_probe_worker,
+    )
+    transaction_root = tmp_path / "transactions"
+    sysfs_root = tmp_path / "sysfs"
+
+    assert (
+        main(
+            [
+                "internal",
+                "probe",
+                "--transaction-root",
+                str(transaction_root),
+                "--action-id",
+                "probe-12345678123456781234567812345678-1",
+                "--unit",
+                "monitor-probe@test.service",
+                "--sysfs-root",
+                str(sysfs_root),
+            ]
+        )
+        == 23
+    )
+    assert seen == {
+        "transaction_root": transaction_root,
+        "action_id_text": "probe-12345678123456781234567812345678-1",
+        "unit_name": "monitor-probe@test.service",
+        "sysfs_root": sysfs_root,
+    }
+
+
 def test_status_reads_selected_namespace_without_writing(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],

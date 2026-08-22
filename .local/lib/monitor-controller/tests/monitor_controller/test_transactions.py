@@ -437,7 +437,7 @@ def test_worker_execution_claim_rejects_every_repeat_after_terminal_result(
         (None, "timeout", "KILL", ActionLifecycle.TIMED_OUT),
         (ActionLifecycle.TIMED_OUT, "signal", "TERM", ActionLifecycle.TIMED_OUT),
         (ActionLifecycle.UNKNOWN, "signal", "TERM", ActionLifecycle.UNKNOWN),
-        (ActionLifecycle.CANCELLED, "timeout", "KILL", ActionLifecycle.CANCELLED),
+        (ActionLifecycle.CANCELLED, "timeout", "KILL", ActionLifecycle.TIMED_OUT),
         (None, "exit-code", "23", ActionLifecycle.FAILED),
         (None, "success", "0", ActionLifecycle.UNKNOWN),
     ],

@@ -6,6 +6,7 @@ import asyncio
 from typing import Protocol, cast
 
 from monitor_controller.model import (
+    BROKEN_EXTENSION_EDID_INTEGRITIES,
     ActionId,
     ActionKind,
     ActionLifecycle,
@@ -563,10 +564,41 @@ class SerializedController:
             msg = "admitted effect lacks its exact persisted observation proof"
             raise ValueError(msg)
         layout: str | None = None
+        probe_base_hash: str | None = None
+        probe_edid_integrity = None
         if isinstance(effect, ActivateProbe):
             if effect.key.physical_epoch != self._state.physical_epoch:
                 msg = "probe effect physical epoch is no longer current"
                 raise ValueError(msg)
+            candidate = observation.probe_candidate
+            identity_matches = tuple(
+                item
+                for item in observation.base_identity_profiles
+                if item.profile == effect.key.profile and item.output == effect.output
+            )
+            edid = next(
+                (
+                    item
+                    for item in observation.edid_integrity
+                    if item.output == effect.output
+                ),
+                None,
+            )
+            if (
+                candidate is None
+                or candidate.output != effect.output
+                or candidate.internal_output != effect.internal_output
+                or candidate.preferred_mode != effect.preferred_mode
+                or candidate.profile != effect.key.profile
+                or len(identity_matches) != 1
+                or edid is None
+                or edid.base_hash is None
+                or edid.integrity not in BROKEN_EXTENSION_EDID_INTEGRITIES
+            ):
+                msg = "probe effect lacks exact broken-extension identity proof"
+                raise ValueError(msg)
+            probe_base_hash = edid.base_hash
+            probe_edid_integrity = edid.integrity
             mapping = ()
         elif isinstance(effect, ApplyProfile):
             if (
@@ -607,6 +639,8 @@ class SerializedController:
                 x_active_outputs=observation.x_active_outputs,
             ),
             layout=layout,
+            probe_base_hash=probe_base_hash,
+            probe_edid_integrity=probe_edid_integrity,
         )
 
     async def _start_prepared(

@@ -22,8 +22,10 @@ from monitor_controller.runtime.transactions import (
 )
 
 UNIMPLEMENTED_EXIT_STATUS: Final = 78
-TOPOLOGY_REJECTED_EXIT_STATUS: Final = 75
+STALE_EXIT_STATUS: Final = 75
+TOPOLOGY_REJECTED_EXIT_STATUS: Final = STALE_EXIT_STATUS
 CANCELLED_EXIT_STATUS: Final = 143
+TIMED_OUT_EXIT_STATUS: Final = 124
 WORKER_EXCEPTION_EXIT_STATUS: Final = 70
 MAX_EXIT_STATUS: Final = 255
 MAX_RESULT_DETAIL_LENGTH: Final = 512
@@ -34,7 +36,7 @@ class WorkerStartupError(RuntimeError):
 
 
 class WorkerCancelled(BaseException):
-    """Cooperative SIGTERM interrupted work at a safe mutating boundary."""
+    """SIGTERM or a durable stop intent interrupted a mutating boundary."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -121,6 +123,12 @@ def validate_worker_startup(
         msg = "request unit name differs from the invoked unit"
         raise WorkerStartupError(msg)
     try:
+        if (
+            acquire_execution_claim
+            and store.result_if_present(request.action_id) is not None
+        ):
+            msg = "worker action already claimed by an immutable terminal result"
+            raise WorkerStartupError(msg)
         claim = (
             store.claim_execution(request.action_id)
             if acquire_execution_claim
@@ -174,16 +182,22 @@ def execute_worker(
         validate_topology_guard(startup.request, current)
         execution = implementation(startup.request)
     except WorkerCancelled:
+        intent = startup.store.stop_intent_if_present(startup.request.action_id)
+        if intent is None:
+            # A manager deadline also arrives as SIGTERM.  Without a durable
+            # controller intent, do not guess cancellation and thereby preempt
+            # ExecStopPost's authoritative SERVICE_RESULT (notably "timeout").
+            raise
         execution = WorkerExecution(
-            ActionLifecycle.CANCELLED,
-            CANCELLED_EXIT_STATUS,
-            "worker cooperatively cancelled by SIGTERM",
+            intent.terminal_lifecycle,
+            _terminal_exit_status(intent.terminal_lifecycle),
+            f"worker interrupted for {intent.terminal_lifecycle.value} stop intent",
         )
     except WorkerStartupError as error:
         execution = WorkerExecution(
             ActionLifecycle.FAILED,
             TOPOLOGY_REJECTED_EXIT_STATUS,
-            _bounded_detail("topology guard", error),
+            _bounded_detail("STALE", error),
         )
     except Exception as error:  # noqa: BLE001 - worker implementation boundary
         execution = WorkerExecution(
@@ -262,10 +276,12 @@ def record_systemd_result(
     if existing is not None:
         return 0
     intent = startup.store.stop_intent_if_present(startup.request.action_id)
-    if intent is not None:
-        lifecycle = intent.terminal_lifecycle
-    elif service_result == "timeout":
+    if service_result == "timeout":
+        # A manager-enforced deadline is stronger terminal truth than an earlier
+        # stop request: the unit actually exhausted a systemd timeout.
         lifecycle = ActionLifecycle.TIMED_OUT
+    elif intent is not None:
+        lifecycle = intent.terminal_lifecycle
     elif service_result in {
         "exit-code",
         "signal",
@@ -289,12 +305,11 @@ def record_systemd_result(
     ]
     if intent is not None:
         detail_parts.append(f"stop-intent={intent.terminal_lifecycle.value}")
-    status = {
-        ActionLifecycle.CANCELLED: CANCELLED_EXIT_STATUS,
-        ActionLifecycle.TIMED_OUT: 124,
-        ActionLifecycle.UNKNOWN: WORKER_EXCEPTION_EXIT_STATUS,
-        ActionLifecycle.FAILED: _failed_systemd_status(exit_status),
-    }[lifecycle]
+    status = (
+        _failed_systemd_status(exit_status)
+        if lifecycle is ActionLifecycle.FAILED
+        else _terminal_exit_status(lifecycle)
+    )
     now_ms = _monotonic_ms()
     write_worker_result(
         startup,
@@ -346,6 +361,19 @@ def main(argv: Sequence[str] | None = None) -> int:
         exit_code=arguments.exit_code,
         exit_status=arguments.exit_status,
     )
+
+
+def _terminal_exit_status(lifecycle: ActionLifecycle) -> int:
+    statuses = {
+        ActionLifecycle.CANCELLED: CANCELLED_EXIT_STATUS,
+        ActionLifecycle.TIMED_OUT: TIMED_OUT_EXIT_STATUS,
+        ActionLifecycle.UNKNOWN: WORKER_EXCEPTION_EXIT_STATUS,
+    }
+    try:
+        return statuses[lifecycle]
+    except KeyError as error:
+        msg = f"{lifecycle.value} is not a stop-intent terminal lifecycle"
+        raise ValueError(msg) from error
 
 
 def _failed_systemd_status(value: str) -> int:

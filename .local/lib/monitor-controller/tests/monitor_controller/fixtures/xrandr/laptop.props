@@ -4,6 +4,7 @@ eDP connected primary 2880x1920+0+0 (normal left inverted right x axis y axis) 2
 		00ffffffffffff00
 	CONNECTOR_ID: 73
 	non-desktop: 0
-   2880x1920     60.00*+
+   2880x1920     60.00*+  48.00
+   1920x1080     60.00
 DisplayPort-0 disconnected (normal left inverted right x axis y axis)
 	CONNECTOR_ID: 81

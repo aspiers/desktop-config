@@ -116,6 +116,14 @@ class EdidIntegrity(StrEnum):
     COMPLETE = "complete"
 
 
+BROKEN_EXTENSION_EDID_INTEGRITIES: frozenset[EdidIntegrity] = frozenset(
+    {
+        EdidIntegrity.BASE_VALID_EXTENSIONS_INCOMPLETE,
+        EdidIntegrity.BASE_VALID_EXTENSIONS_INVALID,
+    }
+)
+
+
 class ObservationValidity(StrEnum):
     """Whether a canonical sample may be used for classification."""
 
@@ -840,8 +848,7 @@ class CanonicalObservation:
                 and set(self.x_active_outputs) == internal
                 and len(matching_base) == 1
                 and probe_edid is not None
-                and probe_edid.integrity
-                not in {EdidIntegrity.ABSENT, EdidIntegrity.BASE_INVALID}
+                and probe_edid.integrity in BROKEN_EXTENSION_EDID_INTEGRITIES
                 and identified
             ):
                 msg = (

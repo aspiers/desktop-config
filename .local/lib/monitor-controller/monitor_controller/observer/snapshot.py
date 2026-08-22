@@ -17,6 +17,7 @@ from monitor_controller.observer.xrandr import (
 )
 
 from ..model import (  # noqa: TID252
+    BROKEN_EXTENSION_EDID_INTEGRITIES,
     BaseIdentityMatch,
     BootId,
     CanonicalObservation,
@@ -60,6 +61,7 @@ from .drm import (
     sample_drm,
 )
 from .evidence import ParseIssue, ParseIssueCode, TextCommandEvidence
+from .topology import derive_canonical_topology
 
 DEFAULT_OBSERVER_TIMEOUT_SECONDS: float = 5.0
 EDID_BASE_HEX_CHARS: int = 256
@@ -361,45 +363,17 @@ def _derive_facts(
     profiles: tuple[SavedAutorandrProfile, ...],
 ) -> _CanonicalFacts:
     connected_x = tuple(item for item in xrandr.outputs if item.connected)
-    translations, correspondence_inconsistent = _connector_translations(
-        drm.connectors, connected_x
-    )
-    kernel_connected = tuple(
-        sorted(
-            {
-                translations.get(item.kernel_name, item.output_name)
-                for item in drm.connectors
-                if item.connected and item.kind is not ConnectorKind.VIRTUAL
-            }
-        )
-    )
-    kernel_external = tuple(
-        sorted(
-            {
-                translations.get(item.kernel_name, item.output_name)
-                for item in drm.connectors
-                if item.connected and item.kind is ConnectorKind.EXTERNAL
-            }
-        )
-    )
-    x_connected = xrandr.connected_outputs
-    x_active = xrandr.active_outputs
-    x_external_set = {
-        translations[item.kernel_name]
-        for item in drm.connectors
-        if item.connected
-        and item.kind is ConnectorKind.EXTERNAL
-        and item.kernel_name in translations
+    topology = derive_canonical_topology(drm, xrandr)
+    translations = {
+        item.kernel_connector: item.live_output for item in topology.translations
     }
-    translated_x = set(translations.values())
-    x_external_set.update(
-        item.name
-        for item in connected_x
-        if item.name not in translated_x and _x_name_is_external(item.name)
-    )
-    x_external = tuple(sorted(x_external_set & set(x_connected)))
-    identities = _connector_identities(drm.connectors, connected_x, translations)
-    edid = _edid_evidence(drm.connectors, translations)
+    kernel_connected = topology.kernel_connected_outputs
+    kernel_external = topology.kernel_external_outputs
+    x_connected = topology.x_connected_outputs
+    x_active = topology.x_active_outputs
+    x_external = topology.x_external_outputs
+    identities = topology.connector_identities
+    edid = topology.edid_integrity
     base_matches = _base_identity_matches(profiles, drm.connectors, translations)
     eligible, mapping_inconsistent = _eligible_profiles(
         profiles, autorandr, x_connected
@@ -458,10 +432,10 @@ def _derive_facts(
         current=current,
         exact=exact,
         probe=probe,
-        physical_token=_physical_token(drm, translations),
+        physical_token=topology.physical_token,
         raw_evidence=raw,
         inconsistent=(
-            correspondence_inconsistent
+            topology.inconsistent
             or mapping_inconsistent
             or profile_inconsistent
             or topology_inconsistent
@@ -469,89 +443,6 @@ def _derive_facts(
             or x_uncertain
         ),
     )
-
-
-def _connector_translations(
-    connectors: tuple[DrmConnector, ...],
-    connected_x: tuple[XrandrOutput, ...],
-) -> tuple[dict[str, str], bool]:
-    translations: dict[str, str] = {}
-    claimed: set[str] = set()
-    inconsistent = False
-    for connector in connectors:
-        if not connector.connected or connector.kind is ConnectorKind.VIRTUAL:
-            continue
-        connector_id = connector.connector_id.value
-        matches = tuple(
-            output
-            for output in connected_x
-            if connector_id is not None and output.connector_id == connector_id
-        )
-        if not matches:
-            same_name = tuple(
-                output for output in connected_x if output.name == connector.output_name
-            )
-            if len(same_name) == 1 and (
-                connector_id is None or same_name[0].connector_id is None
-            ):
-                matches = same_name
-        if len(matches) != 1 or matches[0].name in claimed:
-            inconsistent = True
-            continue
-        translations[connector.kernel_name] = matches[0].name
-        claimed.add(matches[0].name)
-    return translations, inconsistent
-
-
-def _x_name_is_external(output: str) -> bool:
-    family = output.split("-", maxsplit=1)[0].casefold()
-    return family not in {"edp", "lvds", "dsi", "writeback"}
-
-
-def _connector_identities(
-    connectors: tuple[DrmConnector, ...],
-    connected_x: tuple[XrandrOutput, ...],
-    translations: dict[str, str],
-) -> tuple[ConnectorIdentityEvidence, ...]:
-    x_by_name = {item.name: item for item in connected_x}
-    values: dict[str, ConnectorIdentityEvidence] = {}
-    for connector in connectors:
-        output = translations.get(connector.kernel_name)
-        if output is None or connector.connector_id.value is None:
-            continue
-        x_output = x_by_name.get(output)
-        values[output] = ConnectorIdentityEvidence(
-            output=output,
-            kernel_connector=connector.kernel_name,
-            kernel_connector_id=connector.connector_id.value,
-            x_connector_id=None if x_output is None else x_output.connector_id,
-        )
-    return tuple(sorted(values.values(), key=_identity_key))
-
-
-def _identity_key(item: ConnectorIdentityEvidence) -> str:
-    x_id = "-" if item.x_connector_id is None else f"{item.x_connector_id:020d}"
-    return (
-        f"{item.output}\0{item.kernel_connector}\0"
-        f"{item.kernel_connector_id:020d}\0{x_id}"
-    )
-
-
-def _edid_evidence(
-    connectors: tuple[DrmConnector, ...], translations: dict[str, str]
-) -> tuple[EdidEvidence, ...]:
-    values: dict[str, EdidEvidence] = {}
-    for connector in connectors:
-        if not connector.connected or connector.kind is ConnectorKind.VIRTUAL:
-            continue
-        output = translations.get(connector.kernel_name, connector.output_name)
-        evidence = connector.edid_evidence()
-        values[output] = EdidEvidence(output, evidence.integrity, evidence.base_hash)
-    return tuple(sorted(values.values(), key=_edid_key))
-
-
-def _edid_key(item: EdidEvidence) -> str:
-    return f"{item.output}\0{item.integrity.value}\0{item.base_hash or ''}"
 
 
 def _base_identity_matches(
@@ -707,10 +598,10 @@ def _probe_candidate(  # noqa: PLR0911, PLR0913, PLR0917
     ):
         return None
     external_edid = next((item for item in edid if item.output == external), None)
-    if external_edid is None or external_edid.integrity in {
-        EdidIntegrity.ABSENT,
-        EdidIntegrity.BASE_INVALID,
-    }:
+    if (
+        external_edid is None
+        or external_edid.integrity not in BROKEN_EXTENSION_EDID_INTEGRITIES
+    ):
         return None
     if not any(
         item.output == external and item.x_connector_id is not None
@@ -838,10 +729,10 @@ def _invalidity_reason(  # noqa: PLR0913, PLR0917
 
 
 def _is_xrandr_torn_issue(issue: ParseIssue) -> bool:
-    return (
-        issue.code is ParseIssueCode.INCONSISTENT
-        and "topologies differ" in issue.detail
-    )
+    return issue.code is ParseIssueCode.INCONSISTENT and issue.detail in {
+        "query and properties output topologies differ",
+        "query and properties mode lists or markers differ",
+    }
 
 
 def _xrandr_torn(issues: tuple[ParseIssue, ...]) -> bool:
@@ -857,25 +748,6 @@ def _drm_certain(snapshot: DrmSnapshot) -> bool:
         )
         for item in snapshot.connectors
     )
-
-
-def _physical_token(drm: DrmSnapshot, translations: dict[str, str]) -> PhysicalToken:
-    payload = {
-        "scan_state": drm.scan_state.value,
-        "connectors": [
-            {
-                "kernel_name": item.kernel_name,
-                "output": translations.get(item.kernel_name, item.output_name),
-                "kind": item.kind.value,
-                "status_state": item.status_state.value,
-                "status": item.status.value,
-                "connector_id_state": item.connector_id.state.value,
-                "connector_id": item.connector_id.value,
-            }
-            for item in drm.connectors
-        ],
-    }
-    return PhysicalToken(_digest(payload))
 
 
 def _raw_evidence(

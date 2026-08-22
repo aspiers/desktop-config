@@ -18,11 +18,13 @@ from typing import Final, cast
 from uuid import UUID, uuid4
 
 from monitor_controller.model import (
+    BROKEN_EXTENSION_EDID_INTEGRITIES,
     TERMINAL_ACTION_LIFECYCLES,
     ActionId,
     ActionKind,
     ActionLifecycle,
     ControllerInstanceId,
+    EdidIntegrity,
     EventGeneration,
     ObservationKey,
     OutputMapping,
@@ -246,10 +248,16 @@ class TransactionRequest:
         ):
             msg = "application request requires a profile and output mapping"
             raise TransactionProtocolError(msg)
-        if self.action_kind is ActionKind.PROBE and self.output_mapping:
-            msg = "probe request cannot claim an unproven profile output mapping"
-            raise TransactionProtocolError(msg)
+        if self.action_kind is ActionKind.PROBE:
+            if self.output_mapping:
+                msg = "probe request cannot claim an unproven profile output mapping"
+                raise TransactionProtocolError(msg)
+            if self.profile is None:
+                msg = "probe request requires its unique base-identity profile"
+                raise TransactionProtocolError(msg)
         _validate_payload(self.payload)
+        if self.action_kind is ActionKind.PROBE:
+            _validate_probe_payload(self)
         if self.request_sha256:
             _validate_sha256(self.request_sha256, "request content hash")
             expected = _content_sha256(_request_object(self, include_hash=False))
@@ -1286,6 +1294,47 @@ def _validate_result_binding(
         raise TransactionProtocolError(msg)
     if result.plan_hash != request.plan_hash:
         msg = "result plan hash does not match its request"
+        raise TransactionProtocolError(msg)
+
+
+def _validate_probe_payload(request: TransactionRequest) -> None:
+    if request.layout is not None or request.plan_hash is not None:
+        msg = "probe request cannot carry layout or staged-plan authority"
+        raise TransactionProtocolError(msg)
+    expected = {
+        "base_identity_hash",
+        "edid_integrity",
+        "internal_output",
+        "preferred_mode",
+        "probe_output",
+    }
+    values = dict(request.payload)
+    if set(values) != expected:
+        msg = "probe request payload must contain exactly its five proof fields"
+        raise TransactionProtocolError(msg)
+    base_hash = values["base_identity_hash"]
+    if (
+        not isinstance(base_hash, str)
+        or _SHA256_PATTERN.fullmatch(f"sha256:{base_hash}") is None
+    ):
+        msg = "probe request base identity must be a lowercase SHA-256 digest"
+        raise TransactionProtocolError(msg)
+    try:
+        integrity = EdidIntegrity(values["edid_integrity"])
+    except (TypeError, ValueError) as error:
+        msg = "probe request extension integrity is invalid"
+        raise TransactionProtocolError(msg) from error
+    if integrity not in BROKEN_EXTENSION_EDID_INTEGRITIES:
+        msg = "probe request requires broken extension evidence"
+        raise TransactionProtocolError(msg)
+    for name in ("internal_output", "preferred_mode", "probe_output"):
+        value = values[name]
+        if not isinstance(value, str):
+            msg = f"probe request {name} must be text"
+            raise TransactionProtocolError(msg)
+        _validate_text(value, f"probe request {name}")
+    if values["probe_output"] == values["internal_output"]:
+        msg = "probe request target and internal output must differ"
         raise TransactionProtocolError(msg)
 
 

@@ -488,6 +488,13 @@ def test_probe_candidate_rejects_extra_external_or_active_outputs() -> None:
     probe_observation = replace(
         _observation(exact_profile=None),
         x_active_outputs=("eDP-1",),
+        edid_integrity=(
+            EdidEvidence(
+                "DP-3",
+                EdidIntegrity.BASE_VALID_EXTENSIONS_INVALID,
+                "base-hash",
+            ),
+        ),
         probe_candidate=ProbeCandidate("external", "DP-3", "eDP-1", "4k"),
     )
     assert isinstance(probe_observation.probe_candidate, ProbeCandidate)

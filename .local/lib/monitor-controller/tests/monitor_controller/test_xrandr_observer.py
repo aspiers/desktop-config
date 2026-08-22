@@ -51,6 +51,26 @@ class InjectedXrandr:
         return evidence(self.properties_name, RawEvidenceSource.XRANDR_PROPERTIES)
 
 
+@dataclass
+class _InlineXrandr:
+    query_text: str
+    properties_text: str
+
+    def query(self) -> TextCommandEvidence:
+        return TextCommandEvidence(
+            RawEvidenceSource.XRANDR_QUERY,
+            "injected:inline-query",
+            self.query_text,
+        )
+
+    def properties(self) -> TextCommandEvidence:
+        return TextCommandEvidence(
+            RawEvidenceSource.XRANDR_PROPERTIES,
+            "injected:inline-properties",
+            self.properties_text,
+        )
+
+
 @pytest.mark.parametrize(
     ("name", "connected", "active", "primary"),
     [
@@ -239,6 +259,75 @@ def test_query_and_properties_topology_change_is_explicitly_invalid() -> None:
 
     assert not snapshot.valid
     assert ParseIssueCode.INCONSISTENT in {item.code for item in snapshot.issues}
+
+
+@pytest.mark.parametrize(
+    ("side", "old", "new"),
+    [
+        (
+            "query-mode-list",
+            "   3840x2160    120.00   119.88    60.00    59.94    30.00    29.97\n",
+            "",
+        ),
+        (
+            "properties-mode-list",
+            "   3840x2160    120.00   119.88    60.00    59.94    30.00    29.97\n",
+            "",
+        ),
+        (
+            "query-preferred",
+            "   3440x1440     59.97 + 179.97",
+            "   3440x1440     59.97   179.97",
+        ),
+        (
+            "properties-preferred",
+            "   3440x1440     59.97 + 179.97",
+            "   3440x1440     59.97   179.97",
+        ),
+        (
+            "query-current",
+            "60.00*   59.94",
+            "60.00    59.94",
+        ),
+        (
+            "properties-current",
+            "60.00*   59.94",
+            "60.00    59.94",
+        ),
+    ],
+)
+def test_query_and_properties_mode_tears_are_invalid_in_both_directions(
+    side: str,
+    old: str,
+    new: str,
+) -> None:
+    query = (FIXTURES / "live-samsung-20260822.query").read_text(encoding="utf-8")
+    properties = (FIXTURES / "live-samsung-20260822.props").read_text(encoding="utf-8")
+    if side.startswith("query-"):
+        assert old in query
+        query = query.replace(old, new, 1)
+    else:
+        assert old in properties
+        properties = properties.replace(old, new, 1)
+
+    snapshot = sample_xrandr(_InlineXrandr(query, properties))
+
+    assert not snapshot.valid
+    assert any(
+        item.code is ParseIssueCode.INCONSISTENT and "mode" in item.detail
+        for item in snapshot.issues
+    )
+
+
+def test_mode_comparison_ignores_refresh_rate_presentation_differences() -> None:
+    query = (FIXTURES / "live-samsung-20260822.query").read_text(encoding="utf-8")
+    properties = (
+        (FIXTURES / "live-samsung-20260822.props")
+        .read_text(encoding="utf-8")
+        .replace("179.97", "179.96", 1)
+    )
+
+    assert sample_xrandr(_InlineXrandr(query, properties)).valid
 
 
 def test_malformed_query_and_properties_retain_bounded_typed_errors() -> None:

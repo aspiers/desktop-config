@@ -27,6 +27,7 @@ from monitor_controller.model import (
     ControllerPhase,
     ControllerStarted,
     DisplayIdentity,
+    EdidIntegrity,
     EventGeneration,
     EventMetadata,
     MappingProof,
@@ -34,9 +35,14 @@ from monitor_controller.model import (
     OutputMapping,
     PhysicalToken,
     ProfileScope,
+    RawEvidenceSource,
     State,
     WorkerUnit,
 )
+from monitor_controller.observer.drm import RootedSysfsReader, sample_drm
+from monitor_controller.observer.evidence import TextCommandEvidence
+from monitor_controller.observer.topology import derive_canonical_topology
+from monitor_controller.observer.xrandr import sample_xrandr
 from monitor_controller.reducer import reduce
 from monitor_controller.runtime.dispatcher import (
     DispatchAdapterError,
@@ -65,8 +71,42 @@ from monitor_controller.runtime.transactions import (
 
 _REPOSITORY = Path(__file__).parents[5]
 _STATIC_UNIT_DIRECTORY = _REPOSITORY / ".config" / "systemd" / "user"
+_FIXTURES = Path(__file__).parent / "fixtures"
+_XRANDR_FIXTURES = _FIXTURES / "xrandr"
+_EDID_FIXTURES = _FIXTURES / "edid"
+_PROFILE_SETUP = (
+    _FIXTURES / "autorandr" / "profiles" / "celtic+Samsung-Odyssey-G75F" / "setup"
+)
 _TOPOLOGY = ExpectedTopology(("TEST-1",), ("TEST-1",), ("TEST-1",), ("TEST-1",))
 _MAPPING = (OutputMapping("TEST-SAVED", "TEST-1"),)
+_PROBE_ARGV = (
+    "--output",
+    "DisplayPort-9",
+    "--mode",
+    "5120x2160",
+    "--right-of",
+    "eDP",
+)
+
+
+@dataclass(frozen=True, slots=True)
+class _StaticProbeEvidence:
+    query_text: str
+    properties_text: str
+
+    def query(self) -> TextCommandEvidence:
+        return TextCommandEvidence(
+            RawEvidenceSource.XRANDR_QUERY,
+            "harmless-systemd:query",
+            self.query_text,
+        )
+
+    def properties(self) -> TextCommandEvidence:
+        return TextCommandEvidence(
+            RawEvidenceSource.XRANDR_PROPERTIES,
+            "harmless-systemd:properties",
+            self.properties_text,
+        )
 
 
 @dataclass(slots=True)
@@ -76,6 +116,9 @@ class _RealContract:
     unit_paths: tuple[Path, ...]
     unit_templates: Mapping[ActionKind, str]
     rejection_template: str
+    no_result_template: str
+    probe_sysfs_root: Path
+    probe_log_path: Path
     store: TransactionStore
     supervisor: SystemdSupervisor
     instance: ControllerInstanceId
@@ -124,6 +167,56 @@ class _RealContract:
                 expected_topology=_TOPOLOGY,
                 profile="harmless-contract",
                 payload=payload,
+            )
+        )
+
+    def probe_request(self) -> TransactionRequest:
+        """Create one exact harmless request for the production probe entry point."""
+        self.sequence += 1
+        action_id = ActionId(self.instance, ActionKind.PROBE, self.sequence)
+        unit = self.supervisor.unit_for_action(action_id)
+        self.units.append(unit)
+        query_text = (_XRANDR_FIXTURES / "inactive.query").read_text(encoding="utf-8")
+        properties_text = (_XRANDR_FIXTURES / "inactive.props").read_text(
+            encoding="utf-8"
+        )
+        drm = sample_drm(RootedSysfsReader(self.probe_sysfs_root))
+        xrandr = sample_xrandr(_StaticProbeEvidence(query_text, properties_text))
+        topology = derive_canonical_topology(drm, xrandr)
+        target = next(
+            item
+            for item in drm.connectors
+            if item.output_name == "DP-3" and item.edid.parsed is not None
+        )
+        assert target.edid.parsed is not None
+        assert target.edid.parsed.base_hash is not None
+        return self.store.create_request(
+            TransactionRequest(
+                action_id=action_id,
+                action_kind=ActionKind.PROBE,
+                unit_name=unit.unit_name,
+                physical_epoch=1,
+                physical_token=topology.physical_token,
+                admitted_event_generation=EventGeneration(0),
+                observation_key=ObservationKey("harmless-production-probe"),
+                output_mapping=(),
+                expected_topology=ExpectedTopology(
+                    topology.kernel_connected_outputs,
+                    topology.kernel_external_outputs,
+                    topology.x_connected_outputs,
+                    topology.x_active_outputs,
+                ),
+                profile="celtic+Samsung-Odyssey-G75F",
+                payload=(
+                    ("base_identity_hash", target.edid.parsed.base_hash),
+                    (
+                        "edid_integrity",
+                        EdidIntegrity.BASE_VALID_EXTENSIONS_INVALID.value,
+                    ),
+                    ("internal_output", "eDP"),
+                    ("preferred_mode", "5120x2160"),
+                    ("probe_output", "DisplayPort-9"),
+                ),
             )
         )
 
@@ -198,18 +291,41 @@ def real_contract() -> Iterator[_RealContract]:
     unit_directory = runtime_dir / "systemd" / "user"
     unit_directory.mkdir(mode=0o700, parents=True, exist_ok=True)
     application_unit_path = unit_directory / templates[ActionKind.APPLICATION]
-    no_result_unit_path = unit_directory / templates[ActionKind.PROBE]
+    probe_unit_path = unit_directory / templates[ActionKind.PROBE]
+    no_result_template = f"{template_base}-no-result@.service"
+    no_result_unit_path = unit_directory / no_result_template
     rejection_template = f"{template_base}-reject@.service"
     rejection_unit_path = unit_directory / rejection_template
     unit_paths = (
         application_unit_path,
+        probe_unit_path,
         no_result_unit_path,
         rejection_unit_path,
     )
     root = runtime_dir / f"monitor-system-contract-{suffix}" / "transactions"
+    work_root = root.parent
+    work_root.mkdir(mode=0o700, parents=True)
+    probe_sysfs_root = _probe_sysfs_tree(work_root / "probe-sysfs")
+    fake_bin = work_root / "bin"
+    fake_bin.mkdir(mode=0o700)
+    probe_log_path = work_root / "xrandr-arguments.log"
     python = Path(sys.executable).absolute()
+    _write_fake_xrandr(
+        fake_bin / "xrandr",
+        python=python,
+        log_path=probe_log_path,
+    )
     application_unit_path.write_text(
         _contract_unit(python=python, transaction_root=root),
+        encoding="utf-8",
+    )
+    probe_unit_path.write_text(
+        _production_probe_unit(
+            python=python,
+            transaction_root=root,
+            sysfs_root=probe_sysfs_root,
+            fake_bin=fake_bin,
+        ),
         encoding="utf-8",
     )
     no_result_unit_path.write_text(_no_result_unit(), encoding="utf-8")
@@ -226,6 +342,9 @@ def real_contract() -> Iterator[_RealContract]:
         unit_paths=unit_paths,
         unit_templates=templates,
         rejection_template=rejection_template,
+        no_result_template=no_result_template,
+        probe_sysfs_root=probe_sysfs_root,
+        probe_log_path=probe_log_path,
         store=store,
         supervisor=supervisor,
         instance=ControllerInstanceId(UUID(hex=suffix)),
@@ -268,7 +387,11 @@ def test_static_production_templates_are_explicit_and_cannot_succeed() -> None:
         assert "FinalKillSignal=SIGKILL" in directives
         assert "SendSIGKILL=yes" in directives
         assert "Restart=no" in directives
-        assert "reject-unimplemented" in text
+        if name == "monitor-probe@.service":
+            assert "monitor_controller.cli internal probe" in text
+            assert "reject-unimplemented" not in text
+        else:
+            assert "reject-unimplemented" in text
         assert "record-systemd-result" in text
         assert "SuccessExitStatus=" not in text
 
@@ -335,6 +458,37 @@ def test_dispatcher_final_fence_submits_real_manager_job_without_display(
         assert completion.terminal_lifecycle is ActionLifecycle.COMPLETED
 
     asyncio.run(exercise())
+
+
+def test_real_systemd_runs_production_probe_entry_with_harmless_adapters(
+    real_contract: _RealContract,
+) -> None:
+    real_contract.probe_log_path.unlink(missing_ok=True)
+    request = real_contract.probe_request()
+    unit = real_contract.unit(request)
+
+    assert (
+        real_contract.supervisor.start(
+            unit,
+            lambda: True,
+            lambda: real_contract.store.claim_submission(request.action_id),
+        )
+        is DispatchStartResult.ACCEPTED
+    )
+    _wait_state(
+        real_contract.supervisor,
+        unit,
+        WorkerActivity.INACTIVE,
+        timeout_seconds=5,
+    )
+
+    result = real_contract.store.read_result(request.action_id)
+    arguments = real_contract.probe_log_path.read_text(encoding="utf-8").splitlines()
+    assert arguments == ["--query", "--props", " ".join(_PROBE_ARGV)]
+    assert result.outcome is ActionLifecycle.COMPLETED
+    assert result.exit_status == 0
+    assert result.request_sha256 == request.request_sha256
+    assert real_contract.store.execution_claim_if_present(request.action_id) is not None
 
 
 def test_real_systemd_escape_matches_systemd_escape(
@@ -464,7 +618,7 @@ def test_real_restart_reconciles_result_written_before_completion_state_ack(
         and item.lifecycle is ActionLifecycle.COMPLETED
         for item in recovered.state.action_tombstones
     )
-    assert recovered.reasons == ()
+    assert not recovered.reasons
 
 
 def test_actual_manager_start_rejection_writes_recoverable_terminal_result(
@@ -546,11 +700,11 @@ def test_rejected_start_is_definite_and_never_runs_a_worker(
     real_contract.units.append(unit)
 
     with pytest.raises(SystemdSupervisorError):
-        real_contract.supervisor.start(unit, lambda: True, lambda: None)
+        _ = real_contract.supervisor.start(unit, lambda: True, lambda: None)
     assert not real_contract.store.action_directory(action_id).exists()
 
 
-def test_systemd_timeout_writes_failure_and_cleans_forced_cgroup(
+def test_systemd_timeout_is_timed_out_and_cleans_forced_cgroup(
     real_contract: _RealContract,
 ) -> None:
     request = real_contract.request("ignore_term", delay_ms=10_000, spawn_child=True)
@@ -586,6 +740,39 @@ def test_systemd_timeout_writes_failure_and_cleans_forced_cgroup(
     assert result.outcome is ActionLifecycle.TIMED_OUT
     assert result.exit_status == 124
     assert _cgroup_process_count(cgroup_path) == 0
+
+
+def test_no_intent_sigterm_defers_to_real_systemd_timeout_result(
+    real_contract: _RealContract,
+) -> None:
+    request = real_contract.request("cooperative", delay_ms=10_000)
+    unit = real_contract.unit(request)
+    assert (
+        real_contract.supervisor.start(
+            unit,
+            lambda: True,
+            lambda: real_contract.store.claim_submission(request.action_id),
+        )
+        is DispatchStartResult.ACCEPTED
+    )
+    _wait_state(
+        real_contract.supervisor,
+        unit,
+        WorkerActivity.ACTIVE,
+        timeout_seconds=3,
+    )
+    _wait_state(
+        real_contract.supervisor,
+        unit,
+        WorkerActivity.INACTIVE,
+        timeout_seconds=5,
+    )
+
+    result = real_contract.store.read_result(request.action_id)
+    assert real_contract.store.stop_intent_if_present(request.action_id) is None
+    assert result.outcome is ActionLifecycle.TIMED_OUT
+    assert result.exit_status == 124
+    assert "SERVICE_RESULT=timeout" in result.detail
 
 
 def test_stop_after_completed_result_before_process_exit_keeps_completion(
@@ -675,7 +862,7 @@ def test_collect_mode_removes_failed_instance_but_result_remains_recoverable(
     assert real_contract.store.read_result(request.action_id).outcome is (
         ActionLifecycle.FAILED
     )
-    assert snapshot.ambiguities == ()
+    assert not snapshot.ambiguities
 
 
 @pytest.mark.parametrize(
@@ -712,7 +899,7 @@ def test_controller_stop_intent_overrides_non_timeout_manager_result(
     assert result.outcome is terminal_lifecycle
 
 
-def test_cooperative_and_forced_cancellation_wait_for_cgroup_cleanup(
+def test_cooperative_cancellation_and_forced_timeout_wait_for_cgroup_cleanup(
     real_contract: _RealContract,
 ) -> None:
     cooperative = real_contract.request("cooperative", delay_ms=10_000)
@@ -735,7 +922,7 @@ def test_cooperative_and_forced_cancellation_wait_for_cgroup_cleanup(
         cooperative.action_id,
         ActionLifecycle.CANCELLED,
     )
-    real_contract.supervisor.stop(cooperative_unit)
+    _ = real_contract.supervisor.stop(cooperative_unit)
     cooperative_result = real_contract.store.read_result(cooperative.action_id)
     assert cooperative_result.outcome is ActionLifecycle.CANCELLED
     assert real_contract.supervisor.reattach(cooperative_unit).activity is (
@@ -763,16 +950,16 @@ def test_cooperative_and_forced_cancellation_wait_for_cgroup_cleanup(
     forced_result = real_contract.store.read_result(forced.action_id)
     forced_completion = asyncio.run(dispatcher.worker_completion(forced_unit))
 
-    assert forced_result.outcome is ActionLifecycle.CANCELLED
+    assert forced_result.outcome is ActionLifecycle.TIMED_OUT
     assert forced_completion is not None
-    assert forced_completion.terminal_lifecycle is ActionLifecycle.CANCELLED
+    assert forced_completion.terminal_lifecycle is ActionLifecycle.TIMED_OUT
     assert real_contract.supervisor.reattach(forced_unit).activity is (
         WorkerActivity.INACTIVE
     )
     assert _cgroup_process_count(cgroup_path) == 0
 
 
-def test_real_recovery_scanner_recovery_and_reducer_keep_forced_cancellation(
+def test_real_recovery_and_reducer_keep_forced_systemd_timeout(
     real_contract: _RealContract,
 ) -> None:
     request = real_contract.request("ignore_term", delay_ms=10_000, spawn_child=True)
@@ -818,7 +1005,7 @@ def test_real_recovery_scanner_recovery_and_reducer_keep_forced_cancellation(
     )
 
     assert snapshot.ambiguities == ()
-    assert forced.lifecycle is ActionLifecycle.CANCELLED
+    assert forced.lifecycle is ActionLifecycle.TIMED_OUT
     assert _cgroup_process_count(cgroup_path) == 0
     assert recovered.authority_allowed
     assert forced in recovered.state.action_tombstones
@@ -883,7 +1070,13 @@ def test_real_previously_invoked_unit_without_result_cannot_restart(
         ActionKind.PROBE,
         real_contract.sequence + 20_000,
     )
-    unit = real_contract.supervisor.unit_for_action(action_id)
+    templates = dict(real_contract.unit_templates)
+    templates[ActionKind.PROBE] = real_contract.no_result_template
+    supervisor = SystemdSupervisor(
+        systemctl=Path(shutil.which("systemctl") or "/usr/bin/systemctl"),
+        unit_templates=templates,
+    )
+    unit = supervisor.unit_for_action(action_id)
     real_contract.units.append(unit)
     request = real_contract.store.create_request(
         TransactionRequest(
@@ -896,17 +1089,25 @@ def test_real_previously_invoked_unit_without_result_cannot_restart(
             observation_key=ObservationKey("harmless-no-result"),
             output_mapping=(),
             expected_topology=_TOPOLOGY,
+            profile="harmless-probe-profile",
+            payload=(
+                ("base_identity_hash", "0" * 64),
+                ("edid_integrity", "base_valid_extensions_invalid"),
+                ("internal_output", "eDP-TEST"),
+                ("preferred_mode", "1920x1080"),
+                ("probe_output", "TEST-1"),
+            ),
         )
     )
 
     def submission_guard() -> BoundTransactionRecord:
         return real_contract.store.claim_submission(request.action_id)
 
-    assert real_contract.supervisor.start(unit, lambda: True, submission_guard) is (
+    assert supervisor.start(unit, lambda: True, submission_guard) is (
         DispatchStartResult.ACCEPTED
     )
     terminal = _wait_state(
-        real_contract.supervisor,
+        supervisor,
         unit,
         WorkerActivity.INACTIVE,
         timeout_seconds=3,
@@ -916,7 +1117,111 @@ def test_real_previously_invoked_unit_without_result_cannot_restart(
     assert real_contract.store.execution_claim_if_present(action_id) is None
     assert real_contract.store.result_if_present(action_id) is None
     with pytest.raises(SystemdSupervisorError, match="submission guard"):
-        real_contract.supervisor.start(unit, lambda: True, submission_guard)
+        supervisor.start(unit, lambda: True, submission_guard)
+
+
+def _probe_sysfs_tree(root: Path) -> Path:
+    internal_value = next(
+        line.split()[1]
+        for line in _PROFILE_SETUP.read_text(encoding="ascii").splitlines()
+        if line.startswith("eDP ")
+    )
+    values = (
+        ("card0-eDP-1", 73, bytes.fromhex(internal_value.replace("*", "0"))),
+        (
+            "card0-DP-3",
+            91,
+            bytes.fromhex(
+                (_EDID_FIXTURES / "samsung-broken-captured.hex").read_text(
+                    encoding="ascii"
+                )
+            ),
+        ),
+    )
+    for name, connector_id, edid in values:
+        connector = root / name
+        connector.mkdir(mode=0o700, parents=True)
+        connector.joinpath("status").write_text("connected\n", encoding="ascii")
+        connector.joinpath("connector_id").write_text(
+            f"{connector_id}\n",
+            encoding="ascii",
+        )
+        connector.joinpath("edid").write_bytes(edid)
+    return root
+
+
+def _write_fake_xrandr(path: Path, *, python: Path, log_path: Path) -> None:
+    query = (_XRANDR_FIXTURES / "inactive.query").read_text(encoding="utf-8")
+    properties = (_XRANDR_FIXTURES / "inactive.props").read_text(encoding="utf-8")
+    source = (
+        f"#!{python}\n"
+        "from pathlib import Path\n"
+        "import sys\n"
+        f"QUERY = {query!r}\n"
+        f"PROPERTIES = {properties!r}\n"
+        f"LOG = Path({str(log_path)!r})\n"
+        "arguments = tuple(sys.argv[1:])\n"
+        "with LOG.open('a', encoding='utf-8') as stream:\n"
+        "    stream.write(' '.join(arguments) + '\\n')\n"
+        "if arguments == ('--query',):\n"
+        "    sys.stdout.write(QUERY)\n"
+        "elif arguments == ('--props',):\n"
+        "    sys.stdout.write(PROPERTIES)\n"
+        f"elif arguments != {_PROBE_ARGV!r}:\n"
+        "    raise SystemExit(64)\n"
+    )
+    path.write_text(source, encoding="utf-8")
+    path.chmod(0o700)
+
+
+def _production_probe_unit(
+    *,
+    python: Path,
+    transaction_root: Path,
+    sysfs_root: Path,
+    fake_bin: Path,
+) -> str:
+    """Inject harmless dependencies while retaining the production entry point."""
+    common = (
+        f"{python} -I -m monitor_controller.workers.common "
+        "record-systemd-result "
+        f"--transaction-root {transaction_root} "
+        "--action-id %I --unit %n --action-kind probe "
+        "--service-result ${SERVICE_RESULT} --exit-code ${EXIT_CODE} "
+        "--exit-status ${EXIT_STATUS}"
+    )
+    worker = (
+        f"{python} -I -m monitor_controller.cli internal probe "
+        f"--transaction-root {transaction_root} "
+        f"--action-id %I --unit %n --sysfs-root {sysfs_root}"
+    )
+    production = (_STATIC_UNIT_DIRECTORY / "monitor-probe@.service").read_text(
+        encoding="utf-8"
+    )
+    lines: list[str] = []
+    for source_line in production.splitlines():
+        rendered = source_line
+        if source_line.startswith("Description="):
+            rendered = "Description=Harmless production probe entry point (%I)"
+        elif source_line.startswith("Environment=PATH="):
+            rendered = f"Environment=PATH={fake_bin}:/usr/bin:/bin"
+        elif source_line.startswith("ExecStart="):
+            lines.extend(
+                (
+                    "Environment=DISPLAY=",
+                    "Environment=XAUTHORITY=",
+                    "Environment=WAYLAND_DISPLAY=",
+                )
+            )
+            rendered = f"ExecStart={worker}"
+        elif source_line.startswith("ExecStopPost="):
+            rendered = f"ExecStopPost={common}"
+        elif source_line.startswith("TimeoutStartSec="):
+            rendered = "TimeoutStartSec=3s"
+        elif source_line.startswith("TimeoutStopSec="):
+            rendered = "TimeoutStopSec=500ms"
+        lines.append(rendered)
+    return "\n".join((*lines, ""))
 
 
 def _contract_unit(*, python: Path, transaction_root: Path) -> str:

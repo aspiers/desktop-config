@@ -9,11 +9,13 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Protocol
 
 from monitor_controller.model import (
+    BROKEN_EXTENSION_EDID_INTEGRITIES,
     TERMINAL_ACTION_LIFECYCLES,
     ActionId,
     ActionLifecycle,
     ActivateProbe,
     ApplyProfile,
+    EdidIntegrity,
     FinalizeDesktop,
     OutputMapping,
     PhysicalToken,
@@ -30,6 +32,7 @@ type FinalDispatchFence = Callable[[], bool]
 
 NULL_RECORD_RETENTION = 1_024
 MAX_EXIT_STATUS = 255
+SHA256_HEX_LENGTH = 64
 
 
 class DispatchFailureStage(StrEnum):
@@ -83,6 +86,8 @@ class WorkerRequestContext:
     output_mapping: tuple[OutputMapping, ...]
     expected_topology: ExpectedTopology
     layout: str | None = None
+    probe_base_hash: str | None = None
+    probe_edid_integrity: EdidIntegrity | None = None
 
     def __post_init__(self) -> None:
         if self.physical_epoch < 0:
@@ -90,6 +95,24 @@ class WorkerRequestContext:
             raise ValueError(msg)
         if self.layout is not None and (not self.layout or self.layout.isspace()):
             msg = "worker request layout must not be empty"
+            raise ValueError(msg)
+        if (self.probe_base_hash is None) is not (self.probe_edid_integrity is None):
+            msg = "worker probe identity hash and integrity must be supplied together"
+            raise ValueError(msg)
+        if (
+            self.probe_edid_integrity is not None
+            and self.probe_edid_integrity not in BROKEN_EXTENSION_EDID_INTEGRITIES
+        ):
+            msg = "worker probe proof requires broken extensions"
+            raise ValueError(msg)
+        if self.probe_base_hash is not None and (
+            len(self.probe_base_hash) != SHA256_HEX_LENGTH
+            or any(
+                character not in "0123456789abcdef"
+                for character in self.probe_base_hash
+            )
+        ):
+            msg = "worker probe base identity must be a lowercase SHA-256 digest"
             raise ValueError(msg)
 
 

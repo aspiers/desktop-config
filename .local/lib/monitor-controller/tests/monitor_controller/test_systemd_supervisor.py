@@ -14,14 +14,17 @@ from monitor_controller.model import (
     ActionKind,
     ActionLifecycle,
     ActionTombstone,
+    ActivateProbe,
     ApplicationAttemptKey,
     ApplyProfile,
     ControllerInstanceId,
+    EdidIntegrity,
     EventGeneration,
     MappingProof,
     ObservationKey,
     OutputMapping,
     PhysicalToken,
+    ProbeAttemptKey,
     WorkerUnit,
 )
 from monitor_controller.runtime.dispatcher import (
@@ -44,6 +47,7 @@ from monitor_controller.runtime.transactions import (
     BoundRecordKind,
     BoundTransactionRecord,
     ExpectedTopology,
+    TransactionProtocolError,
     TransactionResult,
     TransactionStore,
     with_bound_record_hash,
@@ -51,6 +55,7 @@ from monitor_controller.runtime.transactions import (
 
 _INSTANCE = ControllerInstanceId(UUID("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"))
 _ACTION = ActionId(_INSTANCE, ActionKind.APPLICATION, 7)
+_PROBE_ACTION = ActionId(_INSTANCE, ActionKind.PROBE, 8)
 _OBSERVATION_KEY = ObservationKey("observation")
 _MAPPING = MappingProof(
     "dock",
@@ -282,6 +287,59 @@ def test_query_reattach_and_stop_use_only_exact_keyed_unit() -> None:
     assert all(call[0][-1] == unit.unit_name for call in runner.calls)
     stop_call = next(call for call in runner.calls if "stop" in call[0])
     assert stop_call[1] == 20
+
+
+def test_dispatcher_hash_binds_complete_probe_identity_proof(
+    tmp_path: Path,
+) -> None:
+    effect = ActivateProbe(
+        action_id=_PROBE_ACTION,
+        key=ProbeAttemptKey(3, "dock", _OBSERVATION_KEY),
+        output="DP-1",
+        internal_output="eDP-1",
+        preferred_mode="2560x1440",
+        admitted_event_generation=EventGeneration(8),
+        observation_key=_OBSERVATION_KEY,
+    )
+    context = WorkerRequestContext(
+        physical_epoch=3,
+        physical_token=PhysicalToken("physical"),
+        output_mapping=(),
+        expected_topology=ExpectedTopology(
+            ("DP-1", "eDP-1"),
+            ("DP-1",),
+            ("DP-1", "eDP-1"),
+            ("eDP-1",),
+        ),
+        probe_base_hash="a" * 64,
+        probe_edid_integrity=EdidIntegrity.BASE_VALID_EXTENSIONS_INVALID,
+    )
+    store = TransactionStore(tmp_path / "transactions")
+    dispatcher = SystemdDispatcher(store, _supervisor(_Runner()))
+
+    prepared = asyncio.run(dispatcher.write_request(effect, context))
+    request = store.read_request(prepared.action_id)
+
+    assert request.profile == "dock"
+    assert dict(request.payload) == {
+        "base_identity_hash": "a" * 64,
+        "edid_integrity": "base_valid_extensions_invalid",
+        "internal_output": "eDP-1",
+        "preferred_mode": "2560x1440",
+        "probe_output": "DP-1",
+    }
+    assert prepared.request_sha256 == request.request_sha256
+    with pytest.raises(TransactionProtocolError, match="lacks immutable"):
+        asyncio.run(
+            dispatcher.write_request(
+                effect,
+                replace(
+                    context,
+                    probe_base_hash=None,
+                    probe_edid_integrity=None,
+                ),
+            )
+        )
 
 
 def test_dispatcher_writes_before_start_and_reads_rapid_terminal_result(

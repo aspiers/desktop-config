@@ -494,7 +494,7 @@ def parse_xrandr_properties(  # noqa: C901, PLR0912, PLR0915
 
 
 def sample_xrandr(source: XrandrEvidenceSource) -> XrandrSnapshot:
-    """Merge two injected command results and reject a torn topology sample."""
+    """Merge two injected command results and reject any torn X sample."""
     query = parse_xrandr_query(source.query())
     properties = parse_xrandr_properties(source.properties())
     issues = [*query.issues, *properties.issues]
@@ -514,6 +514,21 @@ def sample_xrandr(source: XrandrEvidenceSource) -> XrandrSnapshot:
                 "query and properties output topologies differ",
             )
         )
+    query_modes = tuple(
+        (item.name, _normalized_mode_evidence(item.modes)) for item in query.outputs
+    )
+    property_modes = tuple(
+        (item.name, _normalized_mode_evidence(item.modes))
+        for item in properties.outputs
+    )
+    if query_modes != property_modes and len(issues) < MAX_PARSE_ISSUES:
+        issues.append(
+            ParseIssue(
+                RawEvidenceSource.XRANDR_PROPERTIES,
+                ParseIssueCode.INCONSISTENT,
+                "query and properties mode lists or markers differ",
+            )
+        )
     connector_ids = {item.name: item.connector_id for item in properties.outputs}
     outputs = tuple(
         replace(output, connector_id=connector_ids.get(output.name))
@@ -526,6 +541,13 @@ def sample_xrandr(source: XrandrEvidenceSource) -> XrandrSnapshot:
         )
     )
     return XrandrSnapshot(outputs, raw_evidence, tuple(issues[:MAX_PARSE_ISSUES]))
+
+
+def _normalized_mode_evidence(
+    modes: tuple[XrandrMode, ...],
+) -> tuple[tuple[str, bool, bool], ...]:
+    """Compare semantic mode names/markers, not presentation-only rate grammar."""
+    return tuple(sorted((mode.name, mode.current, mode.preferred) for mode in modes))
 
 
 def _connection_state(value: str) -> XConnectionState:

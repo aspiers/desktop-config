@@ -755,14 +755,24 @@ def _request_from_effect(
     transition_key = None
     plan_hash = None
     payload: Payload
+    if not isinstance(effect, ActivateProbe) and (
+        context.probe_base_hash is not None or context.probe_edid_integrity is not None
+    ):
+        msg = "non-probe request context cannot carry probe identity proof"
+        raise TransactionProtocolError(msg)
     if isinstance(effect, ActivateProbe):
         if context.physical_epoch != effect.key.physical_epoch:
             msg = "probe request context physical epoch differs"
+            raise TransactionProtocolError(msg)
+        if context.probe_base_hash is None or context.probe_edid_integrity is None:
+            msg = "probe request context lacks immutable base-identity proof"
             raise TransactionProtocolError(msg)
         profile = effect.key.profile
         payload = tuple(
             sorted(
                 (
+                    ("base_identity_hash", context.probe_base_hash),
+                    ("edid_integrity", context.probe_edid_integrity.value),
                     ("internal_output", effect.internal_output),
                     ("preferred_mode", effect.preferred_mode),
                     ("probe_output", effect.output),
