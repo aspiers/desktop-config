@@ -1,4 +1,4 @@
-# ruff: noqa: C901, PLR0911, PLR0912, PLR0915
+# ruff: noqa: C901, PLR0911, PLR0912, PLR0913, PLR0915, PLR0917
 """Total deterministic policy reducer for the monitor controller.
 
 The reducer is deliberately pure: time, observations, worker identity, and worker
@@ -13,6 +13,7 @@ from dataclasses import replace
 from .invariants import assert_controller_invariants
 from .model import (
     EVENT_TYPES,
+    TERMINAL_ACTION_LIFECYCLES,
     ActionId,
     ActionKind,
     ActionLifecycle,
@@ -43,6 +44,7 @@ from .model import (
     FinalizeDesktop,
     MappingProof,
     ObservationCompleted,
+    ObservationFailed,
     ObservationKey,
     PlanCompleted,
     PlanFailed,
@@ -77,6 +79,7 @@ from .model import (
     WorkerStatusUnknown,
     WorkerTimedOut,
     WorkerUnit,
+    bound_action_tombstones,
 )
 
 AGGRESSIVE_BUDGET_MS: int = 30_000
@@ -89,6 +92,11 @@ UNKNOWN_STABILITY_MS = 10_000
 UNPLUG_STABILITY_MS = 1_000
 UNPLUG_REQUIRED_SAMPLES = 2
 HEALTH_POLL_MS = 60_000
+OBSERVATION_FAILURE_RETRY_MS = 1_000
+PROBE_WORKER_TIMEOUT_MS = 30_000
+APPLICATION_WORKER_TIMEOUT_MS = 120_000
+PREPARATION_WORKER_TIMEOUT_MS = 300_000
+FINALIZATION_WORKER_TIMEOUT_MS = 300_000
 
 
 class UnknownEventError(TypeError):
@@ -125,6 +133,15 @@ def _allocate_transition(state: State) -> tuple[State, TransitionId]:
     )
 
 
+def _clear_recovery_unit(state: State, action_id: ActionId) -> State:
+    return replace(
+        state,
+        recovery_units=tuple(
+            unit for unit in state.recovery_units if unit.action_id != action_id
+        ),
+    )
+
+
 def _append_tombstone(
     state: State, action: ActionRecord, lifecycle: ActionLifecycle
 ) -> State:
@@ -132,7 +149,25 @@ def _append_tombstone(
     retained = tuple(
         item for item in state.action_tombstones if item.action_id != action.action_id
     )
-    return replace(state, action_tombstones=(*retained, tombstone))
+    protected_ids = frozenset(
+        item.action_id
+        for item in (
+            state.probe,
+            state.application,
+            state.planning,
+            state.preparation,
+            state.finalization,
+        )
+        if item is not None
+    )
+    bounded = bound_action_tombstones(
+        (*retained, tombstone),
+        protected_action_ids=protected_ids,
+    )
+    return replace(
+        _clear_recovery_unit(state, action.action_id),
+        action_tombstones=bounded,
+    )
 
 
 def _profile_match(
@@ -199,7 +234,8 @@ def _discard_planning(state: State) -> tuple[State, tuple[Effect, ...]]:
     effects: tuple[Effect, ...] = ()
     if state.planning is not None:
         effects = (DiscardPlan(state.planning.action_id, state.planning.plan_hash),)
-        state = _append_tombstone(state, state.planning, ActionLifecycle.CANCELLED)
+        if state.planning.lifecycle not in TERMINAL_ACTION_LIFECYCLES:
+            state = _append_tombstone(state, state.planning, ActionLifecycle.CANCELLED)
     return (
         replace(
             state,
@@ -937,7 +973,16 @@ def _observe(state: State, event: ObservationCompleted) -> Decision:
             ControllerPhase.FINALIZE_FAILED,
         }:
             state = replace(state, phase=ControllerPhase.DISCOVER_FAST)
-        return _schedule(state, now_ms + 1_000, *invalid_effects)
+        stopping = _stopping_mutator(state)
+        stopping_effects: tuple[Effect, ...] = (
+            () if stopping is None else (StopAction(stopping.action_id),)
+        )
+        return _schedule(
+            state,
+            now_ms + 1_000,
+            *invalid_effects,
+            *stopping_effects,
+        )
 
     if (
         observation.has_external_hardware
@@ -956,22 +1001,10 @@ def _observe(state: State, event: ObservationCompleted) -> Decision:
         return _schedule(state, now_ms + 1_000, StopAction(action.action_id))
 
     # Stopping is a display-mutation exclusion. No observation may erase it
-    # or admit another mutation before cancellation is acknowledged.
-    stopping = next(
-        (
-            action
-            for action in (
-                state.probe,
-                state.application,
-                state.preparation,
-                state.finalization,
-            )
-            if action is not None and action.lifecycle is ActionLifecycle.STOPPING
-        ),
-        None,
-    )
+    # or admit another mutation before supervisor inactivity is proven.
+    stopping = _stopping_mutator(state)
     if stopping is not None:
-        return _schedule(state, now_ms + 1_000)
+        return _schedule(state, now_ms + 1_000, StopAction(stopping.action_id))
 
     token_changed = state.physical_token != observation.physical_token
     if token_changed and state.phase is ControllerPhase.PROBING and state.probe:
@@ -1101,6 +1134,7 @@ def _observe(state: State, event: ObservationCompleted) -> Decision:
         if action.lifecycle is ActionLifecycle.RESULT_PENDING:
             if exact:
                 action = replace(action, lifecycle=ActionLifecycle.COMPLETED)
+                state = _append_tombstone(state, action, ActionLifecycle.COMPLETED)
                 state = replace(
                     state,
                     preparation_state=PreparationState.PREPARED,
@@ -1184,10 +1218,24 @@ def _drm_hint(state: State, event: DrmHintReceived) -> Decision:
     )
 
 
+def _worker_deadline_ms(action_id: ActionId, dispatched_at_ms: int) -> int:
+    timeout_ms = {
+        ActionKind.PROBE: PROBE_WORKER_TIMEOUT_MS,
+        ActionKind.APPLICATION: APPLICATION_WORKER_TIMEOUT_MS,
+        ActionKind.PREPARATION: PREPARATION_WORKER_TIMEOUT_MS,
+        ActionKind.FINALIZATION: FINALIZATION_WORKER_TIMEOUT_MS,
+    }.get(action_id.kind)
+    if timeout_ms is None:
+        msg = "planning tasks do not have supervisor worker deadlines"
+        raise ValueError(msg)
+    return dispatched_at_ms + timeout_ms
+
+
 def _dispatched(
     state: State,
     action_id: ActionId,
     unit: WorkerUnit,
+    dispatched_at_ms: int,
 ) -> Decision:
     if action_id.kind is ActionKind.PROBE:
         action = state.probe
@@ -1198,7 +1246,12 @@ def _dispatched(
             or action.lifecycle is not ActionLifecycle.ADMITTED
         ):
             return _no_op(state)
-        action = replace(action, lifecycle=ActionLifecycle.DISPATCHED, unit=unit)
+        action = replace(
+            action,
+            lifecycle=ActionLifecycle.DISPATCHED,
+            unit=unit,
+            worker_deadline_ms=_worker_deadline_ms(action_id, dispatched_at_ms),
+        )
         state = replace(
             state,
             phase=ControllerPhase.PROBING,
@@ -1215,7 +1268,12 @@ def _dispatched(
             or action.lifecycle is not ActionLifecycle.ADMITTED
         ):
             return _no_op(state)
-        action = replace(action, lifecycle=ActionLifecycle.DISPATCHED, unit=unit)
+        action = replace(
+            action,
+            lifecycle=ActionLifecycle.DISPATCHED,
+            unit=unit,
+            worker_deadline_ms=_worker_deadline_ms(action_id, dispatched_at_ms),
+        )
         state = replace(
             state,
             phase=ControllerPhase.APPLYING,
@@ -1232,7 +1290,12 @@ def _dispatched(
             or action.lifecycle is not ActionLifecycle.ADMITTED
         ):
             return _no_op(state)
-        action = replace(action, lifecycle=ActionLifecycle.DISPATCHED, unit=unit)
+        action = replace(
+            action,
+            lifecycle=ActionLifecycle.DISPATCHED,
+            unit=unit,
+            worker_deadline_ms=_worker_deadline_ms(action_id, dispatched_at_ms),
+        )
         state = replace(
             state,
             preparation_state=PreparationState.PREPARING,
@@ -1247,7 +1310,12 @@ def _dispatched(
             or action.lifecycle is not ActionLifecycle.ADMITTED
         ):
             return _no_op(state)
-        action = replace(action, lifecycle=ActionLifecycle.DISPATCHED, unit=unit)
+        action = replace(
+            action,
+            lifecycle=ActionLifecycle.DISPATCHED,
+            unit=unit,
+            worker_deadline_ms=_worker_deadline_ms(action_id, dispatched_at_ms),
+        )
         state = replace(
             state,
             phase=ControllerPhase.FINALIZING,
@@ -1263,9 +1331,9 @@ def _finished(
     action_id: ActionId,
     outcome: WorkerOutcome,
     exit_status: int | None,
+    now_ms: int,
     plan_hash: PlanHash | None = None,
 ) -> Decision:
-    now_ms = state.latest_observation.observed_at_ms if state.latest_observation else 0
     if action_id.kind is ActionKind.PROBE:
         action = state.probe
         if (
@@ -1274,6 +1342,8 @@ def _finished(
             or state.phase is not ControllerPhase.PROBING
         ):
             return _no_op(state)
+        if action.lifecycle is ActionLifecycle.STOPPING:
+            return _schedule(state, now_ms + 1_000, StopAction(action.action_id))
         if outcome is WorkerOutcome.SUCCEEDED:
             action = replace(
                 action,
@@ -1313,6 +1383,8 @@ def _finished(
             or state.phase is not ControllerPhase.APPLYING
         ):
             return _no_op(state)
+        if action.lifecycle is ActionLifecycle.STOPPING:
+            return _schedule(state, now_ms + 1_000, StopAction(action.action_id))
         if outcome is WorkerOutcome.SUCCEEDED:
             action = replace(
                 action,
@@ -1362,35 +1434,19 @@ def _finished(
             not in {PreparationState.PREPARING, PreparationState.PREPARE_STOPPING}
         ):
             return _no_op(state)
+        if action.lifecycle is ActionLifecycle.STOPPING:
+            return _schedule(state, now_ms + 1_000, StopAction(action.action_id))
         if outcome is WorkerOutcome.SUCCEEDED and plan_hash == action.plan_hash:
-            if state.preparation_state is PreparationState.PREPARE_STOPPING:
-                action = replace(
-                    action,
-                    lifecycle=ActionLifecycle.CANCELLED,
-                    exit_status=exit_status,
-                    terminal_after_stop=None,
-                )
-                state = _append_tombstone(state, action, ActionLifecycle.CANCELLED)
-                state, discard_effects = _discard_planning(
-                    replace(
-                        state,
-                        preparation_state=PreparationState.PREPARE_IDLE,
-                        preparation=None,
-                    )
-                )
-                return _schedule(
-                    replace(state, phase=ControllerPhase.DISCOVER_FAST),
-                    now_ms,
-                    *discard_effects,
-                    RequestObservation(WakeReason.WORKER_COMPLETED),
-                )
             action = replace(
                 action,
                 lifecycle=ActionLifecycle.RESULT_PENDING,
                 exit_status=exit_status,
                 terminal_after_stop=None,
             )
-            state = replace(state, preparation=action)
+            state = replace(
+                _clear_recovery_unit(state, action.action_id),
+                preparation=action,
+            )
             return _schedule(
                 state, now_ms, RequestObservation(WakeReason.WORKER_COMPLETED)
             )
@@ -1433,6 +1489,15 @@ def _finished(
             not in {ControllerPhase.FINALIZING, ControllerPhase.FINALIZE_STOPPING}
         ):
             return _no_op(state)
+        if action.lifecycle is ActionLifecycle.STOPPING:
+            # A terminal worker message does not prove that a cancellation/timeout
+            # exclusion is inactive. Keep the original post-stop terminal result
+            # until the supervisor explicitly acknowledges inactivity.
+            return _schedule(
+                state,
+                now_ms + 1_000,
+                StopAction(action.action_id),
+            )
         if outcome is WorkerOutcome.SUCCEEDED:
             action = replace(
                 action,
@@ -1441,7 +1506,9 @@ def _finished(
                 terminal_after_stop=None,
             )
             state = replace(
-                state, phase=ControllerPhase.FINALIZING, finalization=action
+                _clear_recovery_unit(state, action.action_id),
+                phase=ControllerPhase.FINALIZING,
+                finalization=action,
             )
             return _schedule(
                 state, now_ms, RequestObservation(WakeReason.WORKER_COMPLETED)
@@ -1507,6 +1574,7 @@ def _plan_completed(state: State, event: PlanCompleted) -> Decision:
     action = replace(
         action, lifecycle=ActionLifecycle.COMPLETED, plan_hash=event.plan_hash
     )
+    state = _append_tombstone(state, action, ActionLifecycle.COMPLETED)
     state = replace(state, planning_state=PlanningState.PLAN_READY, planning=action)
     return _schedule(
         state,
@@ -1531,6 +1599,22 @@ def _plan_failed(state: State, event: PlanFailed) -> Decision:
     return _schedule(
         replace(state, planning_state=PlanningState.PLAN_FAILED, planning=action),
         event.metadata.processed_at_ms + HEALTH_POLL_MS,
+    )
+
+
+def _stopping_mutator(state: State) -> ActionRecord | None:
+    return next(
+        (
+            action
+            for action in (
+                state.probe,
+                state.application,
+                state.preparation,
+                state.finalization,
+            )
+            if action is not None and action.lifecycle is ActionLifecycle.STOPPING
+        ),
+        None,
     )
 
 
@@ -1631,10 +1715,11 @@ def _stop_uncertain_mutator(
     """Hold mutation exclusion until the supervisor confirms the worker stopped."""
     if isinstance(action, PlanningAction):
         return _fail_action(state, action.action_id, terminal, now_ms)
+    was_stopping = action.lifecycle is ActionLifecycle.STOPPING
     stopping = replace(
         action,
         lifecycle=ActionLifecycle.STOPPING,
-        terminal_after_stop=terminal,
+        terminal_after_stop=action.terminal_after_stop or terminal,
     )
     if action.action_id.kind is ActionKind.PROBE:
         state = replace(state, phase=ControllerPhase.PROBING, probe=stopping)
@@ -1657,7 +1742,10 @@ def _stop_uncertain_mutator(
         )
     else:
         return _fail_action(state, action.action_id, terminal, now_ms)
-    return _schedule(state, now_ms + 1_000, StopAction(action.action_id))
+    effects: tuple[Effect, ...] = (
+        () if was_stopping else (StopAction(action.action_id),)
+    )
+    return _schedule(state, now_ms + 1_000, *effects)
 
 
 def _cancellation_acknowledged(
@@ -1838,9 +1926,21 @@ def reduce(state: State, event: Event) -> Decision:
         return _boot_changed(state, event)
     if event.metadata.boot_id != state.boot_id:
         return _no_op(state)
+    if state.phase is ControllerPhase.RECOVERING and state.recovery_units:
+        return _no_op(state)
 
     if isinstance(event, ObservationCompleted):
         return _observe(state, event)
+    if isinstance(event, ObservationFailed):
+        stopping = _stopping_mutator(state)
+        effects: tuple[Effect, ...] = (
+            () if stopping is None else (StopAction(stopping.action_id),)
+        )
+        return _schedule(
+            state,
+            event.metadata.processed_at_ms + OBSERVATION_FAILURE_RETRY_MS,
+            *effects,
+        )
     if isinstance(event, DrmHintReceived):
         return _drm_hint(state, event)
     if isinstance(event, TimerFired):
@@ -1865,15 +1965,27 @@ def reduce(state: State, event: Event) -> Decision:
         | PreparationDispatched
         | FinalizationDispatched,
     ):
-        return _dispatched(state, event.action_id, event.unit)
+        return _dispatched(
+            state,
+            event.action_id,
+            event.unit,
+            event.metadata.processed_at_ms,
+        )
     if isinstance(event, ProbeFinished | ApplicationFinished | FinalizationFinished):
-        return _finished(state, event.action_id, event.outcome, event.exit_status)
+        return _finished(
+            state,
+            event.action_id,
+            event.outcome,
+            event.exit_status,
+            event.metadata.processed_at_ms,
+        )
     if isinstance(event, PreparationFinished):
         return _finished(
             state,
             event.action_id,
             event.outcome,
             event.exit_status,
+            event.metadata.processed_at_ms,
             event.plan_hash,
         )
     if isinstance(event, PlanRequested):
@@ -1907,10 +2019,19 @@ def reduce(state: State, event: Event) -> Decision:
         )
     if isinstance(event, WorkerTimedOut):
         action = _action_for_id(state, event.action_id)
-        if action is None or action.lifecycle not in {
-            ActionLifecycle.DISPATCHED,
-            ActionLifecycle.STOPPING,
-        }:
+        if (
+            action is None
+            or isinstance(action, PlanningAction)
+            or action.lifecycle
+            not in {ActionLifecycle.DISPATCHED, ActionLifecycle.STOPPING}
+        ):
+            return _no_op(state)
+        worker_deadline_ms = action.worker_deadline_ms
+        if (
+            worker_deadline_ms is None
+            or worker_deadline_ms != event.deadline_ms
+            or event.metadata.processed_at_ms < worker_deadline_ms
+        ):
             return _no_op(state)
         return _stop_uncertain_mutator(
             state,

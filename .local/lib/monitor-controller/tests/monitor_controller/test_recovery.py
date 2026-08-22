@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from pathlib import Path
 from uuid import UUID
 
+import pytest
+
 from monitor_controller.model import (
+    ACTION_TOMBSTONE_RETENTION_LIMIT,
     ActionId,
     ActionKind,
     ActionLifecycle,
@@ -15,13 +19,17 @@ from monitor_controller.model import (
     ControllerPhase,
     DisplayIdentity,
     EventGeneration,
+    EventMetadata,
     ObservationKey,
     ProbeAction,
     ProbeAttemptKey,
+    ProbeFinished,
     State,
+    WorkerOutcome,
     WorkerUnit,
 )
-from monitor_controller.runtime.persistence import StateNamespace
+from monitor_controller.reducer import reduce
+from monitor_controller.runtime.persistence import AtomicStateStore, StateNamespace
 from monitor_controller.runtime.recovery import (
     WorkerNamespaceSnapshot,
     recover_state,
@@ -68,6 +76,7 @@ def _in_flight_state() -> State:
             preferred_mode="3840x2160",
             lifecycle=ActionLifecycle.DISPATCHED,
             unit=unit,
+            worker_deadline_ms=1_000,
         ),
         event_generation=EventGeneration(3),
         action_sequence_high_water=7,
@@ -88,11 +97,104 @@ def test_same_boot_reconstructs_exact_surviving_worker_without_effects() -> None
 
     assert result.authority_allowed
     assert not result.requires_fresh_observation
-    assert result.effects == ()
+    assert not result.effects
     assert result.state.recovery_units == (_unit(),)
     assert result.state.probe == _in_flight_state().probe
     assert result.state.controller_instance == _NEW_INSTANCE
     assert scanner.seen == [StateNamespace.ACTIVE]
+
+
+@pytest.mark.parametrize(
+    "lifecycle",
+    [
+        ActionLifecycle.FAILED,
+        ActionLifecycle.UNKNOWN,
+        ActionLifecycle.TIMED_OUT,
+    ],
+)
+def test_matching_live_worker_cannot_authorize_terminal_action_without_evidence(
+    lifecycle: ActionLifecycle,
+) -> None:
+    persisted = _in_flight_state()
+    action = persisted.probe
+    assert action is not None
+    persisted = replace(
+        persisted,
+        phase=ControllerPhase.PROBE_FAILED,
+        probe=replace(action, lifecycle=lifecycle),
+    )
+
+    result = recover_state(
+        persisted,
+        current_boot_id=_OLD_BOOT,
+        controller_instance=_NEW_INSTANCE,
+        display_identity=_DISPLAY,
+        namespace=StateNamespace.ACTIVE,
+        scanner=_Scanner(WorkerNamespaceSnapshot(units=(_unit(),)), []),
+    )
+
+    assert not result.authority_allowed
+    assert result.requires_fresh_observation
+    assert result.state.phase is ControllerPhase.RECOVERING
+    assert result.state.probe is None
+    assert result.state.recovery_units == (_unit(),)
+    assert not result.effects
+    assert any("matching terminal evidence" in reason for reason in result.reasons)
+
+
+def test_denied_recovery_keeps_worker_represented_by_discarded_action() -> None:
+    result = recover_state(
+        _in_flight_state(),
+        current_boot_id=_OLD_BOOT,
+        controller_instance=_NEW_INSTANCE,
+        display_identity=_DISPLAY,
+        namespace=StateNamespace.ACTIVE,
+        scanner=_Scanner(
+            WorkerNamespaceSnapshot(
+                units=(_unit(),),
+                ambiguities=("injected unrelated ambiguity",),
+            ),
+            [],
+        ),
+    )
+
+    assert not result.authority_allowed
+    assert result.state.phase is ControllerPhase.RECOVERING
+    assert result.state.probe is None
+    assert result.state.recovery_units == (_unit(),)
+
+
+def test_recovered_worker_completion_persists_without_unit_tombstone_conflict(
+    tmp_path: Path,
+) -> None:
+    duplicated = replace(_in_flight_state(), recovery_units=(_unit(),))
+    result = recover_state(
+        duplicated,
+        current_boot_id=_OLD_BOOT,
+        controller_instance=_NEW_INSTANCE,
+        display_identity=_DISPLAY,
+        namespace=StateNamespace.ACTIVE,
+        scanner=_Scanner(WorkerNamespaceSnapshot(units=(_unit(),)), []),
+    )
+    action = result.state.probe
+    assert action is not None
+    assert result.state.recovery_units == (_unit(),)
+
+    completed = reduce(
+        result.state,
+        ProbeFinished(
+            EventMetadata(500, _OLD_BOOT),
+            action.action_id,
+            WorkerOutcome.SUCCEEDED,
+            0,
+        ),
+    )
+    store = AtomicStateStore(tmp_path, StateNamespace.ACTIVE)
+    store.save(completed.state)
+
+    assert not completed.state.recovery_units
+    assert completed.state.action_tombstones[-1].action_id == action.action_id
+    assert store.load() == completed.state
 
 
 def test_same_boot_unknown_or_ambiguous_survivor_remains_fail_closed() -> None:
@@ -117,7 +219,7 @@ def test_same_boot_unknown_or_ambiguous_survivor_remains_fail_closed() -> None:
     assert not result.authority_allowed
     assert result.requires_fresh_observation
     assert result.state.phase is ControllerPhase.RECOVERING
-    assert result.effects == ()
+    assert not result.effects
     assert result.state.recovery_units == (unknown,)
     assert any(
         "ambiguous" in reason or "disagree" in reason for reason in result.reasons
@@ -142,7 +244,7 @@ def test_duplicate_worker_identity_is_detected_without_scanner_hint() -> None:
     assert not result.authority_allowed
     assert result.state.phase is ControllerPhase.RECOVERING
     assert any("conflicting units" in reason for reason in result.reasons)
-    assert result.effects == ()
+    assert not result.effects
 
 
 def test_corrupt_state_never_discards_worker_exclusions_or_authorizes_work() -> None:
@@ -169,7 +271,7 @@ def test_corrupt_state_never_discards_worker_exclusions_or_authorizes_work() -> 
     assert result.state.phase is ControllerPhase.RECOVERING
     assert result.state.recovery_units == (survivor,)
     assert result.state.action_sequence_high_water == 43
-    assert result.effects == ()
+    assert not result.effects
     assert any("corrupt" in reason for reason in result.reasons)
 
 
@@ -219,7 +321,7 @@ def test_boot_change_drops_monotonic_waits_and_keeps_verified_durable_facts() ->
     assert result.state.last_drm_at_ms is None
     assert result.state.desktop_finalized_profile == "external"
     assert result.state.action_tombstones == (tombstone,)
-    assert result.effects == ()
+    assert not result.effects
 
 
 def test_boot_change_drops_unverified_terminal_facts() -> None:
@@ -247,7 +349,7 @@ def test_boot_change_drops_unverified_terminal_facts() -> None:
     )
 
     assert result.state.desktop_finalized_profile is None
-    assert result.state.action_tombstones == ()
+    assert not result.state.action_tombstones
     assert result.state.action_sequence_high_water == 8
     assert result.requires_fresh_observation
 
@@ -312,9 +414,9 @@ def test_same_boot_recovery_unit_requires_verified_terminal_tombstone() -> None:
     )
 
     assert resolved.authority_allowed
-    assert resolved.state.recovery_units == ()
+    assert not resolved.state.recovery_units
     assert resolved.state.action_tombstones == (tombstone,)
-    assert resolved.effects == ()
+    assert not resolved.effects
 
 
 def test_surviving_worker_and_terminal_tombstone_contradiction_is_denied() -> None:
@@ -346,8 +448,8 @@ def test_surviving_worker_and_terminal_tombstone_contradiction_is_denied() -> No
     assert not result.authority_allowed
     assert result.state.phase is ControllerPhase.RECOVERING
     assert result.state.recovery_units == (survivor,)
-    assert result.state.action_tombstones == ()
-    assert result.effects == ()
+    assert not result.state.action_tombstones
+    assert not result.effects
     assert any("terminal tombstone" in item for item in result.reasons)
 
 
@@ -371,7 +473,7 @@ def test_same_boot_finalized_profile_disagreement_is_denied() -> None:
 
     assert not result.authority_allowed
     assert result.state.phase is ControllerPhase.RECOVERING
-    assert result.effects == ()
+    assert not result.effects
     assert any("finalized profile disagrees" in item for item in result.reasons)
 
 
@@ -440,7 +542,7 @@ def test_display_identity_mismatch_never_grants_authority() -> None:
     assert result.state.phase is ControllerPhase.RECOVERING
     assert result.state.display_identity == _DISPLAY
     assert result.state.desktop_finalized_profile is None
-    assert result.effects == ()
+    assert not result.effects
     assert any("display identity" in item for item in result.reasons)
 
 
@@ -470,7 +572,43 @@ def test_scanner_failure_retains_persisted_recovery_exclusions() -> None:
     assert not result.authority_allowed
     assert result.state.recovery_units == (survivor,)
     assert result.state.action_sequence_high_water == 101
-    assert result.effects == ()
+    assert not result.effects
+
+
+def test_recovery_prunes_tombstones_below_codec_ceiling_and_keeps_exclusions(
+    tmp_path: Path,
+) -> None:
+    tombstone_count = ACTION_TOMBSTONE_RETENTION_LIMIT + 300
+    tombstones = tuple(
+        ActionTombstone(
+            ActionId(_OLD_INSTANCE, ActionKind.APPLICATION, sequence),
+            ActionLifecycle.COMPLETED,
+        )
+        for sequence in range(1, tombstone_count + 1)
+    )
+    survivor = _unit(tombstone_count + 100)
+    result = recover_state(
+        None,
+        current_boot_id=_OLD_BOOT,
+        controller_instance=_NEW_INSTANCE,
+        display_identity=_DISPLAY,
+        namespace=StateNamespace.ACTIVE,
+        scanner=_Scanner(
+            WorkerNamespaceSnapshot(
+                units=(survivor,),
+                verified_tombstones=tombstones,
+            ),
+            [],
+        ),
+        corruption=ValueError("injected corrupt state"),
+    )
+    store = AtomicStateStore(tmp_path, StateNamespace.ACTIVE)
+    store.save(result.state)
+
+    assert len(result.state.action_tombstones) == ACTION_TOMBSTONE_RETENTION_LIMIT
+    assert result.state.recovery_units == (survivor,)
+    assert result.state.action_sequence_high_water == survivor.action_id.sequence
+    assert store.load() == result.state
 
 
 def test_scanner_failure_is_a_fail_closed_result() -> None:
@@ -489,5 +627,6 @@ def test_scanner_failure_is_a_fail_closed_result() -> None:
 
     assert not result.authority_allowed
     assert result.state.phase is ControllerPhase.RECOVERING
-    assert result.effects == ()
+    assert result.state.recovery_units == (_unit(),)
+    assert not result.effects
     assert any("scan failed" in reason for reason in result.reasons)

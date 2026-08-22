@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from .model import (
+    TERMINAL_ACTION_LIFECYCLES,
     ActionId,
-    ActionKind,
     ActionLifecycle,
     ActionRecord,
     ControllerPhase,
@@ -215,6 +215,23 @@ def _check_action_identities(state: State) -> None:
     for action_id in tombstone_ids:
         _check_action_id(state, action_id)
 
+    tombstones_by_id = {
+        tombstone.action_id: tombstone for tombstone in state.action_tombstones
+    }
+    for action in actions:
+        tombstone = tombstones_by_id.get(action.action_id)
+        if action.lifecycle in TERMINAL_ACTION_LIFECYCLES:
+            _require(
+                tombstone is not None and tombstone.lifecycle is action.lifecycle,
+                "retained terminal action requires a matching terminal tombstone",
+            )
+        if tombstone is not None:
+            _require(
+                action.lifecycle in TERMINAL_ACTION_LIFECYCLES
+                and tombstone.lifecycle is action.lifecycle,
+                "retained action and tombstone lifecycles must match",
+            )
+
     unit_ids = tuple(unit.action_id for unit in state.recovery_units)
     _require(
         len(set(unit_ids)) == len(unit_ids),
@@ -222,6 +239,22 @@ def _check_action_identities(state: State) -> None:
     )
     for action_id in unit_ids:
         _check_action_id(state, action_id)
+    _require(
+        not (set(unit_ids) & set(tombstone_ids)),
+        "possibly-live recovery worker cannot have terminal evidence",
+    )
+    if state.phase is not ControllerPhase.RECOVERING:
+        actions_by_id = {action.action_id: action for action in actions}
+        for unit in state.recovery_units:
+            action = actions_by_id.get(unit.action_id)
+            _require(
+                action is not None
+                and not isinstance(action, PlanningAction)
+                and action.lifecycle
+                in {ActionLifecycle.DISPATCHED, ActionLifecycle.STOPPING}
+                and action.unit == unit,
+                "possibly-live recovery worker requires its matching exclusion",
+            )
 
     transitions = tuple(
         action.transition_id
@@ -266,15 +299,16 @@ def _check_worker_acknowledgements(state: State) -> None:
         "more than one display mutation is acknowledged in flight",
     )
     for action in _actions(state):
-        lifecycle = action.lifecycle
-        unit = None if isinstance(action, PlanningAction) else action.unit
-        if (
-            lifecycle in _MUTATING_IN_FLIGHT
-            and action.action_id.kind is not ActionKind.PLAN
-        ):
+        if isinstance(action, PlanningAction):
+            continue
+        if action.lifecycle in _MUTATING_IN_FLIGHT:
             _require(
-                unit is not None,
+                action.unit is not None,
                 "acknowledged worker must retain its unit identity",
+            )
+            _require(
+                action.worker_deadline_ms is not None,
+                "acknowledged worker must retain its absolute deadline",
             )
 
 
@@ -536,6 +570,10 @@ def _check_numbered_safety_rules(state: State) -> None:  # noqa: C901
     for action in actions:
         if action is not None and action.lifecycle in _MUTATING_IN_FLIGHT:
             _require(action.unit is not None, "mutating worker must retain its unit")
+            _require(
+                action.worker_deadline_ms is not None,
+                "mutating worker must retain its absolute deadline",
+            )
 
     # 8 and 9: desktop completion is independent, and same-profile transitions
     # never reach finalization.

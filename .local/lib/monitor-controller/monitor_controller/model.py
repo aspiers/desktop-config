@@ -11,7 +11,9 @@ from dataclasses import dataclass
 from enum import StrEnum
 from uuid import UUID
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
+# Keep generated state comfortably below the codec's 1,024-record hard ceiling.
+ACTION_TOMBSTONE_RETENTION_LIMIT = 768
 
 
 def _require_uuid(value: object, field: str) -> None:
@@ -163,6 +165,17 @@ class ActionLifecycle(StrEnum):
     CANCELLED = "cancelled"
     UNKNOWN = "unknown"
     TIMED_OUT = "timed_out"
+
+
+TERMINAL_ACTION_LIFECYCLES: frozenset[ActionLifecycle] = frozenset(
+    {
+        ActionLifecycle.COMPLETED,
+        ActionLifecycle.FAILED,
+        ActionLifecycle.CANCELLED,
+        ActionLifecycle.UNKNOWN,
+        ActionLifecycle.TIMED_OUT,
+    }
+)
 
 
 class WorkerOutcome(StrEnum):
@@ -908,6 +921,7 @@ class ProbeAction:
     preferred_mode: str
     lifecycle: ActionLifecycle = ActionLifecycle.ADMITTED
     unit: WorkerUnit | None = None
+    worker_deadline_ms: int | None = None
     exit_status: int | None = None
     terminal_after_stop: ActionLifecycle | None = None
 
@@ -918,7 +932,9 @@ class ProbeAction:
         _require_nonempty(self.output, "probe output")
         _require_nonempty(self.internal_output, "probe internal output")
         _require_nonempty(self.preferred_mode, "probe preferred mode")
-        _validate_action_unit(self.action_id, self.unit)
+        _validate_action_worker(
+            self.action_id, self.lifecycle, self.unit, self.worker_deadline_ms
+        )
         _validate_terminal_after_stop(self.lifecycle, self.terminal_after_stop)
 
 
@@ -934,6 +950,7 @@ class ApplicationAction:
     mapping: MappingProof
     lifecycle: ActionLifecycle = ActionLifecycle.ADMITTED
     unit: WorkerUnit | None = None
+    worker_deadline_ms: int | None = None
     exit_status: int | None = None
     terminal_after_stop: ActionLifecycle | None = None
 
@@ -945,7 +962,9 @@ class ApplicationAction:
         if self.key.profile != self.profile or self.mapping.profile != self.profile:
             msg = "application identity profiles must match"
             raise ValueError(msg)
-        _validate_action_unit(self.action_id, self.unit)
+        _validate_action_worker(
+            self.action_id, self.lifecycle, self.unit, self.worker_deadline_ms
+        )
         _validate_terminal_after_stop(self.lifecycle, self.terminal_after_stop)
 
 
@@ -984,6 +1003,7 @@ class PreparationAction:
     profile: str
     lifecycle: ActionLifecycle = ActionLifecycle.ADMITTED
     unit: WorkerUnit | None = None
+    worker_deadline_ms: int | None = None
     exit_status: int | None = None
     terminal_after_stop: ActionLifecycle | None = None
 
@@ -992,7 +1012,9 @@ class PreparationAction:
             msg = "preparation action ID has the wrong kind"
             raise ValueError(msg)
         _require_nonempty(self.profile, "preparation profile")
-        _validate_action_unit(self.action_id, self.unit)
+        _validate_action_worker(
+            self.action_id, self.lifecycle, self.unit, self.worker_deadline_ms
+        )
         _validate_terminal_after_stop(self.lifecycle, self.terminal_after_stop)
 
 
@@ -1009,6 +1031,7 @@ class FinalizationAction:
     profile: str
     lifecycle: ActionLifecycle = ActionLifecycle.ADMITTED
     unit: WorkerUnit | None = None
+    worker_deadline_ms: int | None = None
     exit_status: int | None = None
     terminal_after_stop: ActionLifecycle | None = None
 
@@ -1017,7 +1040,9 @@ class FinalizationAction:
             msg = "finalization action ID has the wrong kind"
             raise ValueError(msg)
         _require_nonempty(self.profile, "finalization profile")
-        _validate_action_unit(self.action_id, self.unit)
+        _validate_action_worker(
+            self.action_id, self.lifecycle, self.unit, self.worker_deadline_ms
+        )
         _validate_terminal_after_stop(self.lifecycle, self.terminal_after_stop)
 
 
@@ -1032,6 +1057,22 @@ def _validate_terminal_after_stop(
         raise ValueError(msg)
     if terminal_after_stop is not None and lifecycle is not ActionLifecycle.STOPPING:
         msg = "post-stop terminal lifecycle requires stopping exclusion"
+        raise ValueError(msg)
+
+
+def _validate_action_worker(
+    action_id: ActionId,
+    lifecycle: ActionLifecycle,
+    unit: WorkerUnit | None,
+    worker_deadline_ms: int | None,
+) -> None:
+    if unit is not None and unit.action_id != action_id:
+        msg = "worker unit and action IDs must match"
+        raise ValueError(msg)
+    if worker_deadline_ms is not None:
+        _require_nonnegative(worker_deadline_ms, "worker deadline")
+    if lifecycle is ActionLifecycle.ADMITTED and worker_deadline_ms is not None:
+        msg = "admitted action cannot already have a worker deadline"
         raise ValueError(msg)
 
 
@@ -1079,16 +1120,35 @@ class ActionTombstone:
     lifecycle: ActionLifecycle
 
     def __post_init__(self) -> None:
-        terminal = {
-            ActionLifecycle.COMPLETED,
-            ActionLifecycle.FAILED,
-            ActionLifecycle.CANCELLED,
-            ActionLifecycle.UNKNOWN,
-            ActionLifecycle.TIMED_OUT,
-        }
-        if self.lifecycle not in terminal:
+        if self.lifecycle not in TERMINAL_ACTION_LIFECYCLES:
             msg = "action tombstone must have a terminal lifecycle"
             raise ValueError(msg)
+
+
+def bound_action_tombstones(
+    tombstones: tuple[ActionTombstone, ...],
+    *,
+    protected_action_ids: frozenset[ActionId] = frozenset(),
+) -> tuple[ActionTombstone, ...]:
+    """Retain a deterministic recent subset below the codec's hard ceiling.
+
+    Sequence high-water marks summarize pruned terminal identities. Tombstones for
+    terminal actions still represented in ``State`` remain protected until that
+    action record is cleared.
+    """
+    excess = len(tombstones) - ACTION_TOMBSTONE_RETENTION_LIMIT
+    if excess <= 0:
+        return tombstones
+    retained: list[ActionTombstone] = []
+    for tombstone in tombstones:
+        if excess and tombstone.action_id not in protected_action_ids:
+            excess -= 1
+        else:
+            retained.append(tombstone)
+    if excess:
+        msg = "protected action tombstones exceed the retention limit"
+        raise ValueError(msg)
+    return tuple(retained)
 
 
 @dataclass(frozen=True, slots=True)
@@ -1194,6 +1254,16 @@ class ObservationCompleted(EventEnvelope):
         if self.observation.boot_id != self.metadata.boot_id:
             msg = "observation and event metadata boot IDs must match"
             raise ValueError(msg)
+
+
+@dataclass(frozen=True, slots=True)
+class ObservationFailed(EventEnvelope):
+    """The canonical observation adapter failed or exceeded its deadline."""
+
+    reason: str
+
+    def __post_init__(self) -> None:
+        _require_nonempty(self.reason, "observation failure reason")
 
 
 @dataclass(frozen=True, slots=True)
@@ -1388,6 +1458,9 @@ class WorkerTimedOut(EventEnvelope):
 
     def __post_init__(self) -> None:
         _require_nonnegative(self.deadline_ms, "worker deadline")
+        if self.deadline_ms > self.metadata.processed_at_ms:
+            msg = "worker deadline cannot be later than event processing time"
+            raise ValueError(msg)
 
 
 @dataclass(frozen=True, slots=True)
@@ -1433,6 +1506,7 @@ def _validate_finished_event(action_id: ActionId, kind: ActionKind) -> None:
 
 type Event = (
     ObservationCompleted
+    | ObservationFailed
     | PlanRequested
     | PlanCompleted
     | PlanFailed
@@ -1457,6 +1531,7 @@ type Event = (
 
 EVENT_TYPES: tuple[type[EventEnvelope], ...] = (
     ObservationCompleted,
+    ObservationFailed,
     PlanRequested,
     PlanCompleted,
     PlanFailed,

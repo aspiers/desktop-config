@@ -57,6 +57,7 @@ from monitor_controller.model import (
     Fingerprint,
     MappingProof,
     ObservationCompleted,
+    ObservationFailed,
     ObservationGeneration,
     ObservationInvalidityReason,
     ObservationKey,
@@ -224,6 +225,7 @@ def _all_events() -> tuple[EventEnvelope, ...]:
     plan_hash = PlanHash("plan")
     return (
         ObservationCompleted(_META, _observation()),
+        ObservationFailed(_META, "observer timed out"),
         PlanRequested(_META, plan_id, input_key),
         PlanCompleted(_META, plan_id, input_key, plan_hash),
         PlanFailed(_META, plan_id, input_key, "failed"),
@@ -244,7 +246,7 @@ def _all_events() -> tuple[EventEnvelope, ...]:
         FinalizationFinished(_META, finalize_id, WorkerOutcome.SUCCEEDED, 0),
         DispatchRejected(_META, probe_id, "rejected"),
         WorkerStatusUnknown(_META, probe_id, "unknown"),
-        WorkerTimedOut(_META, probe_id, 200),
+        WorkerTimedOut(_META, probe_id, 100),
         WorkerCancellationAcknowledged(_META, probe_id),
         ControllerStarted(_META, _INSTANCE),
         BootChanged(
@@ -286,6 +288,7 @@ def test_closed_unions_have_exact_membership() -> None:
         "FinalizationDispatched",
         "FinalizationFinished",
         "ObservationCompleted",
+        "ObservationFailed",
         "PlanCompleted",
         "PlanFailed",
         "PlanRequested",
@@ -328,7 +331,7 @@ def test_every_event_uses_the_shared_frozen_metadata_envelope() -> None:
 def test_generation_types_are_distinct_and_observation_keeps_sample_time() -> None:
     observation = _observation()
 
-    assert ObservationGeneration is not EventGeneration
+    assert ObservationGeneration.__name__ != EventGeneration.__name__
     assert isinstance(observation.observation_generation, ObservationGeneration)
     assert isinstance(observation.event_generation, EventGeneration)
     assert observation.observed_at_ms == 100
@@ -482,7 +485,7 @@ def test_probe_candidate_rejects_extra_external_or_active_outputs() -> None:
         x_active_outputs=("eDP-1",),
         probe_candidate=ProbeCandidate("external", "DP-3", "eDP-1", "4k"),
     )
-    assert probe_observation.probe_candidate is not None
+    assert isinstance(probe_observation.probe_candidate, ProbeCandidate)
 
     with pytest.raises(ValueError, match="exact external/inactive"):
         replace(
@@ -592,8 +595,8 @@ def test_invalid_observation_retains_prior_candidate_and_mapping_intent() -> Non
     assert_controller_invariants(state)
     retained_candidate = state.candidate
     assert retained_candidate == candidate
-    assert retained_candidate is not None
-    assert retained_candidate.observation_key != observation.observation_key
+    assert isinstance(retained_candidate, CandidateSelection)
+    assert retained_candidate.observation_key.value != observation.observation_key.value
 
 
 def test_invariants_reject_internal_fallback_with_external_hardware() -> None:
@@ -703,6 +706,7 @@ def test_recovery_retains_prior_instance_ids_transitions_and_worker_units() -> N
             preferred_mode="3840x2160",
             lifecycle=ActionLifecycle.DISPATCHED,
             unit=old_unit,
+            worker_deadline_ms=1_000,
         ),
         attempted_probe_keys=frozenset({old_key}),
         planning=PlanningAction(
@@ -721,7 +725,7 @@ def test_recovery_retains_prior_instance_ids_transitions_and_worker_units() -> N
     )
 
     assert_controller_invariants(state)
-    assert state.probe is not None
+    assert isinstance(state.probe, ProbeAction)
     assert state.probe.action_id == old_probe_id
     assert state.recovery_units == (old_unit,)
 
@@ -794,6 +798,7 @@ def test_invariants_reject_overlapping_display_workers() -> None:
             preferred_mode="3840x2160",
             lifecycle=ActionLifecycle.DISPATCHED,
             unit=WorkerUnit(probe_id, "monitor-probe@1.service"),
+            worker_deadline_ms=1_000,
         ),
         attempted_probe_keys=frozenset({probe_key}),
         application=ApplicationAction(
@@ -805,6 +810,7 @@ def test_invariants_reject_overlapping_display_workers() -> None:
             mapping=_mapping(),
             lifecycle=ActionLifecycle.DISPATCHED,
             unit=WorkerUnit(application_id, "monitor-apply@2.service"),
+            worker_deadline_ms=1_000,
         ),
         attempted_application_keys=frozenset({application_key}),
     )
@@ -864,8 +870,12 @@ assert loaded == expected, loaded
     assert completed.returncode == 0, completed.stderr
 
 
-def test_cli_subcommands_are_non_mutating_placeholders(
+def test_status_is_read_only_when_authoritative_state_is_missing(
+    tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    assert main(["status"]) == 2
-    assert capsys.readouterr().out == "monitor-controller status: not implemented\n"
+    assert main(["status", "--state-home", str(tmp_path)]) == 1
+    output = capsys.readouterr().out
+
+    assert '"status": "missing"' in output
+    assert not (tmp_path / "monitor-controller").exists()

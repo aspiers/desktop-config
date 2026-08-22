@@ -6,9 +6,16 @@ from __future__ import annotations
 import json
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
+from hashlib import sha256
 from typing import Never, cast
 
-from ..codec import decode_schema_value, encode_schema_value
+from ..codec import (
+    StateCodecError,
+    decode_schema_value,
+    encode_schema_value,
+    encode_state,
+    validate_state,
+)
 from ..model import (
     EFFECT_TYPES,
     EVENT_TYPES,
@@ -16,6 +23,7 @@ from ..model import (
     Effect,
     Event,
     EventEnvelope,
+    RequestObservation,
     State,
 )
 from ..reducer import reduce
@@ -28,6 +36,12 @@ _EVENT_BY_NAME: Mapping[str, type[EventEnvelope]] = {
 }
 _EFFECT_BY_NAME: Mapping[str, type[object]] = {
     item.__name__: item for item in EFFECT_TYPES
+}
+_WOULD_EFFECT_NAMES: Mapping[str, str] = {
+    "WOULD_PROBE": "ActivateProbe",
+    "WOULD_APPLY": "ApplyProfile",
+    "WOULD_PREPARE": "PrepareDesktop",
+    "WOULD_FINALIZE": "FinalizeDesktop",
 }
 
 
@@ -90,6 +104,9 @@ def replay(trace: ReplayTrace) -> tuple[Decision, ...]:
 
 def encode_replay(trace: ReplayTrace) -> bytes:
     """Encode a trace as canonical, language-neutral JSONL."""
+    _validate_state_for_replay(trace.initial_state, "initial_state")
+    for index, step in enumerate(trace.steps, start=1):
+        _validate_state_for_replay(step.expected.state, f"record {index}.state")
     records: list[dict[str, object]] = [
         {
             "record": "header",
@@ -133,13 +150,19 @@ def decode_replay(data: bytes | str) -> ReplayTrace:
         raise ReplayFormatError(
             f"replay schema_version must be {REPLAY_SCHEMA_VERSION}"
         )
-    initial = decode_schema_value(header["initial_state"], State)
-    if not isinstance(initial, State):  # defensive narrowing for strict checkers
-        raise ReplayFormatError("initial_state did not decode as State")
-    steps = tuple(
-        _decode_step(record, index) for index, record in enumerate(records[1:], start=1)
-    )
-    return ReplayTrace(initial, steps)
+    initial = _decode_replay_state(header["initial_state"], "initial_state")
+    steps: list[ReplayStep] = []
+    state = initial
+    for index, record in enumerate(records[1:], start=1):
+        record_kind = record.get("record")
+        if record_kind in {"would_dispatch", "runtime_failure"}:
+            _validate_annotation(record, index)
+            continue
+        step = _decode_step(record, index)
+        _validate_audit_metadata(record.get("audit"), state, step, index)
+        steps.append(step)
+        state = step.expected.state
+    return ReplayTrace(initial, tuple(steps))
 
 
 def _encode_step(step: ReplayStep) -> dict[str, object]:
@@ -160,20 +183,17 @@ def _encode_step(step: ReplayStep) -> dict[str, object]:
 
 def _decode_step(record: Mapping[str, object], index: int) -> ReplayStep:
     where = f"record {index}"
-    _exact_fields(
-        record,
-        frozenset({"record", "event_type", "event", "state", "effects"}),
-        where,
-    )
+    base_fields = frozenset({"record", "event_type", "event", "state", "effects"})
+    actual_fields = frozenset(record)
+    if actual_fields not in {base_fields, base_fields | {"audit"}}:
+        _exact_fields(record, base_fields, where)
     if record["record"] != "decision":
         raise ReplayFormatError(f"{where} must be a decision")
     event_type = _named_type(record["event_type"], _EVENT_BY_NAME, f"{where}.event")
     event = decode_schema_value(record["event"], event_type)
     if not isinstance(event, EVENT_TYPES):
         raise ReplayFormatError(f"{where}.event is outside the closed Event union")
-    state = decode_schema_value(record["state"], State)
-    if not isinstance(state, State):
-        raise ReplayFormatError(f"{where}.state did not decode as State")
+    state = _decode_replay_state(record["state"], f"{where}.state")
     effects_data = record["effects"]
     if not isinstance(effects_data, list):
         raise ReplayFormatError(f"{where}.effects must be an array")
@@ -182,6 +202,24 @@ def _decode_step(record: Mapping[str, object], index: int) -> ReplayStep:
         for effect_index, item in enumerate(cast("list[object]", effects_data))
     )
     return ReplayStep(cast("Event", event), Decision(state, effects))
+
+
+def _validate_state_for_replay(state: State, where: str) -> None:
+    try:
+        validate_state(state)
+    except StateCodecError as error:
+        raise ReplayFormatError(f"{where} is invalid: {error}") from error
+
+
+def _decode_replay_state(value: object, where: str) -> State:
+    try:
+        decoded = decode_schema_value(value, State)
+        if not isinstance(decoded, State):
+            raise ReplayFormatError(f"{where} did not decode as State")
+        _validate_state_for_replay(decoded, where)
+    except StateCodecError as error:
+        raise ReplayFormatError(f"{where} is invalid: {error}") from error
+    return decoded
 
 
 def _decode_effect(value: object, where: str) -> Effect:
@@ -196,6 +234,181 @@ def _decode_effect(value: object, where: str) -> Effect:
     if not isinstance(effect, EFFECT_TYPES):
         raise ReplayFormatError(f"{where} is outside the closed Effect union")
     return cast("Effect", effect)
+
+
+def _validate_audit_metadata(
+    value: object,
+    prior_state: State,
+    step: ReplayStep,
+    index: int,
+) -> None:
+    if value is None:
+        return
+    where = f"record {index}.audit"
+    if not isinstance(value, dict):
+        raise ReplayFormatError(f"{where} must be an object")
+    audit = cast("dict[str, object]", value)
+    _exact_fields(
+        audit,
+        frozenset(
+            {
+                "monotonic_ms",
+                "wake_reason",
+                "prior_state_key",
+                "resulting_state_key",
+                "timing",
+            }
+        ),
+        where,
+    )
+    for field in ("monotonic_ms",):
+        _nonnegative_integer(audit[field], f"{where}.{field}")
+    for field in ("wake_reason", "prior_state_key", "resulting_state_key"):
+        if not isinstance(audit[field], str) or not audit[field]:
+            raise ReplayFormatError(f"{where}.{field} must be a non-empty string")
+    if audit["monotonic_ms"] != step.event.metadata.processed_at_ms:
+        raise ReplayFormatError(
+            f"{where}.monotonic_ms does not match event processing time"
+        )
+    expected_wake_reason = _expected_wake_reason(step)
+    if audit["wake_reason"] != expected_wake_reason:
+        raise ReplayFormatError(
+            f"{where}.wake_reason does not match its event and observation request"
+        )
+    expected_prior = sha256(encode_state(prior_state)).hexdigest()
+    expected_result = sha256(encode_state(step.expected.state)).hexdigest()
+    if audit["prior_state_key"] != expected_prior:
+        raise ReplayFormatError(f"{where}.prior_state_key does not match replay state")
+    if audit["resulting_state_key"] != expected_result:
+        raise ReplayFormatError(f"{where}.resulting_state_key does not match decision")
+    _validate_audit_timing(audit["timing"], where)
+
+
+def _expected_wake_reason(step: ReplayStep) -> str:
+    request = next(
+        (
+            effect
+            for effect in step.expected.effects
+            if isinstance(effect, RequestObservation)
+        ),
+        None,
+    )
+    return request.reason.value if request is not None else type(step.event).__name__
+
+
+def _validate_audit_timing(value: object, audit_where: str) -> None:
+    where = f"{audit_where}.timing"
+    if not isinstance(value, dict):
+        raise ReplayFormatError(f"{where} must be an object")
+    timing = cast("dict[str, object]", value)
+    fields = frozenset(
+        {
+            "processing_started_ms",
+            "reduction_finished_ms",
+            "persistence_finished_ms",
+            "observation_duration_ms",
+            "command_duration_ms",
+            "worker_duration_ms",
+        }
+    )
+    _exact_fields(timing, fields, where)
+    boundaries = tuple(
+        _nonnegative_integer(timing[field], f"{where}.{field}")
+        for field in (
+            "processing_started_ms",
+            "reduction_finished_ms",
+            "persistence_finished_ms",
+        )
+    )
+    if boundaries != tuple(sorted(boundaries)):
+        raise ReplayFormatError(f"{where} boundaries are not ordered")
+    for field in (
+        "observation_duration_ms",
+        "command_duration_ms",
+        "worker_duration_ms",
+    ):
+        duration = timing[field]
+        if duration is not None:
+            _nonnegative_integer(duration, f"{where}.{field}")
+
+
+def _validate_annotation(record: Mapping[str, object], index: int) -> None:
+    where = f"record {index}"
+    if record.get("record") == "would_dispatch":
+        _validate_would_dispatch(record, where)
+    else:
+        _validate_runtime_failure(record, where)
+
+
+def _validate_would_dispatch(record: Mapping[str, object], where: str) -> None:
+    _exact_fields(
+        record,
+        frozenset(
+            {
+                "record",
+                "schema_version",
+                "kind",
+                "action_id",
+                "effect_type",
+                "effect",
+                "recorded_at_ms",
+            }
+        ),
+        where,
+    )
+    _validate_annotation_header(record, where)
+    kind = record["kind"]
+    if not isinstance(kind, str) or kind not in _WOULD_EFFECT_NAMES:
+        raise ReplayFormatError(f"{where}.kind is not a known WOULD_* value")
+    if not isinstance(record["action_id"], str) or not record["action_id"]:
+        raise ReplayFormatError(f"{where}.action_id must be a non-empty string")
+    effect = _decode_effect(
+        {
+            "effect_type": record["effect_type"],
+            "effect": record["effect"],
+        },
+        f"{where}.effect",
+    )
+    if type(effect).__name__ != _WOULD_EFFECT_NAMES[kind]:
+        raise ReplayFormatError(f"{where}.kind does not match its decoded effect")
+    effect_action_id = getattr(effect, "action_id", None)
+    if record["action_id"] != getattr(effect_action_id, "value", None):
+        raise ReplayFormatError(f"{where}.action_id does not match its decoded effect")
+
+
+def _validate_runtime_failure(record: Mapping[str, object], where: str) -> None:
+    _exact_fields(
+        record,
+        frozenset(
+            {
+                "record",
+                "schema_version",
+                "boundary",
+                "detail",
+                "action_id",
+                "recorded_at_ms",
+            }
+        ),
+        where,
+    )
+    _validate_annotation_header(record, where)
+    for field in ("boundary", "detail"):
+        if not isinstance(record[field], str) or not record[field]:
+            raise ReplayFormatError(f"{where}.{field} must be a non-empty string")
+    if record["action_id"] is not None and not isinstance(record["action_id"], str):
+        raise ReplayFormatError(f"{where}.action_id must be null or a string")
+
+
+def _validate_annotation_header(record: Mapping[str, object], where: str) -> None:
+    if record["schema_version"] != REPLAY_SCHEMA_VERSION:
+        raise ReplayFormatError(f"{where} has an unsupported schema version")
+    _nonnegative_integer(record["recorded_at_ms"], f"{where}.recorded_at_ms")
+
+
+def _nonnegative_integer(value: object, where: str) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise ReplayFormatError(f"{where} must be a non-negative integer")
+    return value
 
 
 def _named_type[T](

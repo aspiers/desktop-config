@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import types
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import fields, is_dataclass
 from enum import Enum
 from typing import Any, Never, cast, get_args, get_origin, get_type_hints
@@ -12,9 +12,12 @@ from uuid import UUID
 
 from .invariants import assert_controller_invariants
 from .model import (
+    SCHEMA_VERSION,
+    TERMINAL_ACTION_LIFECYCLES,
     ActionId,
     ActionLifecycle,
     ActionRecord,
+    ActionTombstone,
     ControllerPhase,
     PlanningAction,
     PlanningState,
@@ -28,6 +31,20 @@ MAX_STRING_LENGTH = 65_536
 MAX_TOMBSTONES = 1_024
 MAX_RECOVERY_UNITS = 256
 MAX_ATTEMPT_KEYS = 4_096
+_LEGACY_SCHEMA_VERSION = 1
+_STATE_WORKER_ACTION_FIELDS = (
+    "probe",
+    "application",
+    "preparation",
+    "finalization",
+)
+_IN_FLIGHT_LIFECYCLE_VALUES = frozenset(
+    {
+        ActionLifecycle.DISPATCHED.value,
+        ActionLifecycle.STOPPING.value,
+        ActionLifecycle.RESULT_PENDING.value,
+    }
+)
 
 
 class StateCodecError(ValueError):
@@ -285,13 +302,17 @@ def _validate_action_record(action: ActionRecord) -> None:
     if isinstance(action, PlanningAction):
         return
     if action.lifecycle is ActionLifecycle.ADMITTED and (
-        action.unit is not None or action.exit_status is not None
+        action.unit is not None
+        or action.worker_deadline_ms is not None
+        or action.exit_status is not None
     ):
         _fail("admitted action cannot have dispatch or result data")
     if action.lifecycle is ActionLifecycle.DISPATCHED and (
-        action.unit is None or action.exit_status is not None
+        action.unit is None
+        or action.worker_deadline_ms is None
+        or action.exit_status is not None
     ):
-        _fail("dispatched action requires only its worker unit")
+        _fail("dispatched action requires its worker unit and deadline")
 
 
 def _validate_recovering_relationships(
@@ -307,24 +328,32 @@ def _validate_recovering_relationships(
         _fail("recovering state requires idle preparation")
 
 
+def _validate_terminal_evidence(
+    actions: tuple[ActionRecord, ...],
+    tombstones_by_id: Mapping[ActionId, ActionTombstone],
+) -> None:
+    for action in actions:
+        tombstone = tombstones_by_id.get(action.action_id)
+        if action.lifecycle in TERMINAL_ACTION_LIFECYCLES and (
+            tombstone is None or tombstone.lifecycle is not action.lifecycle
+        ):
+            _fail("retained terminal action requires a matching terminal tombstone")
+        if tombstone is not None and (
+            action.lifecycle not in TERMINAL_ACTION_LIFECYCLES
+            or tombstone.lifecycle is not action.lifecycle
+        ):
+            _fail("retained action and terminal tombstone lifecycles must match")
+
+
 def _validate_persistence_relationships(state: State) -> None:
     actions = _state_actions(state)
     action_ids = {action.action_id for action in actions}
     tombstone_ids = {item.action_id for item in state.action_tombstones}
     recovery_unit_ids = {item.action_id for item in state.recovery_units}
-    actions_by_id = {action.action_id: action for action in actions}
     tombstones_by_id = {item.action_id: item for item in state.action_tombstones}
-    for action_id in action_ids & tombstone_ids:
-        action = actions_by_id[action_id]
-        tombstone = tombstones_by_id[action_id]
-        if action.lifecycle is not tombstone.lifecycle or action.lifecycle not in {
-            ActionLifecycle.FAILED,
-            ActionLifecycle.UNKNOWN,
-            ActionLifecycle.TIMED_OUT,
-        }:
-            _fail("retained terminal action must match its failure tombstone lifecycle")
+    _validate_terminal_evidence(actions, tombstones_by_id)
     if recovery_unit_ids & tombstone_ids:
-        _fail("surviving worker cannot also have a terminal tombstone")
+        _fail("possibly-live worker cannot also have terminal evidence")
 
     _validate_recovering_relationships(state, actions)
 
@@ -383,9 +412,44 @@ def _validate_bounded_state(state: State) -> None:
         raise StateCodecError(message) from error
 
 
+def validate_state(state: State) -> None:
+    """Validate all authoritative-state bounds and cross-field invariants."""
+    _validate_bounded_state(state)
+
+
+def _migrate_state_document(document: object) -> object:
+    if not isinstance(document, dict):
+        return document
+    state_data = cast("dict[str, object]", document)
+    version = state_data.get("schema_version")
+    if isinstance(version, bool) or not isinstance(version, int):
+        _fail("state.schema_version must be an integer")
+    if version == SCHEMA_VERSION:
+        return state_data
+    if version != _LEGACY_SCHEMA_VERSION:
+        _fail(f"state.schema_version {version} is unsupported")
+
+    migrated = dict(state_data)
+    for field in _STATE_WORKER_ACTION_FIELDS:
+        action = migrated.get(field)
+        if not isinstance(action, dict):
+            continue
+        action_data = cast("dict[str, object]", action)
+        if "worker_deadline_ms" in action_data:
+            _fail(f"state.{field}.worker_deadline_ms is not valid in schema version 1")
+        migrated_action = dict(action_data)
+        lifecycle = migrated_action.get("lifecycle")
+        migrated_action["worker_deadline_ms"] = (
+            0 if lifecycle in _IN_FLIGHT_LIFECYCLE_VALUES else None
+        )
+        migrated[field] = migrated_action
+    migrated["schema_version"] = SCHEMA_VERSION
+    return migrated
+
+
 def encode_state(state: State, *, max_bytes: int = MAX_STATE_BYTES) -> bytes:
     """Encode one validated state to deterministic, bounded UTF-8 JSON."""
-    _validate_bounded_state(state)
+    validate_state(state)
     document = _encode_value(state, "state")
     encoded = json.dumps(
         document,
@@ -401,9 +465,9 @@ def encode_state(state: State, *, max_bytes: int = MAX_STATE_BYTES) -> bytes:
 
 def decode_state(data: bytes | str, *, max_bytes: int = MAX_STATE_BYTES) -> State:
     """Decode and validate state without mutating any caller-owned value."""
-    document = _decode_document(data, max_bytes)
+    document = _migrate_state_document(_decode_document(data, max_bytes))
     decoded = _decode_value(document, State, "state")
     if not isinstance(decoded, State):
         _fail("decoded document is not controller state")
-    _validate_bounded_state(decoded)
+    validate_state(decoded)
     return decoded

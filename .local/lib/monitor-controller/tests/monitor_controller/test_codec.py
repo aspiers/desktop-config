@@ -16,6 +16,7 @@ from monitor_controller.codec import (
     encode_state,
 )
 from monitor_controller.model import (
+    SCHEMA_VERSION,
     ActionId,
     ActionKind,
     ActionLifecycle,
@@ -32,6 +33,13 @@ from monitor_controller.model import (
     ProbeAction,
     ProbeAttemptKey,
     State,
+    WorkerUnit,
+)
+from monitor_controller.simulation.replay import (
+    ReplayFormatError,
+    ReplayTrace,
+    decode_replay,
+    encode_replay,
 )
 
 _BOOT = BootId(UUID("11111111-1111-1111-1111-111111111111"))
@@ -67,6 +75,7 @@ def _state() -> State:
                 ActionId(_INSTANCE, ActionKind.APPLICATION, 2),
                 ActionLifecycle.CANCELLED,
             ),
+            ActionTombstone(action_id, ActionLifecycle.FAILED),
         ),
     )
 
@@ -82,6 +91,7 @@ def test_state_codec_round_trips_all_present_relationships_deterministically() -
     decoded = decode_state(first)
 
     assert decoded == state
+    assert decoded.schema_version == SCHEMA_VERSION == 2
     assert encode_state(decoded) == first
     assert first == encode_state(state)
 
@@ -100,11 +110,51 @@ def test_codec_round_trips_multiple_application_attempt_keys() -> None:
     assert decode_state(encode_state(state)) == state
 
 
+def test_version_one_state_migrates_in_flight_worker_to_immediate_deadline() -> None:
+    state = _state()
+    probe = state.probe
+    assert probe is not None
+    unit = WorkerUnit(probe.action_id, "monitor-probe@1.service")
+    dispatched = replace(
+        state,
+        phase=ControllerPhase.PROBING,
+        probe=replace(
+            probe,
+            lifecycle=ActionLifecycle.DISPATCHED,
+            unit=unit,
+            worker_deadline_ms=123_456,
+            exit_status=None,
+        ),
+        action_tombstones=state.action_tombstones[:1],
+    )
+    document = cast("dict[str, object]", json.loads(encode_state(dispatched)))
+    document["schema_version"] = 1
+    old_probe = cast("dict[str, object]", document["probe"])
+    old_probe.pop("worker_deadline_ms")
+
+    migrated = decode_state(json.dumps(document))
+
+    assert migrated.schema_version == SCHEMA_VERSION
+    assert migrated.probe is not None
+    assert migrated.probe.lifecycle is ActionLifecycle.DISPATCHED
+    assert migrated.probe.worker_deadline_ms == 0
+    assert decode_state(encode_state(migrated)) == migrated
+
+
+def test_version_one_state_rejects_current_only_or_malformed_fields() -> None:
+    document = _document()
+    document["schema_version"] = 1
+    probe = cast("dict[str, object]", document["probe"])
+    probe["worker_deadline_ms"] = "not-an-old-schema-field"
+
+    with pytest.raises(StateCodecError, match="not valid in schema version 1"):
+        decode_state(json.dumps(document))
+
+
 def test_duplicate_fields_are_rejected_before_construction() -> None:
     encoded = encode_state(_state()).decode()
-    duplicate = encoded.replace(
-        '"schema_version":1', '"schema_version":1,"schema_version":1', 1
-    )
+    version_field = f'"schema_version":{SCHEMA_VERSION}'
+    duplicate = encoded.replace(version_field, f"{version_field},{version_field}", 1)
 
     with pytest.raises(StateCodecError, match="duplicate JSON field"):
         decode_state(duplicate)
@@ -137,7 +187,7 @@ def test_truncation_invalid_utf8_float_and_oversize_are_rejected() -> None:
 
 def test_schema_enums_uuid_and_numeric_types_are_strict() -> None:
     mutations: tuple[tuple[str, object, str], ...] = (
-        ("schema_version", 2, "schema version"),
+        ("schema_version", SCHEMA_VERSION + 1, "schema_version"),
         ("phase", "run-this", "invalid enum"),
         ("physical_epoch", "1+2", "must be an integer"),
         ("physical_epoch", True, "must be an integer"),
@@ -187,6 +237,9 @@ def test_cross_field_lifecycle_corruption_is_rejected() -> None:
     probe = cast("dict[str, object]", document["probe"])
     probe["lifecycle"] = ActionLifecycle.ADMITTED.value
     probe["exit_status"] = None
+    document["action_tombstones"] = cast(
+        "list[dict[str, object]]", document["action_tombstones"]
+    )[:1]
     with pytest.raises(StateCodecError, match="already be attempted"):
         decode_state(json.dumps(document))
 
@@ -196,6 +249,76 @@ def test_cross_field_lifecycle_corruption_is_rejected() -> None:
     tombstone_id["sequence"] = 1
     with pytest.raises(StateCodecError, match="multiple action kinds"):
         decode_state(json.dumps(document))
+
+
+@pytest.mark.parametrize(
+    "lifecycle",
+    [
+        ActionLifecycle.FAILED,
+        ActionLifecycle.UNKNOWN,
+        ActionLifecycle.TIMED_OUT,
+    ],
+)
+def test_retained_failure_requires_matching_terminal_tombstone(
+    lifecycle: ActionLifecycle,
+) -> None:
+    state = _state()
+    probe = state.probe
+    assert probe is not None
+    matching = ActionTombstone(probe.action_id, lifecycle)
+    valid = replace(
+        state,
+        probe=replace(probe, lifecycle=lifecycle),
+        action_tombstones=(state.action_tombstones[0], matching),
+    )
+    malformed = replace(valid, action_tombstones=valid.action_tombstones[:1])
+
+    with pytest.raises(StateCodecError, match="matching terminal tombstone"):
+        encode_state(malformed)
+
+    document = cast("dict[str, object]", json.loads(encode_state(valid)))
+    document["action_tombstones"] = cast(
+        "list[dict[str, object]]", document["action_tombstones"]
+    )[:1]
+    with pytest.raises(StateCodecError, match="matching terminal tombstone"):
+        decode_state(json.dumps(document))
+
+
+@pytest.mark.parametrize(
+    "lifecycle",
+    [
+        ActionLifecycle.FAILED,
+        ActionLifecycle.UNKNOWN,
+        ActionLifecycle.TIMED_OUT,
+    ],
+)
+def test_replay_rejects_retained_terminal_action_without_tombstone(
+    lifecycle: ActionLifecycle,
+) -> None:
+    state = _state()
+    probe = state.probe
+    assert probe is not None
+    state = replace(
+        state,
+        probe=replace(probe, lifecycle=lifecycle),
+        action_tombstones=(
+            state.action_tombstones[0],
+            ActionTombstone(probe.action_id, lifecycle),
+        ),
+    )
+    malformed = replace(state, action_tombstones=state.action_tombstones[:1])
+
+    with pytest.raises(ReplayFormatError, match="matching terminal tombstone"):
+        encode_replay(ReplayTrace(malformed, ()))
+
+    records = [json.loads(encode_replay(ReplayTrace(state, ())).decode())]
+    initial_state = cast("dict[str, object]", records[0]["initial_state"])
+    initial_state["action_tombstones"] = cast(
+        "list[dict[str, object]]", initial_state["action_tombstones"]
+    )[:1]
+    payload = json.dumps(records[0], sort_keys=True, separators=(",", ":")) + "\n"
+    with pytest.raises(ReplayFormatError, match="matching terminal tombstone"):
+        decode_replay(payload)
 
 
 def test_failed_decode_cannot_partially_mutate_existing_state() -> None:

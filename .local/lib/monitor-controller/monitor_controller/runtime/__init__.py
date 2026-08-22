@@ -1,1 +1,1 @@
-"""Runtime adapter interfaces for persistence and recovery."""
+"""Serialized controller runtime and injected adapter boundaries."""

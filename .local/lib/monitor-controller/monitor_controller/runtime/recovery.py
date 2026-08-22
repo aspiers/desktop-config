@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Protocol
 
 from monitor_controller.invariants import assert_controller_invariants
 from monitor_controller.model import (
+    TERMINAL_ACTION_LIFECYCLES,
     ActionId,
     ActionLifecycle,
     ActionRecord,
@@ -23,6 +24,7 @@ from monitor_controller.model import (
     PreparationState,
     State,
     WorkerUnit,
+    bound_action_tombstones,
 )
 
 if TYPE_CHECKING:
@@ -130,6 +132,7 @@ def _action_high_water(
 ) -> int:
     sequences = [snapshot.action_sequence_high_water]
     sequences.extend(unit.action_id.sequence for unit in units)
+    sequences.extend(item.action_id.sequence for item in snapshot.verified_tombstones)
     sequences.extend(item.action_id.sequence for item in tombstones)
     if persisted is not None:
         sequences.append(persisted.action_sequence_high_water)
@@ -174,6 +177,38 @@ def _merge_tombstones(
     return tuple(sorted(merged.values(), key=lambda item: item.action_id.value)), tuple(
         reasons
     )
+
+
+def _persisted_terminal_evidence_reasons(state: State) -> tuple[str, ...]:
+    reasons: list[str] = []
+    tombstones = {
+        tombstone.action_id: tombstone for tombstone in state.action_tombstones
+    }
+    for action in _actions(state):
+        tombstone = tombstones.get(action.action_id)
+        if action.lifecycle in TERMINAL_ACTION_LIFECYCLES and (
+            tombstone is None or tombstone.lifecycle is not action.lifecycle
+        ):
+            reasons.append(
+                "retained terminal action "
+                f"{action.action_id.value} lacks matching terminal evidence"
+            )
+        elif tombstone is not None and (
+            action.lifecycle not in TERMINAL_ACTION_LIFECYCLES
+            or tombstone.lifecycle is not action.lifecycle
+        ):
+            reasons.append(
+                f"retained action {action.action_id.value} conflicts with "
+                "terminal evidence"
+            )
+    tombstone_ids = frozenset(tombstones)
+    reasons.extend(
+        f"possibly-live recovery worker {unit.action_id.value} "
+        "also has terminal evidence"
+        for unit in state.recovery_units
+        if unit.action_id in tombstone_ids
+    )
+    return tuple(reasons)
 
 
 def _minimum_recovery_state(  # noqa: PLR0913
@@ -251,6 +286,14 @@ def _boot_mismatch_state(
     )
 
 
+def _represented_worker_units(persisted: State) -> frozenset[WorkerUnit]:
+    return frozenset(
+        action.unit
+        for action in _actions(persisted)
+        if not isinstance(action, PlanningAction) and action.unit is not None
+    )
+
+
 def _same_boot_recovery_units(
     persisted: State,
     snapshot: WorkerNamespaceSnapshot,
@@ -264,7 +307,7 @@ def _same_boot_recovery_units(
     return _unique_units((*retained, *snapshot.units))
 
 
-def _same_boot_relationship_reasons(
+def _same_boot_relationship_reasons(  # noqa: C901, PLR0912
     persisted: State,
     snapshot: WorkerNamespaceSnapshot,
     verified_terminal_ids: frozenset[ActionId],
@@ -277,8 +320,9 @@ def _same_boot_relationship_reasons(
     )
     retained, retained_reasons = _unit_map(retained_units)
     reasons.extend(retained_reasons)
-    _, combined_reasons = _unit_map((*retained_units, *snapshot.units))
-    reasons.extend(combined_reasons)
+    for key in scanned.keys() & retained.keys():
+        if scanned[key] != retained[key]:
+            reasons.append(f"recovery worker unit identity differs for action {key}")
 
     expected: dict[str, WorkerUnit] = {}
     actions_by_id: dict[str, ActionRecord] = {}
@@ -289,8 +333,8 @@ def _same_boot_relationship_reasons(
         expected[action.action_id.value] = action.unit
     for key, unit in expected.items():
         scanned_unit = scanned.get(key)
+        action = actions_by_id[key]
         if scanned_unit is None:
-            action = actions_by_id[key]
             if action.lifecycle in {
                 ActionLifecycle.DISPATCHED,
                 ActionLifecycle.STOPPING,
@@ -299,6 +343,14 @@ def _same_boot_relationship_reasons(
                 reasons.append(f"persisted in-flight worker {key} is not discoverable")
         elif scanned_unit != unit:
             reasons.append(f"worker unit identity differs for action {key}")
+        elif action.lifecycle not in {
+            ActionLifecycle.DISPATCHED,
+            ActionLifecycle.STOPPING,
+        }:
+            reasons.append(
+                f"scanner-confirmed possibly-live worker {key} conflicts with "
+                f"persisted {action.lifecycle.value} lifecycle"
+            )
     for key in scanned.keys() - expected.keys() - retained.keys():
         reasons.append(f"surviving worker {key} is absent from persisted state")
     for key in retained.keys() - expected.keys():
@@ -333,7 +385,14 @@ def recover_state(  # noqa: PLR0913
         snapshot = WorkerNamespaceSnapshot()
         reason = f"worker namespace scan failed: {type(error).__name__}: {error}"
         retained_units = (
-            () if persisted_state is None else persisted_state.recovery_units
+            ()
+            if persisted_state is None
+            else _unique_units(
+                (
+                    *persisted_state.recovery_units,
+                    *_represented_worker_units(persisted_state),
+                )
+            )
         )
         state = _minimum_recovery_state(
             current_boot_id=current_boot_id,
@@ -365,6 +424,7 @@ def recover_state(  # noqa: PLR0913
     tombstones = tuple(
         item for item in tombstones if item.action_id not in contradicted_ids
     )
+    tombstones = bound_action_tombstones(tombstones)
     reasons = (
         *snapshot.ambiguities,
         *unit_reasons,
@@ -444,7 +504,16 @@ def recover_state(  # noqa: PLR0913
         for item in merged_tombstones
         if item.action_id not in merged_contradicted_ids
     )
-    verified_terminal_ids = frozenset(item.action_id for item in merged_tombstones)
+    protected_action_ids = frozenset(
+        action.action_id for action in _actions(persisted_state)
+    )
+    tombstones = bound_action_tombstones(
+        tombstones,
+        protected_action_ids=protected_action_ids,
+    )
+    verified_terminal_ids = frozenset(
+        item.action_id for item in snapshot.verified_tombstones
+    )
     recovery_units = _same_boot_recovery_units(
         persisted_state, snapshot, verified_terminal_ids
     )
@@ -460,11 +529,17 @@ def recover_state(  # noqa: PLR0913
         *same_boot_tombstone_reasons,
         *merged_contradiction_reasons,
         *profile_reasons,
+        *_persisted_terminal_evidence_reasons(persisted_state),
         *_same_boot_relationship_reasons(
             persisted_state, snapshot, verified_terminal_ids
         ),
     )
     if reasons:
+        fail_closed_units = _same_boot_recovery_units(
+            persisted_state,
+            snapshot,
+            verified_terminal_ids,
+        )
         state = _minimum_recovery_state(
             current_boot_id=current_boot_id,
             controller_instance=controller_instance,
@@ -472,7 +547,7 @@ def recover_state(  # noqa: PLR0913
             snapshot=snapshot,
             tombstones=tombstones,
             persisted=persisted_state,
-            units=recovery_units,
+            units=fail_closed_units,
         )
         assert_controller_invariants(state)
         return RecoveryResult(

@@ -339,7 +339,7 @@
                 "type": "request_observation"
               },
               {
-                "deadline_ms": 0,
+                "deadline_ms": 2,
                 "type": "schedule"
               }
             ],
@@ -355,7 +355,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 0,
+              "next_timer_ms": 2,
               "phase": "discover_fast",
               "physical_epoch": 1,
               "planning_action_id": null,
@@ -562,7 +562,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 1,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 1000
             }
@@ -654,7 +654,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 1,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 1000
             }
@@ -704,7 +704,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 1,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 1000
             }
@@ -737,7 +737,7 @@
                 "type": "request_observation"
               },
               {
-                "deadline_ms": 3000,
+                "deadline_ms": 3002,
                 "type": "schedule"
               }
             ],
@@ -753,7 +753,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 3000,
+              "next_timer_ms": 3002,
               "phase": "verifying",
               "physical_epoch": 1,
               "planning_action_id": "plan-22222222222222222222222222222222-2",
@@ -765,7 +765,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 1,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 1000
             }
@@ -847,7 +847,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 1,
+              "tombstone_count": 3,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 1000
             }
@@ -935,7 +935,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 1,
+              "tombstone_count": 3,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 1000
             }
@@ -985,7 +985,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 1,
+              "tombstone_count": 3,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 1000
             }
@@ -1018,7 +1018,7 @@
                 "type": "request_observation"
               },
               {
-                "deadline_ms": 11000,
+                "deadline_ms": 12000,
                 "type": "schedule"
               }
             ],
@@ -1034,7 +1034,7 @@
               "external_intent": true,
               "finalization_action_id": "finalization-22222222222222222222222222222222-4",
               "finalization_lifecycle": "result_pending",
-              "next_timer_ms": 11000,
+              "next_timer_ms": 12000,
               "phase": "finalizing",
               "physical_epoch": 1,
               "planning_action_id": "plan-22222222222222222222222222222222-2",
@@ -1046,7 +1046,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 1,
+              "tombstone_count": 3,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 1000
             }
@@ -1133,7 +1133,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": "samsung",
-              "tombstone_count": 3,
+              "tombstone_count": 4,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 1000
             }
@@ -1313,7 +1313,7 @@
                 "type": "request_observation"
               },
               {
-                "deadline_ms": 0,
+                "deadline_ms": 2,
                 "type": "schedule"
               }
             ],
@@ -1329,7 +1329,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 0,
+              "next_timer_ms": 2,
               "phase": "discover_fast",
               "physical_epoch": 1,
               "planning_action_id": null,
@@ -2539,7 +2539,7 @@
                 "type": "request_observation"
               },
               {
-                "deadline_ms": 2,
+                "deadline_ms": 3,
                 "type": "schedule"
               }
             ],
@@ -2555,7 +2555,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 2,
+              "next_timer_ms": 3,
               "phase": "discover_fast",
               "physical_epoch": 1,
               "planning_action_id": null,
@@ -3202,7 +3202,7 @@
             },
             "effects": [
               {
-                "deadline_ms": 60000,
+                "deadline_ms": 60002,
                 "type": "schedule"
               }
             ],
@@ -3218,7 +3218,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 60000,
+              "next_timer_ms": 60002,
               "phase": "probe_failed",
               "physical_epoch": 1,
               "planning_action_id": null,
@@ -3717,7 +3717,7 @@
                 "type": "request_observation"
               },
               {
-                "deadline_ms": 0,
+                "deadline_ms": 2,
                 "type": "schedule"
               }
             ],
@@ -3733,7 +3733,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 0,
+              "next_timer_ms": 2,
               "phase": "discover_fast",
               "physical_epoch": 1,
               "planning_action_id": null,
@@ -4186,7 +4186,7 @@
                 "type": "request_observation"
               },
               {
-                "deadline_ms": 0,
+                "deadline_ms": 2,
                 "type": "schedule"
               }
             ],
@@ -4202,7 +4202,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 0,
+              "next_timer_ms": 2,
               "phase": "discover_fast",
               "physical_epoch": 1,
               "planning_action_id": null,
@@ -4747,7 +4747,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -4839,7 +4839,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -4889,7 +4889,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -4922,7 +4922,7 @@
                 "type": "request_observation"
               },
               {
-                "deadline_ms": 2000,
+                "deadline_ms": 2002,
                 "type": "schedule"
               }
             ],
@@ -4938,7 +4938,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 2000,
+              "next_timer_ms": 2002,
               "phase": "verifying",
               "physical_epoch": 1,
               "planning_action_id": "plan-22222222222222222222222222222222-1",
@@ -4950,7 +4950,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -5032,7 +5032,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -5120,7 +5120,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -5179,7 +5179,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 1,
+              "tombstone_count": 3,
               "transition_sequence_high_water": 1,
               "verify_since_ms": null
             }
@@ -5273,7 +5273,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 2,
+              "tombstone_count": 3,
               "transition_sequence_high_water": 2,
               "verify_since_ms": 10001
             }
@@ -5481,7 +5481,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -5556,7 +5556,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": null
             }
@@ -6090,7 +6090,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 1000
             }
@@ -6176,7 +6176,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 1000
             }
@@ -6226,7 +6226,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 1000
             }
@@ -6259,7 +6259,7 @@
                 "type": "request_observation"
               },
               {
-                "deadline_ms": 3000,
+                "deadline_ms": 3002,
                 "type": "schedule"
               }
             ],
@@ -6275,7 +6275,7 @@
               "external_intent": false,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 3000,
+              "next_timer_ms": 3002,
               "phase": "verifying",
               "physical_epoch": 1,
               "planning_action_id": "plan-22222222222222222222222222222222-1",
@@ -6287,7 +6287,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 1000
             }
@@ -6363,7 +6363,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 1000
             }
@@ -6445,7 +6445,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 1000
             }
@@ -7277,7 +7277,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -7369,7 +7369,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -7419,7 +7419,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -7452,7 +7452,7 @@
                 "type": "request_observation"
               },
               {
-                "deadline_ms": 2000,
+                "deadline_ms": 2002,
                 "type": "schedule"
               }
             ],
@@ -7468,7 +7468,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 2000,
+              "next_timer_ms": 2002,
               "phase": "verifying",
               "physical_epoch": 1,
               "planning_action_id": "plan-22222222222222222222222222222222-1",
@@ -7480,7 +7480,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -7562,7 +7562,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -7650,7 +7650,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -9468,7 +9468,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -9560,7 +9560,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -9610,7 +9610,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -9643,7 +9643,7 @@
                 "type": "request_observation"
               },
               {
-                "deadline_ms": 2000,
+                "deadline_ms": 2002,
                 "type": "schedule"
               }
             ],
@@ -9659,7 +9659,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 2000,
+              "next_timer_ms": 2002,
               "phase": "verifying",
               "physical_epoch": 1,
               "planning_action_id": "plan-22222222222222222222222222222222-1",
@@ -9671,7 +9671,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -9753,7 +9753,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -9841,7 +9841,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -9899,7 +9899,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -9987,7 +9987,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -10194,7 +10194,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -10286,7 +10286,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -10336,7 +10336,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -10369,7 +10369,7 @@
                 "type": "request_observation"
               },
               {
-                "deadline_ms": 2000,
+                "deadline_ms": 2002,
                 "type": "schedule"
               }
             ],
@@ -10385,7 +10385,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 2000,
+              "next_timer_ms": 2002,
               "phase": "verifying",
               "physical_epoch": 1,
               "planning_action_id": "plan-22222222222222222222222222222222-1",
@@ -10397,7 +10397,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -10479,7 +10479,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -10567,7 +10567,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -10617,7 +10617,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -10671,7 +10671,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -10992,7 +10992,7 @@
                 "type": "request_observation"
               },
               {
-                "deadline_ms": 2,
+                "deadline_ms": 3,
                 "type": "schedule"
               }
             ],
@@ -11008,7 +11008,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 2,
+              "next_timer_ms": 3,
               "phase": "discover_fast",
               "physical_epoch": 1,
               "planning_action_id": null,
@@ -11665,7 +11665,7 @@
             },
             "effects": [
               {
-                "deadline_ms": 60000,
+                "deadline_ms": 60002,
                 "type": "schedule"
               }
             ],
@@ -11681,7 +11681,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 60000,
+              "next_timer_ms": 60002,
               "phase": "apply_failed",
               "physical_epoch": 1,
               "planning_action_id": null,
@@ -11900,7 +11900,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -11992,7 +11992,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -12042,7 +12042,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -12075,7 +12075,7 @@
                 "type": "request_observation"
               },
               {
-                "deadline_ms": 2000,
+                "deadline_ms": 2002,
                 "type": "schedule"
               }
             ],
@@ -12091,7 +12091,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 2000,
+              "next_timer_ms": 2002,
               "phase": "verifying",
               "physical_epoch": 1,
               "planning_action_id": "plan-22222222222222222222222222222222-1",
@@ -12103,7 +12103,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -12185,7 +12185,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -12273,7 +12273,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -12323,7 +12323,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -12356,7 +12356,7 @@
                 "type": "request_observation"
               },
               {
-                "deadline_ms": 10000,
+                "deadline_ms": 11000,
                 "type": "schedule"
               }
             ],
@@ -12372,7 +12372,7 @@
               "external_intent": true,
               "finalization_action_id": "finalization-22222222222222222222222222222222-3",
               "finalization_lifecycle": "result_pending",
-              "next_timer_ms": 10000,
+              "next_timer_ms": 11000,
               "phase": "finalizing",
               "physical_epoch": 1,
               "planning_action_id": "plan-22222222222222222222222222222222-1",
@@ -12384,7 +12384,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -12459,7 +12459,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": null
             }
@@ -12546,7 +12546,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": "samsung",
-              "tombstone_count": 2,
+              "tombstone_count": 3,
               "transition_sequence_high_water": 1,
               "verify_since_ms": null
             }
@@ -12756,7 +12756,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -12848,7 +12848,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -12898,7 +12898,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -12931,7 +12931,7 @@
                 "type": "request_observation"
               },
               {
-                "deadline_ms": 2000,
+                "deadline_ms": 2002,
                 "type": "schedule"
               }
             ],
@@ -12947,7 +12947,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 2000,
+              "next_timer_ms": 2002,
               "phase": "verifying",
               "physical_epoch": 1,
               "planning_action_id": "plan-22222222222222222222222222222222-1",
@@ -12959,7 +12959,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -13041,7 +13041,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -13129,7 +13129,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -13179,7 +13179,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -13259,7 +13259,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": null
             }
@@ -13303,9 +13303,13 @@
               "request_observation": 2,
               "request_plan": 1,
               "schedule": 7,
-              "stop_action": 1
+              "stop_action": 2
             },
             "effects": [
+              {
+                "action_id": "finalization-22222222222222222222222222222222-3",
+                "type": "stop_action"
+              },
               {
                 "deadline_ms": 12001,
                 "type": "schedule"
@@ -13335,7 +13339,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": null
             }
@@ -13357,7 +13361,7 @@
               "request_observation": 3,
               "request_plan": 1,
               "schedule": 8,
-              "stop_action": 1
+              "stop_action": 2
             },
             "effects": [
               {
@@ -13393,7 +13397,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 1,
+              "tombstone_count": 3,
               "transition_sequence_high_water": 1,
               "verify_since_ms": null
             }
@@ -13600,7 +13604,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -13692,7 +13696,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -13742,7 +13746,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -13775,7 +13779,7 @@
                 "type": "request_observation"
               },
               {
-                "deadline_ms": 2000,
+                "deadline_ms": 2002,
                 "type": "schedule"
               }
             ],
@@ -13791,7 +13795,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 2000,
+              "next_timer_ms": 2002,
               "phase": "verifying",
               "physical_epoch": 1,
               "planning_action_id": "plan-22222222222222222222222222222222-1",
@@ -13803,7 +13807,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -13885,7 +13889,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -13973,7 +13977,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -14023,7 +14027,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -14052,7 +14056,7 @@
             },
             "effects": [
               {
-                "deadline_ms": 70000,
+                "deadline_ms": 71000,
                 "type": "schedule"
               }
             ],
@@ -14068,7 +14072,7 @@
               "external_intent": true,
               "finalization_action_id": "finalization-22222222222222222222222222222222-3",
               "finalization_lifecycle": "failed",
-              "next_timer_ms": 70000,
+              "next_timer_ms": 71000,
               "phase": "finalize_failed",
               "physical_epoch": 1,
               "planning_action_id": "plan-22222222222222222222222222222222-1",
@@ -14080,7 +14084,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 1,
+              "tombstone_count": 3,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -14174,7 +14178,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 2,
+              "tombstone_count": 3,
               "transition_sequence_high_water": 2,
               "verify_since_ms": 11001
             }
@@ -14381,7 +14385,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -14473,7 +14477,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -14523,7 +14527,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -14556,7 +14560,7 @@
                 "type": "request_observation"
               },
               {
-                "deadline_ms": 2000,
+                "deadline_ms": 2002,
                 "type": "schedule"
               }
             ],
@@ -14572,7 +14576,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 2000,
+              "next_timer_ms": 2002,
               "phase": "verifying",
               "physical_epoch": 1,
               "planning_action_id": "plan-22222222222222222222222222222222-1",
@@ -14584,7 +14588,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -14666,7 +14670,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -14754,7 +14758,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -14835,7 +14839,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 2,
+              "tombstone_count": 3,
               "transition_sequence_high_water": 1,
               "verify_since_ms": null
             }
@@ -14911,7 +14915,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 2,
+              "tombstone_count": 3,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 12000
             }
@@ -14987,7 +14991,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": "celtic",
-              "tombstone_count": 2,
+              "tombstone_count": 3,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 12000
             }
@@ -15076,7 +15080,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 2,
+              "tombstone_count": 3,
               "transition_sequence_high_water": 2,
               "verify_since_ms": 23000
             }
@@ -15283,7 +15287,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -15375,7 +15379,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -15425,7 +15429,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -15458,7 +15462,7 @@
                 "type": "request_observation"
               },
               {
-                "deadline_ms": 2000,
+                "deadline_ms": 2002,
                 "type": "schedule"
               }
             ],
@@ -15474,7 +15478,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 2000,
+              "next_timer_ms": 2002,
               "phase": "verifying",
               "physical_epoch": 1,
               "planning_action_id": "plan-22222222222222222222222222222222-1",
@@ -15486,7 +15490,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -15568,7 +15572,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -15656,7 +15660,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -15706,7 +15710,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -15781,7 +15785,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": null
             }
@@ -15988,7 +15992,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -16080,7 +16084,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -16130,7 +16134,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -16163,7 +16167,7 @@
                 "type": "request_observation"
               },
               {
-                "deadline_ms": 2000,
+                "deadline_ms": 2002,
                 "type": "schedule"
               }
             ],
@@ -16179,7 +16183,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 2000,
+              "next_timer_ms": 2002,
               "phase": "verifying",
               "physical_epoch": 1,
               "planning_action_id": "plan-22222222222222222222222222222222-1",
@@ -16191,7 +16195,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -16273,7 +16277,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -16361,7 +16365,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -16411,7 +16415,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -16444,7 +16448,7 @@
                 "type": "request_observation"
               },
               {
-                "deadline_ms": 10000,
+                "deadline_ms": 11000,
                 "type": "schedule"
               }
             ],
@@ -16460,7 +16464,7 @@
               "external_intent": true,
               "finalization_action_id": "finalization-22222222222222222222222222222222-3",
               "finalization_lifecycle": "result_pending",
-              "next_timer_ms": 10000,
+              "next_timer_ms": 11000,
               "phase": "finalizing",
               "physical_epoch": 1,
               "planning_action_id": "plan-22222222222222222222222222222222-1",
@@ -16472,7 +16476,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -16547,7 +16551,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": null
             }
@@ -16728,7 +16732,7 @@
                 "type": "request_observation"
               },
               {
-                "deadline_ms": 0,
+                "deadline_ms": 2,
                 "type": "schedule"
               }
             ],
@@ -16744,7 +16748,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 0,
+              "next_timer_ms": 2,
               "phase": "discover_fast",
               "physical_epoch": 1,
               "planning_action_id": null,
@@ -17120,7 +17124,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -17212,7 +17216,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -17262,7 +17266,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -17295,7 +17299,7 @@
                 "type": "request_observation"
               },
               {
-                "deadline_ms": 2000,
+                "deadline_ms": 2002,
                 "type": "schedule"
               }
             ],
@@ -17311,7 +17315,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 2000,
+              "next_timer_ms": 2002,
               "phase": "verifying",
               "physical_epoch": 1,
               "planning_action_id": "plan-22222222222222222222222222222222-1",
@@ -17323,7 +17327,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -17405,7 +17409,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -17493,7 +17497,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -17543,7 +17547,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -17572,7 +17576,7 @@
             },
             "effects": [
               {
-                "deadline_ms": 70000,
+                "deadline_ms": 71000,
                 "type": "schedule"
               }
             ],
@@ -17588,7 +17592,7 @@
               "external_intent": true,
               "finalization_action_id": "finalization-22222222222222222222222222222222-3",
               "finalization_lifecycle": "failed",
-              "next_timer_ms": 70000,
+              "next_timer_ms": 71000,
               "phase": "finalize_failed",
               "physical_epoch": 1,
               "planning_action_id": "plan-22222222222222222222222222222222-1",
@@ -17600,7 +17604,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 1,
+              "tombstone_count": 3,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -17694,7 +17698,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 2,
+              "tombstone_count": 3,
               "transition_sequence_high_water": 2,
               "verify_since_ms": 12000
             }
@@ -17901,7 +17905,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -17993,7 +17997,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -18043,7 +18047,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -18076,7 +18080,7 @@
                 "type": "request_observation"
               },
               {
-                "deadline_ms": 2000,
+                "deadline_ms": 2002,
                 "type": "schedule"
               }
             ],
@@ -18092,7 +18096,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 2000,
+              "next_timer_ms": 2002,
               "phase": "verifying",
               "physical_epoch": 1,
               "planning_action_id": "plan-22222222222222222222222222222222-1",
@@ -18104,7 +18108,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -18186,7 +18190,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -18274,7 +18278,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -18333,7 +18337,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 1,
+              "tombstone_count": 3,
               "transition_sequence_high_water": 1,
               "verify_since_ms": null
             }
@@ -18427,7 +18431,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 2,
+              "tombstone_count": 3,
               "transition_sequence_high_water": 2,
               "verify_since_ms": 10001
             }
@@ -18856,7 +18860,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -19270,7 +19274,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -19362,7 +19366,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -19412,7 +19416,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -19445,7 +19449,7 @@
                 "type": "request_observation"
               },
               {
-                "deadline_ms": 2000,
+                "deadline_ms": 2002,
                 "type": "schedule"
               }
             ],
@@ -19461,7 +19465,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 2000,
+              "next_timer_ms": 2002,
               "phase": "verifying",
               "physical_epoch": 1,
               "planning_action_id": "plan-22222222222222222222222222222222-1",
@@ -19473,7 +19477,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -19555,7 +19559,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -19764,7 +19768,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -19856,7 +19860,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -19906,7 +19910,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -19992,7 +19996,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": null
             }
@@ -20055,7 +20059,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 1,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": null
             }
@@ -20262,7 +20266,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -20354,7 +20358,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -20404,7 +20408,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -20433,7 +20437,7 @@
             },
             "effects": [
               {
-                "deadline_ms": 62000,
+                "deadline_ms": 62002,
                 "type": "schedule"
               }
             ],
@@ -20449,7 +20453,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 62000,
+              "next_timer_ms": 62002,
               "phase": "verifying",
               "physical_epoch": 1,
               "planning_action_id": "plan-22222222222222222222222222222222-1",
@@ -20461,7 +20465,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 1,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -21030,8 +21034,8 @@
         },
         {
           "event": {
-            "at_ms": 60000,
-            "deadline_ms": 60000,
+            "at_ms": 30001,
+            "deadline_ms": 30001,
             "kind": "probe",
             "type": "worker_timed_out"
           },
@@ -21053,7 +21057,7 @@
                 "type": "stop_action"
               },
               {
-                "deadline_ms": 61000,
+                "deadline_ms": 31001,
                 "type": "schedule"
               }
             ],
@@ -21069,7 +21073,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 61000,
+              "next_timer_ms": 31001,
               "phase": "probing",
               "physical_epoch": 1,
               "planning_action_id": null,
@@ -21089,7 +21093,7 @@
         },
         {
           "event": {
-            "at_ms": 60001,
+            "at_ms": 30002,
             "kind": "probe",
             "type": "cancellation_acknowledged"
           },
@@ -21107,7 +21111,7 @@
             },
             "effects": [
               {
-                "deadline_ms": 120001,
+                "deadline_ms": 90002,
                 "type": "schedule"
               }
             ],
@@ -21123,7 +21127,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 120001,
+              "next_timer_ms": 90002,
               "phase": "probe_failed",
               "physical_epoch": 1,
               "planning_action_id": null,
@@ -21343,7 +21347,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -21435,7 +21439,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 0,
+              "tombstone_count": 1,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 0
             }
@@ -21694,7 +21698,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 2,
+              "tombstone_count": 3,
               "transition_sequence_high_water": 2,
               "verify_since_ms": 2001
             }
@@ -21786,7 +21790,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 2,
+              "tombstone_count": 3,
               "transition_sequence_high_water": 2,
               "verify_since_ms": 2001
             }
@@ -22028,7 +22032,7 @@
                 "type": "request_observation"
               },
               {
-                "deadline_ms": 0,
+                "deadline_ms": 2,
                 "type": "schedule"
               }
             ],
@@ -22044,7 +22048,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 0,
+              "next_timer_ms": 2,
               "phase": "discover_fast",
               "physical_epoch": 1,
               "planning_action_id": null,
@@ -22251,7 +22255,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 1,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 1000
             }
@@ -22343,7 +22347,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 1,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 1000
             }
@@ -22393,7 +22397,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 1,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 1000
             }
@@ -22426,7 +22430,7 @@
                 "type": "request_observation"
               },
               {
-                "deadline_ms": 3000,
+                "deadline_ms": 3002,
                 "type": "schedule"
               }
             ],
@@ -22442,7 +22446,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 3000,
+              "next_timer_ms": 3002,
               "phase": "verifying",
               "physical_epoch": 1,
               "planning_action_id": "plan-22222222222222222222222222222222-2",
@@ -22454,7 +22458,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 1,
+              "tombstone_count": 2,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 1000
             }
@@ -22536,7 +22540,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 1,
+              "tombstone_count": 3,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 1000
             }
@@ -22624,7 +22628,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 1,
+              "tombstone_count": 3,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 1000
             }
@@ -22674,7 +22678,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 1,
+              "tombstone_count": 3,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 1000
             }
@@ -22707,7 +22711,7 @@
                 "type": "request_observation"
               },
               {
-                "deadline_ms": 11000,
+                "deadline_ms": 12000,
                 "type": "schedule"
               }
             ],
@@ -22723,7 +22727,7 @@
               "external_intent": true,
               "finalization_action_id": "finalization-22222222222222222222222222222222-4",
               "finalization_lifecycle": "result_pending",
-              "next_timer_ms": 11000,
+              "next_timer_ms": 12000,
               "phase": "finalizing",
               "physical_epoch": 1,
               "planning_action_id": "plan-22222222222222222222222222222222-2",
@@ -22735,7 +22739,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": null,
-              "tombstone_count": 1,
+              "tombstone_count": 3,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 1000
             }
@@ -22822,7 +22826,7 @@
               "probe_action_id": null,
               "probe_lifecycle": null,
               "stable_x_profile": "samsung",
-              "tombstone_count": 3,
+              "tombstone_count": 4,
               "transition_sequence_high_water": 1,
               "verify_since_ms": 1000
             }
