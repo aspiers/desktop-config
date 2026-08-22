@@ -80,9 +80,9 @@ desktop_fluxbox_pid () {
     done < <(
         xrestop -b -m 1 2>/dev/null |
             awk '
-                /\( PID:[0-9]+ \):$/ {
+                /\( PID: *[0-9]+ \):$/ {
                     pid = $0
-                    sub(/^.*\( PID:/, "", pid)
+                    sub(/^.*\( PID: */, "", pid)
                     sub(/ \):$/, "", pid)
                     base = ""
                 }
