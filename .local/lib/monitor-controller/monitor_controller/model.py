@@ -14,6 +14,7 @@ from uuid import UUID
 SCHEMA_VERSION = 2
 # Keep generated state comfortably below the codec's 1,024-record hard ceiling.
 ACTION_TOMBSTONE_RETENTION_LIMIT = 768
+_MAX_EXIT_STATUS = 255
 
 
 def _require_uuid(value: object, field: str) -> None:
@@ -1451,23 +1452,49 @@ class WorkerStatusUnknown(EventEnvelope):
 
 @dataclass(frozen=True, slots=True)
 class WorkerTimedOut(EventEnvelope):
-    """An acknowledged worker exceeded its explicit deadline."""
+    """A controller deadline or exact manager timeout became terminal evidence."""
 
     action_id: ActionId
     deadline_ms: int
+    manager_confirmed: bool = False
 
     def __post_init__(self) -> None:
         _require_nonnegative(self.deadline_ms, "worker deadline")
-        if self.deadline_ms > self.metadata.processed_at_ms:
+        if (
+            not self.manager_confirmed
+            and self.deadline_ms > self.metadata.processed_at_ms
+        ):
             msg = "worker deadline cannot be later than event processing time"
             raise ValueError(msg)
 
 
 @dataclass(frozen=True, slots=True)
 class WorkerCancellationAcknowledged(EventEnvelope):
-    """A stopping worker can no longer mutate the display."""
+    """Manager inactivity and the exact terminal transaction result agree."""
 
     action_id: ActionId
+    terminal_lifecycle: ActionLifecycle
+    exit_status: int
+
+    def __post_init__(self) -> None:
+        if self.terminal_lifecycle not in TERMINAL_ACTION_LIFECYCLES:
+            msg = "cancellation reconciliation requires a terminal lifecycle"
+            raise ValueError(msg)
+        if not 0 <= self.exit_status <= _MAX_EXIT_STATUS:
+            msg = "cancellation reconciliation exit status is outside 0..255"
+            raise ValueError(msg)
+        if (
+            self.terminal_lifecycle is ActionLifecycle.COMPLETED
+            and self.exit_status != 0
+        ):
+            msg = "completed cancellation reconciliation requires status zero"
+            raise ValueError(msg)
+        if (
+            self.terminal_lifecycle is not ActionLifecycle.COMPLETED
+            and self.exit_status == 0
+        ):
+            msg = "non-completed cancellation reconciliation requires non-zero status"
+            raise ValueError(msg)
 
 
 @dataclass(frozen=True, slots=True)

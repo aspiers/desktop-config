@@ -31,6 +31,7 @@ from monitor_controller.model import (
 from monitor_controller.reducer import reduce
 from monitor_controller.runtime.persistence import AtomicStateStore, StateNamespace
 from monitor_controller.runtime.recovery import (
+    VerifiedWorkerResult,
     WorkerNamespaceSnapshot,
     recover_state,
 )
@@ -81,6 +82,58 @@ def _in_flight_state() -> State:
         event_generation=EventGeneration(3),
         action_sequence_high_water=7,
     )
+
+
+@pytest.mark.parametrize(
+    "lifecycle",
+    [ActionLifecycle.DISPATCHED, ActionLifecycle.STOPPING],
+)
+def test_same_boot_reconciles_verified_result_into_persisted_mutator(
+    lifecycle: ActionLifecycle,
+) -> None:
+    persisted = _in_flight_state()
+    action = persisted.probe
+    assert action is not None
+    if lifecycle is ActionLifecycle.STOPPING:
+        persisted = replace(
+            persisted,
+            probe=replace(
+                action,
+                lifecycle=ActionLifecycle.STOPPING,
+                terminal_after_stop=ActionLifecycle.UNKNOWN,
+            ),
+        )
+    result = VerifiedWorkerResult(
+        unit=_unit(),
+        terminal_lifecycle=ActionLifecycle.COMPLETED,
+        exit_status=0,
+        finished_monotonic_ms=500,
+    )
+
+    recovered = recover_state(
+        persisted,
+        current_boot_id=_OLD_BOOT,
+        controller_instance=_NEW_INSTANCE,
+        display_identity=_DISPLAY,
+        namespace=StateNamespace.ACTIVE,
+        scanner=_Scanner(
+            WorkerNamespaceSnapshot(verified_results=(result,)),
+            [],
+        ),
+    )
+
+    assert recovered.authority_allowed
+    assert recovered.requires_fresh_observation
+    assert recovered.state.phase is ControllerPhase.DISCOVER_FAST
+    assert recovered.state.probe is None
+    assert recovered.state.recovery_units == ()
+    assert recovered.state.action_tombstones[-1] == ActionTombstone(
+        action.action_id,
+        ActionLifecycle.COMPLETED,
+    )
+    assert recovered.state.next_timer_ms == 500
+    assert recovered.reasons == ()
+    assert recovered.effects == ()
 
 
 def test_same_boot_reconstructs_exact_surviving_worker_without_effects() -> None:

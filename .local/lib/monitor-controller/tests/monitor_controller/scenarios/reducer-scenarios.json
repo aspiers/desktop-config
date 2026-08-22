@@ -2099,7 +2099,9 @@
         {
           "event": {
             "at_ms": 4,
+            "exit_status": 70,
             "kind": "probe",
+            "terminal_lifecycle": "unknown",
             "type": "cancellation_acknowledged"
           },
           "expect": {
@@ -2893,7 +2895,9 @@
         {
           "event": {
             "at_ms": 3,
+            "exit_status": 143,
             "kind": "probe",
+            "terminal_lifecycle": "cancelled",
             "type": "cancellation_acknowledged"
           },
           "expect": {
@@ -11353,7 +11357,9 @@
         {
           "event": {
             "at_ms": 3,
+            "exit_status": 143,
             "kind": "application",
+            "terminal_lifecycle": "cancelled",
             "type": "cancellation_acknowledged"
           },
           "expect": {
@@ -13348,7 +13354,9 @@
         {
           "event": {
             "at_ms": 11002,
+            "exit_status": 143,
             "kind": "finalization",
+            "terminal_lifecycle": "cancelled",
             "type": "cancellation_acknowledged"
           },
           "expect": {
@@ -20005,7 +20013,9 @@
         {
           "event": {
             "at_ms": 2003,
+            "exit_status": 143,
             "kind": "preparation",
+            "terminal_lifecycle": "cancelled",
             "type": "cancellation_acknowledged"
           },
           "expect": {
@@ -20835,7 +20845,9 @@
         {
           "event": {
             "at_ms": 3,
+            "exit_status": 70,
             "kind": "application",
+            "terminal_lifecycle": "unknown",
             "type": "cancellation_acknowledged"
           },
           "expect": {
@@ -21094,7 +21106,9 @@
         {
           "event": {
             "at_ms": 30002,
+            "exit_status": 124,
             "kind": "probe",
+            "terminal_lifecycle": "timed_out",
             "type": "cancellation_acknowledged"
           },
           "expect": {
@@ -23403,5 +23417,5 @@
       ]
     }
   ],
-  "schema_version": 1
+  "schema_version": 2
 }

@@ -55,7 +55,18 @@ from monitor_controller.runtime.dispatcher import (
     FinalDispatchFence,
     PreparedDispatch,
     WorkerActivity,
+    WorkerCompletion,
+    WorkerRequestContext,
 )
+from monitor_controller.runtime.persistence import StateNamespace
+from monitor_controller.runtime.recovery import recover_state
+from monitor_controller.runtime.systemd import (
+    SystemctlCommandResult,
+    SystemdDispatcher,
+    SystemdRecoveryScanner,
+    SystemdSupervisor,
+)
+from monitor_controller.runtime.transactions import TransactionStore
 
 _BOOT = BootId(UUID(int=701))
 _INSTANCE = ControllerInstanceId(UUID(int=702))
@@ -166,6 +177,7 @@ class _Dispatcher:
         self.submissions: list[PreparedDispatch] = []
         self.discards: list[PreparedDispatch] = []
         self.stops: list[ActionId] = []
+        self.stop_lifecycles: list[ActionLifecycle] = []
         self.queries: list[WorkerUnit] = []
         self.write_failure: Exception | None = None
         self.start_failure: Exception | None = None
@@ -175,9 +187,15 @@ class _Dispatcher:
         self.start_result: object = DispatchStartResult.ACCEPTED
         self.activity = WorkerActivity.ACTIVE
         self.query_failure: Exception | None = None
+        self.completion: WorkerCompletion | None = None
         self.persisted_before_write: Callable[[], bool] = lambda: True
 
-    async def write_request(self, effect: DispatchEffect) -> PreparedDispatch:
+    async def write_request(
+        self,
+        effect: DispatchEffect,
+        context: WorkerRequestContext,
+    ) -> PreparedDispatch:
+        del context
         assert self.persisted_before_write()
         self.writes.append(effect)
         if self.write_failure is not None:
@@ -216,8 +234,13 @@ class _Dispatcher:
     async def discard_prepared(self, prepared: PreparedDispatch) -> None:
         self.discards.append(prepared)
 
-    async def stop(self, action_id: ActionId) -> None:
+    async def stop(
+        self,
+        action_id: ActionId,
+        terminal_lifecycle: ActionLifecycle,
+    ) -> None:
         self.stops.append(action_id)
+        self.stop_lifecycles.append(terminal_lifecycle)
 
     async def worker_activity(self, unit: WorkerUnit) -> WorkerActivity:
         self.queries.append(unit)
@@ -225,9 +248,51 @@ class _Dispatcher:
             raise self.query_failure
         return self.activity
 
+    async def worker_completion(self, unit: WorkerUnit) -> WorkerCompletion | None:
+        del unit
+        if self.query_failure is not None:
+            raise self.query_failure
+        return self.completion
+
+
+class _RejectingSystemctlRunner:
+    def run(
+        self,
+        arguments: tuple[str, ...],
+        *,
+        timeout_seconds: float,
+    ) -> SystemctlCommandResult:
+        del timeout_seconds
+        verb = next(
+            item for item in ("show", "start", "list-units") if item in arguments
+        )
+        if verb == "show":
+            output = (
+                "LoadState=loaded\n"
+                "ActiveState=inactive\n"
+                "SubState=dead\n"
+                "Job=\n"
+                "MainPID=0\n"
+                "Result=success\n"
+                "ExecMainStartTimestampMonotonic=0\n"
+                "ExecMainExitTimestampMonotonic=0\n"
+                "ExecMainCode=0\n"
+                "ExecMainStatus=0\n"
+                "ControlGroup="
+            )
+            return SystemctlCommandResult(arguments, 0, output, "")
+        if verb == "list-units":
+            return SystemctlCommandResult(arguments, 0, "", "")
+        return SystemctlCommandResult(arguments, 5, "", "manager rejected")
+
 
 class _HangingDispatcher(_Dispatcher):
-    async def write_request(self, effect: DispatchEffect) -> PreparedDispatch:
+    async def write_request(
+        self,
+        effect: DispatchEffect,
+        context: WorkerRequestContext,
+    ) -> PreparedDispatch:
+        del context
         self.writes.append(effect)
         await asyncio.Event().wait()
         message = "unreachable after adapter cancellation"
@@ -627,6 +692,68 @@ def test_request_write_crash_is_a_definite_dispatch_rejection(tmp_path: Path) ->
     asyncio.run(exercise())
 
 
+def test_manager_rejected_start_is_exactly_recoverable_after_controller_restart(
+    tmp_path: Path,
+) -> None:
+    async def exercise() -> None:
+        initial = _state()
+        state_store = _Store()
+        transaction_store = TransactionStore(tmp_path / "transactions")
+        supervisor = SystemdSupervisor(
+            systemctl=Path("/fake/systemctl"),
+            runner=_RejectingSystemctlRunner(),
+        )
+        dispatcher = SystemdDispatcher(transaction_store, supervisor)
+        controller = SerializedController(
+            initial_state=initial,
+            store=state_store,
+            observer=_Observer(),
+            planner=_Planner(),
+            dispatcher=dispatcher,
+            audit=RotatingAuditLog(tmp_path / "audit.jsonl", initial),
+            clock=_Clock(),
+            adapter_timeout_seconds=0.05,
+        )
+        try:
+            await controller.consume(_event(_observation()))
+
+            terminal = controller.state.application
+            assert terminal is not None
+            result = transaction_store.read_result(terminal.action_id)
+            assert terminal.lifecycle is ActionLifecycle.FAILED
+            assert terminal.unit is not None
+            assert terminal.exit_status == result.exit_status
+            assert result.outcome is ActionLifecycle.FAILED
+            assert any(
+                saved.application is not None
+                and saved.application.lifecycle is ActionLifecycle.DISPATCHED
+                and saved.application.unit == terminal.unit
+                for saved in state_store.saved
+            )
+
+            recovered = recover_state(
+                state_store.saved[-1],
+                current_boot_id=_BOOT,
+                controller_instance=ControllerInstanceId(UUID(int=703)),
+                display_identity=initial.display_identity,
+                namespace=StateNamespace.ACTIVE,
+                scanner=SystemdRecoveryScanner(transaction_store, supervisor),
+            )
+            restarted_terminal = recovered.state.application
+            assert recovered.authority_allowed
+            assert not recovered.requires_fresh_observation
+            assert restarted_terminal is not None
+            assert restarted_terminal.unit == terminal.unit
+            assert restarted_terminal.lifecycle is ActionLifecycle.FAILED
+            assert restarted_terminal.exit_status == result.exit_status
+            assert recovered.reasons == ()
+        finally:
+            await controller.close()
+            transaction_store.close()
+
+    asyncio.run(exercise())
+
+
 @pytest.mark.parametrize(
     "dispatcher_type",
     [
@@ -814,7 +941,41 @@ def test_worker_monitor_polls_and_times_out_at_persisted_deadline(
     asyncio.run(exercise())
 
 
-def test_restart_monitor_marks_inactive_worker_with_lost_notification_unknown(
+def test_rapid_inactive_worker_result_becomes_exact_completion_event(
+    tmp_path: Path,
+) -> None:
+    async def exercise() -> None:
+        dispatcher = _Dispatcher()
+        dispatcher.activity = WorkerActivity.INACTIVE
+        controller, _store, _observer, _planner, _dispatcher, _clock = _controller(
+            tmp_path,
+            dispatcher=dispatcher,
+        )
+
+        await controller.consume(_event(_observation()))
+        action = controller.state.application
+        assert action is not None
+        dispatcher.completion = WorkerCompletion(
+            action.action_id,
+            ActionLifecycle.COMPLETED,
+            0,
+        )
+        await asyncio.sleep(0)
+        await asyncio.sleep(0)
+        await controller.process_available()
+
+        assert any(
+            item.action_id == action.action_id
+            and item.lifecycle is ActionLifecycle.COMPLETED
+            for item in controller.state.action_tombstones
+        )
+        assert controller.state.application is None
+        await controller.close()
+
+    asyncio.run(exercise())
+
+
+def test_restart_monitor_keeps_inactive_worker_without_result_excluded(
     tmp_path: Path,
 ) -> None:
     async def exercise() -> None:
@@ -840,9 +1001,11 @@ def test_restart_monitor_marks_inactive_worker_with_lost_notification_unknown(
 
         terminal = restarted.state.application
         assert terminal is not None
-        assert terminal.lifecycle is ActionLifecycle.UNKNOWN
-        assert restarted.state.phase is ControllerPhase.APPLY_FAILED
-        assert dispatcher.queries == [action.unit, action.unit]
+        assert terminal.lifecycle is ActionLifecycle.STOPPING
+        assert terminal.terminal_after_stop is ActionLifecycle.UNKNOWN
+        assert restarted.state.phase is ControllerPhase.APPLYING
+        assert not restarted.state.action_tombstones
+        assert dispatcher.stops == [action.action_id]
         await restarted.close()
 
     asyncio.run(exercise())
@@ -952,6 +1115,11 @@ def test_stop_acceptance_does_not_release_exclusion_before_inactive_evidence(
         assert not controller.state.action_tombstones
 
         dispatcher.activity = WorkerActivity.INACTIVE
+        dispatcher.completion = WorkerCompletion(
+            action.action_id,
+            ActionLifecycle.TIMED_OUT,
+            124,
+        )
         await controller.consume(
             _event(
                 _observation(
@@ -986,6 +1154,11 @@ def test_worker_timeout_is_an_explicit_event_and_holds_exclusion_until_stop_ack(
         deadline_ms = action.worker_deadline_ms
         assert deadline_ms is not None
         dispatcher.activity = WorkerActivity.INACTIVE
+        dispatcher.completion = WorkerCompletion(
+            action.action_id,
+            ActionLifecycle.TIMED_OUT,
+            124,
+        )
         clock.advance(deadline_ms)
 
         controller.notify_worker_timeout(
@@ -996,8 +1169,12 @@ def test_worker_timeout_is_an_explicit_event_and_holds_exclusion_until_stop_ack(
         await controller.process_available()
 
         assert dispatcher.stops == [action.action_id]
+        assert dispatcher.stop_lifecycles == [ActionLifecycle.TIMED_OUT]
         assert controller.state.application is not None
         assert controller.state.application.lifecycle is ActionLifecycle.TIMED_OUT
+        assert controller.state.action_tombstones[-1].lifecycle is (
+            ActionLifecycle.TIMED_OUT
+        )
         await controller.close()
 
     asyncio.run(exercise())
@@ -1016,6 +1193,11 @@ def test_query_failure_is_an_explicit_event_and_holds_exclusion_until_stop_ack(
         assert controller.state.phase is ControllerPhase.APPLYING
 
         dispatcher.activity = WorkerActivity.INACTIVE
+        dispatcher.completion = WorkerCompletion(
+            action.action_id,
+            ActionLifecycle.UNKNOWN,
+            70,
+        )
         controller.notify_worker_query_failure(
             action.action_id,
             "injected query crash",
@@ -1024,9 +1206,13 @@ def test_query_failure_is_an_explicit_event_and_holds_exclusion_until_stop_ack(
         await controller.process_available()
 
         assert dispatcher.stops == [action.action_id]
+        assert dispatcher.stop_lifecycles == [ActionLifecycle.UNKNOWN]
         assert controller.state.phase is ControllerPhase.APPLY_FAILED
         assert controller.state.application is not None
         assert controller.state.application.lifecycle is ActionLifecycle.UNKNOWN
+        assert controller.state.action_tombstones[-1].lifecycle is (
+            ActionLifecycle.UNKNOWN
+        )
         await controller.close()
 
     asyncio.run(exercise())

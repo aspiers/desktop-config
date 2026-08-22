@@ -132,6 +132,11 @@ def _event_data(event_type: str, kind: ActionKind, now_ms: int) -> dict[str, obj
         common["reason"] = "matrix injection"
     elif event_type == "worker_timed_out":
         common["deadline_ms"] = now_ms
+    elif event_type == "cancellation_acknowledged":
+        common.update(
+            terminal_lifecycle=ActionLifecycle.CANCELLED.value,
+            exit_status=143,
+        )
     return common
 
 

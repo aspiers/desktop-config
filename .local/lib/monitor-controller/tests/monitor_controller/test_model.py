@@ -247,7 +247,12 @@ def _all_events() -> tuple[EventEnvelope, ...]:
         DispatchRejected(_META, probe_id, "rejected"),
         WorkerStatusUnknown(_META, probe_id, "unknown"),
         WorkerTimedOut(_META, probe_id, 100),
-        WorkerCancellationAcknowledged(_META, probe_id),
+        WorkerCancellationAcknowledged(
+            _META,
+            probe_id,
+            ActionLifecycle.CANCELLED,
+            143,
+        ),
         ControllerStarted(_META, _INSTANCE),
         BootChanged(
             EventMetadata(

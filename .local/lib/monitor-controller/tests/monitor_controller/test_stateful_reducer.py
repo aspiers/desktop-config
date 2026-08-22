@@ -468,7 +468,12 @@ class ReducerStateMachine(RuleBasedStateMachine):
         elif failure == "timeout":
             event = WorkerTimedOut(metadata, action.action_id, self.now_ms)
         elif failure == "cancel":
-            event = WorkerCancellationAcknowledged(metadata, action.action_id)
+            event = WorkerCancellationAcknowledged(
+                metadata,
+                action.action_id,
+                ActionLifecycle.CANCELLED,
+                143,
+            )
         else:
             event = AdmissionDirtied(
                 metadata,

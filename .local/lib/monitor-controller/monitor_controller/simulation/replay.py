@@ -19,16 +19,20 @@ from ..codec import (
 from ..model import (
     EFFECT_TYPES,
     EVENT_TYPES,
+    ActionId,
+    ActionLifecycle,
     Decision,
     Effect,
     Event,
     EventEnvelope,
     RequestObservation,
     State,
+    WorkerCancellationAcknowledged,
 )
 from ..reducer import reduce
 
-REPLAY_SCHEMA_VERSION = 1
+REPLAY_SCHEMA_VERSION = 2
+_LEGACY_REPLAY_SCHEMA_VERSION = 1
 MAX_REPLAY_BYTES = 16 * 1_048_576
 _POLICY_PROVENANCE = "synthetic_policy"
 _POLICY_TRACE_SEMANTICS = "scenario_replay_not_production_audit"
@@ -171,24 +175,49 @@ def decode_replay(data: bytes | str) -> ReplayTrace:
         _exact_fields(header, base_header_fields, "header")
     if header["record"] != "header":
         raise ReplayFormatError("first replay record must be a header")
-    if header["schema_version"] != REPLAY_SCHEMA_VERSION:
+    schema_version = _nonnegative_integer(
+        header["schema_version"],
+        "header.schema_version",
+    )
+    if schema_version not in {
+        _LEGACY_REPLAY_SCHEMA_VERSION,
+        REPLAY_SCHEMA_VERSION,
+    }:
         raise ReplayFormatError(
-            f"replay schema_version must be {REPLAY_SCHEMA_VERSION}"
+            f"replay schema_version must be {_LEGACY_REPLAY_SCHEMA_VERSION} "
+            f"or {REPLAY_SCHEMA_VERSION}"
         )
     initial = _decode_replay_state(header["initial_state"], "initial_state")
     provenance = cast("str | None", header.get("provenance"))
     trace_semantics = cast("str | None", header.get("trace_semantics"))
     steps: list[ReplayStep] = []
     state = initial
+    audit_key_state = initial
     for index, record in enumerate(records[1:], start=1):
         record_kind = record.get("record")
         if record_kind in {"would_dispatch", "runtime_failure"}:
-            _validate_annotation(record, index)
+            _validate_annotation(record, index, schema_version)
             continue
-        step = _decode_step(record, index)
-        _validate_audit_metadata(record.get("audit"), state, step, index)
+        audit_key_result = _decode_replay_state(
+            record.get("state"),
+            f"record {index}.state",
+        )
+        migrated_record = _migrate_legacy_cancellation_record(
+            record,
+            state,
+            schema_version,
+        )
+        step = _decode_step(migrated_record, index)
+        _validate_audit_metadata(
+            migrated_record.get("audit"),
+            step,
+            index,
+            key_prior_state=audit_key_state,
+            key_result_state=audit_key_result,
+        )
         steps.append(step)
         state = step.expected.state
+        audit_key_state = audit_key_result
     try:
         return ReplayTrace(
             initial,
@@ -198,6 +227,85 @@ def decode_replay(data: bytes | str) -> ReplayTrace:
         )
     except ValueError as error:
         raise ReplayFormatError(f"invalid replay header metadata: {error}") from error
+
+
+def _migrate_legacy_cancellation_record(  # noqa: C901
+    record: Mapping[str, object],
+    prior_state: State,
+    schema_version: int,
+) -> Mapping[str, object]:
+    """Add deterministic v1 cancellation evidence before strict decoding."""
+    if (
+        schema_version != _LEGACY_REPLAY_SCHEMA_VERSION
+        or record.get("event_type") != WorkerCancellationAcknowledged.__name__
+    ):
+        return record
+    event_value = record.get("event")
+    if not isinstance(event_value, dict):
+        return record
+    event = cast("dict[str, object]", event_value)
+    has_lifecycle = "terminal_lifecycle" in event
+    has_status = "exit_status" in event
+    if has_lifecycle and has_status:
+        return record
+    if has_lifecycle or has_status:
+        raise ReplayFormatError(
+            "legacy cancellation event must omit both terminal fields or neither"
+        )
+    try:
+        action_id_value = decode_schema_value(event.get("action_id"), ActionId)
+    except StateCodecError as error:
+        raise ReplayFormatError(
+            f"legacy cancellation event action ID is invalid: {error}"
+        ) from error
+    if not isinstance(action_id_value, ActionId):
+        raise ReplayFormatError("legacy cancellation event lacks an action ID")
+    action = next(
+        (
+            item
+            for item in (
+                prior_state.probe,
+                prior_state.application,
+                prior_state.preparation,
+                prior_state.finalization,
+            )
+            if item is not None and item.action_id == action_id_value
+        ),
+        None,
+    )
+    lifecycle = (
+        None if action is None else action.terminal_after_stop
+    ) or ActionLifecycle.CANCELLED
+    exit_status = {
+        ActionLifecycle.CANCELLED: 143,
+        ActionLifecycle.TIMED_OUT: 124,
+        ActionLifecycle.UNKNOWN: 70,
+    }.get(lifecycle)
+    if exit_status is None:
+        raise ReplayFormatError(
+            "legacy cancellation event implies an unsupported terminal lifecycle"
+        )
+    migrated_event = dict(event)
+    migrated_event["terminal_lifecycle"] = lifecycle.value
+    migrated_event["exit_status"] = exit_status
+    migrated = dict(record)
+    migrated["event"] = migrated_event
+
+    state_value = record.get("state")
+    if isinstance(state_value, dict):
+        state_document = dict(cast("dict[str, object]", state_value))
+        action_value = state_document.get(action_id_value.kind.value)
+        if isinstance(action_value, dict):
+            action_document = dict(cast("dict[str, object]", action_value))
+            if (
+                action_document.get("action_id") == event.get("action_id")
+                and action_document.get("lifecycle") == lifecycle.value
+                and action_document.get("exit_status") is None
+            ):
+                action_document["exit_status"] = exit_status
+                state_document[action_id_value.kind.value] = action_document
+                migrated["state"] = state_document
+    return migrated
 
 
 def _encode_step(step: ReplayStep) -> dict[str, object]:
@@ -273,9 +381,11 @@ def _decode_effect(value: object, where: str) -> Effect:
 
 def _validate_audit_metadata(
     value: object,
-    prior_state: State,
     step: ReplayStep,
     index: int,
+    *,
+    key_prior_state: State,
+    key_result_state: State,
 ) -> None:
     if value is None:
         return
@@ -310,8 +420,8 @@ def _validate_audit_metadata(
         raise ReplayFormatError(
             f"{where}.wake_reason does not match its event and observation request"
         )
-    expected_prior = sha256(encode_state(prior_state)).hexdigest()
-    expected_result = sha256(encode_state(step.expected.state)).hexdigest()
+    expected_prior = sha256(encode_state(key_prior_state)).hexdigest()
+    expected_result = sha256(encode_state(key_result_state)).hexdigest()
     if audit["prior_state_key"] != expected_prior:
         raise ReplayFormatError(f"{where}.prior_state_key does not match replay state")
     if audit["resulting_state_key"] != expected_result:
@@ -367,15 +477,23 @@ def _validate_audit_timing(value: object, audit_where: str) -> None:
             _nonnegative_integer(duration, f"{where}.{field}")
 
 
-def _validate_annotation(record: Mapping[str, object], index: int) -> None:
+def _validate_annotation(
+    record: Mapping[str, object],
+    index: int,
+    schema_version: int,
+) -> None:
     where = f"record {index}"
     if record.get("record") == "would_dispatch":
-        _validate_would_dispatch(record, where)
+        _validate_would_dispatch(record, where, schema_version)
     else:
-        _validate_runtime_failure(record, where)
+        _validate_runtime_failure(record, where, schema_version)
 
 
-def _validate_would_dispatch(record: Mapping[str, object], where: str) -> None:
+def _validate_would_dispatch(
+    record: Mapping[str, object],
+    where: str,
+    schema_version: int,
+) -> None:
     _exact_fields(
         record,
         frozenset(
@@ -391,7 +509,7 @@ def _validate_would_dispatch(record: Mapping[str, object], where: str) -> None:
         ),
         where,
     )
-    _validate_annotation_header(record, where)
+    _validate_annotation_header(record, where, schema_version)
     kind = record["kind"]
     if not isinstance(kind, str) or kind not in _WOULD_EFFECT_NAMES:
         raise ReplayFormatError(f"{where}.kind is not a known WOULD_* value")
@@ -411,7 +529,11 @@ def _validate_would_dispatch(record: Mapping[str, object], where: str) -> None:
         raise ReplayFormatError(f"{where}.action_id does not match its decoded effect")
 
 
-def _validate_runtime_failure(record: Mapping[str, object], where: str) -> None:
+def _validate_runtime_failure(
+    record: Mapping[str, object],
+    where: str,
+    schema_version: int,
+) -> None:
     _exact_fields(
         record,
         frozenset(
@@ -426,7 +548,7 @@ def _validate_runtime_failure(record: Mapping[str, object], where: str) -> None:
         ),
         where,
     )
-    _validate_annotation_header(record, where)
+    _validate_annotation_header(record, where, schema_version)
     for field in ("boundary", "detail"):
         if not isinstance(record[field], str) or not record[field]:
             raise ReplayFormatError(f"{where}.{field} must be a non-empty string")
@@ -434,8 +556,12 @@ def _validate_runtime_failure(record: Mapping[str, object], where: str) -> None:
         raise ReplayFormatError(f"{where}.action_id must be null or a string")
 
 
-def _validate_annotation_header(record: Mapping[str, object], where: str) -> None:
-    if record["schema_version"] != REPLAY_SCHEMA_VERSION:
+def _validate_annotation_header(
+    record: Mapping[str, object],
+    where: str,
+    schema_version: int,
+) -> None:
+    if record["schema_version"] != schema_version:
         raise ReplayFormatError(f"{where} has an unsupported schema version")
     _nonnegative_integer(record["recorded_at_ms"], f"{where}.recorded_at_ms")
 

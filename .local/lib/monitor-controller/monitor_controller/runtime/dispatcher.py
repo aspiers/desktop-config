@@ -6,21 +6,30 @@ from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from monitor_controller.model import (
+    TERMINAL_ACTION_LIFECYCLES,
     ActionId,
+    ActionLifecycle,
     ActivateProbe,
     ApplyProfile,
     FinalizeDesktop,
+    OutputMapping,
+    PhysicalToken,
+    PlanHash,
     PrepareDesktop,
     WorkerUnit,
 )
+
+if TYPE_CHECKING:
+    from monitor_controller.runtime.transactions import ExpectedTopology
 
 type DispatchEffect = ActivateProbe | ApplyProfile | PrepareDesktop | FinalizeDesktop
 type FinalDispatchFence = Callable[[], bool]
 
 NULL_RECORD_RETENTION = 1_024
+MAX_EXIT_STATUS = 255
 
 
 class DispatchFailureStage(StrEnum):
@@ -32,16 +41,23 @@ class DispatchFailureStage(StrEnum):
 
 
 class DispatchAdapterError(RuntimeError):
-    """A bounded adapter operation definitely failed before worker submission."""
+    """A bounded adapter operation with a definite non-running outcome."""
 
-    def __init__(self, stage: DispatchFailureStage, detail: str) -> None:
-        """Retain a typed stage and bounded diagnostic detail."""
+    def __init__(
+        self,
+        stage: DispatchFailureStage,
+        detail: str,
+        *,
+        completion: WorkerCompletion | None = None,
+    ) -> None:
+        """Retain a typed stage, diagnostic detail, and optional exact result."""
         clean_detail = " ".join(detail.split())[:512]
         if not clean_detail:
             clean_detail = type(self).__name__
         super().__init__(f"{stage.value}: {clean_detail}")
         self.stage = stage
         self.detail = clean_detail
+        self.completion = completion
 
 
 class DispatchStartResult(StrEnum):
@@ -59,12 +75,62 @@ class WorkerActivity(StrEnum):
 
 
 @dataclass(frozen=True, slots=True)
+class WorkerRequestContext:
+    """Persisted observation proof needed to materialize a worker request."""
+
+    physical_epoch: int
+    physical_token: PhysicalToken
+    output_mapping: tuple[OutputMapping, ...]
+    expected_topology: ExpectedTopology
+    layout: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.physical_epoch < 0:
+            msg = "worker request physical epoch must be non-negative"
+            raise ValueError(msg)
+        if self.layout is not None and (not self.layout or self.layout.isspace()):
+            msg = "worker request layout must not be empty"
+            raise ValueError(msg)
+
+
+@dataclass(frozen=True, slots=True)
+class WorkerCompletion:
+    """Validated terminal output bound to an exact non-active worker identity."""
+
+    action_id: ActionId
+    terminal_lifecycle: ActionLifecycle
+    exit_status: int
+    plan_hash: PlanHash | None = None
+
+    def __post_init__(self) -> None:
+        if not 0 <= self.exit_status <= MAX_EXIT_STATUS:
+            msg = "worker completion exit status must be between zero and 255"
+            raise ValueError(msg)
+        if self.terminal_lifecycle not in TERMINAL_ACTION_LIFECYCLES:
+            msg = "worker completion requires an exact terminal lifecycle"
+            raise ValueError(msg)
+        if (
+            self.terminal_lifecycle is ActionLifecycle.COMPLETED
+            and self.exit_status != 0
+        ):
+            msg = "completed worker completion requires exit status zero"
+            raise ValueError(msg)
+        if (
+            self.terminal_lifecycle is not ActionLifecycle.COMPLETED
+            and self.exit_status == 0
+        ):
+            msg = "non-completed worker completion requires a non-zero exit status"
+            raise ValueError(msg)
+
+
+@dataclass(frozen=True, slots=True)
 class PreparedDispatch:
     """Opaque request plus the worker identity fixed before submission."""
 
     action_id: ActionId
     unit: WorkerUnit
     reference: str
+    request_sha256: str | None = None
 
     def __post_init__(self) -> None:
         if self.unit.action_id != self.action_id:
@@ -73,12 +139,21 @@ class PreparedDispatch:
         if not self.reference or self.reference.isspace():
             msg = "prepared dispatch reference must not be empty"
             raise ValueError(msg)
+        if self.request_sha256 is not None and not self.request_sha256.startswith(
+            "sha256:"
+        ):
+            msg = "prepared dispatch request hash must use sha256 form"
+            raise ValueError(msg)
 
 
 class ActionDispatcher(Protocol):
     """Authoritative worker path implemented by the later systemd integration."""
 
-    async def write_request(self, effect: DispatchEffect) -> PreparedDispatch:
+    async def write_request(
+        self,
+        effect: DispatchEffect,
+        context: WorkerRequestContext,
+    ) -> PreparedDispatch:
         """Durably write one immutable request without starting its worker."""
         ...
 
@@ -94,6 +169,11 @@ class ActionDispatcher(Protocol):
         the actual supervisor submission. ``FENCE_REJECTED`` guarantees that no
         submission occurred. The worker identity is fixed by *prepared*, so an
         acknowledgement cannot substitute a different unit.
+
+        ``DispatchAdapterError`` without a completion guarantees no submission.
+        With a completion it proves an immutable exact terminal result and that the
+        bound worker identity is not active; the caller must persist both identity
+        and completion rather than treating it as a pre-submission rejection.
         """
         ...
 
@@ -101,12 +181,20 @@ class ActionDispatcher(Protocol):
         """Remove a definitely never-started generation-invalid request."""
         ...
 
-    async def stop(self, action_id: ActionId) -> None:
-        """Request keyed idempotent cancellation without claiming inactivity."""
+    async def stop(
+        self,
+        action_id: ActionId,
+        terminal_lifecycle: ActionLifecycle,
+    ) -> None:
+        """Persist exact stop intent, then request keyed manager cancellation."""
         ...
 
     async def worker_activity(self, unit: WorkerUnit) -> WorkerActivity:
         """Return supervisor evidence about whether *unit* may still mutate."""
+        ...
+
+    async def worker_completion(self, unit: WorkerUnit) -> WorkerCompletion | None:
+        """Return exact terminal output, or ``None`` when no safe result exists."""
         ...
 
 

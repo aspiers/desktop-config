@@ -1740,7 +1740,7 @@ def _stop_uncertain_mutator(
     stopping = replace(
         action,
         lifecycle=ActionLifecycle.STOPPING,
-        terminal_after_stop=action.terminal_after_stop or terminal,
+        terminal_after_stop=(action.terminal_after_stop if was_stopping else terminal),
     )
     if action.action_id.kind is ActionKind.PROBE:
         state = replace(state, phase=ControllerPhase.PROBING, probe=stopping)
@@ -1779,19 +1779,61 @@ def _cancellation_acknowledged(
         or action.lifecycle is not ActionLifecycle.STOPPING
     ):
         return _no_op(state)
-    terminal_after_stop = action.terminal_after_stop
-    if terminal_after_stop is not None:
-        terminal = replace(
+    lifecycle = event.terminal_lifecycle
+    if lifecycle is ActionLifecycle.COMPLETED:
+        # This event carries both manager inactivity and exact result evidence, so
+        # resume the ordinary completion transition without another stop cycle.
+        resumed = replace(
             action,
-            lifecycle=terminal_after_stop,
+            lifecycle=ActionLifecycle.DISPATCHED,
             terminal_after_stop=None,
         )
-        state = _append_tombstone(state, terminal, terminal_after_stop)
+        if action.action_id.kind is ActionKind.PROBE:
+            state = replace(state, phase=ControllerPhase.PROBING, probe=resumed)
+        elif action.action_id.kind is ActionKind.APPLICATION:
+            state = replace(state, phase=ControllerPhase.APPLYING, application=resumed)
+        elif action.action_id.kind is ActionKind.PREPARATION:
+            state = replace(
+                state,
+                preparation_state=PreparationState.PREPARING,
+                preparation=resumed,
+            )
+        elif action.action_id.kind is ActionKind.FINALIZATION:
+            state = replace(
+                state,
+                phase=ControllerPhase.FINALIZING,
+                finalization=resumed,
+            )
+        else:
+            return _no_op(state)
+        return _finished(
+            state,
+            action.action_id,
+            WorkerOutcome.SUCCEEDED,
+            event.exit_status,
+            event.metadata.processed_at_ms,
+            getattr(action, "plan_hash", None),
+        )
+
+    terminal = replace(
+        action,
+        lifecycle=lifecycle,
+        exit_status=event.exit_status,
+        terminal_after_stop=None,
+    )
+    state = _append_tombstone(state, terminal, lifecycle)
+    if lifecycle in {
+        ActionLifecycle.FAILED,
+        ActionLifecycle.UNKNOWN,
+        ActionLifecycle.TIMED_OUT,
+    }:
         if action.action_id.kind is ActionKind.PROBE:
             state = replace(state, phase=ControllerPhase.PROBE_FAILED, probe=terminal)
         elif action.action_id.kind is ActionKind.APPLICATION:
             state = replace(
-                state, phase=ControllerPhase.APPLY_FAILED, application=terminal
+                state,
+                phase=ControllerPhase.APPLY_FAILED,
+                application=terminal,
             )
         elif action.action_id.kind is ActionKind.PREPARATION:
             state = replace(
@@ -1810,7 +1852,6 @@ def _cancellation_acknowledged(
             return _no_op(state)
         return _schedule(state, event.metadata.processed_at_ms + HEALTH_POLL_MS)
 
-    state = _append_tombstone(state, action, ActionLifecycle.CANCELLED)
     effects: tuple[Effect, ...] = ()
     if action.action_id.kind is ActionKind.PROBE:
         state = replace(state, phase=ControllerPhase.DISCOVER_FAST, probe=None)
@@ -2051,7 +2092,10 @@ def reduce(state: State, event: Event) -> Decision:
         if (
             worker_deadline_ms is None
             or worker_deadline_ms != event.deadline_ms
-            or event.metadata.processed_at_ms < worker_deadline_ms
+            or (
+                not event.manager_confirmed
+                and event.metadata.processed_at_ms < worker_deadline_ms
+            )
         ):
             return _no_op(state)
         return _stop_uncertain_mutator(

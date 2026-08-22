@@ -37,7 +37,14 @@ from monitor_controller.model import (
     WorkerTimedOut,
 )
 from monitor_controller.reducer import reduce
+from monitor_controller.runtime.persistence import StateNamespace
+from monitor_controller.runtime.recovery import (
+    VerifiedWorkerResult,
+    WorkerNamespaceSnapshot,
+    recover_state,
+)
 from monitor_controller.simulation.scenario import (
+    SCENARIO_SCHEMA_VERSION,
     Scenario,
     ScenarioFormatError,
     load_scenarios,
@@ -128,6 +135,44 @@ def test_retained_completed_actions_have_atomic_terminal_evidence() -> None:
         state.action_tombstones
     )
     assert encode_state(state)
+
+
+def test_recovery_accepts_already_observation_confirmed_preparation_result() -> None:
+    state = _scenario_state(
+        "production_prepare_pending_preparing_prepared",
+        ControllerPhase.VERIFYING,
+        ActionLifecycle.COMPLETED,
+    )
+    preparation = state.preparation
+    assert preparation is not None
+    assert preparation.unit is not None
+    assert preparation.exit_status == 0
+    result = VerifiedWorkerResult(
+        unit=preparation.unit,
+        terminal_lifecycle=ActionLifecycle.COMPLETED,
+        exit_status=preparation.exit_status,
+        finished_monotonic_ms=0,
+        plan_hash=preparation.plan_hash,
+    )
+
+    class Scanner:
+        def scan(self, namespace: StateNamespace) -> WorkerNamespaceSnapshot:
+            assert namespace is StateNamespace.ACTIVE
+            return WorkerNamespaceSnapshot(verified_results=(result,))
+
+    recovered = recover_state(
+        state,
+        current_boot_id=state.boot_id,
+        controller_instance=state.controller_instance,
+        display_identity=state.display_identity,
+        namespace=StateNamespace.ACTIVE,
+        scanner=Scanner(),
+    )
+
+    assert recovered.authority_allowed
+    assert not recovered.requires_fresh_observation
+    assert recovered.reasons == ()
+    assert recovered.state.preparation == preparation
 
 
 def test_terminal_worker_event_atomically_releases_recovery_exclusion() -> None:
@@ -282,6 +327,8 @@ def test_late_worker_completion_keeps_stopping_exclusion_and_terminal_outcome(
         WorkerCancellationAcknowledged(
             EventMetadata(deadline_ms + 2, state.boot_id),
             action.action_id,
+            ActionLifecycle.TIMED_OUT,
+            124,
         ),
     )
     terminal = {
@@ -337,6 +384,8 @@ def test_late_finalizer_success_cannot_supersede_timeout_or_commit_profile() -> 
         WorkerCancellationAcknowledged(
             EventMetadata(deadline_ms + 2, state.boot_id),
             action.action_id,
+            ActionLifecycle.TIMED_OUT,
+            124,
         ),
     )
     terminal = acknowledged.state.finalization
@@ -576,10 +625,33 @@ def test_all_thirteen_numbered_invariants_are_explicitly_named() -> None:
     assert len(set(NUMBERED_INVARIANTS)) == 13
 
 
+def test_v1_cancellation_events_migrate_and_current_scenarios_round_trip(
+    tmp_path: Path,
+) -> None:
+    current = json.loads(_SCENARIO_PATH.read_text())
+    assert current["schema_version"] == SCENARIO_SCHEMA_VERSION == 2
+    legacy = json.loads(_SCENARIO_PATH.read_text())
+    legacy["schema_version"] = 1
+    for scenario in legacy["scenarios"]:
+        for step in scenario["steps"]:
+            event = step["event"]
+            if event["type"] == "cancellation_acknowledged":
+                event.pop("terminal_lifecycle")
+                event.pop("exit_status")
+    path = tmp_path / "legacy-v1.json"
+    path.write_text(json.dumps(legacy), encoding="utf-8")
+
+    migrated = load_scenarios(path)
+
+    assert len(migrated) == len(_SCENARIOS)
+    for scenario in migrated:
+        run_scenario(scenario)
+
+
 def test_strict_loader_rejects_duplicate_fields(tmp_path: Path) -> None:
     text = _SCENARIO_PATH.read_text().replace(
-        '"schema_version": 1',
-        '"schema_version": 1, "schema_version": 1',
+        '"schema_version": 2',
+        '"schema_version": 2, "schema_version": 2',
         1,
     )
     path = tmp_path / "duplicate.json"

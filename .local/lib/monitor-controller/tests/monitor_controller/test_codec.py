@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import replace
+from pathlib import Path
 from typing import cast
 from uuid import UUID
 
@@ -27,19 +28,25 @@ from monitor_controller.model import (
     ControllerPhase,
     DisplayIdentity,
     EventGeneration,
+    EventMetadata,
     ObservationKey,
     PlanningState,
     PreparationState,
     ProbeAction,
     ProbeAttemptKey,
     State,
+    WorkerCancellationAcknowledged,
     WorkerUnit,
 )
+from monitor_controller.runtime.audit import RotatingAuditLog
 from monitor_controller.simulation.replay import (
+    REPLAY_SCHEMA_VERSION,
     ReplayFormatError,
     ReplayTrace,
+    capture_replay,
     decode_replay,
     encode_replay,
+    replay,
 )
 
 _BOOT = BootId(UUID("11111111-1111-1111-1111-111111111111"))
@@ -319,6 +326,60 @@ def test_replay_rejects_retained_terminal_action_without_tombstone(
     payload = json.dumps(records[0], sort_keys=True, separators=(",", ":")) + "\n"
     with pytest.raises(ReplayFormatError, match="matching terminal tombstone"):
         decode_replay(payload)
+
+
+def test_v1_cancellation_replay_migrates_and_current_schema_round_trips(
+    tmp_path: Path,
+) -> None:
+    state = _state()
+    probe = state.probe
+    assert probe is not None
+    stopping = replace(
+        state,
+        phase=ControllerPhase.PROBING,
+        probe=replace(
+            probe,
+            lifecycle=ActionLifecycle.STOPPING,
+            unit=WorkerUnit(probe.action_id, "monitor-probe@1.service"),
+            worker_deadline_ms=1_000,
+            exit_status=None,
+            terminal_after_stop=None,
+        ),
+        action_tombstones=state.action_tombstones[:1],
+    )
+    event = WorkerCancellationAcknowledged(
+        EventMetadata(500, _BOOT),
+        probe.action_id,
+        ActionLifecycle.CANCELLED,
+        143,
+    )
+    trace = capture_replay(stopping, (event,))
+    current = encode_replay(trace)
+    current_records = [json.loads(line) for line in current.splitlines()]
+    assert current_records[0]["schema_version"] == REPLAY_SCHEMA_VERSION == 2
+    assert decode_replay(current) == trace
+
+    legacy_records = [json.loads(line) for line in current.splitlines()]
+    legacy_records[0]["schema_version"] = 1
+    legacy_event = legacy_records[1]["event"]
+    legacy_event.pop("terminal_lifecycle")
+    legacy_event.pop("exit_status")
+    legacy = "".join(
+        json.dumps(record, separators=(",", ":"), sort_keys=True) + "\n"
+        for record in legacy_records
+    )
+    migrated = decode_replay(legacy)
+
+    assert migrated == trace
+    assert replay(migrated) == (trace.steps[0].expected,)
+    assert decode_replay(encode_replay(migrated)) == migrated
+
+    audit_path = tmp_path / "audit.jsonl"
+    audit_path.write_text(legacy, encoding="utf-8")
+    audit = RotatingAuditLog(audit_path, stopping, max_files=2)
+    retained_legacy = audit_path.with_name("audit.jsonl.1")
+    assert retained_legacy in audit.retained_paths
+    assert replay(decode_replay(retained_legacy.read_bytes()))
 
 
 def test_failed_decode_cannot_partially_mutate_existing_state() -> None:

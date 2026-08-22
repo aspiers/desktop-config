@@ -1,0 +1,23 @@
+[Unit]
+Description=Keyed explicit monitor profile application (%I)
+CollectMode=inactive-or-failed
+
+[Service]
+Type=oneshot
+Environment=PATH=/usr/bin:/bin
+Environment=PYTHONUNBUFFERED=1
+UnsetEnvironment=BASH_ENV ENV LD_LIBRARY_PATH LD_PRELOAD PYTHONHOME PYTHONINSPECT PYTHONPATH PYTHONSTARTUP PYTHONUSERBASE
+ExecStart=%h/.local/share/monitor-controller/venv/bin/python -I -m monitor_controller.workers.common reject-unimplemented --transaction-root %t/monitor-system/transactions --action-id %I --unit %n --action-kind application
+ExecStopPost=%h/.local/share/monitor-controller/venv/bin/python -I -m monitor_controller.workers.common record-systemd-result --transaction-root %t/monitor-system/transactions --action-id %I --unit %n --action-kind application --service-result ${SERVICE_RESULT} --exit-code ${EXIT_CODE} --exit-status ${EXIT_STATUS}
+TimeoutStartSec=120s
+TimeoutStartFailureMode=terminate
+TimeoutStopSec=5s
+KillMode=control-group
+KillSignal=SIGTERM
+FinalKillSignal=SIGKILL
+SendSIGKILL=yes
+Restart=no
+RemainAfterExit=no
+StandardOutput=journal
+StandardError=journal
+UMask=0077

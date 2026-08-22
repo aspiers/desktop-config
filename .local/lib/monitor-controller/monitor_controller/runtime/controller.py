@@ -46,6 +46,7 @@ from monitor_controller.model import (
     State,
     StopAction,
     WorkerCancellationAcknowledged,
+    WorkerOutcome,
     WorkerStatusUnknown,
     WorkerTimedOut,
     WorkerUnit,
@@ -63,8 +64,11 @@ from monitor_controller.runtime.dispatcher import (
     NullDispatcher,
     PreparedDispatch,
     WorkerActivity,
+    WorkerCompletion,
+    WorkerRequestContext,
 )
 from monitor_controller.runtime.scheduler import DeadlineScheduler, SchedulerClock
+from monitor_controller.runtime.transactions import ExpectedTopology
 
 DEFAULT_PLANNING_TIMEOUT_SECONDS = 30.0
 DEFAULT_ADAPTER_TIMEOUT_SECONDS = 10.0
@@ -529,8 +533,9 @@ class SerializedController:
         if isinstance(self._dispatcher, NullDispatcher):
             return None
         try:
+            context = self._worker_request_context(effect)
             prepared = await asyncio.wait_for(
-                self._dispatcher.write_request(effect),
+                self._dispatcher.write_request(effect, context),
                 timeout=self._adapter_timeout_seconds,
             )
         except Exception as error:  # noqa: BLE001 - explicit adapter trust boundary
@@ -545,6 +550,64 @@ class SerializedController:
             ValueError("prepared request has a different action ID"),
         )
         return None
+
+    def _worker_request_context(self, effect: DispatchEffect) -> WorkerRequestContext:
+        observation = self._state.latest_observation
+        if (
+            observation is None
+            or not observation.valid
+            or observation.observation_key != effect.observation_key
+            or observation.event_generation != effect.admitted_event_generation
+            or self._state.physical_token != observation.physical_token
+        ):
+            msg = "admitted effect lacks its exact persisted observation proof"
+            raise ValueError(msg)
+        layout: str | None = None
+        if isinstance(effect, ActivateProbe):
+            if effect.key.physical_epoch != self._state.physical_epoch:
+                msg = "probe effect physical epoch is no longer current"
+                raise ValueError(msg)
+            mapping = ()
+        elif isinstance(effect, ApplyProfile):
+            if (
+                effect.key.physical_epoch != self._state.physical_epoch
+                or effect.mapping.physical_epoch != self._state.physical_epoch
+                or effect.mapping.observation_key != effect.observation_key
+            ):
+                msg = "application effect proof is outside its admitted epoch"
+                raise ValueError(msg)
+            mapping = effect.mapping.outputs
+        else:
+            candidate = self._state.candidate
+            planning = self._state.planning
+            if (
+                candidate is None
+                or candidate.observation_key != effect.observation_key
+                or candidate.mapping.physical_epoch != self._state.physical_epoch
+                or planning is None
+                or planning.transition_id != effect.transition_id
+                or planning.plan_hash != effect.plan_hash
+                or planning.profile != effect.profile
+                or planning.input_key.physical_epoch != self._state.physical_epoch
+                or planning.input_key.observation_key != effect.observation_key
+                or planning.input_key.mapping != candidate.mapping.outputs
+            ):
+                msg = "desktop effect lacks its exact mapping and plan proof"
+                raise ValueError(msg)
+            mapping = candidate.mapping.outputs
+            layout = planning.input_key.layout
+        return WorkerRequestContext(
+            physical_epoch=self._state.physical_epoch,
+            physical_token=observation.physical_token,
+            output_mapping=mapping,
+            expected_topology=ExpectedTopology(
+                kernel_connected_outputs=observation.kernel_connected_outputs,
+                kernel_external_outputs=observation.kernel_external_outputs,
+                x_connected_outputs=observation.x_connected_outputs,
+                x_active_outputs=observation.x_active_outputs,
+            ),
+            layout=layout,
+        )
 
     async def _start_prepared(
         self,
@@ -563,9 +626,17 @@ class SerializedController:
                 timeout=self._adapter_timeout_seconds,
             )
         except DispatchAdapterError as error:
-            # This typed exception contract guarantees no supervisor submission.
-            await self._discard_prepared(prepared)
-            await self._reject_dispatch(effect, "unit_start", error)
+            if error.completion is None:
+                # Without terminal evidence this contract guarantees no submission.
+                await self._discard_prepared(prepared)
+                await self._reject_dispatch(effect, "unit_start", error)
+            else:
+                await self._complete_definitely_rejected_start(
+                    effect,
+                    prepared,
+                    error,
+                    dispatch_started_ms,
+                )
         except Exception as error:  # noqa: BLE001 - post-submission uncertainty
             await self._mark_dispatch_uncertain(
                 effect,
@@ -581,6 +652,43 @@ class SerializedController:
                 result,
                 dispatch_started_ms,
             )
+
+    async def _complete_definitely_rejected_start(
+        self,
+        effect: DispatchEffect,
+        prepared: PreparedDispatch,
+        error: DispatchAdapterError,
+        dispatch_started_ms: int,
+    ) -> None:
+        """Persist the exact unit and immutable manager-rejection result."""
+        completion = error.completion
+        if (
+            completion is None
+            or completion.action_id != effect.action_id
+            or completion.terminal_lifecycle is not ActionLifecycle.FAILED
+        ):
+            await self._mark_dispatch_uncertain(
+                effect,
+                prepared,
+                "unit_start_terminal_result",
+                error,
+                dispatch_started_ms,
+            )
+            return
+        await self._acknowledge_dispatch(effect, prepared, dispatch_started_ms)
+        finished_ms = max(dispatch_started_ms, self._clock.monotonic_ms())
+        await self._process_event(
+            _finished_event(
+                completion,
+                EventMetadata(finished_ms, self._state.boot_id),
+            )
+        )
+        self._audit.append_runtime_failure(
+            boundary="unit_start",
+            detail=str(error),
+            recorded_at_ms=finished_ms,
+            action_id=effect.action_id.value,
+        )
 
     async def _handle_start_result(
         self,
@@ -772,12 +880,13 @@ class SerializedController:
                 action_id=prepared.action_id.value,
             )
 
-    async def _stop_action(self, effect: StopAction) -> None:
+    async def _stop_action(self, effect: StopAction) -> None:  # noqa: PLR0911
         if isinstance(self._dispatcher, NullDispatcher):
             await self._process_event(
-                WorkerCancellationAcknowledged(
+                WorkerStatusUnknown(
                     EventMetadata(self._clock.monotonic_ms(), self._state.boot_id),
                     effect.action_id,
+                    "null dispatcher cannot prove worker inactivity or outcome",
                 )
             )
             return
@@ -795,8 +904,9 @@ class SerializedController:
         ):
             return
         try:
+            terminal_lifecycle = action.terminal_after_stop or ActionLifecycle.CANCELLED
             await asyncio.wait_for(
-                self._dispatcher.stop(effect.action_id),
+                self._dispatcher.stop(effect.action_id, terminal_lifecycle),
                 timeout=self._adapter_timeout_seconds,
             )
         except Exception as error:  # noqa: BLE001 - explicit adapter trust boundary
@@ -836,10 +946,38 @@ class SerializedController:
                 )
             )
             return
+        try:
+            completion = await asyncio.wait_for(
+                self._dispatcher.worker_completion(action.unit),
+                timeout=self._adapter_timeout_seconds,
+            )
+        except Exception as error:  # noqa: BLE001 - explicit adapter trust boundary
+            await self._process_event(
+                WorkerStatusUnknown(
+                    EventMetadata(self._clock.monotonic_ms(), self._state.boot_id),
+                    effect.action_id,
+                    _bounded_reason(
+                        "result_after_stop",
+                        _exception_detail(error),
+                    ),
+                )
+            )
+            return
+        if completion is None or completion.action_id != effect.action_id:
+            await self._process_event(
+                WorkerStatusUnknown(
+                    EventMetadata(self._clock.monotonic_ms(), self._state.boot_id),
+                    effect.action_id,
+                    "result_after_stop: inactive worker lacks its exact result",
+                )
+            )
+            return
         await self._process_event(
             WorkerCancellationAcknowledged(
                 EventMetadata(self._clock.monotonic_ms(), self._state.boot_id),
                 effect.action_id,
+                completion.terminal_lifecycle,
+                completion.exit_status,
             )
         )
 
@@ -928,13 +1066,34 @@ class SerializedController:
                     timeout=self._adapter_timeout_seconds,
                 )
                 if activity is WorkerActivity.INACTIVE:
-                    self.notify_worker_event(
-                        WorkerStatusUnknown(
-                            EventMetadata(self._clock.monotonic_ms(), boot_id),
-                            action_id,
-                            "supervisor: worker inactive without a terminal event",
-                        )
+                    completion = await asyncio.wait_for(
+                        dispatcher.worker_completion(unit),
+                        timeout=self._adapter_timeout_seconds,
                     )
+                    if completion is None:
+                        self.notify_worker_event(
+                            WorkerStatusUnknown(
+                                EventMetadata(self._clock.monotonic_ms(), boot_id),
+                                action_id,
+                                "supervisor: worker inactive without an exact result",
+                            )
+                        )
+                    elif completion.action_id != action_id:
+                        self.notify_worker_event(
+                            WorkerStatusUnknown(
+                                EventMetadata(self._clock.monotonic_ms(), boot_id),
+                                action_id,
+                                "supervisor: terminal result action identity differs",
+                            )
+                        )
+                    else:
+                        self.notify_worker_event(
+                            _completion_event(
+                                completion,
+                                EventMetadata(self._clock.monotonic_ms(), boot_id),
+                                deadline_ms,
+                            )
+                        )
                     return
                 if activity is not WorkerActivity.ACTIVE:
                     self.notify_worker_event(
@@ -961,6 +1120,84 @@ class SerializedController:
                     _bounded_reason("worker_query", _exception_detail(error)),
                 )
             )
+
+
+def _completion_event(
+    completion: WorkerCompletion,
+    metadata: EventMetadata,
+    deadline_ms: int,
+) -> (
+    ProbeFinished
+    | ApplicationFinished
+    | PreparationFinished
+    | FinalizationFinished
+    | WorkerStatusUnknown
+    | WorkerTimedOut
+):
+    """Translate exact persisted terminal semantics into reducer events."""
+    if completion.terminal_lifecycle is ActionLifecycle.UNKNOWN:
+        return WorkerStatusUnknown(
+            metadata,
+            completion.action_id,
+            "supervisor: exact terminal transaction outcome is unknown",
+        )
+    if completion.terminal_lifecycle is ActionLifecycle.TIMED_OUT:
+        return WorkerTimedOut(
+            metadata,
+            completion.action_id,
+            deadline_ms,
+            manager_confirmed=True,
+        )
+    return _finished_event(completion, metadata)
+
+
+def _finished_event(
+    completion: WorkerCompletion,
+    metadata: EventMetadata,
+) -> ProbeFinished | ApplicationFinished | PreparationFinished | FinalizationFinished:
+    action_id = completion.action_id
+    outcome = {
+        ActionLifecycle.COMPLETED: WorkerOutcome.SUCCEEDED,
+        ActionLifecycle.FAILED: WorkerOutcome.FAILED,
+        ActionLifecycle.CANCELLED: WorkerOutcome.CANCELLED,
+    }.get(completion.terminal_lifecycle)
+    if outcome is None:
+        msg = "unknown/timed-out completion requires its dedicated reducer event"
+        raise ValueError(msg)
+    if action_id.kind is ActionKind.PROBE:
+        return ProbeFinished(
+            metadata,
+            action_id,
+            outcome,
+            completion.exit_status,
+        )
+    if action_id.kind is ActionKind.APPLICATION:
+        return ApplicationFinished(
+            metadata,
+            action_id,
+            outcome,
+            completion.exit_status,
+        )
+    if action_id.kind is ActionKind.PREPARATION:
+        if completion.plan_hash is None:
+            msg = "preparation result lacks its bound plan hash"
+            raise ValueError(msg)
+        return PreparationFinished(
+            metadata,
+            action_id,
+            outcome,
+            completion.exit_status,
+            completion.plan_hash,
+        )
+    if action_id.kind is ActionKind.FINALIZATION:
+        return FinalizationFinished(
+            metadata,
+            action_id,
+            outcome,
+            completion.exit_status,
+        )
+    msg = "planning actions cannot produce systemd worker completion"
+    raise ValueError(msg)
 
 
 def _dispatched_event(

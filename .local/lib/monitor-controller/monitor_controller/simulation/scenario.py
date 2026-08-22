@@ -14,6 +14,8 @@ from uuid import UUID
 from ..model import (
     ActionId,
     ActionKind,
+    ActionLifecycle,
+    ActionRecord,
     ActivateProbe,
     AdmissionDirtied,
     ApplicationDispatched,
@@ -77,7 +79,8 @@ from ..model import (
 )
 from ..reducer import reduce
 
-SCENARIO_SCHEMA_VERSION: int = 1
+SCENARIO_SCHEMA_VERSION: int = 2
+_LEGACY_SCENARIO_SCHEMA_VERSION: int = 1
 DEFAULT_BOOT_ID = BootId(UUID("11111111-1111-1111-1111-111111111111"))
 DEFAULT_INSTANCE_ID = ControllerInstanceId(UUID("22222222-2222-2222-2222-222222222222"))
 
@@ -171,7 +174,9 @@ _EVENT_FIELDS: dict[str, frozenset[str]] = {
     "dispatch_rejected": frozenset({"type", "at_ms", "kind", "reason"}),
     "worker_status_unknown": frozenset({"type", "at_ms", "kind", "reason"}),
     "worker_timed_out": frozenset({"type", "at_ms", "kind", "deadline_ms"}),
-    "cancellation_acknowledged": frozenset({"type", "at_ms", "kind"}),
+    "cancellation_acknowledged": frozenset(
+        {"type", "at_ms", "kind", "terminal_lifecycle", "exit_status"}
+    ),
     "controller_started": frozenset({"type", "at_ms", "instance_id"}),
     "boot_changed": frozenset({"type", "at_ms", "previous_boot_id", "new_boot_id"}),
 }
@@ -355,15 +360,20 @@ def load_scenarios(path: Path) -> tuple[Scenario, ...]:
     root = _object(data, "scenario document")
     _exact_fields(root, _TOP_LEVEL_FIELDS, "scenario document")
     _required_fields(root, _TOP_LEVEL_FIELDS, "scenario document")
-    if (
-        _integer(root["schema_version"], "scenario schema_version")
-        != SCENARIO_SCHEMA_VERSION
-    ):
+    schema_version = _integer(
+        root["schema_version"],
+        "scenario schema_version",
+    )
+    if schema_version not in {
+        _LEGACY_SCENARIO_SCHEMA_VERSION,
+        SCENARIO_SCHEMA_VERSION,
+    }:
         raise ScenarioFormatError(
-            f"scenario schema_version must be {SCENARIO_SCHEMA_VERSION}"
+            f"scenario schema_version must be {_LEGACY_SCENARIO_SCHEMA_VERSION} "
+            f"or {SCENARIO_SCHEMA_VERSION}"
         )
     scenarios = tuple(
-        _decode_scenario(item, index)
+        _decode_scenario(item, index, schema_version)
         for index, item in enumerate(_array(root["scenarios"], "scenarios"))
     )
     names = tuple(item.name for item in scenarios)
@@ -372,7 +382,7 @@ def load_scenarios(path: Path) -> tuple[Scenario, ...]:
     return scenarios
 
 
-def _decode_scenario(value: object, index: int) -> Scenario:
+def _decode_scenario(value: object, index: int, schema_version: int) -> Scenario:
     where = f"scenarios[{index}]"
     data = _object(value, where)
     _exact_fields(data, _SCENARIO_FIELDS, where)
@@ -380,7 +390,7 @@ def _decode_scenario(value: object, index: int) -> Scenario:
     initial = _object(data["initial"], f"{where}.initial")
     _exact_fields(initial, _INITIAL_FIELDS, f"{where}.initial")
     steps = tuple(
-        _decode_step(item, f"{where}.steps[{step_index}]")
+        _decode_step(item, f"{where}.steps[{step_index}]", schema_version)
         for step_index, item in enumerate(_array(data["steps"], f"{where}.steps"))
     )
     if not steps:
@@ -400,7 +410,7 @@ def _decode_scenario(value: object, index: int) -> Scenario:
     )
 
 
-def _decode_step(value: object, where: str) -> ScenarioStep:
+def _decode_step(value: object, where: str, schema_version: int) -> ScenarioStep:
     data = _object(value, where)
     _exact_fields(data, _STEP_FIELDS, where)
     _required_fields(data, _STEP_FIELDS, where)
@@ -414,11 +424,17 @@ def _decode_step(value: object, where: str) -> ScenarioStep:
     if allowed is None:
         raise ScenarioFormatError(f"{where}.event has unknown type: {event_type}")
     _exact_fields(event, allowed, f"{where}.event")
-    required = (
-        allowed - _OBSERVATION_OPTIONAL_FIELDS
-        if event_type == "observation"
-        else allowed
-    )
+    if (
+        schema_version == _LEGACY_SCENARIO_SCHEMA_VERSION
+        and event_type == "cancellation_acknowledged"
+    ):
+        required = frozenset({"type", "at_ms", "kind"})
+    else:
+        required = (
+            allowed - _OBSERVATION_OPTIONAL_FIELDS
+            if event_type == "observation"
+            else allowed
+        )
     _required_fields(event, required, f"{where}.event")
 
     expected = _object(data["expect"], f"{where}.expect")
@@ -736,6 +752,23 @@ def _unit(action_id: ActionId, data: Mapping[str, object]) -> WorkerUnit:
     return WorkerUnit(action_id, _string(data["unit"], "event.unit"))
 
 
+def _action_for_id(state: State, action_id: ActionId) -> ActionRecord | None:
+    return next(
+        (
+            action
+            for action in (
+                state.probe,
+                state.application,
+                state.planning,
+                state.preparation,
+                state.finalization,
+            )
+            if action is not None and action.action_id == action_id
+        ),
+        None,
+    )
+
+
 def event_from_data(data: Mapping[str, object], state: State) -> Event:  # noqa: C901, PLR0911
     """Construct one typed event, resolving named current action identities."""
     event_type = _string(data["type"], "event.type")
@@ -854,7 +887,33 @@ def event_from_data(data: Mapping[str, object], state: State) -> Event:  # noqa:
             _integer(data["deadline_ms"], "event.deadline_ms"),
         )
     if event_type == "cancellation_acknowledged":
-        return WorkerCancellationAcknowledged(metadata, action_id)
+        lifecycle_value = data.get("terminal_lifecycle")
+        lifecycle = (
+            getattr(
+                _action_for_id(state, action_id),
+                "terminal_after_stop",
+                None,
+            )
+            or ActionLifecycle.CANCELLED
+            if lifecycle_value is None
+            else ActionLifecycle(_string(lifecycle_value, "event.terminal_lifecycle"))
+        )
+        status_value = data.get("exit_status")
+        exit_status = (
+            {
+                ActionLifecycle.CANCELLED: 143,
+                ActionLifecycle.TIMED_OUT: 124,
+                ActionLifecycle.UNKNOWN: 70,
+            }[lifecycle]
+            if status_value is None
+            else _integer(status_value, "event.exit_status")
+        )
+        return WorkerCancellationAcknowledged(
+            metadata,
+            action_id,
+            lifecycle,
+            exit_status,
+        )
     raise ScenarioFormatError(f"unsupported event type: {event_type}")
 
 
