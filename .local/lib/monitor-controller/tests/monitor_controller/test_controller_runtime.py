@@ -44,6 +44,11 @@ from monitor_controller.model import (
     TimerFired,
     WorkerUnit,
 )
+from monitor_controller.observer.autorandr import (
+    AutorandrConfigOutput,
+    SavedAutorandrProfile,
+)
+from monitor_controller.observer.snapshot import StaticSavedProfiles
 from monitor_controller.runtime.audit import RotatingAuditLog
 from monitor_controller.runtime.controller import (
     RuntimeAuthorityError,
@@ -71,6 +76,23 @@ from monitor_controller.runtime.transactions import TransactionStore
 _BOOT = BootId(UUID(int=701))
 _INSTANCE = ControllerInstanceId(UUID(int=702))
 _CONFIG = (ConfigurationContentHash("layouts/dock.yaml", "sha256:dock"),)
+
+
+def _saved_profile() -> SavedAutorandrProfile:
+    return SavedAutorandrProfile(
+        name="dock",
+        setup=(
+            Fingerprint("DP-SAVED", "external"),
+            Fingerprint("eDP-1", "internal"),
+        ),
+        config=(
+            AutorandrConfigOutput("DP-SAVED", (("mode", "2560x1440"),)),
+            AutorandrConfigOutput("eDP-1", (("mode", "1920x1080"),)),
+        ),
+        layout="layouts/dock.yaml",
+        scope=ProfileScope.MIXED,
+        configuration_hashes=_CONFIG,
+    )
 
 
 class _Clock:
@@ -692,6 +714,39 @@ def test_request_write_crash_is_a_definite_dispatch_rejection(tmp_path: Path) ->
     asyncio.run(exercise())
 
 
+def test_missing_application_materializer_rejects_without_consuming_attempt(
+    tmp_path: Path,
+) -> None:
+    async def exercise() -> None:
+        initial = _state()
+        transaction_store = TransactionStore(tmp_path / "transactions")
+        dispatcher = SystemdDispatcher(
+            transaction_store,
+            SystemdSupervisor(systemctl=Path("/fake/systemctl")),
+        )
+        controller = SerializedController(
+            initial_state=initial,
+            store=_Store(),
+            observer=_Observer(),
+            planner=_Planner(),
+            dispatcher=dispatcher,
+            audit=RotatingAuditLog(tmp_path / "audit.jsonl", initial),
+            clock=_Clock(),
+            adapter_timeout_seconds=0.05,
+        )
+        try:
+            await controller.consume(_event(_observation()))
+
+            assert controller.state.phase is ControllerPhase.APPLY_FAILED
+            assert controller.state.attempted_application_keys == frozenset()
+            assert transaction_store.action_directories() == ()
+        finally:
+            await controller.close()
+            transaction_store.close()
+
+    asyncio.run(exercise())
+
+
 def test_manager_rejected_start_is_exactly_recoverable_after_controller_restart(
     tmp_path: Path,
 ) -> None:
@@ -703,7 +758,11 @@ def test_manager_rejected_start_is_exactly_recoverable_after_controller_restart(
             systemctl=Path("/fake/systemctl"),
             runner=_RejectingSystemctlRunner(),
         )
-        dispatcher = SystemdDispatcher(transaction_store, supervisor)
+        dispatcher = SystemdDispatcher(
+            transaction_store,
+            supervisor,
+            autorandr_profiles=StaticSavedProfiles((_saved_profile(),)),
+        )
         controller = SerializedController(
             initial_state=initial,
             store=state_store,

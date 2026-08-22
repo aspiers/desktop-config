@@ -11,6 +11,64 @@ if [ -z "$profile" ]; then
     exit 0
 fi
 
+# A keyed controller application owns its own completion and fresh-observation
+# lifecycle.  It must never create the legacy pending marker, launch
+# setup-monitor, or notify itself through the manual-change path.  The
+# transaction-local profile normally shadows this global hook with its own
+# evidence-only postswitch; this guard is the fail-safe for any hook lookup
+# difference across autorandr versions.
+if [ -n "${MONITOR_CONTROLLER_AUTORANDR_ACTION_ID:-}" ]; then
+    echo "postswitch: controller-owned application ${MONITOR_CONTROLLER_AUTORANDR_ACTION_ID}; desktop work remains keyed" >&2
+    exit 0
+fi
+
+# Merely running the non-authoritative shadow never changes manual autorandr
+# behaviour.  Only an explicit active postswitch policy removes this hook's
+# legacy finalization authority.  A manual load then leaves a bounded atomic
+# notification for the active controller, or logs that notification was
+# deferred when the controller-owned runtime directory is unavailable.
+postswitch_policy=${MONITOR_CONTROLLER_POSTSWITCH_POLICY:-legacy}
+if [ "$postswitch_policy" = active ]; then
+    if [ -z "${XDG_RUNTIME_DIR:-}" ]; then
+        echo "postswitch: active policy; controller notification deferred because XDG_RUNTIME_DIR is unset" >&2
+        exit 0
+    fi
+    notification_file=${MONITOR_CONTROLLER_POSTSWITCH_NOTIFICATION_FILE:-$XDG_RUNTIME_DIR/monitor-controller/active/autorandr-postswitch}
+    case $notification_file in
+        /*) ;;
+        *)
+            echo "postswitch: active policy; controller notification deferred because its path is not absolute" >&2
+            exit 0
+            ;;
+    esac
+    case $profile:${AUTORANDR_MONITORS:-} in
+        *$'\n'*)
+            echo "postswitch: active policy; controller notification deferred because its evidence is malformed" >&2
+            exit 0
+            ;;
+    esac
+    notification_dir=$(dirname "$notification_file")
+    if [ ! -d "$notification_dir" ] || [ -L "$notification_dir" ]; then
+        echo "postswitch: active policy; controller notification deferred because $notification_dir is unavailable" >&2
+        exit 0
+    fi
+    notification_tmp=$notification_file.$$
+    umask 077
+    if ! printf 'profile=%s\nmonitors=%s\n' \
+        "$profile" "${AUTORANDR_MONITORS:-}" > "$notification_tmp" ||
+       ! mv -f "$notification_tmp" "$notification_file"; then
+        rm -f "$notification_tmp"
+        echo "postswitch: active policy; could not notify controller for profile $profile" >&2
+        exit 0
+    fi
+    echo "postswitch: active policy; notified controller of manual profile $profile" >&2
+    exit 0
+fi
+if [ "$postswitch_policy" != legacy ]; then
+    echo "postswitch: unknown MONITOR_CONTROLLER_POSTSWITCH_POLICY=$postswitch_policy; refusing unkeyed desktop work" >&2
+    exit 1
+fi
+
 # monitor-watcher-ng may need several autorandr applications before a slow
 # DisplayPort link remains active.  Record each applied profile atomically but
 # defer the expensive desktop pipeline until the watcher verifies convergence.

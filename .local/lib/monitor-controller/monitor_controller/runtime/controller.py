@@ -566,6 +566,7 @@ class SerializedController:
         layout: str | None = None
         probe_base_hash: str | None = None
         probe_edid_integrity = None
+        profile_configuration_hashes = ()
         if isinstance(effect, ActivateProbe):
             if effect.key.physical_epoch != self._state.physical_epoch:
                 msg = "probe effect physical epoch is no longer current"
@@ -608,7 +609,17 @@ class SerializedController:
             ):
                 msg = "application effect proof is outside its admitted epoch"
                 raise ValueError(msg)
+            matching_profiles = tuple(
+                item
+                for item in observation.eligible_profiles
+                if item.profile == effect.profile
+                and item.mapping == effect.mapping.outputs
+            )
+            if len(matching_profiles) != 1:
+                msg = "application effect lacks one exact saved-profile proof"
+                raise ValueError(msg)
             mapping = effect.mapping.outputs
+            profile_configuration_hashes = matching_profiles[0].configuration_hashes
         else:
             candidate = self._state.candidate
             planning = self._state.planning
@@ -641,6 +652,7 @@ class SerializedController:
             layout=layout,
             probe_base_hash=probe_base_hash,
             probe_edid_integrity=probe_edid_integrity,
+            profile_configuration_hashes=profile_configuration_hashes,
         )
 
     async def _start_prepared(

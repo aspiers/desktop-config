@@ -13,7 +13,7 @@ import stat
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from enum import StrEnum
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Final, cast
 from uuid import UUID, uuid4
 
@@ -40,7 +40,15 @@ MAX_EXIT_STATUS: Final = 255
 UUID_HEX_LENGTH: Final = 32
 _DIRECTORY_MODE: Final = 0o700
 _FILE_MODE: Final = 0o600
+_EXECUTABLE_FILE_MODE: Final = 0o700
 _MIN_DIRECTORY_LINK_COUNT: Final = 2
+MAX_TRANSACTION_ARTIFACT_BYTES: Final = 128 * 1024
+MAX_TRANSACTION_ARTIFACT_TOTAL_BYTES: Final = 512 * 1024
+MAX_TRANSACTION_ARTIFACTS: Final = 32
+MAX_TRANSACTION_ARTIFACT_PATH_CHARS: Final = 1_024
+MAX_TRANSACTION_ARTIFACT_COMPONENT_CHARS: Final = 255
+_ARTIFACT_ROOT: Final = "artifacts"
+_MIN_ARTIFACT_PATH_PARTS: Final = 2
 _RENAME_NOREPLACE: Final = 1
 _SHA256_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
 _ACTION_ID_PATTERN = re.compile(
@@ -74,6 +82,21 @@ _FILE_READ_FLAGS: Final = (
 # protocol grows explicit top-level fields rather than accepting nested ad-hoc data.
 type PayloadValue = str | int | bool | None
 type Payload = tuple[tuple[str, PayloadValue], ...]
+
+
+@dataclass(frozen=True, slots=True)
+class TransactionArtifact:
+    """One immutable non-JSON file published with a transaction request."""
+
+    relative_path: str
+    content: bytes
+    executable: bool = False
+
+    def __post_init__(self) -> None:
+        _validate_artifact_path(self.relative_path)
+        if not self.content or len(self.content) > MAX_TRANSACTION_ARTIFACT_BYTES:
+            msg = "transaction artifact size is outside the accepted bounds"
+            raise TransactionProtocolError(msg)
 
 
 class TransactionProtocolError(ValueError):
@@ -381,8 +404,13 @@ class TransactionStore:
         """Return a diagnostic reference; protocol I/O never dereferences it."""
         return self._root / action_id.value
 
-    def create_request(self, request: TransactionRequest) -> TransactionRequest:
-        """Atomically install request and prepared metadata as one directory."""
+    def create_request(
+        self,
+        request: TransactionRequest,
+        artifacts: tuple[TransactionArtifact, ...] = (),
+    ) -> TransactionRequest:
+        """Atomically install request, metadata, and immutable action artifacts."""
+        artifacts = _validated_artifacts(artifacts)
         request = with_request_hash(request)
         prepared = with_bound_record_hash(
             BoundTransactionRecord(
@@ -396,7 +424,7 @@ class TransactionStore:
         try:
             descriptor = self._action_descriptor(request.action_id)
         except FileNotFoundError:
-            self._install_prepared_bundle(request, prepared)
+            self._install_prepared_bundle(request, prepared, artifacts)
             descriptor = self._action_descriptor(request.action_id)
         existing = self._read_request_at(descriptor, request.action_id)
         existing_prepared = self._read_bound_record_at(
@@ -407,12 +435,15 @@ class TransactionStore:
         if existing != request or existing_prepared != prepared:
             msg = f"request for {request.action_id.value} is already immutable"
             raise ImmutableTransactionError(msg)
+        if artifacts:
+            self._validate_artifacts_at(descriptor, artifacts)
         return existing
 
     def _install_prepared_bundle(
         self,
         request: TransactionRequest,
         prepared: BoundTransactionRecord,
+        artifacts: tuple[TransactionArtifact, ...],
     ) -> None:
         """Publish only a fully synced two-file transaction directory."""
         root_descriptor = self._root_descriptor(create=True)
@@ -444,6 +475,8 @@ class TransactionStore:
                 encode_bound_record(prepared),
             )
             self._inject_installation_fault("prepared_installed")
+            _install_artifacts_at(temporary_descriptor, artifacts)
+            self._inject_installation_fault("artifacts_installed")
             _sync_descriptor(temporary_descriptor)
             self._inject_installation_fault("bundle_synced")
             _rename_noreplace_at(
@@ -488,6 +521,75 @@ class TransactionStore:
         prepared = self._read_bound_record_at(descriptor, BoundRecordKind.PREPARED)
         _validate_bound_record(request, prepared)
         return request
+
+    def validate_artifacts(
+        self,
+        action_id: ActionId,
+        artifacts: tuple[TransactionArtifact, ...],
+    ) -> None:
+        """Validate the exact immutable artifact tree for one bound request."""
+        _ = self.read_request(action_id)
+        self._validate_artifacts_at(
+            self._action_descriptor(action_id),
+            _validated_artifacts(artifacts),
+        )
+
+    def read_artifact(
+        self,
+        action_id: ActionId,
+        relative_path: str,
+        *,
+        executable: bool = False,
+    ) -> bytes:
+        """Read one action artifact through verified no-follow descriptors."""
+        _ = self.read_request(action_id)
+        descriptor, leaf = _open_artifact_parent_at(
+            self._action_descriptor(action_id),
+            relative_path,
+            create=False,
+        )
+        try:
+            return _read_regular_file_at(
+                descriptor,
+                leaf,
+                expected_mode=(_EXECUTABLE_FILE_MODE if executable else _FILE_MODE),
+            )
+        finally:
+            os.close(descriptor)
+
+    def artifact_directory(self, action_id: ActionId) -> Path:
+        """Return the fixed action artifact root used as a subprocess capability."""
+        return self.action_directory(action_id) / _ARTIFACT_ROOT
+
+    def _validate_artifacts_at(
+        self,
+        action_descriptor: int,
+        artifacts: tuple[TransactionArtifact, ...],
+    ) -> None:
+        expected_paths = tuple(item.relative_path for item in artifacts)
+        actual_paths = _artifact_file_paths_at(action_descriptor)
+        if actual_paths != expected_paths:
+            msg = "transaction artifact tree differs from its exact manifest"
+            raise TransactionProtocolError(msg)
+        for artifact in artifacts:
+            descriptor, leaf = _open_artifact_parent_at(
+                action_descriptor,
+                artifact.relative_path,
+                create=False,
+            )
+            try:
+                actual = _read_regular_file_at(
+                    descriptor,
+                    leaf,
+                    expected_mode=(
+                        _EXECUTABLE_FILE_MODE if artifact.executable else _FILE_MODE
+                    ),
+                )
+            finally:
+                os.close(descriptor)
+            if actual != artifact.content:
+                msg = f"transaction artifact {artifact.relative_path} changed"
+                raise ImmutableTransactionError(msg)
 
     def read_prepared(self, action_id: ActionId) -> BoundTransactionRecord:
         """Return the independently hash-protected controller preparation record."""
@@ -691,10 +793,13 @@ class TransactionStore:
         except OSError as error:
             msg = "prepared transaction cannot be safely enumerated"
             raise ImmutableTransactionError(msg) from error
-        if names != ("prepared.json", "request.json"):
+        allowed = {"prepared.json", "request.json", _ARTIFACT_ROOT}
+        if set(names) - allowed or not {"prepared.json", "request.json"} <= set(names):
             msg = "cannot discard a transaction containing submission evidence"
             raise ImmutableTransactionError(msg)
         try:
+            if _ARTIFACT_ROOT in names:
+                _remove_child_directory_at(descriptor, _ARTIFACT_ROOT)
             os.unlink("prepared.json", dir_fd=descriptor)
             os.unlink("request.json", dir_fd=descriptor)
             _sync_descriptor(descriptor)
@@ -1596,6 +1701,149 @@ def _encode(raw: Mapping[str, object]) -> bytes:
     return payload
 
 
+def _validate_artifact_path(value: str) -> None:
+    path = PurePosixPath(value)
+    if (
+        value != path.as_posix()
+        or path.is_absolute()
+        or not path.parts
+        or path.parts[0] != _ARTIFACT_ROOT
+        or len(path.parts) < _MIN_ARTIFACT_PATH_PARTS
+        or len(value) > MAX_TRANSACTION_ARTIFACT_PATH_CHARS
+        or any(
+            part in {"", ".", ".."}
+            or "\x00" in part
+            or len(part) > MAX_TRANSACTION_ARTIFACT_COMPONENT_CHARS
+            for part in path.parts
+        )
+    ):
+        msg = "transaction artifact path must be canonical below artifacts/"
+        raise TransactionProtocolError(msg)
+
+
+def _validated_artifacts(
+    artifacts: tuple[TransactionArtifact, ...],
+) -> tuple[TransactionArtifact, ...]:
+    for artifact in artifacts:
+        _validate_artifact_path(artifact.relative_path)
+    ordered = tuple(sorted(artifacts, key=lambda item: item.relative_path))
+    paths = tuple(item.relative_path for item in ordered)
+    if len(paths) > MAX_TRANSACTION_ARTIFACTS:
+        msg = "transaction artifact count exceeds its limit"
+        raise TransactionProtocolError(msg)
+    if len(paths) != len(set(paths)):
+        msg = "transaction artifact paths must be unique"
+        raise TransactionProtocolError(msg)
+    total_bytes = sum(len(item.content) for item in ordered)
+    if total_bytes > MAX_TRANSACTION_ARTIFACT_TOTAL_BYTES:
+        msg = "transaction artifacts exceed their aggregate size limit"
+        raise TransactionProtocolError(msg)
+    return ordered
+
+
+def _open_artifact_parent_at(
+    action_directory_fd: int,
+    relative_path: str,
+    *,
+    create: bool,
+) -> tuple[int, str]:
+    """Open an artifact's parent without following any path component."""
+    _validate_artifact_path(relative_path)
+    parts = PurePosixPath(relative_path).parts
+    descriptor = os.dup(action_directory_fd)
+    try:
+        for part in parts[:-1]:
+            try:
+                child = os.open(part, _DIRECTORY_OPEN_FLAGS, dir_fd=descriptor)
+            except FileNotFoundError:
+                if not create:
+                    raise
+                os.mkdir(part, _DIRECTORY_MODE, dir_fd=descriptor)
+                _sync_descriptor(descriptor)
+                child = os.open(part, _DIRECTORY_OPEN_FLAGS, dir_fd=descriptor)
+                os.fchmod(child, _DIRECTORY_MODE)
+            except OSError as error:
+                msg = "cannot safely open transaction artifact directory"
+                raise TransactionProtocolError(msg) from error
+            _validate_directory_descriptor(child, "transaction artifact directory")
+            os.close(descriptor)
+            descriptor = child
+        return descriptor, parts[-1]
+    except Exception:
+        os.close(descriptor)
+        raise
+
+
+def _install_artifacts_at(
+    action_directory_fd: int,
+    artifacts: tuple[TransactionArtifact, ...],
+) -> None:
+    for artifact in artifacts:
+        descriptor, leaf = _open_artifact_parent_at(
+            action_directory_fd,
+            artifact.relative_path,
+            create=True,
+        )
+        try:
+            _atomic_create_at(
+                descriptor,
+                leaf,
+                artifact.content,
+                mode=(_EXECUTABLE_FILE_MODE if artifact.executable else _FILE_MODE),
+            )
+        finally:
+            os.close(descriptor)
+
+
+def _artifact_file_paths_at(action_directory_fd: int) -> tuple[str, ...]:
+    """Enumerate the exact regular-file tree while rejecting unsafe metadata."""
+    try:
+        root = os.open(
+            _ARTIFACT_ROOT,
+            _DIRECTORY_OPEN_FLAGS,
+            dir_fd=action_directory_fd,
+        )
+    except FileNotFoundError:
+        return ()
+    except OSError as error:
+        msg = "cannot safely open transaction artifact root"
+        raise TransactionProtocolError(msg) from error
+    paths: list[str] = []
+
+    def walk(descriptor: int, prefix: tuple[str, ...]) -> None:
+        _validate_directory_descriptor(descriptor, "transaction artifact directory")
+        try:
+            names = tuple(sorted(os.listdir(descriptor)))
+        except OSError as error:
+            msg = "transaction artifact directory cannot be enumerated"
+            raise TransactionProtocolError(msg) from error
+        for name in names:
+            _validate_leaf_name(name)
+            try:
+                details = os.stat(name, dir_fd=descriptor, follow_symlinks=False)
+            except OSError as error:
+                msg = "transaction artifact metadata cannot be read"
+                raise TransactionProtocolError(msg) from error
+            relative = (*prefix, name)
+            if stat.S_ISDIR(details.st_mode):
+                child = os.open(name, _DIRECTORY_OPEN_FLAGS, dir_fd=descriptor)
+                try:
+                    walk(child, relative)
+                finally:
+                    os.close(child)
+            elif stat.S_ISREG(details.st_mode):
+                paths.append("/".join(relative))
+            else:
+                msg = "transaction artifact tree contains a non-regular entry"
+                raise TransactionProtocolError(msg)
+
+    try:
+        walk(root, (_ARTIFACT_ROOT,))
+    finally:
+        os.close(root)
+    return tuple(paths)
+
+
 def _rename_noreplace_at(directory_fd: int, source: str, target: str) -> None:
     """Atomically publish a directory without replacing any existing identity."""
     _validate_leaf_name(source)
@@ -1629,6 +1877,50 @@ def _rename_noreplace_at(directory_fd: int, source: str, target: str) -> None:
     raise OSError(error_number, os.strerror(error_number), target)
 
 
+def _remove_child_directory_at(parent_directory_fd: int, name: str) -> None:
+    """Recursively remove one verified private child directory without symlinks."""
+    _validate_leaf_name(name)
+    try:
+        descriptor = os.open(name, _DIRECTORY_OPEN_FLAGS, dir_fd=parent_directory_fd)
+    except OSError as error:
+        msg = "transaction child directory cannot be safely opened"
+        raise TransactionProtocolError(msg) from error
+    try:
+        _validate_directory_descriptor(descriptor, "transaction child directory")
+        try:
+            names = tuple(sorted(os.listdir(descriptor)))  # noqa: PTH208
+        except OSError as error:
+            msg = "transaction child directory cannot be enumerated"
+            raise TransactionProtocolError(msg) from error
+        for child_name in names:
+            _validate_leaf_name(child_name)
+            try:
+                details = os.stat(
+                    child_name,
+                    dir_fd=descriptor,
+                    follow_symlinks=False,
+                )
+                if stat.S_ISDIR(details.st_mode):
+                    _remove_child_directory_at(descriptor, child_name)
+                elif stat.S_ISREG(details.st_mode):
+                    os.unlink(child_name, dir_fd=descriptor)
+                else:
+                    msg = "transaction child directory contains an unsafe entry"
+                    raise TransactionProtocolError(msg)
+            except OSError as error:
+                msg = "transaction child entry cannot be removed"
+                raise TransactionProtocolError(msg) from error
+        _sync_descriptor(descriptor)
+    finally:
+        os.close(descriptor)
+    try:
+        os.rmdir(name, dir_fd=parent_directory_fd)
+    except OSError as error:
+        msg = "transaction child directory cannot be removed"
+        raise TransactionProtocolError(msg) from error
+    _sync_descriptor(parent_directory_fd)
+
+
 def _remove_temporary_directory_at(
     root_directory_fd: int,
     temporary_directory_fd: int,
@@ -1657,9 +1949,20 @@ def _remove_temporary_directory_at(
     for name in names:
         _validate_leaf_name(name)
         try:
-            os.unlink(name, dir_fd=temporary_directory_fd)
+            details = os.stat(
+                name,
+                dir_fd=temporary_directory_fd,
+                follow_symlinks=False,
+            )
+            if stat.S_ISDIR(details.st_mode):
+                _remove_child_directory_at(temporary_directory_fd, name)
+            elif stat.S_ISREG(details.st_mode):
+                os.unlink(name, dir_fd=temporary_directory_fd)
+            else:
+                msg = "temporary transaction contains an unsafe entry"
+                raise TransactionProtocolError(msg)
         except OSError as error:
-            msg = "temporary transaction file cannot be removed"
+            msg = "temporary transaction entry cannot be removed"
             raise TransactionProtocolError(msg) from error
     _sync_descriptor(temporary_directory_fd)
     try:
@@ -1670,9 +1973,18 @@ def _remove_temporary_directory_at(
     _sync_descriptor(root_directory_fd)
 
 
-def _atomic_create_at(directory_fd: int, name: str, payload: bytes) -> None:
+def _atomic_create_at(
+    directory_fd: int,
+    name: str,
+    payload: bytes,
+    *,
+    mode: int = _FILE_MODE,
+) -> None:
     """Install one immutable file through an already-verified directory FD."""
     _validate_leaf_name(name)
+    if mode not in {_FILE_MODE, _EXECUTABLE_FILE_MODE}:
+        msg = "transaction file mode is outside the closed protocol"
+        raise TransactionProtocolError(msg)
     _validate_directory_descriptor(directory_fd, "transaction action directory")
     temporary_name = f".{name}.{uuid4().hex}.tmp"
     flags = (
@@ -1682,10 +1994,10 @@ def _atomic_create_at(directory_fd: int, name: str, payload: bytes) -> None:
         | getattr(os, "O_CLOEXEC", 0)
         | getattr(os, "O_NOFOLLOW", 0)
     )
-    descriptor = os.open(temporary_name, flags, _FILE_MODE, dir_fd=directory_fd)
+    descriptor = os.open(temporary_name, flags, mode, dir_fd=directory_fd)
     installed = False
     try:
-        os.fchmod(descriptor, _FILE_MODE)
+        os.fchmod(descriptor, mode)
         view = memoryview(payload)
         while view:
             written = os.write(descriptor, view)
@@ -1708,7 +2020,11 @@ def _atomic_create_at(directory_fd: int, name: str, payload: bytes) -> None:
         _sync_descriptor(directory_fd)
         final_descriptor = os.open(name, _FILE_READ_FLAGS, dir_fd=directory_fd)
         try:
-            _validate_regular_file_details(os.fstat(final_descriptor), name)
+            _validate_regular_file_details(
+                os.fstat(final_descriptor),
+                name,
+                expected_mode=mode,
+            )
         finally:
             os.close(final_descriptor)
         _validate_directory_descriptor(directory_fd, "transaction action directory")
@@ -1720,7 +2036,12 @@ def _atomic_create_at(directory_fd: int, name: str, payload: bytes) -> None:
                 os.unlink(temporary_name, dir_fd=directory_fd)
 
 
-def _read_regular_file_at(directory_fd: int, name: str) -> bytes:
+def _read_regular_file_at(
+    directory_fd: int,
+    name: str,
+    *,
+    expected_mode: int = _FILE_MODE,
+) -> bytes:
     """Read one final file through a retained parent descriptor and O_NOFOLLOW."""
     _validate_leaf_name(name)
     _validate_directory_descriptor(directory_fd, "transaction action directory")
@@ -1733,7 +2054,7 @@ def _read_regular_file_at(directory_fd: int, name: str) -> bytes:
         raise TransactionProtocolError(msg) from error
     try:
         before = os.fstat(descriptor)
-        _validate_regular_file_details(before, name)
+        _validate_regular_file_details(before, name, expected_mode=expected_mode)
         chunks: list[bytes] = []
         remaining = before.st_size
         while remaining:
@@ -1747,7 +2068,7 @@ def _read_regular_file_at(directory_fd: int, name: str) -> bytes:
             msg = f"transaction file {name} grew while reading"
             raise TransactionProtocolError(msg)
         after = os.fstat(descriptor)
-        _validate_regular_file_details(after, name)
+        _validate_regular_file_details(after, name, expected_mode=expected_mode)
         if _stable_file_details(before) != _stable_file_details(after):
             msg = f"transaction file {name} metadata changed while reading"
             raise TransactionProtocolError(msg)
@@ -1799,11 +2120,16 @@ def _open_absolute_directory(path: Path, *, create: bool) -> int:  # noqa: C901
         raise
 
 
-def _validate_regular_file_details(details: os.stat_result, name: str) -> None:
+def _validate_regular_file_details(
+    details: os.stat_result,
+    name: str,
+    *,
+    expected_mode: int = _FILE_MODE,
+) -> None:
     if (
         not stat.S_ISREG(details.st_mode)
         or details.st_uid != os.getuid()
-        or stat.S_IMODE(details.st_mode) != _FILE_MODE
+        or stat.S_IMODE(details.st_mode) != expected_mode
         or details.st_nlink != 1
         or details.st_size <= 0
         or details.st_size > MAX_TRANSACTION_BYTES

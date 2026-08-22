@@ -23,6 +23,7 @@ from monitor_controller.model import (
     ApplicationAttemptKey,
     ApplyProfile,
     BootId,
+    ConfigurationContentHash,
     ControllerInstanceId,
     ControllerPhase,
     ControllerStarted,
@@ -30,6 +31,7 @@ from monitor_controller.model import (
     EdidIntegrity,
     EventGeneration,
     EventMetadata,
+    Fingerprint,
     MappingProof,
     ObservationKey,
     OutputMapping,
@@ -39,8 +41,13 @@ from monitor_controller.model import (
     State,
     WorkerUnit,
 )
+from monitor_controller.observer.autorandr import (
+    AutorandrConfigOutput,
+    SavedAutorandrProfile,
+)
 from monitor_controller.observer.drm import RootedSysfsReader, sample_drm
 from monitor_controller.observer.evidence import TextCommandEvidence
+from monitor_controller.observer.snapshot import StaticSavedProfiles
 from monitor_controller.observer.topology import derive_canonical_topology
 from monitor_controller.observer.xrandr import sample_xrandr
 from monitor_controller.reducer import reduce
@@ -87,6 +94,32 @@ _PROBE_ARGV = (
     "--right-of",
     "eDP",
 )
+_PROFILE_HASHES = (
+    ConfigurationContentHash("profiles/harmless-contract/config", "sha256:config"),
+    ConfigurationContentHash("profiles/harmless-contract/setup", "sha256:setup"),
+)
+
+
+def _saved_profile() -> SavedAutorandrProfile:
+    return SavedAutorandrProfile(
+        name="harmless-contract",
+        setup=(Fingerprint("TEST-SAVED", "saved-fingerprint"),),
+        config=(AutorandrConfigOutput("TEST-SAVED", (("mode", "1920x1080"),)),),
+        layout="harmless-contract",
+        scope=ProfileScope.EXTERNAL_ONLY,
+        configuration_hashes=_PROFILE_HASHES,
+    )
+
+
+def _application_dispatcher(
+    store: TransactionStore,
+    supervisor: SystemdSupervisor,
+) -> SystemdDispatcher:
+    return SystemdDispatcher(
+        store,
+        supervisor,
+        autorandr_profiles=StaticSavedProfiles((_saved_profile(),)),
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -256,6 +289,7 @@ class _RealContract:
                 physical_token=PhysicalToken("harmless-contract"),
                 output_mapping=_MAPPING,
                 expected_topology=_TOPOLOGY,
+                profile_configuration_hashes=_PROFILE_HASHES,
             ),
         )
 
@@ -367,7 +401,7 @@ def real_contract() -> Iterator[_RealContract]:
         shutil.rmtree(root.parent, ignore_errors=True)
 
 
-def test_static_production_templates_are_explicit_and_cannot_succeed() -> None:
+def test_static_production_templates_are_explicit_and_fail_closed() -> None:
     expected_timeouts = {
         "monitor-probe@.service": "30s",
         "monitor-apply@.service": "120s",
@@ -389,6 +423,10 @@ def test_static_production_templates_are_explicit_and_cannot_succeed() -> None:
         assert "Restart=no" in directives
         if name == "monitor-probe@.service":
             assert "monitor_controller.cli internal probe" in text
+            assert "reject-unimplemented" not in text
+        elif name == "monitor-apply@.service":
+            assert "monitor_controller.cli internal apply" in text
+            assert "--sysfs-root /sys/class/drm" in text
             assert "reject-unimplemented" not in text
         else:
             assert "reject-unimplemented" in text
@@ -436,7 +474,10 @@ def test_dispatcher_final_fence_submits_real_manager_job_without_display(
 ) -> None:
     async def exercise() -> None:
         effect, context = real_contract.effect_and_context()
-        dispatcher = SystemdDispatcher(real_contract.store, real_contract.supervisor)
+        dispatcher = _application_dispatcher(
+            real_contract.store,
+            real_contract.supervisor,
+        )
         prepared = await dispatcher.write_request(effect, context)
         fence_calls: list[ActionId] = []
 
@@ -554,7 +595,10 @@ def test_real_restart_reconciles_result_written_before_completion_state_ack(
     real_contract: _RealContract,
 ) -> None:
     effect, context = real_contract.effect_and_context()
-    dispatcher = SystemdDispatcher(real_contract.store, real_contract.supervisor)
+    dispatcher = _application_dispatcher(
+        real_contract.store,
+        real_contract.supervisor,
+    )
     prepared = asyncio.run(dispatcher.write_request(effect, context))
     boot_id = BootId(uuid4())
     display_identity = DisplayIdentity(":harmless-result-before-ack")
@@ -633,7 +677,7 @@ def test_actual_manager_start_rejection_writes_recoverable_terminal_result(
     )
     effect, context = real_contract.effect_and_context(supervisor=supervisor)
     store = TransactionStore(tmp_path / "rejected-transactions")
-    dispatcher = SystemdDispatcher(store, supervisor)
+    dispatcher = _application_dispatcher(store, supervisor)
     prepared = asyncio.run(dispatcher.write_request(effect, context))
 
     with pytest.raises(DispatchAdapterError, match="systemctl start exited"):

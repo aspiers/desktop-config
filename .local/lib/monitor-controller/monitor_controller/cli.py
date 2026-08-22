@@ -24,6 +24,7 @@ from monitor_controller.simulation.scenario import (
     normalize_state,
     run_scenario,
 )
+from monitor_controller.workers.apply import run_apply_worker
 from monitor_controller.workers.common import WorkerStartupError
 from monitor_controller.workers.probe import run_probe_worker
 
@@ -63,6 +64,15 @@ def _parser() -> argparse.ArgumentParser:
     probe.add_argument("--action-id", required=True)
     probe.add_argument("--unit", required=True)
     probe.add_argument(
+        "--sysfs-root",
+        type=Path,
+        default=Path("/sys/class/drm"),
+    )
+    apply = workers.add_parser("apply", help=argparse.SUPPRESS)
+    apply.add_argument("--transaction-root", required=True, type=Path)
+    apply.add_argument("--action-id", required=True)
+    apply.add_argument("--unit", required=True)
+    apply.add_argument(
         "--sysfs-root",
         type=Path,
         default=Path("/sys/class/drm"),
@@ -155,7 +165,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         if args.command == "replay":
             return _replay(args.trace)
         if args.command == "internal":
-            return run_probe_worker(
+            worker = (
+                run_probe_worker
+                if args.internal_command == "probe"
+                else run_apply_worker
+            )
+            return worker(
                 transaction_root=args.transaction_root,
                 action_id_text=args.action_id,
                 unit_name=args.unit,

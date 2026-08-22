@@ -17,16 +17,24 @@ from monitor_controller.model import (
     ActivateProbe,
     ApplicationAttemptKey,
     ApplyProfile,
+    ConfigurationContentHash,
     ControllerInstanceId,
     EdidIntegrity,
     EventGeneration,
+    Fingerprint,
     MappingProof,
     ObservationKey,
     OutputMapping,
     PhysicalToken,
     ProbeAttemptKey,
+    ProfileScope,
     WorkerUnit,
 )
+from monitor_controller.observer.autorandr import (
+    AutorandrConfigOutput,
+    SavedAutorandrProfile,
+)
+from monitor_controller.observer.snapshot import StaticSavedProfiles
 from monitor_controller.runtime.dispatcher import (
     DispatchAdapterError,
     DispatchStartResult,
@@ -64,6 +72,21 @@ _MAPPING = MappingProof(
     (OutputMapping("DP-SAVED", "DP-1"),),
 )
 _TOPOLOGY = ExpectedTopology(("DP-1",), ("DP-1",), ("DP-1",), ("DP-1",))
+_CONFIGURATION_HASHES = (
+    ConfigurationContentHash("profiles/dock/config", "sha256:config"),
+    ConfigurationContentHash("profiles/dock/setup", "sha256:setup"),
+)
+
+
+def _saved_profile() -> SavedAutorandrProfile:
+    return SavedAutorandrProfile(
+        name="dock",
+        setup=(Fingerprint("DP-SAVED", "saved-fingerprint"),),
+        config=(AutorandrConfigOutput("DP-SAVED", (("mode", "2560x1440"),)),),
+        layout="dock",
+        scope=ProfileScope.EXTERNAL_ONLY,
+        configuration_hashes=_CONFIGURATION_HASHES,
+    )
 
 
 class _SubmissionGuard:
@@ -154,6 +177,17 @@ def _supervisor(runner: _Runner) -> SystemdSupervisor:
     return SystemdSupervisor(systemctl=Path("/usr/bin/systemctl"), runner=runner)
 
 
+def _dispatcher(
+    store: TransactionStore,
+    supervisor: SystemdSupervisor,
+) -> SystemdDispatcher:
+    return SystemdDispatcher(
+        store,
+        supervisor,
+        autorandr_profiles=StaticSavedProfiles((_saved_profile(),)),
+    )
+
+
 def _effect() -> ApplyProfile:
     return ApplyProfile(
         action_id=_ACTION,
@@ -171,6 +205,7 @@ def _context() -> WorkerRequestContext:
         physical_token=PhysicalToken("physical"),
         output_mapping=_MAPPING.outputs,
         expected_topology=_TOPOLOGY,
+        profile_configuration_hashes=_CONFIGURATION_HASHES,
     )
 
 
@@ -315,7 +350,7 @@ def test_dispatcher_hash_binds_complete_probe_identity_proof(
         probe_edid_integrity=EdidIntegrity.BASE_VALID_EXTENSIONS_INVALID,
     )
     store = TransactionStore(tmp_path / "transactions")
-    dispatcher = SystemdDispatcher(store, _supervisor(_Runner()))
+    dispatcher = _dispatcher(store, _supervisor(_Runner()))
 
     prepared = asyncio.run(dispatcher.write_request(effect, context))
     request = store.read_request(prepared.action_id)
@@ -349,7 +384,7 @@ def test_dispatcher_writes_before_start_and_reads_rapid_terminal_result(
         runner = _Runner()
         supervisor = _supervisor(runner)
         store = TransactionStore(tmp_path / "transactions")
-        dispatcher = SystemdDispatcher(store, supervisor)
+        dispatcher = _dispatcher(store, supervisor)
         prepared = await dispatcher.write_request(_effect(), _context())
 
         assert runner.calls == []
@@ -398,7 +433,7 @@ def test_dispatcher_maps_definite_start_rejection_without_unit_substitution(
         runner = _Runner(start_returncode=5)
         store = TransactionStore(tmp_path / "transactions")
         supervisor = _supervisor(runner)
-        dispatcher = SystemdDispatcher(store, supervisor)
+        dispatcher = _dispatcher(store, supervisor)
         prepared = await dispatcher.write_request(_effect(), _context())
         with pytest.raises(DispatchAdapterError) as caught:
             await dispatcher.start(prepared, lambda: True)
@@ -437,7 +472,7 @@ def test_recovery_scanner_reattaches_exact_active_transaction(
         )
         supervisor = _supervisor(runner)
         store = TransactionStore(tmp_path / "transactions")
-        dispatcher = SystemdDispatcher(store, supervisor)
+        dispatcher = _dispatcher(store, supervisor)
         prepared = await dispatcher.write_request(_effect(), _context())
         store.claim_submission(_ACTION)
         store.claim_execution(_ACTION)
@@ -480,7 +515,7 @@ def test_dispatcher_repeat_is_rejected_by_durable_claim_without_manager_call(
     async def exercise() -> None:
         runner = _Runner()
         store = TransactionStore(tmp_path / "transactions")
-        dispatcher = SystemdDispatcher(store, _supervisor(runner))
+        dispatcher = _dispatcher(store, _supervisor(runner))
         prepared = await dispatcher.write_request(_effect(), _context())
         store.claim_submission(_ACTION)
         store.claim_execution(_ACTION)
@@ -504,9 +539,7 @@ def test_recovery_marks_previously_invoked_no_result_ambiguous_and_unrestartable
     )
     supervisor = _supervisor(runner)
     store = TransactionStore(tmp_path / "transactions")
-    asyncio.run(
-        SystemdDispatcher(store, supervisor).write_request(_effect(), _context())
-    )
+    asyncio.run(_dispatcher(store, supervisor).write_request(_effect(), _context()))
     store.claim_submission(_ACTION)
     store.claim_execution(_ACTION)
 
@@ -550,7 +583,7 @@ def test_recovery_scanner_reconstructs_every_exact_terminal_outcome(
     supervisor = _supervisor(runner)
     store = TransactionStore(tmp_path / "transactions")
     request = asyncio.run(
-        SystemdDispatcher(store, supervisor).write_request(_effect(), _context())
+        _dispatcher(store, supervisor).write_request(_effect(), _context())
     )
     stored_request = store.read_request(request.action_id)
     store.claim_submission(_ACTION)
@@ -596,7 +629,7 @@ def test_recovery_accepts_bound_results_after_manager_history_is_collected(
     supervisor = _supervisor(runner)
     store = TransactionStore(tmp_path / "transactions")
     prepared = asyncio.run(
-        SystemdDispatcher(store, supervisor).write_request(_effect(), _context())
+        _dispatcher(store, supervisor).write_request(_effect(), _context())
     )
     request = store.read_request(prepared.action_id)
     store.claim_submission(request.action_id)

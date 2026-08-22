@@ -11,11 +11,11 @@ import signal
 import subprocess
 import time
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from subprocess import TimeoutExpired
 from types import MappingProxyType
-from typing import Final, Protocol
+from typing import TYPE_CHECKING, Final, Protocol
 
 from monitor_controller.model import (
     ActionId,
@@ -46,12 +46,19 @@ from monitor_controller.runtime.transactions import (
     BoundRecordKind,
     BoundTransactionRecord,
     Payload,
+    TransactionArtifact,
     TransactionProtocolError,
     TransactionRequest,
     TransactionResult,
     TransactionStore,
     parse_action_id,
 )
+from monitor_controller.workers.autorandr_profile import (
+    materialize_autorandr_profile,
+)
+
+if TYPE_CHECKING:
+    from monitor_controller.observer.snapshot import SavedProfileSource
 
 DEFAULT_SYSTEMCTL_TIMEOUT_SECONDS: Final = 10.0
 DEFAULT_SYSTEMCTL_STOP_TIMEOUT_SECONDS: Final = 20.0
@@ -429,10 +436,13 @@ class SystemdDispatcher:
         self,
         store: TransactionStore,
         supervisor: SystemdSupervisor,
+        *,
+        autorandr_profiles: SavedProfileSource | None = None,
     ) -> None:
-        """Bind only the active transaction and user-manager boundaries."""
+        """Bind only the active transaction, profile, and manager boundaries."""
         self._store = store
         self._supervisor = supervisor
+        self._autorandr_profiles = autorandr_profiles
 
     async def write_request(
         self,
@@ -442,7 +452,38 @@ class SystemdDispatcher:
         """Atomically create one fully bound request before any manager call."""
         unit = self._supervisor.unit_for_action(effect.action_id)
         request = _request_from_effect(effect, context, unit)
-        written = await asyncio.to_thread(self._store.create_request, request)
+        artifacts: tuple[TransactionArtifact, ...] = ()
+        if isinstance(effect, ApplyProfile):
+            if self._autorandr_profiles is None:
+                msg = "application dispatch requires an autorandr profile source"
+                raise TransactionProtocolError(msg)
+            profiles = tuple(
+                item
+                for item in self._autorandr_profiles.saved_profiles()
+                if item.name == effect.profile
+            )
+            if len(profiles) != 1:
+                msg = "application request lacks one exact saved autorandr profile"
+                raise TransactionProtocolError(msg)
+            profile = profiles[0]
+            if (
+                not context.profile_configuration_hashes
+                or profile.configuration_hashes != context.profile_configuration_hashes
+            ):
+                msg = "saved autorandr profile content differs from admission"
+                raise TransactionProtocolError(msg)
+            materialized = materialize_autorandr_profile(
+                profile,
+                context.output_mapping,
+                effect.action_id.value,
+            )
+            request = replace(request, payload=materialized.payload)
+            artifacts = materialized.artifacts
+        written = await asyncio.to_thread(
+            self._store.create_request,
+            request,
+            artifacts,
+        )
         return PreparedDispatch(
             action_id=effect.action_id,
             unit=unit,
@@ -759,6 +800,9 @@ def _request_from_effect(
         context.probe_base_hash is not None or context.probe_edid_integrity is not None
     ):
         msg = "non-probe request context cannot carry probe identity proof"
+        raise TransactionProtocolError(msg)
+    if not isinstance(effect, ApplyProfile) and context.profile_configuration_hashes:
+        msg = "non-application request cannot carry autorandr profile hashes"
         raise TransactionProtocolError(msg)
     if isinstance(effect, ActivateProbe):
         if context.physical_epoch != effect.key.physical_epoch:

@@ -1,0 +1,139 @@
+#!/bin/bash
+
+# Harmless migration-policy tests for the tracked autorandr postswitch hook.
+
+set -u
+
+repo=$(cd "$(dirname "$0")/.." && pwd)
+postswitch=$repo/.config/autorandr/postswitch
+failures=0
+
+run_test () {
+    local name=$1
+    shift
+    if "$@"; then
+        printf 'ok - %s\n' "$name"
+    else
+        printf 'not ok - %s\n' "$name" >&2
+        failures=$((failures + 1))
+    fi
+}
+
+prepare_manual_home () {
+    local root=$1
+    mkdir -p "$root/home/.config/autorandr/manual" "$root/home/bin" "$root/bin"
+    printf 'manual-layout\n' > "$root/home/.config/autorandr/manual/layout"
+    for command in clear-dpy-cache monitor-identity; do
+        cat > "$root/home/bin/$command" <<'EOF'
+#!/bin/sh
+[ "${0##*/}" != monitor-identity ] || printf 'test-token\n'
+exit 0
+EOF
+        chmod +x "$root/home/bin/$command"
+    done
+    cat > "$root/home/libdpy.py" <<'EOF'
+#!/bin/sh
+exit 0
+EOF
+    chmod +x "$root/home/libdpy.py"
+    mkdir -p "$root/home/lib"
+    mv "$root/home/libdpy.py" "$root/home/lib/libdpy.py"
+    cat > "$root/home/bin/setup-monitor" <<'EOF'
+#!/bin/sh
+printf '%s\n' "$*" >> "$POSTSWITCH_SETUP_LOG"
+exit 0
+EOF
+    chmod +x "$root/home/bin/setup-monitor"
+    cat > "$root/bin/setsid" <<'EOF'
+#!/bin/sh
+"$@"
+EOF
+    chmod +x "$root/bin/setsid"
+}
+
+test_controller_owned_is_always_side_effect_free () {
+    local tmp output
+    tmp=$(mktemp -d)
+    trap 'rm -rf "${tmp:-}"' RETURN
+    output=$(AUTORANDR_CURRENT_PROFILE=manual \
+        MONITOR_CONTROLLER_AUTORANDR_ACTION_ID=application-12345678123456781234567812345678-1 \
+        MONITOR_WATCHER_NG_DEFER_POSTSWITCH=1 \
+        MONITOR_WATCHER_NG_PENDING_PROFILE_FILE="$tmp/pending" \
+        bash "$postswitch" 2>&1) || return
+    [[ $output == *controller-owned* ]] &&
+        [[ ! -e $tmp/pending ]] &&
+        [[ ! -e $tmp/setup.log ]]
+}
+
+test_active_manual_writes_notification_only () {
+    local tmp output notification
+    tmp=$(mktemp -d)
+    trap 'rm -rf "${tmp:-}"' RETURN
+    mkdir -p "$tmp/runtime/monitor-controller/active"
+    notification=$tmp/runtime/monitor-controller/active/autorandr-postswitch
+    output=$(AUTORANDR_CURRENT_PROFILE=manual \
+        AUTORANDR_MONITORS=DP-9:eDP \
+        XDG_RUNTIME_DIR="$tmp/runtime" \
+        MONITOR_CONTROLLER_POSTSWITCH_POLICY=active \
+        bash "$postswitch" 2>&1) || return
+    [[ $output == *notified* ]] &&
+        [[ $(cat "$notification") == $'profile=manual\nmonitors=DP-9:eDP' ]] &&
+        [[ ! -e $tmp/runtime/monitor-system/setup-monitor.pid ]]
+}
+
+test_active_manual_defer_logs_without_runtime_owner () {
+    local tmp output
+    tmp=$(mktemp -d)
+    trap 'rm -rf "${tmp:-}"' RETURN
+    mkdir -p "$tmp/runtime"
+    output=$(AUTORANDR_CURRENT_PROFILE=manual \
+        XDG_RUNTIME_DIR="$tmp/runtime" \
+        MONITOR_CONTROLLER_POSTSWITCH_POLICY=active \
+        bash "$postswitch" 2>&1) || return
+    [[ $output == *'notification deferred'* ]] &&
+        [[ ! -e $tmp/runtime/monitor-system/setup-monitor.pid ]]
+}
+
+test_shadow_environment_does_not_change_live_manual_policy () {
+    local tmp output
+    tmp=$(mktemp -d)
+    trap 'rm -rf "${tmp:-}"' RETURN
+    prepare_manual_home "$tmp"
+    : > "$tmp/setup.log"
+    output=$(HOME="$tmp/home" \
+        PATH="$tmp/bin:$PATH" \
+        XDG_RUNTIME_DIR="$tmp/runtime" \
+        MONITOR_CONTROLLER_NAMESPACE=shadow \
+        POSTSWITCH_SETUP_LOG="$tmp/setup.log" \
+        AUTORANDR_CURRENT_PROFILE=manual \
+        bash "$postswitch" 2>&1) || return
+    for _ in $(seq 1 20); do
+        [[ -s $tmp/setup.log ]] && break
+        sleep 0.05
+    done
+    [[ $output == *'launching setup-monitor'* ]] &&
+        grep -q -- '--skip-xrandr --layout manual-layout' "$tmp/setup.log"
+}
+
+test_unknown_policy_fails_closed () {
+    local output
+    output=$(AUTORANDR_CURRENT_PROFILE=manual \
+        MONITOR_CONTROLLER_POSTSWITCH_POLICY=typo \
+        bash "$postswitch" 2>&1)
+    [[ $? -eq 1 ]] && [[ $output == *'refusing unkeyed desktop work'* ]]
+}
+
+run_test 'controller-owned apply cannot mark or launch desktop work' \
+    test_controller_owned_is_always_side_effect_free
+run_test 'active manual apply only writes controller notification' \
+    test_active_manual_writes_notification_only
+run_test 'active manual apply defer-logs if controller is unavailable' \
+    test_active_manual_defer_logs_without_runtime_owner
+run_test 'shadow presence preserves current manual autorandr behaviour' \
+    test_shadow_environment_does_not_change_live_manual_policy
+run_test 'unknown migration policy fails closed' test_unknown_policy_fails_closed
+
+if [[ $failures -ne 0 ]]; then
+    printf '%d test(s) failed\n' "$failures" >&2
+    exit 1
+fi

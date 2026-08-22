@@ -26,6 +26,7 @@ from monitor_controller.model import (
 from monitor_controller.runtime.transactions import (
     ExpectedTopology,
     ImmutableTransactionError,
+    TransactionArtifact,
     TransactionProtocolError,
     TransactionRequest,
     TransactionResult,
@@ -193,6 +194,33 @@ def test_request_prepared_bundle_is_retryable_across_every_crash_boundary(
     assert restarted.execution_claim_if_present(_ACTION) is None
     assert restarted.result_if_present(_ACTION) is None
     assert restarted.action_directories() == (restarted.action_directory(_ACTION),)
+
+
+@pytest.mark.parametrize(
+    "relative_path",
+    [
+        "./artifacts/profile/config",
+        "artifacts//profile/config",
+        "artifacts/profile/config/",
+    ],
+)
+def test_noncanonical_artifact_paths_fail_before_request_publication(
+    tmp_path: Path,
+    relative_path: str,
+) -> None:
+    with pytest.raises(TransactionProtocolError, match="canonical"):
+        TransactionArtifact(relative_path, b"content")
+
+    # Revalidate at the store boundary as well, even if an injected fault bypasses
+    # the frozen dataclass constructor.
+    malformed = object.__new__(TransactionArtifact)
+    object.__setattr__(malformed, "relative_path", relative_path)
+    object.__setattr__(malformed, "content", b"content")
+    object.__setattr__(malformed, "executable", False)
+    store = TransactionStore(tmp_path / "transactions")
+    with pytest.raises(TransactionProtocolError, match="canonical"):
+        store.create_request(_request(), (malformed,))
+    assert not store.action_directory(_ACTION).exists()
 
 
 def test_store_atomically_installs_modes_and_never_replaces_evidence(

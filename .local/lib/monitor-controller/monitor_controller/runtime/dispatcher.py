@@ -15,6 +15,7 @@ from monitor_controller.model import (
     ActionLifecycle,
     ActivateProbe,
     ApplyProfile,
+    ConfigurationContentHash,
     EdidIntegrity,
     FinalizeDesktop,
     OutputMapping,
@@ -88,6 +89,7 @@ class WorkerRequestContext:
     layout: str | None = None
     probe_base_hash: str | None = None
     probe_edid_integrity: EdidIntegrity | None = None
+    profile_configuration_hashes: tuple[ConfigurationContentHash, ...] = ()
 
     def __post_init__(self) -> None:
         if self.physical_epoch < 0:
@@ -104,6 +106,14 @@ class WorkerRequestContext:
             and self.probe_edid_integrity not in BROKEN_EXTENSION_EDID_INTEGRITIES
         ):
             msg = "worker probe proof requires broken extensions"
+            raise ValueError(msg)
+        hash_keys = tuple(
+            f"{item.path}\0{item.sha256}" for item in self.profile_configuration_hashes
+        )
+        if hash_keys != tuple(sorted(hash_keys)) or len(hash_keys) != len(
+            set(hash_keys)
+        ):
+            msg = "worker profile configuration hashes must be sorted and unique"
             raise ValueError(msg)
         if self.probe_base_hash is not None and (
             len(self.probe_base_hash) != SHA256_HEX_LENGTH
