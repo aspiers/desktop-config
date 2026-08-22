@@ -38,6 +38,7 @@ from monitor_controller.model import (
     PlanRequested,
     PreparationDispatched,
     PreparationFinished,
+    PreparationState,
     PrepareDesktop,
     ProbeDispatched,
     ProbeFinished,
@@ -595,7 +596,9 @@ class SerializedController:
         )
         return None
 
-    def _worker_request_context(self, effect: DispatchEffect) -> WorkerRequestContext:
+    def _worker_request_context(  # noqa: C901, PLR0915
+        self, effect: DispatchEffect
+    ) -> WorkerRequestContext:
         observation = self._state.latest_observation
         if (
             observation is None
@@ -608,6 +611,8 @@ class SerializedController:
             raise ValueError(msg)
         layout: str | None = None
         planning_action_id: ActionId | None = None
+        preparation_action_id: ActionId | None = None
+        proof_duration_ms: int | None = None
         probe_base_hash: str | None = None
         probe_edid_integrity = None
         profile_configuration_hashes = ()
@@ -685,6 +690,24 @@ class SerializedController:
             mapping = candidate.mapping.outputs
             layout = planning.input_key.layout
             planning_action_id = planning.action_id
+            if isinstance(effect, FinalizeDesktop):
+                preparation = self._state.preparation
+                verify_since_ms = self._state.verify_since_ms
+                if (
+                    self._state.preparation_state is not PreparationState.PREPARED
+                    or preparation is None
+                    or preparation.lifecycle is not ActionLifecycle.COMPLETED
+                    or preparation.transition_id != effect.transition_id
+                    or preparation.transition_key != effect.transition_key
+                    or preparation.plan_hash != effect.plan_hash
+                    or preparation.profile != effect.profile
+                    or verify_since_ms is None
+                    or observation.observed_at_ms < verify_since_ms
+                ):
+                    msg = "finalization effect lacks matching prepared proof"
+                    raise ValueError(msg)
+                preparation_action_id = preparation.action_id
+                proof_duration_ms = observation.observed_at_ms - verify_since_ms
         return WorkerRequestContext(
             physical_epoch=self._state.physical_epoch,
             physical_token=observation.physical_token,
@@ -697,6 +720,8 @@ class SerializedController:
             ),
             layout=layout,
             planning_action_id=planning_action_id,
+            preparation_action_id=preparation_action_id,
+            proof_duration_ms=proof_duration_ms,
             probe_base_hash=probe_base_hash,
             probe_edid_integrity=probe_edid_integrity,
             profile_configuration_hashes=profile_configuration_hashes,

@@ -1,0 +1,21 @@
+[Unit]
+Description=NetworkManager desktop tray applet
+PartOf=fluxbox-session.target
+After=fluxbox-session.target
+
+[Service]
+Type=exec
+Environment=HOME=%h
+Environment=PATH=/usr/bin:/bin
+PassEnvironment=DISPLAY XAUTHORITY
+ExecStart=/usr/bin/nm-applet
+Restart=on-failure
+RestartSec=2s
+KillMode=control-group
+TimeoutStartSec=15s
+TimeoutStopSec=10s
+StandardOutput=append:%h/.log/nm-applet.log
+StandardError=append:%h/.log/nm-applet.log
+
+[Install]
+WantedBy=fluxbox-session.target

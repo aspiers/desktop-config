@@ -4,15 +4,20 @@ CollectMode=inactive-or-failed
 
 [Service]
 Type=oneshot
+Environment=HOME=%h
 Environment=PATH=/usr/bin:/bin
 Environment=PYTHONUNBUFFERED=1
+PassEnvironment=DISPLAY XAUTHORITY HOST HOSTNAME
 UnsetEnvironment=BASH_ENV ENV LD_LIBRARY_PATH LD_PRELOAD PYTHONHOME PYTHONINSPECT PYTHONPATH PYTHONSTARTUP PYTHONUSERBASE
-ExecStart=%h/.local/share/monitor-controller/venv/bin/python -I -m monitor_controller.workers.common reject-unimplemented --transaction-root %t/monitor-system/transactions --action-id %I --unit %n --action-kind finalization
+ExecStart=%h/.local/share/monitor-controller/venv/bin/python -I -m monitor_controller.cli internal finalize --transaction-root %t/monitor-system/transactions --plan-root %t/monitor-controller/active/plans --event-generation-file %t/monitor-controller/active/event-generation --action-id %I --unit %n --sysfs-root /sys/class/drm --home-root %h --leaf-root %h/bin
 ExecStopPost=%h/.local/share/monitor-controller/venv/bin/python -I -m monitor_controller.workers.common record-systemd-result --transaction-root %t/monitor-system/transactions --action-id %I --unit %n --action-kind finalization --service-result ${SERVICE_RESULT} --exit-code ${EXIT_CODE} --exit-status ${EXIT_STATUS}
 TimeoutStartSec=300s
 TimeoutStartFailureMode=terminate
-TimeoutStopSec=5s
-KillMode=control-group
+# SIGTERM reaches only Python first. It finishes the current bounded atomic
+# restart, reports the durable stop intent, and exits. Any genuinely leaked
+# descendants are then killed as a group at the bounded stop deadline.
+TimeoutStopSec=130s
+KillMode=mixed
 KillSignal=SIGTERM
 FinalKillSignal=SIGKILL
 SendSIGKILL=yes

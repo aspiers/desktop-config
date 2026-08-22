@@ -1,0 +1,23 @@
+[Unit]
+Description=Separately owned XFCE panel restart request (%I)
+CollectMode=inactive-or-failed
+PartOf=fluxbox-session.target
+After=fluxbox-session.target
+
+[Service]
+Type=oneshot
+Environment=HOME=%h
+Environment=PATH=/usr/bin:/bin
+PassEnvironment=DISPLAY XAUTHORITY
+ExecStart=/usr/bin/xfce4-panel -r
+TimeoutStartSec=30s
+TimeoutStartFailureMode=terminate
+TimeoutStopSec=10s
+KillMode=control-group
+KillSignal=SIGTERM
+FinalKillSignal=SIGKILL
+SendSIGKILL=yes
+Restart=no
+RemainAfterExit=no
+StandardOutput=journal
+StandardError=journal

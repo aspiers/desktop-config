@@ -1,0 +1,26 @@
+[Unit]
+Description=Bounded delayed monitor tray diagnostics (%I)
+CollectMode=inactive-or-failed
+PartOf=fluxbox-session.target
+After=fluxbox-session.target
+
+[Service]
+Type=oneshot
+Environment=HOME=%h
+Environment=PATH=/usr/bin:/bin
+Environment=PYTHONUNBUFFERED=1
+PassEnvironment=DISPLAY XAUTHORITY HOST HOSTNAME
+UnsetEnvironment=BASH_ENV ENV LD_LIBRARY_PATH LD_PRELOAD PYTHONHOME PYTHONINSPECT PYTHONPATH PYTHONSTARTUP PYTHONUSERBASE
+ExecStart=%h/.local/share/monitor-controller/venv/bin/python -I -m monitor_controller.cli internal tray-diagnostics --transaction-root %t/monitor-system/transactions --action-id %I --tray-diag %h/bin/tray-diag --output-root %h/.log/tray-diag
+TimeoutStartSec=45s
+TimeoutStartFailureMode=terminate
+TimeoutStopSec=5s
+KillMode=control-group
+KillSignal=SIGTERM
+FinalKillSignal=SIGKILL
+SendSIGKILL=yes
+Restart=no
+RemainAfterExit=no
+StandardOutput=journal
+StandardError=journal
+UMask=0077

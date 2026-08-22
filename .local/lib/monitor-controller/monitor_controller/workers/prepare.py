@@ -12,7 +12,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from subprocess import TimeoutExpired
-from typing import Final, Never, Protocol, final
+from typing import TYPE_CHECKING, Final, Never, Protocol, final
 
 from monitor_controller.desktop.plan_codec import (
     AtomicPlanStore,
@@ -32,21 +32,8 @@ from monitor_controller.model import (
     ConfigurationContentHash,
     RawEvidenceSource,
 )
-from monitor_controller.observer.autorandr import (
-    SavedAutorandrProfile,
-    parse_saved_profile,
-)
-from monitor_controller.observer.drm import (
-    ConnectorKind,
-    ConnectorStatus,
-    EvidenceState,
-    ReadOnlyTree,
-    RootedSysfsReader,
-    sample_drm,
-)
-from monitor_controller.observer.evidence import TextCommandEvidence
-from monitor_controller.observer.topology import derive_canonical_topology
-from monitor_controller.observer.xrandr import XrandrEvidenceSource, sample_xrandr
+from monitor_controller.observer.drm import ReadOnlyTree, RootedSysfsReader
+from monitor_controller.observer.xrandr import XrandrEvidenceSource
 from monitor_controller.runtime.commands import (
     BoundedCommandRunner,
     CommandRequest,
@@ -54,7 +41,6 @@ from monitor_controller.runtime.commands import (
 )
 from monitor_controller.runtime.transactions import (
     BoundRecordKind,
-    ExpectedTopology,
     TransactionProtocolError,
     TransactionRequest,
     parse_action_id,
@@ -68,10 +54,12 @@ from monitor_controller.workers.common import (
     execute_worker,
     install_cooperative_sigterm_handler,
     kill_process_group,
-    validate_topology_guard,
     validate_worker_startup,
 )
-from monitor_controller.workers.identity import validate_noncontradictory_edids
+from monitor_controller.workers.desktop_guard import (
+    sample_exact_desktop_topology,
+    validate_plan_request_binding,
+)
 
 PREPARE_COMMAND_TIMEOUT_SECONDS: Final = 90.0
 COMMAND_NOT_FOUND_EXIT_STATUS: Final = 127
@@ -83,6 +71,9 @@ _PREPARATION_PAYLOAD_FIELDS: Final = frozenset(
     {"allow_temporary_edid_absence", "planning_action_id"}
 )
 _TRUSTED_PATH: Final = "/usr/bin:/bin"
+
+if TYPE_CHECKING:
+    from monitor_controller.observer.evidence import TextCommandEvidence
 
 
 @dataclass(frozen=True, slots=True)
@@ -472,11 +463,12 @@ def execute_preparation(
     def topology_reader(_request: TransactionRequest) -> CurrentTopology:
         nonlocal guarded_bundle
         guarded_bundle = _validate_boundary(startup, plan_store, drm_tree, commands)
-        return _sample_exact_preparation_topology(
-            startup,
+        return sample_exact_desktop_topology(
+            startup.request,
             guarded_bundle,
             drm_tree,
             commands,
+            allow_temporary_edid_absence=_preparation_payload(startup.request)[1],
         )
 
     def implementation(_request: TransactionRequest) -> WorkerExecution:
@@ -487,11 +479,14 @@ def execute_preparation(
         for index, action in enumerate(bundle.plan.prepare_actions):
             if index:
                 bundle = _validate_boundary(startup, plan_store, drm_tree, commands)
-                _sample_exact_preparation_topology(
-                    startup,
+                sample_exact_desktop_topology(
+                    startup.request,
                     bundle,
                     drm_tree,
                     commands,
+                    allow_temporary_edid_absence=(
+                        _preparation_payload(startup.request)[1]
+                    ),
                 )
             _raise_if_cancelled(startup)
             operation = _operation(bundle, action.kind)
@@ -564,142 +559,9 @@ def _validate_boundary(
         _stale(f"cannot read exact staged desktop plan: {error}")
     if request.plan_hash is None or hash_plan_bundle(bundle) != request.plan_hash:
         _stale("staged desktop plan hash differs from preparation request")
-    _validate_plan_request_binding(request, planning_action, bundle)
+    validate_plan_request_binding(request, planning_action, bundle)
     _raise_if_cancelled(startup)
     return bundle
-
-
-def _validate_plan_request_binding(
-    request: TransactionRequest,
-    planning_action: ActionId,
-    bundle: DesktopPlanBundle,
-) -> None:
-    plan = bundle.plan
-    guards = plan.guards
-    topology = ExpectedTopology(
-        guards.topology.kernel_connected_outputs,
-        guards.topology.kernel_external_outputs,
-        guards.topology.x_connected_outputs,
-        guards.topology.x_active_outputs,
-    )
-    transition_key = (
-        f"{guards.input_key.physical_epoch}|{guards.profile}|"
-        f"{guards.observation_key.value}"
-    )
-    if (
-        guards.action_id != planning_action
-        or request.transition_id != guards.transition_id
-        or request.transition_key is None
-        or request.transition_key.value != transition_key
-        or request.profile != guards.profile
-        or request.layout != guards.layout
-        or request.physical_epoch != guards.input_key.physical_epoch
-        or request.admitted_event_generation < guards.admitted_event_generation
-        or request.physical_token != guards.physical_token
-        or request.observation_key != guards.observation_key
-        or request.output_mapping != guards.output_mapping
-        or request.expected_topology != topology
-    ):
-        _stale("preparation request differs from staged transition guards")
-
-
-def _sample_exact_preparation_topology(
-    startup: WorkerStartup,
-    bundle: DesktopPlanBundle,
-    drm_tree: ReadOnlyTree,
-    commands: PrepareCommands,
-) -> CurrentTopology:
-    request = startup.request
-    begin_drm = sample_drm(drm_tree)
-    xrandr = sample_xrandr(commands)
-    end_drm = sample_drm(drm_tree)
-    if begin_drm != end_drm:
-        _stale("DRM evidence changed during preparation boundary sample")
-    if begin_drm.scan_state is not EvidenceState.AVAILABLE:
-        _stale("DRM connector scan is not complete")
-    if not xrandr.valid:
-        _stale("XRandR query and properties evidence is invalid or torn")
-    if any(
-        item.kind is not ConnectorKind.VIRTUAL
-        and (
-            item.status_state is not EvidenceState.AVAILABLE
-            or item.status is ConnectorStatus.UNKNOWN
-        )
-        for item in begin_drm.connectors
-    ):
-        _stale("DRM connector status evidence is uncertain")
-    topology = derive_canonical_topology(begin_drm, xrandr)
-    if topology.inconsistent:
-        _stale("DRM and X connector identity is contradictory or non-unique")
-    if set(topology.kernel_connected_outputs) != set(topology.x_connected_outputs):
-        _stale("kernel and X connected topologies differ")
-    current = CurrentTopology(
-        topology.physical_token,
-        ExpectedTopology(
-            topology.kernel_connected_outputs,
-            topology.kernel_external_outputs,
-            topology.x_connected_outputs,
-            topology.x_active_outputs,
-        ),
-    )
-    validate_topology_guard(request, current)
-    profile = _staged_profile(request, bundle)
-    saved_to_live = {
-        item.saved_output: item.live_output for item in request.output_mapping
-    }
-    if set(saved_to_live) != {item.output for item in profile.setup}:
-        _stale("staged setup outputs differ from admitted output mapping")
-    patterns = {saved_to_live[item.output]: item.value for item in profile.setup}
-    _planning_action, allow_absence = _preparation_payload(request)
-    validate_noncontradictory_edids(
-        patterns,
-        begin_drm.connectors,
-        topology,
-        allow_temporary_absence=allow_absence,
-    )
-    return current
-
-
-def _staged_profile(
-    request: TransactionRequest,
-    bundle: DesktopPlanBundle,
-) -> SavedAutorandrProfile:
-    artifacts = {item.relative_path: item.content for item in bundle.artifacts}
-    intent = bundle.plan.autorandr
-    try:
-        parsed = parse_saved_profile(
-            request.profile or "",
-            _profile_evidence(
-                intent.config_artifact,
-                artifacts[intent.config_artifact],
-            ),
-            _profile_evidence(
-                intent.setup_artifact,
-                artifacts[intent.setup_artifact],
-            ),
-            (
-                None
-                if intent.layout_artifact is None
-                else _profile_evidence(
-                    intent.layout_artifact,
-                    artifacts[intent.layout_artifact],
-                )
-            ),
-        )
-    except (KeyError, UnicodeDecodeError) as error:
-        _stale(f"staged autorandr identity artifacts are invalid: {error}")
-    if not parsed.valid or parsed.profile is None:
-        reasons = ",".join(item.code.value for item in parsed.issues)
-        _stale(f"staged autorandr identity grammar is invalid: {reasons}")
-    return parsed.profile
-
-
-def _profile_evidence(path: str, content: bytes) -> TextCommandEvidence:
-    return TextCommandEvidence(
-        RawEvidenceSource.AUTORANDR_PROFILES,
-        f"staged-plan:{path}",
-        content.decode("utf-8", errors="strict"),
-    )
 
 
 def _preparation_payload(request: TransactionRequest) -> tuple[ActionId, bool]:

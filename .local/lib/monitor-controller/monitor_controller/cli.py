@@ -26,6 +26,10 @@ from monitor_controller.simulation.scenario import (
 )
 from monitor_controller.workers.apply import run_apply_worker
 from monitor_controller.workers.common import WorkerStartupError
+from monitor_controller.workers.finalize import (
+    run_finalize_worker,
+    run_tray_diagnostics,
+)
 from monitor_controller.workers.prepare import run_prepare_worker
 from monitor_controller.workers.probe import run_probe_worker
 
@@ -86,6 +90,20 @@ def _parser() -> argparse.ArgumentParser:
     prepare.add_argument("--sysfs-root", required=True, type=Path)
     prepare.add_argument("--home-root", required=True, type=Path)
     prepare.add_argument("--leaf-root", required=True, type=Path)
+    finalize = workers.add_parser("finalize", help=argparse.SUPPRESS)
+    finalize.add_argument("--transaction-root", required=True, type=Path)
+    finalize.add_argument("--plan-root", required=True, type=Path)
+    finalize.add_argument("--event-generation-file", required=True, type=Path)
+    finalize.add_argument("--action-id", required=True)
+    finalize.add_argument("--unit", required=True)
+    finalize.add_argument("--sysfs-root", required=True, type=Path)
+    finalize.add_argument("--home-root", required=True, type=Path)
+    finalize.add_argument("--leaf-root", required=True, type=Path)
+    diagnostics = workers.add_parser("tray-diagnostics", help=argparse.SUPPRESS)
+    diagnostics.add_argument("--transaction-root", required=True, type=Path)
+    diagnostics.add_argument("--action-id", required=True)
+    diagnostics.add_argument("--tray-diag", required=True, type=Path)
+    diagnostics.add_argument("--output-root", required=True, type=Path)
     return parser
 
 
@@ -174,6 +192,13 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0911
         if args.command == "replay":
             return _replay(args.trace)
         if args.command == "internal":
+            if args.internal_command == "tray-diagnostics":
+                return run_tray_diagnostics(
+                    transaction_root=args.transaction_root,
+                    action_id_text=args.action_id,
+                    tray_diag=args.tray_diag,
+                    output_root=args.output_root,
+                )
             common = {
                 "transaction_root": args.transaction_root,
                 "action_id_text": args.action_id,
@@ -184,11 +209,17 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0911
                 return run_probe_worker(**common)
             if args.internal_command == "apply":
                 return run_apply_worker(**common)
-            return run_prepare_worker(
+            desktop = {
                 **common,
-                plan_root=args.plan_root,
-                home_root=args.home_root,
-                leaf_root=args.leaf_root,
+                "plan_root": args.plan_root,
+                "home_root": args.home_root,
+                "leaf_root": args.leaf_root,
+            }
+            if args.internal_command == "prepare":
+                return run_prepare_worker(**desktop)
+            return run_finalize_worker(
+                **desktop,
+                event_generation_file=args.event_generation_file,
             )
         state_home = args.state_home or _default_state_home()
         return _status(state_home, StateNamespace(args.namespace))

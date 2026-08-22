@@ -10,6 +10,7 @@
 # - running ~/lib/liblayout.py $layout_name
 
 import argparse
+import json
 from pprint import pp
 import subprocess
 import os
@@ -74,6 +75,40 @@ def exec_window_cmds(window_cmds, args):
         print()
 
 
+def exec_resolved_actions(actions, args):
+    """Apply exact planning-expanded map commands without live discovery."""
+    for action in actions:
+        print(action['matcher'])
+        print("   %s" % action['map_command'])
+        if not args.dump:
+            subprocess.check_call(['fluxbox-remote', action['map_command']])
+            time.sleep(0.1)
+        print()
+
+
+def load_resolved_actions(path):
+    if os.path.getsize(path) > 512 * 1024:
+        raise ValueError('resolved action payload exceeds size limit')
+    with open(path, encoding='utf-8') as stream:
+        value = json.load(stream)
+    if not isinstance(value, list) or not value or len(value) > 4096:
+        raise ValueError('resolved action payload must be a bounded non-empty list')
+    for action in value:
+        if not isinstance(action, dict) or set(action) != {
+                'commands', 'map_command', 'matcher'}:
+            raise ValueError('resolved action has an invalid field set')
+        if not isinstance(action['matcher'], str) or not action['matcher']:
+            raise ValueError('resolved action matcher is invalid')
+        if not isinstance(action['map_command'], str) or not action['map_command']:
+            raise ValueError('resolved action map command is invalid')
+        commands = action['commands']
+        if (not isinstance(commands, list) or not commands or
+                not all(isinstance(command, str) and command
+                        for command in commands)):
+            raise ValueError('resolved action commands are invalid')
+    return value
+
+
 def exec_cmds(cmds, args):
     for cmd in cmds:
         expanded = expand_magic(cmd)
@@ -104,11 +139,21 @@ def parse_args():
         type=str,
         help='Name of a sublayout to apply instead of full layout')
     parser.add_argument(
+        '--resolved-actions',
+        type=str,
+        help='Planning-staged JSON map commands; bypass all layout discovery')
+    parser.add_argument(
         'layout',
         type=str,
+        nargs='?',
         help='Name of a layout pointing to a YAML file with '
         'window matching patterns and commands')
-    return parser.parse_args()
+    args = parser.parse_args()
+    if bool(args.resolved_actions) == bool(args.layout):
+        parser.error('supply exactly one of layout or --resolved-actions')
+    if args.resolved_actions and args.sublayout:
+        parser.error('--sublayout cannot be combined with --resolved-actions')
+    return args
 
 
 def init_magic_cmds(layout_params):
@@ -192,6 +237,17 @@ def main():
     except subprocess.CalledProcessError:
         active_win_id = None
 
+    if args.resolved_actions:
+        try:
+            actions = load_resolved_actions(args.resolved_actions)
+        except (OSError, UnicodeError, ValueError, json.JSONDecodeError) as error:
+            sys.stderr.write("Invalid resolved action payload: %s\n" % error)
+            return 2
+        exec_resolved_actions(actions, args)
+        if active_win_id:
+            subprocess.call(['wmctrl', '-ia', active_win_id])
+        return 0
+
     layout_file = liblayout.get_layout_file(args.layout, args.dir)
     layout_params, layout = liblayout.get_layout_params(layout_file)
     window_cmds = layout['windows']
@@ -209,7 +265,8 @@ def main():
 
     if active_win_id:
         subprocess.call(['wmctrl', '-ia', active_win_id])
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

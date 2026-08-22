@@ -24,6 +24,7 @@ from monitor_controller.model import (
     ActionTombstone,
     ActivateProbe,
     ApplyProfile,
+    FinalizeDesktop,
     PrepareDesktop,
     WorkerUnit,
 )
@@ -787,7 +788,7 @@ def escape_unit_instance(value: str) -> str:
     return "".join(escaped)
 
 
-def _request_from_effect(
+def _request_from_effect(  # noqa: C901, PLR0912
     effect: DispatchEffect,
     context: WorkerRequestContext,
     unit: WorkerUnit,
@@ -814,6 +815,12 @@ def _request_from_effect(
         and context.planning_action_id is not None
     ):
         msg = "non-desktop request cannot carry a planning action identity"
+        raise TransactionProtocolError(msg)
+    if not isinstance(effect, FinalizeDesktop) and (
+        context.preparation_action_id is not None
+        or context.proof_duration_ms is not None
+    ):
+        msg = "non-finalization request cannot carry prepared proof"
         raise TransactionProtocolError(msg)
     if isinstance(effect, ActivateProbe):
         if context.physical_epoch != effect.key.physical_epoch:
@@ -858,17 +865,22 @@ def _request_from_effect(
         transition_id = effect.transition_id
         transition_key = effect.transition_key
         plan_hash = effect.plan_hash
-        payload = (
-            (
-                (
-                    "allow_temporary_edid_absence",
-                    True,
-                ),
+        if isinstance(effect, PrepareDesktop):
+            payload = (
+                ("allow_temporary_edid_absence", True),
                 ("planning_action_id", planning_action_id.value),
             )
-            if isinstance(effect, PrepareDesktop)
-            else ()
-        )
+        else:
+            preparation_action_id = context.preparation_action_id
+            proof_duration_ms = context.proof_duration_ms
+            if preparation_action_id is None or proof_duration_ms is None:
+                msg = "finalization request lacks matching prepared proof"
+                raise TransactionProtocolError(msg)
+            payload = (
+                ("planning_action_id", planning_action_id.value),
+                ("preparation_action_id", preparation_action_id.value),
+                ("proof_duration_ms", proof_duration_ms),
+            )
     return TransactionRequest(
         action_id=effect.action_id,
         action_kind=effect.action_id.kind,

@@ -415,8 +415,12 @@ def test_static_production_templates_are_explicit_and_fail_closed() -> None:
         assert "CollectMode=inactive-or-failed" in directives
         assert f"TimeoutStartSec={timeout}" in directives
         assert "TimeoutStartFailureMode=terminate" in directives
-        assert "TimeoutStopSec=5s" in directives
-        assert "KillMode=control-group" in directives
+        if name == "monitor-finalize@.service":
+            assert "TimeoutStopSec=130s" in directives
+            assert "KillMode=mixed" in directives
+        else:
+            assert "TimeoutStopSec=5s" in directives
+            assert "KillMode=control-group" in directives
         assert "KillSignal=SIGTERM" in directives
         assert "FinalKillSignal=SIGKILL" in directives
         assert "SendSIGKILL=yes" in directives
@@ -437,7 +441,11 @@ def test_static_production_templates_are_explicit_and_fail_closed() -> None:
             assert "--home-root %h --leaf-root %h/bin" in text
             assert "reject-unimplemented" not in text
         else:
-            assert "reject-unimplemented" in text
+            assert "monitor_controller.cli internal finalize" in text
+            assert "--plan-root %t/monitor-controller/active/plans" in text
+            assert "--event-generation-file" in text
+            assert "--home-root %h --leaf-root %h/bin" in text
+            assert "reject-unimplemented" not in text
         assert "record-systemd-result" in text
         assert "SuccessExitStatus=" not in text
 

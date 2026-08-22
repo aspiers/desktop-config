@@ -6,10 +6,22 @@ if [ "$1" = --debug ]; then
     exec 2> >(tee -ia ~/.log/ly.log >&2)
 fi
 
-. $ZDOTDIR/lib/libhost.sh
+if [ "${1:-}" = --resolved-actions ]; then
+    [ "$#" -eq 2 ] || {
+        echo "Usage: ly [--debug] --resolved-actions FILE" >&2
+        exit 2
+    }
+    exec desktop-layout --resolved-actions "$2"
+fi
+
+# Legacy interactive callers retain layout discovery. The monitor controller
+# always uses --resolved-actions so finalization consumes only its hashed plan.
+# ZDOTDIR is the deployed home/config root, which static analysis cannot resolve.
+# shellcheck disable=SC1091
+. "$ZDOTDIR/lib/libhost.sh"
 read_localhost_nickname
 
-if layout="$( get-layout )"; then
+if layout="$(get-layout)"; then
     desktop-layout "$@" "$layout"
 else
     exit 1

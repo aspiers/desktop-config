@@ -151,6 +151,100 @@ def test_internal_prepare_entry_point_passes_all_explicit_roots(
     }
 
 
+def test_internal_finalize_entry_point_passes_all_guard_roots(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seen: dict[str, object] = {}
+
+    def fake_finalize_worker(**arguments: object) -> int:
+        seen.update(arguments)
+        return 25
+
+    monkeypatch.setattr(
+        "monitor_controller.cli.run_finalize_worker",
+        fake_finalize_worker,
+    )
+    roots = {
+        name: tmp_path / name
+        for name in ("transactions", "plans", "events", "sysfs", "home", "bin")
+    }
+    assert (
+        main(
+            [
+                "internal",
+                "finalize",
+                "--transaction-root",
+                str(roots["transactions"]),
+                "--plan-root",
+                str(roots["plans"]),
+                "--event-generation-file",
+                str(roots["events"]),
+                "--action-id",
+                "finalization-12345678123456781234567812345678-3",
+                "--unit",
+                "monitor-finalize@test.service",
+                "--sysfs-root",
+                str(roots["sysfs"]),
+                "--home-root",
+                str(roots["home"]),
+                "--leaf-root",
+                str(roots["bin"]),
+            ]
+        )
+        == 25
+    )
+    assert seen == {
+        "transaction_root": roots["transactions"],
+        "plan_root": roots["plans"],
+        "event_generation_file": roots["events"],
+        "action_id_text": "finalization-12345678123456781234567812345678-3",
+        "unit_name": "monitor-finalize@test.service",
+        "sysfs_root": roots["sysfs"],
+        "home_root": roots["home"],
+        "leaf_root": roots["bin"],
+    }
+
+
+def test_internal_tray_diagnostics_has_no_worker_or_display_discovery_arguments(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seen: dict[str, object] = {}
+
+    def fake_diagnostics(**arguments: object) -> int:
+        seen.update(arguments)
+        return 26
+
+    monkeypatch.setattr(
+        "monitor_controller.cli.run_tray_diagnostics",
+        fake_diagnostics,
+    )
+    assert (
+        main(
+            [
+                "internal",
+                "tray-diagnostics",
+                "--transaction-root",
+                str(tmp_path / "transactions"),
+                "--action-id",
+                "finalization-12345678123456781234567812345678-3",
+                "--tray-diag",
+                str(tmp_path / "bin" / "tray-diag"),
+                "--output-root",
+                str(tmp_path / "diagnostics"),
+            ]
+        )
+        == 26
+    )
+    assert seen == {
+        "transaction_root": tmp_path / "transactions",
+        "action_id_text": "finalization-12345678123456781234567812345678-3",
+        "tray_diag": tmp_path / "bin" / "tray-diag",
+        "output_root": tmp_path / "diagnostics",
+    }
+
+
 def test_status_reads_selected_namespace_without_writing(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],

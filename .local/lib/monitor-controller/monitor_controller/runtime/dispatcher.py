@@ -89,11 +89,13 @@ class WorkerRequestContext:
     expected_topology: ExpectedTopology
     layout: str | None = None
     planning_action_id: ActionId | None = None
+    preparation_action_id: ActionId | None = None
+    proof_duration_ms: int | None = None
     probe_base_hash: str | None = None
     probe_edid_integrity: EdidIntegrity | None = None
     profile_configuration_hashes: tuple[ConfigurationContentHash, ...] = ()
 
-    def __post_init__(self) -> None:
+    def __post_init__(self) -> None:  # noqa: C901
         if self.physical_epoch < 0:
             msg = "worker request physical epoch must be non-negative"
             raise ValueError(msg)
@@ -105,6 +107,22 @@ class WorkerRequestContext:
             and self.planning_action_id.kind is not ActionKind.PLAN
         ):
             msg = "worker request planning identity has the wrong action kind"
+            raise ValueError(msg)
+        if (
+            self.preparation_action_id is not None
+            and self.preparation_action_id.kind is not ActionKind.PREPARATION
+        ):
+            msg = "worker request preparation identity has the wrong action kind"
+            raise ValueError(msg)
+        if (self.preparation_action_id is None) is not (self.proof_duration_ms is None):
+            msg = (
+                "worker preparation identity and final proof must be supplied together"
+            )
+            raise ValueError(msg)
+        if self.proof_duration_ms is not None and (
+            isinstance(self.proof_duration_ms, bool) or self.proof_duration_ms < 0
+        ):
+            msg = "worker final proof duration must be non-negative milliseconds"
             raise ValueError(msg)
         if (self.probe_base_hash is None) is not (self.probe_edid_integrity is None):
             msg = "worker probe identity hash and integrity must be supplied together"
