@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from uuid import UUID
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 # Keep generated state comfortably below the codec's 1,024-record hard ceiling.
 ACTION_TOMBSTONE_RETENTION_LIMIT = 768
 _MAX_EXIT_STATUS = 255
@@ -307,6 +307,7 @@ class PlanningInputKey:
     layout: str
     observation_key: ObservationKey
     mapping: tuple[OutputMapping, ...]
+    active_outputs: tuple[str, ...]
     configuration_hashes: tuple[ConfigurationContentHash, ...]
 
     def __post_init__(self) -> None:
@@ -325,6 +326,10 @@ class PlanningInputKey:
         if len(set(saved)) != len(saved) or len(set(live)) != len(live):
             msg = "planning input mapping must be a bijection"
             raise ValueError(msg)
+        _require_sorted_unique_strings(self.active_outputs, "planning active outputs")
+        if not set(self.active_outputs) <= set(live):
+            msg = "planning active outputs must be included in its mapping"
+            raise ValueError(msg)
         if not self.configuration_hashes:
             msg = "planning input requires configuration content hashes"
             raise ValueError(msg)
@@ -339,12 +344,13 @@ class PlanningInputKey:
         mapping = ",".join(
             f"{item.saved_output}>{item.live_output}" for item in self.mapping
         )
+        active = ",".join(self.active_outputs)
         hashes = ",".join(
             f"{item.path}={item.sha256}" for item in self.configuration_hashes
         )
         return (
             f"{self.physical_epoch}|{self.profile}|{self.layout}|"
-            f"{self.observation_key.value}|{mapping}|{hashes}"
+            f"{self.observation_key.value}|{mapping}|{active}|{hashes}"
         )
 
 

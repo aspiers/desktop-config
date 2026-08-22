@@ -427,7 +427,7 @@
             "effects": [
               {
                 "action_id": "plan-22222222222222222222222222222222-2",
-                "input_key": "1|samsung|layouts/samsung.yaml|active|DP-SAVED-1>DP-1,eDP-1>eDP-1|desktop/common.conf=sha256:desktop:common,layouts/samsung.yaml=sha256:layout:samsung",
+                "input_key": "1|samsung|layouts/samsung.yaml|active|DP-SAVED-1>DP-1,eDP-1>eDP-1|DP-1,eDP-1|desktop/common.conf=sha256:desktop:common,layouts/samsung.yaml=sha256:layout:samsung",
                 "profile": "samsung",
                 "transition_id": "transition-22222222222222222222222222222222-1",
                 "type": "request_plan"
@@ -1788,7 +1788,7 @@
             "effects": [
               {
                 "action_id": "plan-22222222222222222222222222222222-1",
-                "input_key": "1|celtic|layouts/celtic.yaml|laptop|eDP-1>eDP-1|desktop/common.conf=sha256:desktop:common,layouts/celtic.yaml=sha256:layout:celtic",
+                "input_key": "1|celtic|layouts/celtic.yaml|laptop|eDP-1>eDP-1|eDP-1|desktop/common.conf=sha256:desktop:common,layouts/celtic.yaml=sha256:layout:celtic",
                 "profile": "celtic",
                 "transition_id": "transition-22222222222222222222222222222222-1",
                 "type": "request_plan"
@@ -2741,7 +2741,7 @@
             "effects": [
               {
                 "action_id": "plan-22222222222222222222222222222222-1",
-                "input_key": "1|samsung|layouts/samsung.yaml|active|DP-SAVED-1>DP-1,eDP-1>eDP-1|desktop/common.conf=sha256:desktop:common,layouts/samsung.yaml=sha256:layout:samsung",
+                "input_key": "1|samsung|layouts/samsung.yaml|active|DP-SAVED-1>DP-1,eDP-1>eDP-1|DP-1,eDP-1|desktop/common.conf=sha256:desktop:common,layouts/samsung.yaml=sha256:layout:samsung",
                 "profile": "samsung",
                 "transition_id": "transition-22222222222222222222222222222222-1",
                 "type": "request_plan"
@@ -2893,7 +2893,7 @@
               },
               {
                 "action_id": "plan-33333333333333333333333333333333-2",
-                "input_key": "1|samsung|layouts/samsung.yaml|active|DP-SAVED-1>DP-1,eDP-1>eDP-1|desktop/common.conf=sha256:desktop:common,layouts/samsung.yaml=sha256:layout:samsung",
+                "input_key": "1|samsung|layouts/samsung.yaml|active|DP-SAVED-1>DP-1,eDP-1>eDP-1|DP-1,eDP-1|desktop/common.conf=sha256:desktop:common,layouts/samsung.yaml=sha256:layout:samsung",
                 "profile": "samsung",
                 "transition_id": "transition-33333333333333333333333333333333-2",
                 "type": "request_plan"

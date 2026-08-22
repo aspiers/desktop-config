@@ -1,30 +1,115 @@
-#!/bin/bash
-#
-# Generate ~/.fluxbox/keys from .fluxbox/keys.erb, prepending an
-# auto-generated warning so that the output file is clearly not for
-# manual editing.
+#!/usr/bin/python3 -I
+"""Generate Fluxbox keys with the controller's closed deterministic renderer."""
 
-SELF=$(realpath "$0")
-TEMPLATE=$(realpath "$(dirname "$0")/../.fluxbox/keys.erb")
-KEYS=~/.fluxbox/keys
+from __future__ import annotations
 
-mkdir -p ~/.fluxbox
+import argparse
+import os
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
 
-warning() {
-    cat <<EOF
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# WARNING: This file is auto-generated. DO NOT EDIT IT MANUALLY.
-# Edit the template instead:
-#   $TEMPLATE
-# Then regenerate by running:
-#   $SELF
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-EOF
-}
+_REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
+_PACKAGE_ROOT = _REPOSITORY_ROOT / ".local" / "lib" / "monitor-controller"
+sys.path.insert(0, str(_PACKAGE_ROOT))
 
-if { warning; erb "$TEMPLATE"; } > "$KEYS"; then
-    echo "Generated $KEYS"
-else
-    rm -f "$KEYS"
-    exit 1
-fi
+from monitor_controller.desktop.fluxbox_renderer import (  # noqa: E402
+    FluxboxRenderError,
+    render_fluxbox_keys,
+)
+
+
+def _parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--template", type=Path)
+    parser.add_argument("--template-label")
+    parser.add_argument("--output", type=Path)
+    parser.add_argument("--monitor-count", type=int)
+    parser.add_argument("--host-name")
+    return parser
+
+
+def _atomic_replace(destination: Path, content: bytes) -> None:
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, name = tempfile.mkstemp(
+        prefix=f".{destination.name}.",
+        dir=destination.parent,
+    )
+    temporary = Path(name)
+    try:
+        os.fchmod(descriptor, 0o600)
+        with os.fdopen(descriptor, "wb", closefd=True) as stream:
+            stream.write(content)
+            stream.flush()
+            os.fsync(stream.fileno())
+        temporary.replace(destination)
+        directory = os.open(destination.parent, os.O_RDONLY | os.O_DIRECTORY)
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def _live_monitor_count(parser: argparse.ArgumentParser) -> int:
+    try:
+        completed = subprocess.run(
+            ("monitors-connected",),  # noqa: S607 - legacy PATH-resolved helper
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError) as error:
+        parser.error(f"monitors-connected failed: {error}")
+    value = completed.stdout.strip()
+    if not value.isdecimal() or int(value) <= 0:
+        parser.error("monitors-connected did not return a positive decimal count")
+    return int(value)
+
+
+def main() -> int:
+    """Render one validated template and atomically install its exact bytes."""
+    parser = _parser()
+    arguments = parser.parse_args()
+    template_path = arguments.template or _REPOSITORY_ROOT / ".fluxbox" / "keys.erb"
+    if str(template_path) == "-":
+        template = sys.stdin.buffer.read()
+        template_label = arguments.template_label or "stdin"
+    else:
+        template_path = template_path.resolve(strict=True)
+        template = template_path.read_bytes()
+        template_label = arguments.template_label or str(template_path)
+    output = arguments.output or Path.home() / ".fluxbox" / "keys"
+    if not output.is_absolute():
+        parser.error("--output must be absolute")
+    monitor_count = arguments.monitor_count
+    if monitor_count is None:
+        if len(sys.argv) != 1:
+            parser.error("--monitor-count is required with explicit renderer options")
+        monitor_count = _live_monitor_count(parser)
+    host_name = arguments.host_name or os.environ.get(
+        "localhost_nickname"  # noqa: SIM112 - established shell environment name
+    )
+    if not host_name:
+        host_name = os.uname().nodename.split(".", maxsplit=1)[0]
+    try:
+        rendered = render_fluxbox_keys(
+            template,
+            monitor_count=monitor_count,
+            host_name=host_name,
+            template_label=template_label,
+            generator_label=str(Path(__file__).resolve()),
+        )
+        _atomic_replace(output, rendered)
+    except (FluxboxRenderError, OSError) as error:
+        print(f"fluxbox-gen-config: {error}", file=sys.stderr)
+        return 1
+    print(f"Generated {output}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -31,6 +31,8 @@ from monitor_controller.desktop.planner import (
     ProfileMonitorIdentity,
 )
 from monitor_controller.model import (
+    ActionLifecycle,
+    ActionTombstone,
     BootId,
     CanonicalObservation,
     ControllerInstanceId,
@@ -39,6 +41,7 @@ from monitor_controller.model import (
     RawEvidenceSource,
     RequestPlan,
     State,
+    bound_action_tombstones,
 )
 from monitor_controller.observer.autorandr import (
     MAX_PROFILE_NAME_CHARS,
@@ -699,6 +702,24 @@ def load_saved_profiles(root: Path) -> tuple[SavedAutorandrProfile, ...]:
     return tuple(sorted(profiles, key=lambda item: item.name))
 
 
+def _resolve_shadow_recovery_exclusions(state: State) -> State:
+    """Terminalize stale units which a null-dispatch namespace cannot create."""
+    if not state.recovery_units:
+        return state
+    cancellations = tuple(
+        ActionTombstone(unit.action_id, ActionLifecycle.CANCELLED)
+        for unit in state.recovery_units
+    )
+    return replace(
+        state,
+        action_tombstones=bound_action_tombstones(
+            (*state.action_tombstones, *cancellations),
+            protected_action_ids=frozenset(item.action_id for item in cancellations),
+        ),
+        recovery_units=(),
+    )
+
+
 def load_shadow_state(
     store: AtomicStateStore,
     *,
@@ -727,6 +748,7 @@ def load_shadow_state(
             f"{persisted.display_identity.value!r} != {display_identity.value!r}"
         )
         raise ShadowStartupError(msg)
+    persisted = _resolve_shadow_recovery_exclusions(persisted)
     if persisted.boot_id != boot_id:
         # Absolute monotonic values are meaningful only on their source boot.
         # Preserve non-temporal identity history, but force recovery through a

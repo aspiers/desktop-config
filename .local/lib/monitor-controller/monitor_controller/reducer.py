@@ -35,6 +35,7 @@ from .model import (
     DiscardPlan,
     DispatchRejected,
     DrmHintReceived,
+    EdidIntegrity,
     Effect,
     Event,
     EventGeneration,
@@ -209,6 +210,59 @@ def _candidate(
     )
 
 
+def _preparation_observation_status(
+    state: State,
+    observation: CanonicalObservation,
+    action: PreparationAction,
+) -> str | None:
+    """Classify exact proof, admitted temporary EDID absence, or contradiction."""
+    planning = state.planning
+    if planning is None or planning.plan_hash != action.plan_hash:
+        return None
+    mapped_outputs = {item.live_output for item in planning.input_key.mapping}
+    admitted_active_outputs = set(planning.input_key.active_outputs)
+    if (
+        state.physical_token != observation.physical_token
+        or set(observation.kernel_connected_outputs) != mapped_outputs
+        or set(observation.x_connected_outputs) != mapped_outputs
+        or set(observation.x_active_outputs) != admitted_active_outputs
+        or action.profile not in observation.current_profiles
+        or any(
+            item.x_connector_id is not None
+            and item.kernel_connector_id != item.x_connector_id
+            for item in observation.connector_identities
+        )
+    ):
+        return None
+    if (
+        observation.exact_profile == action.profile
+        and observation.observation_key == action.observation_key
+    ):
+        return "exact"
+
+    base_outputs = {
+        item.output
+        for item in observation.base_identity_profiles
+        if item.profile == action.profile
+    }
+    edids = {item.output: item for item in observation.edid_integrity}
+    identity_uncertain = False
+    external_outputs = set(observation.kernel_external_outputs)
+    for output in mapped_outputs:
+        evidence = edids.get(output)
+        if evidence is None:
+            if output in external_outputs:
+                return None
+            continue
+        if evidence.integrity is EdidIntegrity.ABSENT and evidence.base_hash is None:
+            identity_uncertain = True
+        elif evidence.base_hash is None or output not in base_outputs:
+            return None
+        elif evidence.integrity is not EdidIntegrity.COMPLETE:
+            identity_uncertain = True
+    return "identity_uncertain" if identity_uncertain else None
+
+
 def _transition_key(state: State, profile: str, key: ObservationKey) -> TransitionKey:
     return TransitionKey(f"{state.physical_epoch}|{profile}|{key.value}")
 
@@ -222,6 +276,7 @@ def _planning_input_key(
         layout=target.layout,
         observation_key=key,
         mapping=target.mapping,
+        active_outputs=target.active_outputs,
         configuration_hashes=target.configuration_hashes,
     )
 
@@ -1144,20 +1199,28 @@ def _observe(state: State, event: ObservationCompleted) -> Decision:
         and state.preparation is not None
     ):
         action = state.preparation
-        exact = (
-            state.physical_token == observation.physical_token
-            and observation.exact_profile == action.profile
-            and action.profile in observation.current_profiles
-            and observation.observation_key == action.observation_key
-            and action.plan_hash
-            == (state.planning.plan_hash if state.planning is not None else None)
-        )
+        evidence_status = _preparation_observation_status(state, observation, action)
+        if evidence_status == "identity_uncertain":
+            # Retain the admitted epoch/mapping and worker exclusion across
+            # absent or extension-broken EDID, but reset continuous proof.
+            state = replace(
+                state,
+                phase=ControllerPhase.DISCOVER_FAST,
+                verify_since_ms=None,
+            )
+            return _schedule(state, now_ms + 1_000, *epoch_effects)
         if action.lifecycle is ActionLifecycle.RESULT_PENDING:
-            if exact:
+            if evidence_status == "exact":
                 action = replace(action, lifecycle=ActionLifecycle.COMPLETED)
                 state = _append_tombstone(state, action, ActionLifecycle.COMPLETED)
                 state = replace(
                     state,
+                    phase=ControllerPhase.VERIFYING,
+                    verify_since_ms=(
+                        now_ms
+                        if state.verify_since_ms is None
+                        else state.verify_since_ms
+                    ),
                     preparation_state=PreparationState.PREPARED,
                     preparation=action,
                 )
@@ -1171,7 +1234,7 @@ def _observe(state: State, event: ObservationCompleted) -> Decision:
                     verify_since_ms=None,
                 )
                 return _schedule(state, now_ms + HEALTH_POLL_MS, *epoch_effects)
-        elif not exact:
+        elif evidence_status != "exact":
             action = replace(action, lifecycle=ActionLifecycle.STOPPING)
             state = replace(
                 state,
@@ -1187,6 +1250,13 @@ def _observe(state: State, event: ObservationCompleted) -> Decision:
                 StopAction(action.action_id),
             )
         else:
+            state = replace(
+                state,
+                phase=ControllerPhase.VERIFYING,
+                verify_since_ms=(
+                    now_ms if state.verify_since_ms is None else state.verify_since_ms
+                ),
+            )
             return _schedule(state, now_ms + 1_000, *epoch_effects)
 
     decision = _classify_observation(state, observation)

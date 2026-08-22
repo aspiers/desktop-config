@@ -14,6 +14,7 @@ from monitor_controller.codec import (
     MAX_JSON_INTEGER,
     StateCodecError,
     decode_state,
+    decode_state_value,
     encode_state,
 )
 from monitor_controller.model import (
@@ -31,6 +32,7 @@ from monitor_controller.model import (
     EventMetadata,
     ObservationKey,
     PlanningState,
+    PlanRequested,
     PreparationState,
     ProbeAction,
     ProbeAttemptKey,
@@ -51,6 +53,9 @@ from monitor_controller.simulation.replay import (
 
 _BOOT = BootId(UUID("11111111-1111-1111-1111-111111111111"))
 _INSTANCE = ControllerInstanceId(UUID("22222222-2222-2222-2222-222222222222"))
+_FIXTURES = Path(__file__).parent / "fixtures"
+_LIVE_V2_STATE = _FIXTURES / "state" / "live-shadow-v2-sanitized.json"
+_PREPARATION_TRACE = _FIXTURES / "traces" / "genuine_unplug.jsonl"
 
 
 def _state() -> State:
@@ -98,7 +103,7 @@ def test_state_codec_round_trips_all_present_relationships_deterministically() -
     decoded = decode_state(first)
 
     assert decoded == state
-    assert decoded.schema_version == SCHEMA_VERSION == 2
+    assert decoded.schema_version == SCHEMA_VERSION == 3
     assert encode_state(decoded) == first
     assert first == encode_state(state)
 
@@ -156,6 +161,209 @@ def test_version_one_state_rejects_current_only_or_malformed_fields() -> None:
 
     with pytest.raises(StateCodecError, match="not valid in schema version 1"):
         decode_state(json.dumps(document))
+
+
+def _live_v2_document() -> dict[str, object]:
+    return cast("dict[str, object]", json.loads(_LIVE_V2_STATE.read_text()))
+
+
+def _pending_live_v2_document() -> dict[str, object]:
+    document = _live_v2_document()
+    planning = cast("dict[str, object]", document["planning"])
+    planning["lifecycle"] = ActionLifecycle.ADMITTED.value
+    document["planning_state"] = PlanningState.PLAN_PENDING.value
+    document["action_tombstones"] = [
+        item
+        for item in cast("list[dict[str, object]]", document["action_tombstones"])
+        if cast("dict[str, object]", item["action_id"])["sequence"] != 12
+    ]
+    return document
+
+
+def test_version_two_without_planning_preserves_independent_trusted_facts() -> None:
+    state = replace(_state(), desktop_finalized_profile="celtic")
+    document = cast("dict[str, object]", json.loads(encode_state(state)))
+    document["schema_version"] = 2
+
+    migrated = decode_state(json.dumps(document))
+
+    assert migrated == state
+    assert migrated.desktop_finalized_profile == "celtic"
+    assert migrated.attempted_probe_keys == state.attempted_probe_keys
+    assert migrated.action_tombstones == state.action_tombstones
+
+
+def test_version_two_live_state_revokes_planning_and_reobserves() -> None:
+    document = _live_v2_document()
+    original_tombstones = tuple(
+        (
+            cast("dict[str, object]", item["action_id"])["kind"],
+            cast("dict[str, object]", item["action_id"])["sequence"],
+        )
+        for item in cast("list[dict[str, object]]", document["action_tombstones"])
+    )
+
+    migrated = decode_state(json.dumps(document))
+
+    assert migrated.schema_version == SCHEMA_VERSION
+    assert migrated.phase is ControllerPhase.RECOVERING
+    assert migrated.planning_state is PlanningState.PLAN_IDLE
+    assert migrated.preparation_state is PreparationState.PREPARE_IDLE
+    assert migrated.planning is None
+    assert migrated.preparation is None
+    assert migrated.finalization is None
+    assert migrated.latest_observation is None
+    assert migrated.physical_token is None
+    assert migrated.verify_since_ms is None
+    assert migrated.baseline_adoption
+    assert migrated.action_sequence_high_water == 12
+    assert migrated.transition_sequence_high_water == 8
+    assert (
+        tuple(
+            (item.action_id.kind.value, item.action_id.sequence)
+            for item in migrated.action_tombstones
+        )
+        == original_tombstones
+    )
+    assert len(migrated.action_tombstones) == 12
+    assert decode_state(encode_state(migrated)) == migrated
+
+
+def _legacy_v2_preparing_document() -> dict[str, object]:
+    for line in _PREPARATION_TRACE.read_text().splitlines():
+        record = cast("dict[str, object]", json.loads(line))
+        state = record.get("state")
+        if not isinstance(state, dict):
+            continue
+        state_data = cast("dict[str, object]", state)
+        preparation = state_data.get("preparation")
+        if not isinstance(preparation, dict):
+            continue
+        preparation_data = cast("dict[str, object]", preparation)
+        if preparation_data.get("lifecycle") != ActionLifecycle.DISPATCHED.value:
+            continue
+        state_data["schema_version"] = 2
+        planning = cast("dict[str, object]", state_data["planning"])
+        input_key = cast("dict[str, object]", planning["input_key"])
+        input_key.pop("active_outputs")
+        return state_data
+    message = "preparation trace lacks a dispatched preparation state"
+    raise AssertionError(message)
+
+
+def test_version_two_preparation_retains_worker_exclusion_during_recovery() -> None:
+    document = _legacy_v2_preparing_document()
+    preparation = cast("dict[str, object]", document["preparation"])
+    old_id = cast("dict[str, object]", preparation["action_id"])
+
+    migrated = decode_state(json.dumps(document))
+
+    assert migrated.phase is ControllerPhase.RECOVERING
+    assert migrated.planning is None
+    assert migrated.preparation is None
+    assert len(migrated.recovery_units) == 1
+    retained = migrated.recovery_units[0]
+    assert retained.action_id.kind.value == old_id["kind"]
+    assert retained.action_id.sequence == old_id["sequence"]
+    assert all(
+        item.action_id != retained.action_id for item in migrated.action_tombstones
+    )
+
+
+def test_version_two_pending_plan_is_cancelled_without_becoming_authority() -> None:
+    document = _pending_live_v2_document()
+    old_action_id = cast(
+        "dict[str, object]",
+        cast("dict[str, object]", document["planning"])["action_id"],
+    )
+    old_instance = cast("dict[str, object]", old_action_id["controller_instance"])[
+        "value"
+    ]
+
+    migrated = decode_state(json.dumps(document))
+
+    assert migrated.phase is ControllerPhase.RECOVERING
+    assert migrated.planning is None
+    cancelled = [
+        item
+        for item in migrated.action_tombstones
+        if item.action_id.controller_instance.value.hex
+        == str(old_instance).replace("-", "")
+        and item.action_id.kind.value == old_action_id["kind"]
+        and item.action_id.sequence == old_action_id["sequence"]
+    ]
+    assert len(cancelled) == 1
+    assert cancelled[0].lifecycle is ActionLifecycle.CANCELLED
+
+
+@pytest.mark.parametrize("corruption", ["current-only", "missing-key"])
+def test_version_two_migration_rejects_malformed_planning_keys(
+    corruption: str,
+) -> None:
+    document = _live_v2_document()
+    planning = cast("dict[str, object]", document["planning"])
+    input_key = cast("dict[str, object]", planning["input_key"])
+    if corruption == "current-only":
+        input_key["active_outputs"] = ["eDP"]
+        message = "not valid in schema version 2"
+    else:
+        input_key.pop("mapping")
+        message = "missing fields"
+
+    with pytest.raises(StateCodecError, match=message):
+        decode_state(json.dumps(document))
+
+
+def _downgrade_replay_value(value: object) -> None:
+    if isinstance(value, list):
+        for item in cast("list[object]", value):
+            _downgrade_replay_value(item)
+        return
+    if not isinstance(value, dict):
+        return
+    data = cast("dict[str, object]", value)
+    if data.get("schema_version") == SCHEMA_VERSION and "boot_id" in data:
+        data["schema_version"] = 2
+    planning_fields = {
+        "physical_epoch",
+        "profile",
+        "layout",
+        "observation_key",
+        "mapping",
+        "active_outputs",
+        "configuration_hashes",
+    }
+    if set(data) == planning_fields:
+        data.pop("active_outputs")
+    for item in data.values():
+        _downgrade_replay_value(item)
+
+
+def test_version_two_replay_migrates_planning_keys_deterministically() -> None:
+    legacy_initial = _pending_live_v2_document()
+    initial = decode_state_value(legacy_initial, authoritative=False)
+    planning = initial.planning
+    assert planning is not None
+    event = PlanRequested(
+        EventMetadata(378_366_136, initial.boot_id),
+        planning.action_id,
+        planning.input_key,
+    )
+    trace = capture_replay(initial, (event,))
+    records = [json.loads(line) for line in encode_replay(trace).splitlines()]
+    records[0]["schema_version"] = 2
+    for record in records:
+        _downgrade_replay_value(record)
+    encoded = "".join(
+        json.dumps(record, sort_keys=True, separators=(",", ":")) + "\n"
+        for record in records
+    )
+
+    migrated = decode_replay(encoded)
+
+    assert migrated == trace
+    assert replay(migrated) == tuple(step.expected for step in trace.steps)
+    assert decode_replay(encode_replay(migrated)) == migrated
 
 
 def test_duplicate_fields_are_rejected_before_construction() -> None:
@@ -356,7 +564,7 @@ def test_v1_cancellation_replay_migrates_and_current_schema_round_trips(
     trace = capture_replay(stopping, (event,))
     current = encode_replay(trace)
     current_records = [json.loads(line) for line in current.splitlines()]
-    assert current_records[0]["schema_version"] == REPLAY_SCHEMA_VERSION == 2
+    assert current_records[0]["schema_version"] == REPLAY_SCHEMA_VERSION == 3
     assert decode_replay(current) == trace
 
     legacy_records = [json.loads(line) for line in current.splitlines()]

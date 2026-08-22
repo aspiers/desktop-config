@@ -1,0 +1,492 @@
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# WARNING: This file is auto-generated. DO NOT EDIT IT MANUALLY.
+# Edit the template instead:
+#   .fluxbox/keys.erb
+# Then regenerate by running:
+#   bin/fluxbox-gen-config
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+Control Mod1 Mod4 r :MacroCmd {Exec fluxbox-reconfigure && notify-send -t 3000 'Reloaded fluxbox config'}
+
+# For some reason this doesn't always work:
+Shift Control Mod4 r :MacroCmd {Restart} {Exec notify-send -t 3000 "Restarted fluxbox" ""}
+# so offer an alternative:
+Control Mod1 Mod4 9 :MacroCmd {Restart} {Exec notify-send -t 3000 "Restarted fluxbox" ""}
+
+Control Mod1 Mod4 y :Exec ly --debug && notify-send -t 3000 'Applied auto-layout'
+# {Delay {Restart} 500000} {Delay {Exec notify-send -t 3000 "Restarted fluxbox" ""} 500000}
+
+# Click on the desktop to get menus.  Make sure xfdesktop isn't running
+# as it will intercept the mouse clicks.
+# https://unix.stackexchange.com/questions/233423/fluxbox-toggle-rootmenu-using-mouse1#234578
+OnDesktop Mouse1 :If {Matches (Name!=)} {RootMenu} {HideMenus}
+OnDesktop Mouse2 :If {Matches (Name!=)} {WorkspaceMenu} {HideMenus}
+OnDesktop Mouse3 :If {Matches (Name!=)} {CustomMenu ~/.fluxbox/fluxboxmenu} {HideMenus}
+Control Mod1 Mouse4 :LeftWorkspace
+Control Mod1 Mouse5 :RightWorkspace
+
+Shift Mod1 Mouse4 :MacroCmd {Raise} {TakeToPrevWorkspace}
+Shift Mod1 Mouse5 :MacroCmd {Raise} {TakeToNextWorkspace}
+
+Mod4 Return :RootMenu
+Control Mod4 Return :WorkspaceMenu
+Shift Mod4 Return :WindowMenu
+#Mod1 Mod4 Return :ClientMenu
+Mod1 Mod4 Return :Exec rofi-themed -show window
+Mod4 j :CustomMenu ~/.fluxbox/jumpmenu
+Mod4 o :Exec rofi-org-menu
+
+# scroll on the desktop to change workspaces
+OnDesktop Mouse4 :LeftWorkspace
+OnDesktop Mouse5 :RightWorkspace
+
+# scroll on the toolbar to change current window
+OnToolbar Mouse4 :PrevWindow {static groups} (iconhidden=no)
+OnToolbar Mouse5 :NextWindow {static groups} (iconhidden=no)
+
+# alt + left/right click to move/resize a window
+OnWindow Mod1 Mouse1 :MacroCmd {Raise} {Focus} {StartMoving}
+OnWindowBorder Move1 :StartMoving
+
+OnWindow Mod1 Mouse3 :MacroCmd {Raise} {Focus} {StartResizing NearestCorner}
+OnLeftGrip Move1 :StartResizing bottomleft
+OnRightGrip Move1 :StartResizing bottomright
+
+# raise/lower with mouse
+OnTitlebar Mouse4 :Raise
+OnTitlebar Mouse5 :Lower
+OnWindow Mod1 Mouse4 :Raise
+OnWindow Mod1 Mouse5 :Lower
+
+# control-click a window's titlebar and drag to attach windows
+OnTitlebar Control Mouse1 :StartTabbing
+
+# double click on the titlebar to shade
+OnTitlebar Double Mouse1 :Shade
+
+# left click on the titlebar to move the window
+OnTitlebar Mouse1 :MacroCmd {Raise} {Focus} {ActivateTab}
+OnTitlebar Move1  :StartMoving
+
+# middle click on the titlebar to lower
+OnTitlebar Mouse2 :Lower
+
+# right click on the titlebar for a menu of options
+OnTitlebar Mouse3 :WindowMenu
+
+# cycle windows on current display and workspace
+Mod4 slash :MacroCmd {Delay {Exec focus-active-window} 300000} {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no) (Minimized=no)}
+
+# add Shift to cycle in opposite direction:
+Shift Mod4 slash :MacroCmd {Delay {Exec focus-active-window} 300000} {PrevWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no) (Minimized=no)}
+
+# add Control to include minimized windows
+Control Mod4 slash :MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {Delay {Exec focus-active-window} 300000}
+
+# cycle windows on any display head, current workspace
+# probably not useful since makes more sense to switch display head manually first
+# Shift Mod4 slash :MacroCmd {NextWindow (workspace=[current]) (FocusHidden=no)} {Delay {Exec focus-active-window} 300000}
+
+# FIXME: figure out how to cycle without raising the focused window.
+# According to fluxbox-keys(5) man page, this should only raise windows
+# temporarily due to the binding using a modifier key, but it always
+# leaves the window raised.
+#Control Mod4 slash :NextWindow (workspace=[current])
+#Control Shift Mod4 slash :PrevWindow (workspace=[current])
+
+# So instead, use these bindings to cycle through tabs in the current window.
+Control Shift Mod4 slash :NextTab (workspace=[current])
+#Control Shift Mod4 slash :PrevTab
+
+# FIXME: Focus* are missing support for client patterns like the other commands
+Mod4 Left :MacroCmd {FocusLeft} {Delay {Exec focus-active-window} 300000} {Delay {Raise} 10000}
+Mod4 Right :MacroCmd {FocusRight} {Delay {Exec focus-active-window} 300000} {Delay {Raise} 10000}
+Mod4 Up :MacroCmd {FocusUp} {Delay {Exec focus-active-window} 300000} {Delay {Raise} 10000}
+Mod4 Down :MacroCmd {FocusDown} {Delay {Exec focus-active-window} 300000} {Delay {Raise} 10000}
+
+Control Mod4 Left :MacroCmd {FocusLeft}
+Control Mod4 Right :MacroCmd {FocusRight}
+Control Mod4 Up :MacroCmd {FocusUp}
+Control Mod4 Down :MacroCmd {FocusDown}
+
+
+
+# current window commands
+Mod4 space :Raise
+Mod4 l :MacroCmd {Lower} {Delay {Exec focus-active-window} 300000}
+Mod1 Mod4 l :Lower
+Mod4 i :Minimize
+# Deminimize
+Control Mod4 i :MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (Minimized=yes) (FocusHidden=no)} {Delay {Exec focus-active-window} 300000}
+
+Shift Mod4 m :MaximizeVertical
+Control Mod4 m :MaximizeHorizontal
+Shift Control Mod4 m :Maximize
+
+Mod4 m :Exec rofi-mail-menu
+
+# Added into reorg mode instead
+# Shift Mod4 m :MacroCmd {KeyMode fluxbox maximize} {Exec notify-send -t 999999 "fluxbox fluxbox maximize mode" "maximize" -p >~/tmp/.fluxbox-fluxbox maximize-id}
+# maximize: v :MacroCmd {MaximizeVertical} {KeyMode default} {Exec notify-send -t 3000 -r $(cat ~/tmp/.fluxbox-maximize-id) 'fluxbox maximize done'}
+# maximize: h :MacroCmd {MaximizeHorizontal} {KeyMode default} {Exec notify-send -t 3000 -r $(cat ~/tmp/.fluxbox-maximize-id) 'fluxbox maximize done'}
+# maximize: b :MacroCmd {Maximize} {KeyMode default} {Exec notify-send -t 3000 -r $(cat ~/tmp/.fluxbox-maximize-id) 'fluxbox maximize done'}
+# maximize: q :MacroCmd {KeyMode default} {Exec notify-send -t 3000 -r $(cat ~/tmp/.fluxbox-maximize-id) 'fluxbox maximize done'}
+
+Shift Mod4 s :StickWindow
+Mod4 q :Close
+Control Mod4 q :Kill
+
+Mod4 equal :Exec warp-notification clear
+Control Mod4 equal :Exec warp-notification
+
+Shift Mod4 Left  :MacroCmd {MoveLeft  10} {Delay {Exec focus-active-window} 300000}
+Shift Mod4 Right :MacroCmd {MoveRight 10} {Delay {Exec focus-active-window} 300000}
+Shift Mod4 Up    :MacroCmd {MoveUp    10} {Delay {Exec focus-active-window} 300000}
+Shift Mod4 Down  :MacroCmd {MoveDown  10} {Delay {Exec focus-active-window} 300000}
+
+Shift Mod1 Mod4 Left  :MacroCmd {MoveLeft  50} {Delay {Exec focus-active-window} 300000}
+Shift Mod1 Mod4 Right :MacroCmd {MoveRight 50} {Delay {Exec focus-active-window} 300000}
+Shift Mod1 Mod4 Up    :MacroCmd {MoveUp    50} {Delay {Exec focus-active-window} 300000}
+Shift Mod1 Mod4 Down  :MacroCmd {MoveDown  50} {Delay {Exec focus-active-window} 300000}
+
+Shift Mod4 h :MacroCmd {MoveLeft  10} {Delay {Exec focus-active-window} 300000}
+Shift Mod4 l :MacroCmd {MoveRight 10} {Delay {Exec focus-active-window} 300000}
+Shift Mod4 k :MacroCmd {MoveUp    10} {Delay {Exec focus-active-window} 300000}
+Shift Mod4 j :MacroCmd {MoveDown  10} {Delay {Exec focus-active-window} 300000}
+
+Shift Mod1 Mod4 h :MacroCmd {MoveLeft  50} {Delay {Exec focus-active-window} 300000}
+Shift Mod1 Mod4 l :MacroCmd {MoveRight 50} {Delay {Exec focus-active-window} 300000}
+Shift Mod1 Mod4 k :MacroCmd {MoveUp    50} {Delay {Exec focus-active-window} 300000}
+Shift Mod1 Mod4 j :MacroCmd {MoveDown  50} {Delay {Exec focus-active-window} 300000}
+
+Control Mod4 p :MacroCmd {KeyMode passthru} {Exec notify-send -t 999999 "fluxbox passthru mode" "" -p >~/tmp/.fluxbox-passthru-id}
+passthru: q :MacroCmd {KeyMode default} {Exec notify-send -t 3000 -r $(cat ~/tmp/.fluxbox-passthru-id) 'fluxbox passthru done'}
+
+Mod4 r :MacroCmd {KeyMode reorg} {Exec notify-send -t 999999 "fluxbox reorg mode" "" -p >~/tmp/.fluxbox-reorg-id}
+reorg: q :MacroCmd {KeyMode default} {Exec notify-send -t 3000 -r $(cat ~/tmp/.fluxbox-reorg-id) 'fluxbox reorg done'}
+
+reorg: slash :MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {Delay {Exec focus-active-window} 300000} {Delay {Raise} 10000}
+reorg: Mod4 slash :MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (FocusHidden=no)} {Delay {Exec focus-active-window} 300000} {Delay {Raise} 10000}
+reorg: h :MacroCmd {FocusLeft} {Delay {Exec focus-active-window} 300000} {Delay {Raise} 10000}
+reorg: l :MacroCmd {FocusRight} {Delay {Exec focus-active-window} 300000} {Delay {Raise} 10000}
+reorg: k :MacroCmd {FocusUp} {Delay {Exec focus-active-window} 300000} {Delay {Raise} 10000}
+reorg: j :MacroCmd {FocusDown} {Delay {Exec focus-active-window} 300000} {Delay {Raise} 10000}
+
+reorg: Left :MacroCmd {MoveLeft 10} {Delay {Exec focus-active-window} 300000}
+reorg: Right :MacroCmd {MoveRight 10} {Delay {Exec focus-active-window} 300000}
+reorg: Up :MacroCmd {MoveUp 10} {Delay {Exec focus-active-window} 300000}
+reorg: Down :MacroCmd {MoveDown 10} {Delay {Exec focus-active-window} 300000}
+
+reorg: Shift Left :MacroCmd {MoveLeft 50} {Delay {Exec focus-active-window} 300000}
+reorg: Shift Right :MacroCmd {MoveRight 50} {Delay {Exec focus-active-window} 300000}
+reorg: Shift Up :MacroCmd {MoveUp 50} {Delay {Exec focus-active-window} 300000}
+reorg: Shift Down :MacroCmd {MoveDown 50} {Delay {Exec focus-active-window} 300000}
+
+reorg: Control Left :ResizeHorizontal -2%
+reorg: Control Right :ResizeHorizontal 2%
+reorg: Control Up :ResizeVertical -2%
+reorg: Control Down :ResizeVertical 2%
+
+reorg: Control Shift Left :ResizeHorizontal -10%
+reorg: Control Shift Right :ResizeHorizontal 10%
+reorg: Control Shift Up :ResizeVertical -10%
+reorg: Control Shift Down :ResizeVertical 10%
+
+reorg: m :Maximize
+reorg: Shift m :MaximizeVertical
+reorg: Control m :MaximizeHorizontal
+
+#reorg: Shift d :MacroCmd {Exec get-layout --debug >&~/.log/get-layout.log} {KeyMode default} {Exec notify-send -t 3000 -r $(cat ~/tmp/.fluxbox-reorg-id) 'fluxbox reorg done'}
+#reorg: Shift i :MacroCmd {Exec strace /usr/bin/inxi --tty -c 0 -Gxx --output json --output-file print >&~/.log/inxi.log} {KeyMode default} {Exec notify-send -t 3000 -r $(cat ~/tmp/.fluxbox-reorg-id) 'fluxbox reorg done'}
+#reorg: Shift i :MacroCmd {Exec which inxi >&~/.log/inxi.path} {KeyMode default} {Exec notify-send -t 3000 -r $(cat ~/tmp/.fluxbox-reorg-id) 'fluxbox reorg done'}
+reorg: Shift 0 :MacroCmd {Exec ly --debug -s active} {KeyMode default} {Exec notify-send -t 3000 -r $(cat ~/tmp/.fluxbox-reorg-id) 'fluxbox reorg done'}
+reorg: Control 0 :MacroCmd {Exec ly --debug -s full} {KeyMode default} {Exec notify-send -t 3000 -r $(cat ~/tmp/.fluxbox-reorg-id) 'fluxbox reorg done'}
+reorg: 0 :MacroCmd {Exec ly --debug -s 2cols-left} {KeyMode default} {Exec notify-send -t 3000 -r $(cat ~/tmp/.fluxbox-reorg-id) 'fluxbox reorg done'}
+reorg: 1 :MacroCmd {Exec ly --debug -s left} {KeyMode default} {Exec notify-send -t 3000 -r $(cat ~/tmp/.fluxbox-reorg-id) 'fluxbox reorg done'}
+reorg: 2 :MacroCmd {Exec ly --debug -s right} {KeyMode default} {Exec notify-send -t 3000 -r $(cat ~/tmp/.fluxbox-reorg-id) 'fluxbox reorg done'}
+reorg: 3 :MacroCmd {Exec ly --debug -s top} {KeyMode default} {Exec notify-send -t 3000 -r $(cat ~/tmp/.fluxbox-reorg-id) 'fluxbox reorg done'}
+reorg: 4 :MacroCmd {Exec ly --debug -s bottom} {KeyMode default} {Exec notify-send -t 3000 -r $(cat ~/tmp/.fluxbox-reorg-id) 'fluxbox reorg done'}
+reorg: 5 :MacroCmd {Exec ly --debug -s top-left} {KeyMode default} {Exec notify-send -t 3000 -r $(cat ~/tmp/.fluxbox-reorg-id) 'fluxbox reorg done'}
+reorg: 6 :MacroCmd {Exec ly --debug -s top-right} {KeyMode default} {Exec notify-send -t 3000 -r $(cat ~/tmp/.fluxbox-reorg-id) 'fluxbox reorg done'}
+reorg: 7 :MacroCmd {Exec ly --debug -s bottom-left} {KeyMode default} {Exec notify-send -t 3000 -r $(cat ~/tmp/.fluxbox-reorg-id) 'fluxbox reorg done'}
+reorg: 8 :MacroCmd {Exec ly --debug -s bottom-right} {KeyMode default} {Exec notify-send -t 3000 -r $(cat ~/tmp/.fluxbox-reorg-id) 'fluxbox reorg done'}
+reorg: 9 :MacroCmd {Exec ly --debug -s col3-right} {KeyMode default} {Exec notify-send -t 3000 -r $(cat ~/tmp/.fluxbox-reorg-id) 'fluxbox reorg done'}
+reorg: Shift 2 :MacroCmd {Exec ly --debug -s 2cols} {KeyMode default} {Exec notify-send -t 3000 -r $(cat ~/tmp/.fluxbox-reorg-id) 'fluxbox reorg done'}
+# For some reason, running keyd breaks the above Shift 2 binding, so we also need
+# this one (just quotedbl by itself doesn't work):
+reorg: Shift quotedbl :MacroCmd {Exec ly --debug -s 2cols} {KeyMode default} {Exec notify-send -t 3000 -r $(cat ~/tmp/.fluxbox-reorg-id) 'fluxbox reorg done'}
+reorg: Shift 5 :ResizeTo 1280 720 {KeyMode default} {Exec notify-send -t 3000 -r $(cat ~/tmp/.fluxbox-reorg-id) 'fluxbox reorg done'}
+reorg: Shift semicolon :MacroCmd {Exec ly --debug -s 2rows} {KeyMode default} {Exec notify-send -t 3000 -r $(cat ~/tmp/.fluxbox-reorg-id) 'fluxbox reorg done'}
+
+reorg: space :MacroCmd {Raise} {KeyMode default} {Exec notify-send -t 3000 -r $(cat ~/tmp/.fluxbox-reorg-id) 'fluxbox reorg done'}
+reorg: Mod4 l :If {Matches (Layer=Normal)} {MacroCmd {SetLayer Top} {Exec notify-send -t 3000 "set to top layer" "" -p >~/tmp/.fluxbox-layer-id}} {MacroCmd {SetLayer Normal} {Exec notify-send -t 3000 "set to normal layer" "" -p >~/tmp/.fluxbox-layer-id}}
+
+# go to a specific tab in the current window
+# Mod4 1 :Tab 1
+# Mod4 2 :Tab 2
+# Mod4 3 :Tab 3
+# Mod4 4 :Tab 4
+# Mod4 5 :Tab 5
+# Mod4 6 :Tab 6
+# Mod4 7 :Tab 7
+# Mod4 8 :Tab 8
+# Mod4 9 :Tab 9
+
+# opening terminals
+Mod4 t :Exec rofi-terminal-menu
+Mod4 grave :Exec fluxbox-focus-or-launch --toggle btop top-term btop
+Mod4 Shift grave :Exec fluxbox-focus-or-launch --toggle ccmonitor top-term ccmonitor
+
+# opening programs
+Control Mod4 b :Exec brave-browser
+#Control Mod4 c :Exec google-chrome-stable
+Mod4 f :Exec fluxbox-focus-or-launch -c firefox firefox
+Mod4 p :Exec fluxbox-focus-or-launch --toggle -c '[Pp]avucontrol' pavucontrol
+Mod4 Shift p :Exec fluxbox-focus-or-launch --toggle -c 'easyeffects' easyeffects
+
+# Control Mod4 s :Exec flameshot gui
+# Control Shift Mod4 s :Exec flameshot launcher
+# Control Mod1 Mod4 s :Exec flameshot full
+Control Mod4 s :Exec ksnip -r
+Control Mod4 w :Exec ksnip -a
+Control Shift Mod4 s :Exec ksnip
+Control Mod1 Mod4 s :Exec ksnip -m
+
+Mod4 u :Exec fluxbox-focus-or-launch --toggle -r 'bluetuith.*' top-term --xl bluetuith --no-warning
+Shift Mod4 u :Exec fluxbox-focus-or-launch --toggle -c Blueman-manager blueman-manager
+
+Control Mod1 Mod4 b :Exec blank-all-screens
+Control Mod1 Mod4 d :Exec xfce4-display-settings
+#Control Mod1 Mod4 l :Exec xset dpms force standby
+Control Mod1 Mod4 l :Exec xscreensaver-command -activate
+# This calls xscreensaver-command -lock if xscreensaver is XFCE4's chosen locker
+Shift Control Mod1 Mod4 l :Exec xflock4
+
+# open a dialog to run programs
+#Control Mod4 space :Exec fbrun
+Control Mod4 space :Exec rofi-themed -show drun
+
+# uv tool install --with PyQt6 .
+Control Mod4 e :Exec efck-chat-keyboard
+
+Mod4 semicolon :Exec warpd --hint
+Shift Mod4 semicolon :Exec warpd --hint2
+Control Mod4 semicolon :Exec warpd --grid
+Mod4 minus :Exec warpd --normal
+
+# Leave these for Whispering bindings
+#Mod4 7 :MacroCmd {Exec xdotool keyup Super_R} {Exec warpd --click 1}
+#Mod4 8 :MacroCmd {Exec xdotool keyup Super_R} {Exec warpd --click 2}
+#Mod4 9 :MacroCmd {Exec xdotool keyup Super_R} {Exec warpd --click 3}
+
+# quick jumping to commonly open windows
+# xdotool can't filter by head on multi-head sessions
+# Mod4 x :Exec wmctrl -s 0; xdotool search --onlyvisible --desktop 0 --class gnome-terminal windowactivate; focus-active-window
+# Heads start from 1 but workspaces from 0?!
+
+# N.B. used to have (Name=gnome-terminal-server) here too as an additional
+# pattern, but it seems these days the instance name is org.gnome.Terminal.
+# Not clear when that changed or why.
+#Mod4 x :MacroCmd {Exec wmctrl -x -a xfce4-terminal} {Delay {Exec focus-active-window} 300000}
+Mod4 x :Exec fluxbox-focus-window 'NextWindow (Class=(Xfce4|Gnome)-terminal|kitty) (Head=1) (workspace=0) (FocusHidden=no) (Minimized=no)'
+Control Mod4 x :Exec rmx-window
+
+Mod4 a :Exec chrome-session-rofi 't3.chat|poe.com|chat.deepseek.com|claude.ai|chatgpt.com|gemini.google.com'
+#Mod4 a :Exec fluxbox-focus-or-launch --toggle AI true
+
+Shift Mod4 a :Exec fluxbox-focus-or-launch -c anytype anytype
+Control Mod4 a :Exec chrome-session-tabs 'tidal.com|open.spotify.com'
+#Mod4 b :Exec wmctrl -s 1; xdotool search --desktop 1 --class brave-browser windowactivate
+Mod4 b :MacroCmd {NextWindow (Name=brave-browser|google-chrome|chromium) (Head=1) (Minimized=no)} {Delay {Exec focus-active-window} 300000}
+
+Mod4 Tab :Exec chrome-session-rofi
+
+# Cleanest but can't find both Cursor and Code:
+#Mod4 c :MacroCmd {Exec wmctrl -x -a 'Code'} {Delay {Exec focus-active-window} 300000}
+
+# Can't handle iconified windows:
+#Mod4 c :Exec fluxbox-focus-or-launch -c 'Cursor|Code' cursor
+
+# Hacky but best results:
+Mod4 c :Exec fluxbox-focus-window 'NextWindow (Class=Cursor|Code) (FocusHidden=no) (Minimized=no)'
+
+Shift Mod4 c :Exec chrome-session-tabs 'calendar.google.com/calendar/u/0'
+Control Mod4 c :Exec chrome-session-tabs 'calendar.google.com/calendar/u/1'
+Shift Mod4 r :Exec chrome-session-tabs 'app.reclaim.ai'
+
+# useful as a calculator
+Control Mod1 Mod4 n :Exec fluxbox-focus-or-launch --toggle -r 'node' top-term --geometry 100x25 node
+
+#Mod4 e :MacroCmd {Exec wmctrl -x -a emacs} {Delay {Exec focus-active-window} 300000}
+Mod4 e  :Exec fluxbox-focus-window 'NextWindow (Class=Emacs) (FocusHidden=no) (Minimized=no)'
+Shift Mod4 e :Exec chrome-session-rofi 'https://linear.app/ '
+
+Mod4 apostrophe :MacroCmd {Exec wmctrl -x -a beeper} {Delay {Exec focus-active-window} 300000}
+#Mod4 apostrophe :Exec fluxbox-focus-window 'NextWindow (Class=Beeper) (FocusHidden=no) (Minimized=no)'
+Control Mod4 d :Exec fluxbox-focus-or-launch -c discord discord
+Control Mod4 f :Exec chrome-session-rofi messenger.com
+
+Mod4 g :Exec fluxbox-focus-or-launch -c TelegramDesktop ~/software/telegram/Telegram
+Shift Mod4 g :Exec chrome-session-tabs https://meet.google.com/
+Control Mod4 g :Exec fluxbox-focus-window 'NextWindow (Title=Google Meet.*) (FocusHidden=no) (Minimized=no)'
+#Control Mod4 g :Exec chrome-session-tabs https://app.gather.town/
+
+Mod4 h :Exec chrome-session-rofi 'https://github.com/ '
+
+Control Mod4 2 :Exec switch-emacs-eval '(as-find-personal-todo)'
+Control Mod4 5 :Exec switch-emacs-eval '(as-find-Toucan-todo)'
+Control Mod4 7 :Exec switch-emacs-eval ~/lib/emacs/shortcuts/org-agenda-weekly-review.el
+Mod4 k :Exec switch-emacs-eval '(org-capture)'
+Control Mod4 k :Exec slack-capture-todo
+Mod4 d :Exec switch-emacs-eval ~/lib/emacs/shortcuts/org-agenda-today.el
+Mod4 v :Exec switch-emacs-eval ~/lib/emacs/shortcuts/org-agenda-daily-review.el
+Mod4 n :Exec switch-emacs-eval '(as-find-personal-note)'
+Mod1 Mod4 n :Exec fluxbox-focus-or-launch -c notion-app-enhanced ~/software/web/Notion-Enhanced.AppImage
+# Mod4 m m :Exec chrome-session-tabs 'mail.google.com/mail/u/0'
+# Mod4 m t :Exec chrome-session-tabs 'mail.google.com/mail/u/1'
+Shift Mod4 n :Exec chrome-session-rofi 'https://(www|app).notion.(so|com)/ '
+Mod4 s :Exec fluxbox-focus-or-launch -c Slack slack
+Control Mod4 y :Exec chrome-session-tabs 'syncthing.*127.0.0.1:8384|localhost:8384' || open http://localhost:8384
+#Shift Mod4 w :Exec fluxbox-focus-or-launch -c Windsurf windsurf
+Shift Mod4 w :Exec fluxbox-focus-or-launch --toggle 'Epicenter.*Whispering' whispering
+Mod4 w :Exec rofi-wifi
+Mod1 Mod4 w :Exec chrome-session-tabs WhatsApp
+Mod4 y :Exec chrome-session-rofi youtube.com
+Mod4 z :Exec fluxbox-focus-or-launch -c zulip zulip
+
+#Shift Mod4 z :Exec fluxbox-focus-or-launch Zoom 'zoom --disable-gpu-sandbox'
+Shift Mod4 z :Exec chrome-session-rofi 'Zoom meeting|Personal Meeting|://app.zoom.us/'
+# This one not doing anything for some weird reason, but I only use the browser version
+# these days anyway
+Control Mod4 z :MacroCmd {NextWindow (Title=Zoom Meeting|Personal Meeting|://.*\.zoom\.us/.*)} {Delay {Exec focus-active-window} 300000}
+
+# volume settings
+# Mod4 bracketright :MacroCmd {Exec amixer sset Master,0 2%+} {Delay {Exec amixer sset Master,0 unmute} 10000}
+Mod4 bracketright :MacroCmd {Exec wpvol set 2%+} {Delay {Exec wpvol unmute} 10000}
+Mod4 bracketleft :Exec wpvol set 2%-
+Mod4 0 :Exec wpvol toggle
+
+# Push-to-record/playback: start recording on key press, then run stop on key release.
+Control Mod4 8 :MacroCmd {Exec ~/bin/push-to-record-playback start} {Exec ~/.GIT/adamspiers.org/desktop-config/bin/run-on-key-release 17 -- ~/bin/push-to-record-playback stop}
+
+Shift Mod4 bracketleft :Exec brightnessctl set 5%-
+Shift Mod4 bracketright :Exec brightnessctl set +5%
+Control Mod4 bracketleft :Exec brightnessctl set 5%-
+Control Mod4 bracketright :Exec brightnessctl set +5%
+
+# exit fluxbox
+Control Mod1 Mod4 Shift e :Exit
+
+
+###################################################################
+# Workspace switching
+
+# change to previous/next workspace
+Mod4 comma :LeftWorkspace
+Mod4 period :RightWorkspace
+
+# send the current window to previous/next workspace
+# Mod1 Mod4 comma :SendToLeftWorkspace
+# Mod1 Mod4 period :SendToRightWorkspace
+
+# send the current window and follow it to previous/next workspace
+Mod1 Mod4 comma :If {Matches (Stuck=no)} {MacroCmd {Raise} {TakeToPrevWorkspace}} {MacroCmd {Stick} {Raise} {TakeToPrevWorkspace}}
+Mod1 Mod4 period :If {Matches (Stuck=no)} {MacroCmd {Raise} {TakeToNextWorkspace}} {MacroCmd {Stick} {Raise} {TakeToNextWorkspace}}
+
+# send the current window to the next/previous head, follow it, and
+# stick/unstick depending on whether destination is primary
+
+
+# change to a specific workspace
+Mod4 1 :Workspace 1
+Mod4 2 :Workspace 2
+Mod4 3 :Workspace 3
+Mod4 4 :Workspace 4
+Mod4 5 :Workspace 5
+Mod4 6 :Workspace 6
+#Mod4 7 :Workspace 7
+#Mod4 8 :Workspace 8
+#Mod4 9 :Workspace 9
+
+# send the current window to a specific workspace
+#Mod4 F1 :SendToWorkspace 1
+#Mod4 F2 :SendToWorkspace 2
+#Mod4 F3 :SendToWorkspace 3
+#Mod4 F4 :SendToWorkspace 4
+#Mod4 F5 :SendToWorkspace 5
+#Mod4 F6 :SendToWorkspace 6
+#Mod4 F7 :SendToWorkspace 7
+#Mod4 F8 :SendToWorkspace 8
+#Mod4 F9 :SendToWorkspace 9
+
+# Send the current window and change to a specific workspace.
+# If it's sticky, remove stickiness first.
+Mod1 Mod4 1 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 1}
+Mod1 Mod4 2 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 2}
+Mod1 Mod4 3 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 3}
+Mod1 Mod4 4 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 4}
+Mod1 Mod4 5 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 5}
+Mod1 Mod4 6 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 6}
+#Mod1 Mod4 7 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 7}
+#Mod1 Mod4 8 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 8}
+#Mod1 Mod4 9 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 9}
+
+
+###################################################################
+# Workspace switching for KeyMode reorg: 
+
+# change to previous/next workspace
+reorg: Mod4 comma :LeftWorkspace
+reorg: Mod4 period :RightWorkspace
+
+# send the current window to previous/next workspace
+# Mod1 Mod4 comma :SendToLeftWorkspace
+# Mod1 Mod4 period :SendToRightWorkspace
+
+# send the current window and follow it to previous/next workspace
+reorg: Mod1 Mod4 comma :If {Matches (Stuck=no)} {MacroCmd {Raise} {TakeToPrevWorkspace}} {MacroCmd {Stick} {Raise} {TakeToPrevWorkspace}}
+reorg: Mod1 Mod4 period :If {Matches (Stuck=no)} {MacroCmd {Raise} {TakeToNextWorkspace}} {MacroCmd {Stick} {Raise} {TakeToNextWorkspace}}
+
+# send the current window to the next/previous head, follow it, and
+# stick/unstick depending on whether destination is primary
+
+
+# change to a specific workspace
+reorg: Mod4 1 :Workspace 1
+reorg: Mod4 2 :Workspace 2
+reorg: Mod4 3 :Workspace 3
+reorg: Mod4 4 :Workspace 4
+reorg: Mod4 5 :Workspace 5
+reorg: Mod4 6 :Workspace 6
+#reorg: Mod4 7 :Workspace 7
+#reorg: Mod4 8 :Workspace 8
+#reorg: Mod4 9 :Workspace 9
+
+# send the current window to a specific workspace
+#reorg: Mod4 F1 :SendToWorkspace 1
+#reorg: Mod4 F2 :SendToWorkspace 2
+#reorg: Mod4 F3 :SendToWorkspace 3
+#reorg: Mod4 F4 :SendToWorkspace 4
+#reorg: Mod4 F5 :SendToWorkspace 5
+#reorg: Mod4 F6 :SendToWorkspace 6
+#reorg: Mod4 F7 :SendToWorkspace 7
+#reorg: Mod4 F8 :SendToWorkspace 8
+#reorg: Mod4 F9 :SendToWorkspace 9
+
+# Send the current window and change to a specific workspace.
+# If it's sticky, remove stickiness first.
+reorg: Mod1 Mod4 1 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 1}
+reorg: Mod1 Mod4 2 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 2}
+reorg: Mod1 Mod4 3 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 3}
+reorg: Mod1 Mod4 4 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 4}
+reorg: Mod1 Mod4 5 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 5}
+reorg: Mod1 Mod4 6 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 6}
+#reorg: Mod1 Mod4 7 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 7}
+#reorg: Mod1 Mod4 8 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 8}
+#reorg: Mod1 Mod4 9 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToWorkspace 9}
+
+
+
+# Number of monitors connected: 1
+

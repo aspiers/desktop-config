@@ -37,7 +37,7 @@ from monitor_controller.model import (
 
 from .layout import DisplayScreenSnapshot, ResolvedLayout  # noqa: TC001
 
-PLAN_SCHEMA_VERSION: Final = 1
+PLAN_SCHEMA_VERSION: Final = 2
 MAX_PLAN_BYTES: Final = 1024 * 1024
 MAX_PLAN_ARTIFACT_BYTES: Final = 512 * 1024
 MAX_PLAN_ARTIFACT_TOTAL_BYTES: Final = 2 * 1024 * 1024
@@ -51,7 +51,7 @@ _MIN_DIRECTORY_LINK_COUNT: Final = 2
 _RENAME_NOREPLACE: Final = 1
 _ARTIFACT_HASH_DOMAIN: Final = b"monitor-controller-plan-artifact-v1\x00"
 _GENERATED_KEYS_PATH: Final = ".fluxbox/keys"
-_EMACS_FONT_EXPRESSION: Final = '(load "as-fonts")'
+_EMACS_FONT_EXPRESSION: Final = "monitor-controller-apply-font-height"
 _PANEL_POSITION: Final = "p=8;x=0;y=0"
 _TERMINAL_FONT_NAME: Final = "SauceCodePro Nerd Font"
 _DIRECTORY_OPEN_FLAGS: Final = (
@@ -177,7 +177,7 @@ class TransitionGuards:
     topology: PlannedTopology
     display_screens: tuple[DisplayScreenSnapshot, ...]
 
-    def __post_init__(self) -> None:
+    def __post_init__(self) -> None:  # noqa: C901
         if self.action_id.kind is not ActionKind.PLAN:
             raise PlanCodecError("desktop plan guard action must be a planning action")
         if self.action_id.controller_instance != self.transition_id.controller_instance:
@@ -193,6 +193,8 @@ class TransitionGuards:
             raise PlanCodecError("plan observation differs from its input key")
         if self.output_mapping != self.input_key.mapping:
             raise PlanCodecError("plan mapping differs from its input key")
+        if self.topology.x_active_outputs != self.input_key.active_outputs:
+            raise PlanCodecError("plan active topology differs from its input key")
         screen_outputs = tuple(item.output for item in self.display_screens)
         if len(set(screen_outputs)) != len(screen_outputs):
             raise PlanCodecError("plan display snapshot repeats an output")
@@ -334,7 +336,7 @@ class TerminalThemeIntent:
 
 @dataclass(frozen=True, slots=True)
 class EmacsFontIntent:
-    """Repeatable Emacs font reload bound to exact captured policy hashes."""
+    """Repeatable Emacs helper reload bound to an exact planned font height."""
 
     expression: str
     font_height: int
@@ -342,7 +344,7 @@ class EmacsFontIntent:
 
     def __post_init__(self) -> None:
         if self.expression != _EMACS_FONT_EXPRESSION:
-            raise PlanCodecError("Emacs font expression is outside the allowlist")
+            raise PlanCodecError("Emacs font function is outside the allowlist")
         if self.font_height <= 0:
             raise PlanCodecError("Emacs font height must be positive")
         _configuration_hashes(self.policy_hashes, "Emacs policy hashes")
@@ -372,6 +374,8 @@ class FluxboxGenerationIntent:
     sublayouts_sha256: str
     resolved_sublayouts_artifact: str
     resolved_sublayouts_sha256: str
+    rendered_keys_artifact: str
+    rendered_keys_sha256: str
     generated_keys_path: str
     monitor_count: int
     host_name: str
@@ -387,6 +391,11 @@ class FluxboxGenerationIntent:
                 self.resolved_sublayouts_artifact,
                 self.resolved_sublayouts_sha256,
                 "resolved Fluxbox sublayouts",
+            ),
+            (
+                self.rendered_keys_artifact,
+                self.rendered_keys_sha256,
+                "rendered Fluxbox keys",
             ),
         ):
             _artifact_path(path)
@@ -509,12 +518,13 @@ class DesktopPlan:
             self.autorandr.setup_artifact: "artifacts/autorandr/setup",
             self.overlay.artifact_path: "artifacts/fluxbox/overlay",
             self.terminal.kitty_theme_artifact: ("artifacts/terminal/kitty-theme.conf"),
-            self.fluxbox.template_artifact: "artifacts/fluxbox/keys.resolved.erb",
+            self.fluxbox.template_artifact: "artifacts/fluxbox/keys.erb",
             self.fluxbox.generator_artifact: "artifacts/fluxbox/generator-policy",
             self.fluxbox.sublayouts_artifact: "artifacts/fluxbox/sublayouts.yaml",
             self.fluxbox.resolved_sublayouts_artifact: (
                 "artifacts/fluxbox/resolved-sublayouts.json"
             ),
+            self.fluxbox.rendered_keys_artifact: "artifacts/fluxbox/keys",
             self.windows.source_artifact: "artifacts/layout/expanded.yaml",
             self.windows.actions_artifact: "artifacts/layout/window-actions.json",
         }
@@ -534,6 +544,10 @@ class DesktopPlan:
             (
                 self.fluxbox.resolved_sublayouts_artifact,
                 self.fluxbox.resolved_sublayouts_sha256,
+            ),
+            (
+                self.fluxbox.rendered_keys_artifact,
+                self.fluxbox.rendered_keys_sha256,
             ),
             (self.windows.source_artifact, self.windows.source_sha256),
             (self.windows.actions_artifact, self.windows.actions_sha256),
@@ -562,6 +576,7 @@ class DesktopPlan:
             self.fluxbox.resolved_sublayouts_artifact: (
                 self.fluxbox.resolved_sublayouts_sha256
             ),
+            self.fluxbox.rendered_keys_artifact: self.fluxbox.rendered_keys_sha256,
             self.windows.source_artifact: self.windows.source_sha256,
             self.windows.actions_artifact: self.windows.actions_sha256,
         }
@@ -583,25 +598,11 @@ class DesktopPlan:
             PlannedActionKind.CONFIGURE_TERMINALS: (
                 self.terminal.kitty_theme_artifact,
             ),
-            PlannedActionKind.GENERATE_FLUXBOX_CONFIGURATION: tuple(
-                sorted(
-                    (
-                        self.fluxbox.generator_artifact,
-                        self.fluxbox.resolved_sublayouts_artifact,
-                        self.fluxbox.sublayouts_artifact,
-                        self.fluxbox.template_artifact,
-                    )
-                )
+            PlannedActionKind.GENERATE_FLUXBOX_CONFIGURATION: (
+                self.fluxbox.rendered_keys_artifact,
             ),
-            PlannedActionKind.APPLY_FLUXBOX_CONFIGURATION: tuple(
-                sorted(
-                    (
-                        self.fluxbox.generator_artifact,
-                        self.fluxbox.resolved_sublayouts_artifact,
-                        self.fluxbox.sublayouts_artifact,
-                        self.fluxbox.template_artifact,
-                    )
-                )
+            PlannedActionKind.APPLY_FLUXBOX_CONFIGURATION: (
+                self.fluxbox.rendered_keys_artifact,
             ),
             PlannedActionKind.APPLY_WINDOW_LAYOUT: (self.windows.actions_artifact,),
         }

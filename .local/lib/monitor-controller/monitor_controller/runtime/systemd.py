@@ -24,6 +24,7 @@ from monitor_controller.model import (
     ActionTombstone,
     ActivateProbe,
     ApplyProfile,
+    PrepareDesktop,
     WorkerUnit,
 )
 from monitor_controller.runtime.dispatcher import (
@@ -804,6 +805,16 @@ def _request_from_effect(
     if not isinstance(effect, ApplyProfile) and context.profile_configuration_hashes:
         msg = "non-application request cannot carry autorandr profile hashes"
         raise TransactionProtocolError(msg)
+    if (
+        effect.action_id.kind
+        not in {
+            ActionKind.PREPARATION,
+            ActionKind.FINALIZATION,
+        }
+        and context.planning_action_id is not None
+    ):
+        msg = "non-desktop request cannot carry a planning action identity"
+        raise TransactionProtocolError(msg)
     if isinstance(effect, ActivateProbe):
         if context.physical_epoch != effect.key.physical_epoch:
             msg = "probe request context physical epoch differs"
@@ -835,11 +846,29 @@ def _request_from_effect(
     else:
         # DispatchEffect is closed; after probe/application only the two desktop
         # effect classes remain.
+        planning_action_id = context.planning_action_id
+        if (
+            planning_action_id is None
+            or planning_action_id.controller_instance
+            != effect.action_id.controller_instance
+        ):
+            msg = "desktop request lacks its matching planning action identity"
+            raise TransactionProtocolError(msg)
         profile = effect.profile
         transition_id = effect.transition_id
         transition_key = effect.transition_key
         plan_hash = effect.plan_hash
-        payload = ()
+        payload = (
+            (
+                (
+                    "allow_temporary_edid_absence",
+                    True,
+                ),
+                ("planning_action_id", planning_action_id.value),
+            )
+            if isinstance(effect, PrepareDesktop)
+            else ()
+        )
     return TransactionRequest(
         action_id=effect.action_id,
         action_kind=effect.action_id.kind,

@@ -1,6 +1,17 @@
 #!/bin/bash
 
-. $ZDOTDIR/lib/libfonts.sh
+if [ "${1:-}" = --exact-font ]; then
+    [ "$#" -eq 2 ] && [ -n "$2" ] || {
+        echo "Usage: $0 [--exact-font FONT]" >&2
+        exit 2
+    }
+    medium_font_gnome=$2
+elif [ "$#" -eq 0 ]; then
+    . "$ZDOTDIR/lib/libfonts.sh"
+else
+    echo "Usage: $0 [--exact-font FONT]" >&2
+    exit 2
+fi
 
 if [ -z "$medium_font_gnome" ]; then
     echo >&2 "Couldn't figure out font for gnome-terminal"

@@ -119,6 +119,7 @@ def _planning_key(
         layout=f"layouts/{profile}.yaml",
         observation_key=observation_key,
         mapping=(OutputMapping("DP-1", "DP-3"),),
+        active_outputs=("DP-3",),
         configuration_hashes=_CONFIG_HASHES,
     )
 
@@ -517,13 +518,15 @@ def test_probe_candidate_rejects_extra_external_or_active_outputs() -> None:
         )
 
 
-def test_planning_input_key_covers_layout_mapping_and_configuration_hashes() -> None:
+def test_planning_input_key_covers_topology_mapping_and_configuration() -> None:
     first = _planning_key()
     changed_layout = replace(first, layout="layouts/renamed.yaml")
     changed_mapping = replace(
         first,
         mapping=(OutputMapping("DP-1", "DP-4"),),
+        active_outputs=("DP-4",),
     )
+    changed_active = replace(first, active_outputs=())
     changed_hash = replace(
         first,
         configuration_hashes=(
@@ -535,9 +538,10 @@ def test_planning_input_key_covers_layout_mapping_and_configuration_hashes() -> 
         first.value,
         changed_layout.value,
         changed_mapping.value,
+        changed_active.value,
         changed_hash.value,
     }
-    assert len(identities) == 4
+    assert len(identities) == 5
     with pytest.raises(ValueError, match="configuration content hashes"):
         replace(first, configuration_hashes=())
 

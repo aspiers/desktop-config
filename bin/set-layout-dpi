@@ -5,13 +5,16 @@
 # If no layout_name is provided, get current layout using bin/get-layout
 
 fallback_dpi() {
+    # shellcheck source=/home/adam/lib/libhost.sh
     . ~/lib/libhost.sh
     if host-has-prop laptop; then
         # Get monitor properties for calculation
-        local monitor_json=$(~/lib/libdpy.py --find-inxi-primary 2>/dev/null)
+        local monitor_json
+        local width
+        monitor_json=$(~/lib/libdpy.py --find-inxi-primary 2>/dev/null)
 
         if [ -n "$monitor_json" ]; then
-            local width=$(echo "$monitor_json" | jq -r '.res // empty' | cut -d'x' -f1)
+            width=$(echo "$monitor_json" | jq -r '.res // empty' | cut -d'x' -f1)
             if [ -n "$width" ] && [ "$width" -gt 0 ]; then
                 # Calculate DPI from resolution: 96 * (width / 2560)
                 local scaled_dpi=$(( 96 * width / 2560 ))
@@ -30,7 +33,8 @@ fallback_dpi() {
 
 try_dpi_from_layout_file() {
     local layout_file="$1"
-    local dpi=$(grep -E '^[[:space:]]*dpi:' "$layout_file" | sed 's/.*dpi:[[:space:]]*//')
+    local dpi
+    dpi=$(grep -E '^[[:space:]]*dpi:' "$layout_file" | sed 's/.*dpi:[[:space:]]*//')
     if [ -n "$dpi" ]; then
         echo "Setting DPI to $dpi from layout file"
         set-xfce4-dpi "$dpi"
@@ -103,6 +107,29 @@ set_dpi_for_layout() {
 }
 
 main() {
+    if [ "${1:-}" = --exact ]; then
+        [ "$#" -eq 2 ] || {
+            echo "Usage: $0 --exact DPI|unchanged" >&2
+            exit 2
+        }
+        if [ "$2" = unchanged ]; then
+            echo "DPI intentionally unchanged by exact plan"
+            return 0
+        fi
+        case "$2" in
+            ''|0|*[!0-9]*)
+                echo "Invalid exact DPI: $2" >&2
+                exit 2
+                ;;
+        esac
+        [ -n "${MONITOR_CONTROLLER_LEAF_BIN:-}" ] || {
+            echo "Missing exact leaf binding" >&2
+            exit 2
+        }
+        echo "Setting exact planned DPI to $2"
+        exec "$MONITOR_CONTROLLER_LEAF_BIN/set-xfce4-dpi" "$2"
+    fi
+
     if [ $# -eq 0 ]; then
         echo -n "Getting current layout ... "
         if ! layout_file=$( get-layout ); then

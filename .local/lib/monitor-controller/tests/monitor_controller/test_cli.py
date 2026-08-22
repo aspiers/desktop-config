@@ -99,6 +99,58 @@ def test_internal_probe_entry_point_passes_only_typed_worker_arguments(
     }
 
 
+def test_internal_prepare_entry_point_passes_all_explicit_roots(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seen: dict[str, object] = {}
+
+    def fake_prepare_worker(**arguments: object) -> int:
+        seen.update(arguments)
+        return 24
+
+    monkeypatch.setattr(
+        "monitor_controller.cli.run_prepare_worker",
+        fake_prepare_worker,
+    )
+    roots = {
+        name: tmp_path / name
+        for name in ("transactions", "plans", "sysfs", "home", "bin")
+    }
+    assert (
+        main(
+            [
+                "internal",
+                "prepare",
+                "--transaction-root",
+                str(roots["transactions"]),
+                "--plan-root",
+                str(roots["plans"]),
+                "--action-id",
+                "preparation-12345678123456781234567812345678-2",
+                "--unit",
+                "monitor-prepare@test.service",
+                "--sysfs-root",
+                str(roots["sysfs"]),
+                "--home-root",
+                str(roots["home"]),
+                "--leaf-root",
+                str(roots["bin"]),
+            ]
+        )
+        == 24
+    )
+    assert seen == {
+        "transaction_root": roots["transactions"],
+        "plan_root": roots["plans"],
+        "action_id_text": "preparation-12345678123456781234567812345678-2",
+        "unit_name": "monitor-prepare@test.service",
+        "sysfs_root": roots["sysfs"],
+        "home_root": roots["home"],
+        "leaf_root": roots["bin"],
+    }
+
+
 def test_status_reads_selected_namespace_without_writing(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],

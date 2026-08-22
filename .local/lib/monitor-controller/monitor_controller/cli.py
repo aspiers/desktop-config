@@ -26,6 +26,7 @@ from monitor_controller.simulation.scenario import (
 )
 from monitor_controller.workers.apply import run_apply_worker
 from monitor_controller.workers.common import WorkerStartupError
+from monitor_controller.workers.prepare import run_prepare_worker
 from monitor_controller.workers.probe import run_probe_worker
 
 
@@ -77,6 +78,14 @@ def _parser() -> argparse.ArgumentParser:
         type=Path,
         default=Path("/sys/class/drm"),
     )
+    prepare = workers.add_parser("prepare", help=argparse.SUPPRESS)
+    prepare.add_argument("--transaction-root", required=True, type=Path)
+    prepare.add_argument("--plan-root", required=True, type=Path)
+    prepare.add_argument("--action-id", required=True)
+    prepare.add_argument("--unit", required=True)
+    prepare.add_argument("--sysfs-root", required=True, type=Path)
+    prepare.add_argument("--home-root", required=True, type=Path)
+    prepare.add_argument("--leaf-root", required=True, type=Path)
     return parser
 
 
@@ -156,7 +165,7 @@ def _status(state_home: Path, namespace: StateNamespace) -> int:
     return 0
 
 
-def main(argv: Sequence[str] | None = None) -> int:
+def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0911
     """Run only deterministic simulation/replay or read persisted state."""
     args = _parser().parse_args(argv)
     try:
@@ -165,16 +174,21 @@ def main(argv: Sequence[str] | None = None) -> int:
         if args.command == "replay":
             return _replay(args.trace)
         if args.command == "internal":
-            worker = (
-                run_probe_worker
-                if args.internal_command == "probe"
-                else run_apply_worker
-            )
-            return worker(
-                transaction_root=args.transaction_root,
-                action_id_text=args.action_id,
-                unit_name=args.unit,
-                sysfs_root=args.sysfs_root,
+            common = {
+                "transaction_root": args.transaction_root,
+                "action_id_text": args.action_id,
+                "unit_name": args.unit,
+                "sysfs_root": args.sysfs_root,
+            }
+            if args.internal_command == "probe":
+                return run_probe_worker(**common)
+            if args.internal_command == "apply":
+                return run_apply_worker(**common)
+            return run_prepare_worker(
+                **common,
+                plan_root=args.plan_root,
+                home_root=args.home_root,
+                leaf_root=args.leaf_root,
             )
         state_home = args.state_home or _default_state_home()
         return _status(state_home, StateNamespace(args.namespace))

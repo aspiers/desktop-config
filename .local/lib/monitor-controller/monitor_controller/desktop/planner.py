@@ -32,6 +32,7 @@ from monitor_controller.observer.evidence import TextCommandEvidence
 if TYPE_CHECKING:
     from monitor_controller.observer.autorandr import SavedAutorandrProfile
 
+from .fluxbox_renderer import FluxboxRenderError, render_fluxbox_keys
 from .layout import (
     DisplayScreenSnapshot,
     LayoutPlanningError,
@@ -458,6 +459,10 @@ class DesktopPlanningInputs:
             raise DesktopPlanningError(
                 "display observation differs from planning input key"
             )
+        if self.display.topology.x_active_outputs != key.active_outputs:
+            raise DesktopPlanningError(
+                "display active topology differs from planning input key"
+            )
         if self.configuration.hashes != key.configuration_hashes:
             raise DesktopPlanningError(
                 "captured configuration hashes differ from planning input key"
@@ -529,7 +534,9 @@ class FilesystemDesktopPlanningInputSource:
         root: Path,
         display: DesktopDisplaySnapshot | DesktopDisplaySnapshotSource,
         context: DesktopContext | DesktopContextSource,
-        emacs_policy_paths: tuple[str, ...] = ("bin/setup-monitor",),
+        emacs_policy_paths: tuple[str, ...] = (
+            "bin/monitor-controller-emacs-fonts.el",
+        ),
     ) -> None:
         """Bind explicit immutable facts and a configuration-tree root."""
         if not root.is_absolute():
@@ -590,9 +597,11 @@ class FilesystemDesktopPlanningInputSource:
                 ),
                 self._required(InputRole.PANEL_POLICY, "bin/setup-panels"),
                 self._required(InputRole.DPI_POLICY, "bin/set-layout-dpi"),
+                self._required(InputRole.DPI_POLICY, "bin/set-xfce4-dpi"),
                 self._required(InputRole.FONT_POLICY, "lib/libfonts.sh"),
                 self._required(InputRole.TERMINAL_POLICY, "bin/setup-terminals"),
                 self._required(InputRole.TERMINAL_POLICY, "bin/gnome-terminal-config"),
+                self._required(InputRole.TERMINAL_POLICY, "bin/gnome-terminal-profile"),
                 self._required(InputRole.TERMINAL_POLICY, "bin/xfce4-terminal-config"),
                 self._required(InputRole.TERMINAL_POLICY, "bin/kitty-theme-config"),
                 self._required(
@@ -601,6 +610,10 @@ class FilesystemDesktopPlanningInputSource:
                 ),
                 self._required(InputRole.FLUXBOX_TEMPLATE, ".fluxbox/keys.erb"),
                 self._required(InputRole.FLUXBOX_GENERATOR, "bin/fluxbox-gen-config"),
+                self._required(
+                    InputRole.FLUXBOX_GENERATOR,
+                    ".local/lib/monitor-controller/monitor_controller/desktop/fluxbox_renderer.py",
+                ),
                 self._required(InputRole.KEYBOARD_POLICY, "bin/setup-keyboard"),
             )
         )
@@ -866,7 +879,9 @@ def encode_desktop_context(context: DesktopContext) -> bytes:
     ).encode("utf-8")
 
 
-def build_desktop_plan(inputs: DesktopPlanningInputs) -> DesktopPlanBundle:
+def build_desktop_plan(  # noqa: PLR0915
+    inputs: DesktopPlanningInputs,
+) -> DesktopPlanBundle:
     """Construct deterministic leaf payloads without filesystem, HOME, X, or shell."""
     request = inputs.request
     configuration = inputs.configuration
@@ -940,7 +955,7 @@ def build_desktop_plan(inputs: DesktopPlanningInputs) -> DesktopPlanBundle:
     dpi = _dpi_intent(inputs, resolved)
     terminal, kitty_artifact = _terminal_intent(inputs, scale)
     emacs = EmacsFontIntent(
-        expression='(load "as-fonts")',
+        expression="monitor-controller-apply-font-height",
         font_height=inputs.context.emacs_font_height,
         policy_hashes=configuration.hashes_for(InputRole.EMACS_POLICY),
     )
@@ -961,17 +976,15 @@ def build_desktop_plan(inputs: DesktopPlanningInputs) -> DesktopPlanBundle:
     )
 
     template_content = _required_content(configuration.one(InputRole.FLUXBOX_TEMPLATE))
-    resolved_template = _resolve_fluxbox_template(
-        template_content,
-        host_name=inputs.context.host_name,
-        monitor_count=len(inputs.display.screens),
-    )
-    template_artifact = PlanArtifact(
-        "artifacts/fluxbox/keys.resolved.erb", resolved_template
+    template_artifact = PlanArtifact("artifacts/fluxbox/keys.erb", template_content)
+    renderer_input = next(
+        item
+        for item in configuration.many(InputRole.FLUXBOX_GENERATOR)
+        if item.path.endswith("/fluxbox_renderer.py")
     )
     generator_artifact = PlanArtifact(
         "artifacts/fluxbox/generator-policy",
-        _required_content(configuration.one(InputRole.FLUXBOX_GENERATOR)),
+        _required_content(renderer_input),
     )
     sublayouts_artifact = PlanArtifact(
         "artifacts/fluxbox/sublayouts.yaml", sublayouts_content
@@ -988,6 +1001,17 @@ def build_desktop_plan(inputs: DesktopPlanningInputs) -> DesktopPlanBundle:
             ]
         ),
     )
+    try:
+        rendered_keys = render_fluxbox_keys(
+            template_content,
+            monitor_count=len(inputs.display.screens),
+            host_name=inputs.context.host_name,
+            template_label=".fluxbox/keys.erb",
+            generator_label="bin/fluxbox-gen-config",
+        )
+    except FluxboxRenderError as error:
+        raise DesktopPlanningError(str(error)) from error
+    rendered_keys_artifact = PlanArtifact("artifacts/fluxbox/keys", rendered_keys)
     fluxbox = FluxboxGenerationIntent(
         template_artifact=template_artifact.relative_path,
         template_sha256=template_artifact.sha256,
@@ -997,6 +1021,8 @@ def build_desktop_plan(inputs: DesktopPlanningInputs) -> DesktopPlanBundle:
         sublayouts_sha256=sublayouts_artifact.sha256,
         resolved_sublayouts_artifact=resolved_sublayouts_artifact.relative_path,
         resolved_sublayouts_sha256=resolved_sublayouts_artifact.sha256,
+        rendered_keys_artifact=rendered_keys_artifact.relative_path,
+        rendered_keys_sha256=rendered_keys_artifact.sha256,
         generated_keys_path=".fluxbox/keys",
         monitor_count=len(inputs.display.screens),
         host_name=inputs.context.host_name,
@@ -1024,16 +1050,7 @@ def build_desktop_plan(inputs: DesktopPlanningInputs) -> DesktopPlanBundle:
         topology=inputs.display.topology,
         display_screens=inputs.display.screens,
     )
-    fluxbox_refs = tuple(
-        sorted(
-            (
-                generator_artifact.relative_path,
-                resolved_sublayouts_artifact.relative_path,
-                sublayouts_artifact.relative_path,
-                template_artifact.relative_path,
-            )
-        )
-    )
+    fluxbox_refs = (rendered_keys_artifact.relative_path,)
     prepare_refs = {
         PlannedActionKind.INSTALL_FLUXBOX_OVERLAY: (overlay_artifact.relative_path,),
         PlannedActionKind.CONFIGURE_TERMINALS: (kitty_artifact.relative_path,),
@@ -1062,6 +1079,7 @@ def build_desktop_plan(inputs: DesktopPlanningInputs) -> DesktopPlanBundle:
         generator_artifact,
         sublayouts_artifact,
         resolved_sublayouts_artifact,
+        rendered_keys_artifact,
         kitty_artifact,
     )
     manifest = tuple(
@@ -1108,27 +1126,6 @@ def _encode_window_actions(resolved: ResolvedLayout) -> bytes:
             for action in resolved.window_actions
         ]
     )
-
-
-def _resolve_fluxbox_template(
-    content: bytes, *, host_name: str, monitor_count: int
-) -> bytes:
-    try:
-        text = content.decode("utf-8", errors="strict")
-    except UnicodeDecodeError as error:
-        raise DesktopPlanningError("Fluxbox template is not UTF-8") from error
-    dynamic_command = "%x('monitors-connected').chomp"
-    dynamic_environment = "ENV['localhost_nickname']"
-    if dynamic_command not in text or dynamic_environment not in text:
-        raise DesktopPlanningError(
-            "Fluxbox template dynamic inputs differ from the closed resolver"
-        )
-    resolved = text.replace(dynamic_command, repr(str(monitor_count))).replace(
-        dynamic_environment, repr(host_name)
-    )
-    if "%x(" in resolved or "ENV[" in resolved or "`" in resolved:
-        raise DesktopPlanningError("resolved Fluxbox template retains live discovery")
-    return resolved.encode("utf-8")
 
 
 def _profile_evidence(item: ConfigurationInput) -> TextCommandEvidence:

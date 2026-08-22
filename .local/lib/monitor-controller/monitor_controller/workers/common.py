@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
+import os
 import signal
+import subprocess
 import time
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
@@ -37,6 +40,12 @@ class WorkerStartupError(RuntimeError):
 
 class WorkerCancelled(BaseException):
     """SIGTERM or a durable stop intent interrupted a mutating boundary."""
+
+
+def kill_process_group(process: subprocess.Popen[bytes]) -> None:
+    """Kill a leaf's whole session even when its original leader has exited."""
+    with contextlib.suppress(ProcessLookupError):
+        os.killpg(process.pid, signal.SIGKILL)
 
 
 @dataclass(frozen=True, slots=True)

@@ -12,6 +12,7 @@ from monitor_controller.model import (
     BROKEN_EXTENSION_EDID_INTEGRITIES,
     TERMINAL_ACTION_LIFECYCLES,
     ActionId,
+    ActionKind,
     ActionLifecycle,
     ActivateProbe,
     ApplyProfile,
@@ -87,6 +88,7 @@ class WorkerRequestContext:
     output_mapping: tuple[OutputMapping, ...]
     expected_topology: ExpectedTopology
     layout: str | None = None
+    planning_action_id: ActionId | None = None
     probe_base_hash: str | None = None
     probe_edid_integrity: EdidIntegrity | None = None
     profile_configuration_hashes: tuple[ConfigurationContentHash, ...] = ()
@@ -97,6 +99,12 @@ class WorkerRequestContext:
             raise ValueError(msg)
         if self.layout is not None and (not self.layout or self.layout.isspace()):
             msg = "worker request layout must not be empty"
+            raise ValueError(msg)
+        if (
+            self.planning_action_id is not None
+            and self.planning_action_id.kind is not ActionKind.PLAN
+        ):
+            msg = "worker request planning identity has the wrong action kind"
             raise ValueError(msg)
         if (self.probe_base_hash is None) is not (self.probe_edid_integrity is None):
             msg = "worker probe identity hash and integrity must be supplied together"

@@ -5,3 +5,6 @@
 # Unified diffs require context-marker whitespace which is not source trailing
 # whitespace and must survive byte-for-byte for git apply.
 *.patch -whitespace
+
+# Golden Fluxbox output must preserve byte-for-byte legacy renderer whitespace.
+.local/lib/monitor-controller/tests/monitor_controller/fixtures/fluxbox/*.golden -whitespace

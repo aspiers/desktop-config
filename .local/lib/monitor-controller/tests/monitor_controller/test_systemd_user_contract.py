@@ -425,8 +425,16 @@ def test_static_production_templates_are_explicit_and_fail_closed() -> None:
             assert "monitor_controller.cli internal probe" in text
             assert "reject-unimplemented" not in text
         elif name == "monitor-apply@.service":
+            assert "Environment=HOME=%h" in directives
+            assert "PassEnvironment=DISPLAY XAUTHORITY" in directives
             assert "monitor_controller.cli internal apply" in text
             assert "--sysfs-root /sys/class/drm" in text
+            assert "reject-unimplemented" not in text
+        elif name == "monitor-prepare@.service":
+            assert "monitor_controller.cli internal prepare" in text
+            assert "--plan-root %t/monitor-controller/active/plans" in text
+            assert "--sysfs-root /sys/class/drm" in text
+            assert "--home-root %h --leaf-root %h/bin" in text
             assert "reject-unimplemented" not in text
         else:
             assert "reject-unimplemented" in text
@@ -444,8 +452,10 @@ def test_harmless_unit_reuses_production_safety_contract(
     shared = {
         "Type=oneshot",
         "CollectMode=inactive-or-failed",
+        "Environment=HOME=%h",
         "Environment=PATH=/usr/bin:/bin",
         "Environment=PYTHONUNBUFFERED=1",
+        "PassEnvironment=DISPLAY XAUTHORITY",
         (
             "UnsetEnvironment=BASH_ENV ENV LD_LIBRARY_PATH LD_PRELOAD "
             "PYTHONHOME PYTHONINSPECT PYTHONPATH PYTHONSTARTUP PYTHONUSERBASE"

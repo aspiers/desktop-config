@@ -4,14 +4,67 @@
 # Handles BOTH font initialization AND theme application for all terminals.
 #
 # Usage: setup-terminals [dark|Dark|light|Light|Bright]
+#        setup-terminals --exact THEME GNOME_PROFILE XFCE_THEME FONT SIZE KITTY_FILE
 
-. $ZDOTDIR/lib/libhost.sh
+if [[ "${1:-}" == --exact ]]; then
+    [[ "$#" -eq 7 ]] || {
+        echo >&2 "Usage: $0 --exact THEME GNOME_PROFILE XFCE_THEME FONT SIZE KITTY_FILE"
+        exit 2
+    }
+    theme=$2
+    gnome_terminal_profile=$3
+    xfce_theme=$4
+    font_name=$5
+    font_size=$6
+    kitty_theme_file=$7
+    [[ "$font_size" =~ ^[1-9][0-9]*$ && -n "$font_name" && -f "$kitty_theme_file" ]] || {
+        echo >&2 "Invalid exact terminal font or kitty theme file"
+        exit 2
+    }
+    case "$theme:$gnome_terminal_profile:$xfce_theme" in
+        dark:Dark:dark|light:Bright:light) ;;
+        *)
+            echo >&2 "Inconsistent exact terminal theme tuple"
+            exit 2
+            ;;
+    esac
+    [[ -n "${MONITOR_CONTROLLER_LEAF_BIN:-}" ]] || {
+        echo >&2 "Missing exact leaf binding"
+        exit 2
+    }
+    medium_font_gnome="$font_name $font_size"
+
+    echo "Running gnome-terminal-config with exact font ..."
+    "$MONITOR_CONTROLLER_LEAF_BIN/gnome-terminal-config" \
+        --exact-font "$medium_font_gnome" || exit
+
+    echo gnome-terminal-profile --exact "$gnome_terminal_profile"
+    "$MONITOR_CONTROLLER_LEAF_BIN/gnome-terminal-profile" \
+        --exact "$gnome_terminal_profile" || exit
+    printf '%s\n' "$gnome_terminal_profile" > "$HOME/.config/gnome-terminal-profile" || exit
+
+    echo "Running xfce4-terminal-config with exact theme/font ..."
+    "$MONITOR_CONTROLLER_LEAF_BIN/xfce4-terminal-config" \
+        --exact-font "$medium_font_gnome" "$xfce_theme" || exit
+
+    echo "Running kitty-theme-config with exact staged theme/font ..."
+    "$MONITOR_CONTROLLER_LEAF_BIN/kitty-theme-config" \
+        --exact "$theme" "$kitty_theme_file" "$font_size"
+    exit $?
+fi
+
+[[ "$#" -le 1 ]] || {
+    echo >&2 "Usage: $0 [dark|Dark|light|Light|Bright]"
+    exit 2
+}
+
+# shellcheck source=/home/adam/lib/libhost.sh
+. "$ZDOTDIR/lib/libhost.sh"
 
 # Get theme from argument or from file
-if [[ -n "$1" ]]; then
-    theme="$1"
-else
-    theme=$(cat ~/.config/theme 2>/dev/null || echo "dark")
+theme="${1:-}"
+if [[ -z "$theme" ]]; then
+    theme=$(cat "$HOME/.config/theme" 2>/dev/null || echo "dark")
 fi
 
 if [[ "$theme" == "light" ]]; then
@@ -25,7 +78,7 @@ gnome-terminal-config
 
 echo gnome-terminal-profile "$gnome_terminal_profile"
 gnome-terminal-profile "$gnome_terminal_profile"
-echo "$gnome_terminal_profile" > ~/.config/gnome-terminal-profile
+echo "$gnome_terminal_profile" > "$HOME/.config/gnome-terminal-profile"
 
 div
 

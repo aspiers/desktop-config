@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shlex
 import shutil
 import time
 from collections.abc import Callable, Mapping
@@ -45,6 +46,7 @@ from monitor_controller.workers.apply import (
     ApplyCommandResult,
     SubprocessApplyCommands,
     execute_application,
+    isolated_application_environment,
 )
 from monitor_controller.workers.autorandr_profile import (
     POSTSWITCH_EVIDENCE_ENVIRONMENT,
@@ -85,13 +87,18 @@ _EXPECTED_READ_CALLS: Final = (
     ("xrandr", "--props"),
 )
 _BASE_ENVIRONMENT: Final = {
-    "DISPLAY": ":test",
+    "BASH_FUNC_autorandr%%": "() { touch /tmp/escaped; }",
+    "DISPLAY": ":77",
     "HOME": "/original/home",
-    "LANG": "C.UTF-8",
+    "LANG": "attacker-locale",
     "LD_PRELOAD": "/forbidden.so",
-    "PATH": "/usr/bin:/bin",
+    "PATH": "/attacker/bin",
+    "PYTHONPATH": "/attacker/python",
+    "PYTHONUSERBASE": "/attacker/user-site",
+    "RUBYOPT": "forbidden",
     "WAYLAND_DISPLAY": "wayland-test",
-    "XAUTHORITY": "/original/xauthority",
+    "XAUTHORITY": "/etc/hosts",
+    "XDG_CONFIG_HOME": "/attacker/config",
 }
 
 
@@ -294,10 +301,23 @@ def test_exact_transaction_environment_argv_and_post_action_evidence(
     arguments, environment = commands.loads[0]
     artifact_root = store.artifact_directory(_ACTION)
     assert arguments == _EXPECTED_ARGV
-    assert environment["DISPLAY"] == ":test"
+    assert set(environment) == {
+        "DISPLAY",
+        "HOME",
+        "LANG",
+        "MONITOR_CONTROLLER_AUTORANDR_ACTION_ID",
+        "MONITOR_CONTROLLER_AUTORANDR_POSTSWITCH_EVIDENCE",
+        "PATH",
+        "PYTHONDONTWRITEBYTECODE",
+        "PYTHONNOUSERSITE",
+        "XAUTHORITY",
+        "XDG_CONFIG_DIRS",
+        "XDG_CONFIG_HOME",
+    }
+    assert environment["DISPLAY"] == ":77"
     assert environment["LANG"] == "C.UTF-8"
     assert environment["PATH"] == "/usr/bin:/bin"
-    assert environment["XAUTHORITY"] == "/original/xauthority"
+    assert environment["XAUTHORITY"] == "/etc/hosts"
     assert environment["HOME"] == str(artifact_root / "home")
     assert environment["XDG_CONFIG_HOME"] == str(artifact_root / "xdg-config")
     assert environment["XDG_CONFIG_DIRS"] == str(artifact_root / "xdg-config-dirs")
@@ -311,6 +331,119 @@ def test_exact_transaction_environment_argv_and_post_action_evidence(
     assert result.outcome is ActionLifecycle.COMPLETED
     assert result.exit_status == 0
     assert "DisplayPort-9,eDP" in result.detail
+
+
+@pytest.mark.parametrize(
+    "environment",
+    [
+        {"XAUTHORITY": "/authority"},
+        {"DISPLAY": ":0"},
+        {"DISPLAY": ":0\nINJECTED=1", "XAUTHORITY": "/authority"},
+        {"DISPLAY": ":0", "XAUTHORITY": "relative"},
+    ],
+)
+def test_application_requires_safe_x_environment(
+    tmp_path: Path,
+    environment: Mapping[str, str],
+) -> None:
+    tree = RootedSysfsReader(_sysfs_tree(tmp_path / "sysfs"))
+    commands = _FakeCommands()
+    startup, _store = _startup(tmp_path, tree, commands)
+
+    with pytest.raises(WorkerStartupError, match=r"DISPLAY|HOME|XAUTHORITY"):
+        isolated_application_environment(startup, _ACTION.value, environment)
+
+
+def test_application_resolves_manager_home_authority_before_isolation(
+    tmp_path: Path,
+) -> None:
+    tree = RootedSysfsReader(_sysfs_tree(tmp_path / "sysfs"))
+    commands = _FakeCommands()
+    startup, store = _startup(tmp_path, tree, commands)
+    original_home = tmp_path / "manager-home"
+    original_home.mkdir()
+    authority = original_home / ".Xauthority"
+    authority.write_bytes(b"session-cookie")
+
+    environment = isolated_application_environment(
+        startup,
+        _ACTION.value,
+        {
+            "DISPLAY": ":0",
+            "HOME": str(original_home),
+            "HOME_INJECTION": "/attacker",
+            "LD_PRELOAD": "/attacker/library.so",
+        },
+    )
+
+    assert environment["XAUTHORITY"] == str(authority.resolve())
+    assert environment["HOME"] == str(store.artifact_directory(_ACTION) / "home")
+    assert "HOME_INJECTION" not in environment
+    assert "LD_PRELOAD" not in environment
+
+
+def test_application_preserves_validated_inherited_temp_authority(
+    tmp_path: Path,
+) -> None:
+    tree = RootedSysfsReader(_sysfs_tree(tmp_path / "sysfs"))
+    commands = _FakeCommands()
+    startup, _store = _startup(tmp_path, tree, commands)
+    authority = tmp_path / "session" / "Xauthority"
+    authority.parent.mkdir()
+    authority.write_bytes(b"session-cookie")
+    inherited = str(authority.parent / ".." / "session" / authority.name)
+
+    environment = isolated_application_environment(
+        startup,
+        _ACTION.value,
+        {
+            "DISPLAY": ":0",
+            "HOME": str(tmp_path / "unused-home"),
+            "XAUTHORITY": inherited,
+        },
+    )
+
+    assert environment["XAUTHORITY"] == inherited
+
+
+def test_application_rejects_unreadable_authority(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    tree = RootedSysfsReader(_sysfs_tree(tmp_path / "sysfs"))
+    commands = _FakeCommands()
+    startup, _store = _startup(tmp_path, tree, commands)
+    authority = tmp_path / "Xauthority"
+    authority.write_bytes(b"session-cookie")
+
+    def deny_authority_open(*_args: object, **_kwargs: object) -> None:
+        raise PermissionError
+
+    monkeypatch.setattr(Path, "open", deny_authority_open)
+
+    with pytest.raises(WorkerStartupError, match="readable regular X11 authority"):
+        isolated_application_environment(
+            startup,
+            _ACTION.value,
+            {"DISPLAY": ":0", "XAUTHORITY": str(authority)},
+        )
+
+
+@pytest.mark.parametrize("home", ["relative/home", "/safe/home\nINJECTED=value"])
+def test_application_rejects_home_fallback_escape_or_injection(
+    tmp_path: Path,
+    home: str,
+) -> None:
+    tree = RootedSysfsReader(_sysfs_tree(tmp_path / "sysfs"))
+    commands = _FakeCommands()
+    startup, _store = _startup(tmp_path, tree, commands)
+
+    with pytest.raises(WorkerStartupError, match="safe HOME"):
+        isolated_application_environment(
+            startup,
+            _ACTION.value,
+            {"DISPLAY": ":0", "HOME": home},
+        )
 
 
 def test_installed_autorandr_115_accepts_isolated_materialized_profile(  # noqa: PLR0915
@@ -377,17 +510,17 @@ Screen 0: minimum 8 x 8, current 1920 x 1080, maximum 32767 x 32767
     xrandr_log = tmp_path / "xrandr.log"
     fake_xrandr = fake_bin / "xrandr"
     fake_xrandr.write_text(
-        """#!/bin/sh
+        f"""#!/bin/sh
 set -eu
-printf 'args=%s\\n' "$*" >> "$FAKE_XRANDR_LOG"
+printf 'args=%s\\n' "$*" >> {shlex.quote(str(xrandr_log))}
 if [ "$#" -eq 1 ] && [ "$1" = --query ]; then
-    exec /bin/cat "$FAKE_XRANDR_QUERY"
+    exec /bin/cat {shlex.quote(str(query_file))}
 fi
 if [ "$#" -eq 1 ] && [ "$1" = --props ]; then
-    exec /bin/cat "$FAKE_XRANDR_PROPERTIES"
+    exec /bin/cat {shlex.quote(str(properties_file))}
 fi
 if [ "$#" -eq 2 ] && [ "$1" = -q ] && [ "$2" = --verbose ]; then
-    exec /bin/cat "$FAKE_XRANDR_VERBOSE"
+    exec /bin/cat {shlex.quote(str(verbose))}
 fi
 if [ "$#" -eq 1 ] && [ "$1" = -v ]; then
     printf '%s\\n' 'xrandr program version 1.5.2'
@@ -399,27 +532,38 @@ exit 0
     fake_xrandr.chmod(0o700)
 
     autorandr_log = tmp_path / "autorandr.log"
+    shell_escape = tmp_path / "application-shell-environment-escaped"
+    python_escape = tmp_path / "application-python-environment-escaped"
+    malicious_python = tmp_path / "host-python"
+    malicious_python.mkdir()
+    malicious_python.joinpath("sitecustomize.py").write_text(
+        f"from pathlib import Path\nPath({str(python_escape)!r}).touch()\n",
+        encoding="utf-8",
+    )
     wrapper = fake_bin / "autorandr"
     wrapper.write_text(
-        """#!/bin/sh
+        f"""#!/bin/sh
 set -eu
-{
+if command -v malicious-environment-function >/dev/null 2>&1; then
+    malicious-environment-function
+fi
+{{
     printf 'argv=%s\\n' "$*"
     printf 'HOME=%s\\n' "$HOME"
     printf 'XDG_CONFIG_HOME=%s\\n' "$XDG_CONFIG_HOME"
     printf 'XDG_CONFIG_DIRS=%s\\n' "$XDG_CONFIG_DIRS"
     printf 'DISPLAY=%s\\n' "$DISPLAY"
     printf 'XAUTHORITY=%s\\n' "$XAUTHORITY"
-} > "$AUTORANDR_LOG"
-exec "$REAL_AUTORANDR" "$@"
+}} > {shlex.quote(str(autorandr_log))}
+exec {shlex.quote(real_autorandr)} "$@"
 """,
         encoding="utf-8",
     )
     wrapper.chmod(0o700)
 
     host_sentinel = tmp_path / "host-hook-ran"
-    hook = """#!/bin/sh
-: > "$HOST_HOOK_SENTINEL"
+    hook = f"""#!/bin/sh
+: > {shlex.quote(str(host_sentinel))}
 exit 0
 """
     host_home = tmp_path / "host-home"
@@ -434,21 +578,20 @@ exit 0
     authority.write_bytes(b"test-cookie")
 
     environment = {
-        "AUTORANDR_LOG": str(autorandr_log),
-        "DISPLAY": ":isolated-autorandr-test",
-        "FAKE_XRANDR_LOG": str(xrandr_log),
-        "FAKE_XRANDR_PROPERTIES": str(properties_file),
-        "FAKE_XRANDR_QUERY": str(query_file),
-        "FAKE_XRANDR_VERBOSE": str(verbose),
+        "BASH_FUNC_malicious-environment-function%%": (
+            f"() {{ touch {shlex.quote(str(shell_escape))}; }}"
+        ),
+        "DISPLAY": ":88",
         "HOME": str(host_home),
-        "HOST_HOOK_SENTINEL": str(host_sentinel),
-        "LANG": "C.UTF-8",
+        "LANG": "attacker-locale",
         "PATH": f"{fake_bin}:/usr/bin:/bin",
-        "REAL_AUTORANDR": real_autorandr,
+        "PYTHONPATH": str(malicious_python),
+        "RUBYOPT": "forbidden",
         "XAUTHORITY": str(authority),
         "XDG_CONFIG_DIRS": str(tmp_path / "host-config-dirs"),
         "XDG_CONFIG_HOME": str(tmp_path / "host-config"),
     }
+    monkeypatch.setattr(apply_module, "_TRUSTED_PATH", environment["PATH"])
     for name, value in environment.items():
         monkeypatch.setenv(name, value)
 
@@ -468,7 +611,7 @@ exit 0
     assert f"HOME={artifact_root / 'home'}\n" in invocation
     assert f"XDG_CONFIG_HOME={artifact_root / 'xdg-config'}\n" in invocation
     assert f"XDG_CONFIG_DIRS={artifact_root / 'xdg-config-dirs'}\n" in invocation
-    assert "DISPLAY=:isolated-autorandr-test\n" in invocation
+    assert "DISPLAY=:88\n" in invocation
     assert f"XAUTHORITY={authority}\n" in invocation
     xrandr_calls = xrandr_log.read_text(encoding="utf-8").splitlines()
     assert xrandr_calls[:2] == ["args=--query", "args=--props"]
@@ -484,6 +627,8 @@ exit 0
     )
     assert evidence.read_text(encoding="utf-8") == "eDP\n"
     assert not host_sentinel.exists()
+    assert not python_escape.exists()
+    assert not shell_escape.exists()
     result = store.read_result(_ACTION)
     assert result.outcome is ActionLifecycle.COMPLETED
     # AUTORANDR_MONITORS is target-profile hook metadata.  Fresh DRM/XRandR
@@ -618,6 +763,24 @@ def test_contradictory_connector_identity_is_stale_without_autorandr(
     assert _execute(startup, RootedSysfsReader(root), commands) == STALE_EXIT_STATUS
     assert "identity" in store.read_result(_ACTION).detail
     assert commands.loads == []
+
+
+@pytest.mark.parametrize("extension_state", ["incomplete", "invalid"])
+def test_apply_accepts_matching_valid_base_with_broken_extensions(
+    tmp_path: Path,
+    extension_state: str,
+) -> None:
+    root = _sysfs_tree(tmp_path / "sysfs")
+    external = root / "card0-DP-3" / "edid"
+    if extension_state == "incomplete":
+        external.write_bytes(external.read_bytes()[:128])
+    tree = RootedSysfsReader(root)
+    commands = _FakeCommands()
+    startup, store = _startup(tmp_path, tree, commands)
+
+    assert _execute(startup, tree, commands) == 0
+    assert len(commands.loads) == 1
+    assert store.read_result(_ACTION).outcome is ActionLifecycle.COMPLETED
 
 
 @pytest.mark.parametrize("different_monitor", [False, True])

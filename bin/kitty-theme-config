@@ -13,21 +13,20 @@
 
 KITTY_CONF_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/kitty"
 
-# Theme files are stowed from the repo alongside kitty.conf
-REPO_KITTY_DIR="$(dirname "$(readlink -f "$KITTY_CONF_DIR/kitty.conf")" 2>/dev/null)"
-if [[ -z "$REPO_KITTY_DIR" || ! -d "$REPO_KITTY_DIR" ]]; then
-    # Fallback if kitty.conf isn't a symlink
-    REPO_KITTY_DIR="$KITTY_CONF_DIR"
-fi
-
 get_theme_file() {
     local theme="$1"
+    local repo_kitty_dir
+    # Theme files are stowed from the repo alongside kitty.conf.
+    repo_kitty_dir="$(dirname "$(readlink -f "$KITTY_CONF_DIR/kitty.conf")" 2>/dev/null)"
+    if [[ -z "$repo_kitty_dir" || ! -d "$repo_kitty_dir" ]]; then
+        repo_kitty_dir="$KITTY_CONF_DIR"
+    fi
     case "$theme" in
         dark|Dark)
-            echo "$REPO_KITTY_DIR/dark-theme.conf"
+            echo "$repo_kitty_dir/dark-theme.conf"
             ;;
         light|Light|Bright)
-            echo "$REPO_KITTY_DIR/light-theme.conf"
+            echo "$repo_kitty_dir/light-theme.conf"
             ;;
         *)
             echo >&2 "Unrecognised theme '$theme'"
@@ -77,13 +76,15 @@ get_border_colors() {
 }
 
 set_font_size() {
-    # Source libfonts.sh to get the current medium_font_size (which
-    # respects the active layout's ui_scale / DPI).
-    local font_size
-    font_size=$(
-        . "$ZDOTDIR/lib/libfonts.sh" 2>/dev/null
-        echo "$medium_font_size"
-    )
+    # Exact workers pass the staged size. Ordinary callers retain live policy.
+    local font_size="${1:-}"
+    local medium_font_size=""
+    if [[ -z "$font_size" ]]; then
+        font_size=$(
+            . "$ZDOTDIR/lib/libfonts.sh" 2>/dev/null
+            echo "$medium_font_size"
+        )
+    fi
     if [[ -z "$font_size" ]]; then
         echo >&2 "kitty-theme-config: could not determine font size from libfonts.sh"
         return 1
@@ -94,8 +95,11 @@ set_font_size() {
 
 set_theme() {
     local theme="$1"
-    local theme_file
-    theme_file=$(get_theme_file "$theme") || return 1
+    local theme_file="${2:-}"
+    local exact_font_size="${3:-}"
+    if [[ -z "$theme_file" ]]; then
+        theme_file=$(get_theme_file "$theme") || return 1
+    fi
 
     if [[ ! -f "$theme_file" ]]; then
         echo >&2 "Theme file not found: $theme_file"
@@ -117,16 +121,25 @@ set_theme() {
         read -r -a border_colors <<< "$(get_border_colors "$theme")"
         kitty_remote_all set-colors --all --configured "${border_colors[@]}" 2>/dev/null || true
 
-        # Update font size to match the current layout/DPI
-        set_font_size
+        # Update font size to either the exact plan or current live policy.
+        set_font_size "$exact_font_size"
     fi
 }
 
 main() {
-    if [[ -z "$1" ]]; then
+    if [[ "${1:-}" == --exact ]]; then
+        [[ "$#" -eq 4 && -n "$2" && -n "$3" && "$4" =~ ^[1-9][0-9]*$ ]] || {
+            echo >&2 "Usage: $0 --exact THEME THEME_FILE FONT_SIZE"
+            return 2
+        }
+        set_theme "$2" "$3" "$4"
+    elif [[ -z "${1:-}" ]]; then
         show_current
-    else
+    elif [[ "$#" -eq 1 ]]; then
         set_theme "$1"
+    else
+        echo >&2 "Usage: $0 [dark|Dark|light|Light|Bright]"
+        return 2
     fi
 }
 

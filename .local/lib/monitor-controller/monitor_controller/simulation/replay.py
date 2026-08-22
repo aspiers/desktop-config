@@ -12,6 +12,7 @@ from typing import Never, cast
 from ..codec import (
     StateCodecError,
     decode_schema_value,
+    decode_state_value,
     encode_schema_value,
     encode_state,
     validate_state,
@@ -31,8 +32,9 @@ from ..model import (
 )
 from ..reducer import reduce
 
-REPLAY_SCHEMA_VERSION = 2
+REPLAY_SCHEMA_VERSION = 3
 _LEGACY_REPLAY_SCHEMA_VERSION = 1
+_PREVIOUS_REPLAY_SCHEMA_VERSION = 2
 MAX_REPLAY_BYTES = 16 * 1_048_576
 _POLICY_PROVENANCE = "synthetic_policy"
 _POLICY_TRACE_SEMANTICS = "scenario_replay_not_production_audit"
@@ -161,6 +163,24 @@ def encode_replay(trace: ReplayTrace) -> bytes:
     return payload
 
 
+def _replay_state_key(value: object, state: State, schema_version: int) -> str:
+    """Hash the encoded state schema used by this replay generation."""
+    if schema_version == REPLAY_SCHEMA_VERSION:
+        payload = encode_state(state)
+    else:
+        try:
+            payload = json.dumps(
+                value,
+                allow_nan=False,
+                ensure_ascii=True,
+                separators=(",", ":"),
+                sort_keys=True,
+            ).encode("utf-8")
+        except (TypeError, ValueError) as error:
+            raise ReplayFormatError("legacy replay state cannot be hashed") from error
+    return sha256(payload).hexdigest()
+
+
 def decode_replay(data: bytes | str) -> ReplayTrace:
     """Strictly decode canonical JSONL without executing or reducing it."""
     raw = _bounded_text(data)
@@ -181,29 +201,43 @@ def decode_replay(data: bytes | str) -> ReplayTrace:
     )
     if schema_version not in {
         _LEGACY_REPLAY_SCHEMA_VERSION,
+        _PREVIOUS_REPLAY_SCHEMA_VERSION,
         REPLAY_SCHEMA_VERSION,
     }:
         raise ReplayFormatError(
-            f"replay schema_version must be {_LEGACY_REPLAY_SCHEMA_VERSION} "
-            f"or {REPLAY_SCHEMA_VERSION}"
+            "replay schema_version must be one of "
+            f"{_LEGACY_REPLAY_SCHEMA_VERSION}, "
+            f"{_PREVIOUS_REPLAY_SCHEMA_VERSION}, or {REPLAY_SCHEMA_VERSION}"
         )
-    initial = _decode_replay_state(header["initial_state"], "initial_state")
+    initial_value = header["initial_state"]
+    initial = _decode_replay_state(initial_value, "initial_state")
     provenance = cast("str | None", header.get("provenance"))
     trace_semantics = cast("str | None", header.get("trace_semantics"))
     steps: list[ReplayStep] = []
     state = initial
-    audit_key_state = initial
+    audit_prior_key: str = _replay_state_key(initial_value, initial, schema_version)
     for index, record in enumerate(records[1:], start=1):
         record_kind = record.get("record")
         if record_kind in {"would_dispatch", "runtime_failure"}:
             _validate_annotation(record, index, schema_version)
             continue
+        state_value = record.get("state")
         audit_key_result = _decode_replay_state(
-            record.get("state"),
+            state_value,
             f"record {index}.state",
         )
-        migrated_record = _migrate_legacy_cancellation_record(
+        audit_result_key = _replay_state_key(
+            state_value,
+            audit_key_result,
+            schema_version,
+        )
+        planning_migrated_record = _migrate_legacy_planning_record(
             record,
+            state,
+            schema_version,
+        )
+        migrated_record = _migrate_legacy_cancellation_record(
+            planning_migrated_record,
             state,
             schema_version,
         )
@@ -212,12 +246,12 @@ def decode_replay(data: bytes | str) -> ReplayTrace:
             migrated_record.get("audit"),
             step,
             index,
-            key_prior_state=audit_key_state,
-            key_result_state=audit_key_result,
+            expected_prior_key=audit_prior_key,
+            expected_result_key=audit_result_key,
         )
         steps.append(step)
         state = step.expected.state
-        audit_key_state = audit_key_result
+        audit_prior_key = audit_result_key
     try:
         return ReplayTrace(
             initial,
@@ -227,6 +261,92 @@ def decode_replay(data: bytes | str) -> ReplayTrace:
         )
     except ValueError as error:
         raise ReplayFormatError(f"invalid replay header metadata: {error}") from error
+
+
+_LEGACY_PLANNING_KEY_FIELDS = frozenset(
+    {
+        "physical_epoch",
+        "profile",
+        "layout",
+        "observation_key",
+        "mapping",
+        "configuration_hashes",
+    }
+)
+_CURRENT_PLANNING_KEY_FIELDS = _LEGACY_PLANNING_KEY_FIELDS | {"active_outputs"}
+
+
+def _legacy_key_active_outputs(value: Mapping[str, object]) -> list[object]:
+    mapping = value.get("mapping")
+    if not isinstance(mapping, list):
+        return []
+    outputs = {
+        live
+        for item in cast("list[object]", mapping)
+        if isinstance(item, dict)
+        and isinstance(live := cast("dict[str, object]", item).get("live_output"), str)
+    }
+    return [cast("object", item) for item in sorted(outputs)]
+
+
+def _migrate_legacy_planning_value(
+    value: object,
+    preferred_active_outputs: list[object] | None,
+) -> object:
+    if isinstance(value, list):
+        return [
+            _migrate_legacy_planning_value(item, preferred_active_outputs)
+            for item in cast("list[object]", value)
+        ]
+    if not isinstance(value, dict):
+        return value
+    data = cast("dict[str, object]", value)
+    fields = frozenset(data)
+    if fields == _CURRENT_PLANNING_KEY_FIELDS:
+        raise ReplayFormatError(
+            "legacy replay contains a current-only planning input field"
+        )
+    migrated = {
+        key: _migrate_legacy_planning_value(item, preferred_active_outputs)
+        for key, item in data.items()
+    }
+    if fields == _LEGACY_PLANNING_KEY_FIELDS:
+        migrated["active_outputs"] = (
+            _legacy_key_active_outputs(data)
+            if preferred_active_outputs is None
+            else list(preferred_active_outputs)
+        )
+    return migrated
+
+
+def _migrate_legacy_planning_record(
+    record: Mapping[str, object],
+    prior_state: State,
+    schema_version: int,
+) -> Mapping[str, object]:
+    """Add the v3 active-topology key only to non-authoritative replay values."""
+    if schema_version == REPLAY_SCHEMA_VERSION:
+        return record
+    preferred: list[object] | None = None
+    if prior_state.planning is not None:
+        preferred = [
+            cast("object", item)
+            for item in prior_state.planning.input_key.active_outputs
+        ]
+    event = record.get("event")
+    if preferred is None and isinstance(event, dict):
+        observation = cast("dict[str, object]", event).get("observation")
+        if isinstance(observation, dict):
+            active = cast("dict[str, object]", observation).get("x_active_outputs")
+            if isinstance(active, list) and all(
+                isinstance(item, str) for item in cast("list[object]", active)
+            ):
+                preferred = list(cast("list[object]", active))
+    migrated = dict(record)
+    for field in ("event", "effects"):
+        if field in migrated:
+            migrated[field] = _migrate_legacy_planning_value(migrated[field], preferred)
+    return migrated
 
 
 def _migrate_legacy_cancellation_record(  # noqa: C901
@@ -356,9 +476,7 @@ def _validate_state_for_replay(state: State, where: str) -> None:
 
 def _decode_replay_state(value: object, where: str) -> State:
     try:
-        decoded = decode_schema_value(value, State)
-        if not isinstance(decoded, State):
-            raise ReplayFormatError(f"{where} did not decode as State")
+        decoded = decode_state_value(value, authoritative=False)
         _validate_state_for_replay(decoded, where)
     except StateCodecError as error:
         raise ReplayFormatError(f"{where} is invalid: {error}") from error
@@ -384,8 +502,8 @@ def _validate_audit_metadata(
     step: ReplayStep,
     index: int,
     *,
-    key_prior_state: State,
-    key_result_state: State,
+    expected_prior_key: str,
+    expected_result_key: str,
 ) -> None:
     if value is None:
         return
@@ -420,11 +538,9 @@ def _validate_audit_metadata(
         raise ReplayFormatError(
             f"{where}.wake_reason does not match its event and observation request"
         )
-    expected_prior = sha256(encode_state(key_prior_state)).hexdigest()
-    expected_result = sha256(encode_state(key_result_state)).hexdigest()
-    if audit["prior_state_key"] != expected_prior:
+    if audit["prior_state_key"] != expected_prior_key:
         raise ReplayFormatError(f"{where}.prior_state_key does not match replay state")
-    if audit["resulting_state_key"] != expected_result:
+    if audit["resulting_state_key"] != expected_result_key:
         raise ReplayFormatError(f"{where}.resulting_state_key does not match decision")
     _validate_audit_timing(audit["timing"], where)
 

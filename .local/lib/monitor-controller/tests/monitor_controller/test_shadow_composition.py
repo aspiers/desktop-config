@@ -27,6 +27,7 @@ if TYPE_CHECKING:
 from monitor_controller.model import (
     ActionId,
     ActionKind,
+    ActionLifecycle,
     ActivateProbe,
     ApplicationAttemptKey,
     ApplyProfile,
@@ -62,6 +63,7 @@ from monitor_controller.model import (
     State,
     TransitionId,
     TransitionKey,
+    WorkerUnit,
 )
 from monitor_controller.observer.autorandr import (
     parse_autorandr_fingerprint,
@@ -90,6 +92,9 @@ from monitor_controller.shadow import (
 _BOOT = BootId(UUID(int=801))
 _INSTANCE = ControllerInstanceId(UUID(int=802))
 _CONFIG = (ConfigurationContentHash("layouts/dock.yaml", "sha256:dock"),)
+_LIVE_V2_STATE = (
+    Path(__file__).parent / "fixtures" / "state" / "live-shadow-v2-sanitized.json"
+)
 
 
 class _Clock:
@@ -430,6 +435,77 @@ def test_restart_loads_persisted_shadow_timer_and_rotates_audit(
         await controller.controller.close()
 
     asyncio.run(exercise())
+
+
+def test_shadow_restart_terminalizes_impossible_worker_exclusions(
+    tmp_path: Path,
+) -> None:
+    paths = _paths(tmp_path)
+    paths.state_home.mkdir(parents=True)
+    store = AtomicStateStore(paths.state_home, StateNamespace.SHADOW)
+    action_id = ActionId(_INSTANCE, ActionKind.PREPARATION, 1)
+    unit = WorkerUnit(action_id, "monitor-prepare@legacy.service")
+    persisted = replace(
+        _state(),
+        phase=ControllerPhase.RECOVERING,
+        action_sequence_high_water=1,
+        recovery_units=(unit,),
+    )
+    store.save(persisted)
+
+    loaded = load_shadow_state(
+        store,
+        boot_id=_BOOT,
+        controller_instance=ControllerInstanceId(UUID(int=899)),
+        display_identity=persisted.display_identity,
+    )
+
+    assert loaded.phase is ControllerPhase.RECOVERING
+    assert not loaded.recovery_units
+    cancellation = next(
+        item for item in loaded.action_tombstones if item.action_id == action_id
+    )
+    assert cancellation.lifecycle is ActionLifecycle.CANCELLED
+
+
+def test_v2_shadow_state_recovers_on_same_boot_and_next_restart(
+    tmp_path: Path,
+) -> None:
+    paths = _paths(tmp_path)
+    store = AtomicStateStore(paths.state_home, StateNamespace.SHADOW)
+    store.path.parent.mkdir(parents=True)
+    store.path.write_bytes(_LIVE_V2_STATE.read_bytes())
+    boot_id = BootId(UUID("cccccccc-cccc-4ccc-8ccc-cccccccccccc"))
+    display = DisplayIdentity(":sanitized")
+    first_instance = ControllerInstanceId(UUID(int=900))
+
+    first = load_shadow_state(
+        store,
+        boot_id=boot_id,
+        controller_instance=first_instance,
+        display_identity=display,
+    )
+
+    assert first.phase is ControllerPhase.RECOVERING
+    assert first.planning is None
+    assert first.preparation is None
+    assert first.finalization is None
+    assert first.latest_observation is None
+    assert first.next_timer_ms is None
+    assert first.baseline_adoption
+    assert len(first.action_tombstones) == 12
+
+    store.save(first)
+    second_instance = ControllerInstanceId(UUID(int=901))
+    restarted = load_shadow_state(
+        store,
+        boot_id=boot_id,
+        controller_instance=second_instance,
+        display_identity=display,
+    )
+
+    assert restarted == replace(first, controller_instance=second_instance)
+    assert json.loads(store.path.read_text())["schema_version"] == 3
 
 
 def test_corrupt_shadow_state_is_not_discarded_on_restart(tmp_path: Path) -> None:

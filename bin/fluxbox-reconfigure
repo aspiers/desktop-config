@@ -1,6 +1,53 @@
 #!/bin/bash
 
-if fluxbox-gen-config; then
+set -u
+
+usage() {
+    cat <<EOF
+Usage: $0 [--generate-only [fluxbox-gen-config arguments...]]
+       $0 [--live-only]
+       $0
+EOF
+}
+
+generate=1
+live=1
+case "${1:-}" in
+    --generate-only)
+        generate=1
+        live=0
+        shift
+        ;;
+    --live-only)
+        generate=0
+        live=1
+        shift
+        [ "$#" -eq 0 ] || { usage >&2; exit 2; }
+        ;;
+    --help|-h)
+        usage
+        exit 0
+        ;;
+    "") ;;
+    *)
+        usage >&2
+        exit 2
+        ;;
+esac
+
+if [ "$generate" -eq 1 ]; then
+    has_monitor_count=0
+    for argument in "$@"; do
+        [ "$argument" = --monitor-count ] && has_monitor_count=1
+    done
+    if [ "$has_monitor_count" -eq 0 ]; then
+        monitor_count=$(monitors-connected) || exit $?
+        set -- --monitor-count "$monitor_count" "$@"
+    fi
+    fluxbox-gen-config "$@" || exit $?
+fi
+
+if [ "$live" -eq 1 ]; then
     fluxbox-remote Reconfigure
     # Annoyingly this doesn't force a reload of style overlay settings :-(
     # fluxbox-remote ReloadStyle

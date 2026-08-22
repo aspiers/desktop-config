@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import types
 from collections.abc import Callable, Mapping
-from dataclasses import fields, is_dataclass
+from dataclasses import fields, is_dataclass, replace
 from enum import Enum
 from typing import Any, Never, cast, get_args, get_origin, get_type_hints
 from uuid import UUID
@@ -23,6 +23,7 @@ from .model import (
     PlanningState,
     PreparationState,
     State,
+    bound_action_tombstones,
 )
 
 MAX_STATE_BYTES: int = 1_048_576
@@ -32,6 +33,7 @@ MAX_TOMBSTONES = 1_024
 MAX_RECOVERY_UNITS = 256
 MAX_ATTEMPT_KEYS = 4_096
 _LEGACY_SCHEMA_VERSION = 1
+_PREVIOUS_SCHEMA_VERSION = 2
 _STATE_WORKER_ACTION_FIELDS = (
     "probe",
     "application",
@@ -417,18 +419,9 @@ def validate_state(state: State) -> None:
     _validate_bounded_state(state)
 
 
-def _migrate_state_document(document: object) -> object:
-    if not isinstance(document, dict):
-        return document
-    state_data = cast("dict[str, object]", document)
-    version = state_data.get("schema_version")
-    if isinstance(version, bool) or not isinstance(version, int):
-        _fail("state.schema_version must be an integer")
-    if version == SCHEMA_VERSION:
-        return state_data
-    if version != _LEGACY_SCHEMA_VERSION:
-        _fail(f"state.schema_version {version} is unsupported")
-
+def _migrate_version_one_document(
+    state_data: dict[str, object],
+) -> dict[str, object]:
     migrated = dict(state_data)
     for field in _STATE_WORKER_ACTION_FIELDS:
         action = migrated.get(field)
@@ -443,8 +436,147 @@ def _migrate_state_document(document: object) -> object:
             0 if lifecycle in _IN_FLIGHT_LIFECYCLE_VALUES else None
         )
         migrated[field] = migrated_action
+    migrated["schema_version"] = _PREVIOUS_SCHEMA_VERSION
+    return migrated
+
+
+def _legacy_active_outputs(state_data: Mapping[str, object]) -> list[object]:
+    """Derive the old implicit active set solely for strict legacy validation."""
+    planning = state_data.get("planning")
+    if not isinstance(planning, dict):
+        return []
+    input_key = cast("dict[str, object]", planning).get("input_key")
+    if not isinstance(input_key, dict):
+        return []
+    key_data = cast("dict[str, object]", input_key)
+    mapping = key_data.get("mapping")
+    mapped_outputs: set[str] = set()
+    if isinstance(mapping, list):
+        for item in cast("list[object]", mapping):
+            if isinstance(item, dict):
+                live_output = cast("dict[str, object]", item).get("live_output")
+                if isinstance(live_output, str):
+                    mapped_outputs.add(live_output)
+
+    observation = state_data.get("latest_observation")
+    if isinstance(observation, dict):
+        observation_data = cast("dict[str, object]", observation)
+        if observation_data.get("observation_key") == key_data.get("observation_key"):
+            active = observation_data.get("x_active_outputs")
+            if isinstance(active, list) and all(
+                isinstance(item, str) and item in mapped_outputs
+                for item in cast("list[object]", active)
+            ):
+                return list(cast("list[object]", active))
+    # Before v3 every connected mapped output was implicitly treated as active.
+    return [cast("object", item) for item in sorted(mapped_outputs)]
+
+
+def _migrate_version_two_document(
+    state_data: dict[str, object],
+) -> dict[str, object]:
+    migrated = dict(state_data)
+    planning = migrated.get("planning")
+    if isinstance(planning, dict):
+        planning_data = cast("dict[str, object]", planning)
+        input_key = planning_data.get("input_key")
+        if isinstance(input_key, dict):
+            input_data = cast("dict[str, object]", input_key)
+            if "active_outputs" in input_data:
+                _fail(
+                    "state.planning.input_key.active_outputs is not valid "
+                    "in schema version 2"
+                )
+            migrated_input = dict(input_data)
+            migrated_input["active_outputs"] = _legacy_active_outputs(migrated)
+            migrated_planning = dict(planning_data)
+            migrated_planning["input_key"] = migrated_input
+            migrated["planning"] = migrated_planning
     migrated["schema_version"] = SCHEMA_VERSION
     return migrated
+
+
+def _migrate_state_document(document: object) -> tuple[object, bool]:
+    if not isinstance(document, dict):
+        return document, False
+    state_data = cast("dict[str, object]", document)
+    version = state_data.get("schema_version")
+    if isinstance(version, bool) or not isinstance(version, int):
+        _fail("state.schema_version must be an integer")
+    if version == SCHEMA_VERSION:
+        return state_data, False
+    if version == _LEGACY_SCHEMA_VERSION:
+        state_data = _migrate_version_one_document(state_data)
+        version = _PREVIOUS_SCHEMA_VERSION
+    if version != _PREVIOUS_SCHEMA_VERSION:
+        _fail(f"state.schema_version {version} is unsupported")
+    had_unproven_plan = state_data.get("planning") is not None
+    return _migrate_version_two_document(state_data), had_unproven_plan
+
+
+def _migration_recovery_state(state: State) -> State:
+    """Revoke unproven v1/v2 transition authority while retaining exclusions."""
+    tombstones = list(state.action_tombstones)
+    protected: set[ActionId] = set()
+    recovery_units = list(state.recovery_units)
+    seen_units = set(recovery_units)
+    for action in _state_actions(state):
+        if action.lifecycle in TERMINAL_ACTION_LIFECYCLES:
+            continue
+        if (
+            not isinstance(action, PlanningAction)
+            and action.lifecycle.value in _IN_FLIGHT_LIFECYCLE_VALUES
+            and action.unit is not None
+        ):
+            if action.unit not in seen_units:
+                recovery_units.append(action.unit)
+                seen_units.add(action.unit)
+            continue
+        tombstone = ActionTombstone(action.action_id, ActionLifecycle.CANCELLED)
+        tombstones.append(tombstone)
+        protected.add(action.action_id)
+    retained_tombstones = bound_action_tombstones(
+        tuple(tombstones), protected_action_ids=frozenset(protected)
+    )
+    return replace(
+        state,
+        latest_observation=None,
+        phase=ControllerPhase.RECOVERING,
+        planning_state=PlanningState.PLAN_IDLE,
+        preparation_state=PreparationState.PREPARE_IDLE,
+        physical_token=None,
+        candidate=None,
+        aggressive_deadline_ms=None,
+        next_timer_ms=None,
+        backoff_index=0,
+        verify_since_ms=None,
+        last_drm_at_ms=None,
+        stable_x_profile=None,
+        external_intent=False,
+        baseline_adoption=state.desktop_finalized_profile is None,
+        probe=None,
+        application=None,
+        planning=None,
+        preparation=None,
+        finalization=None,
+        unknown_key=None,
+        unknown_since_ms=None,
+        unplug_proof=None,
+        action_tombstones=retained_tombstones,
+        recovery_units=tuple(recovery_units),
+    )
+
+
+def _decode_state_document(document: object, *, authoritative: bool) -> State:
+    migrated_document, had_unproven_plan = _migrate_state_document(document)
+    decoded = _decode_value(migrated_document, State, "state")
+    if not isinstance(decoded, State):
+        _fail("decoded document is not controller state")
+    validate_state(decoded)
+    if authoritative and had_unproven_plan:
+        decoded = _migration_recovery_state(decoded)
+        validate_state(decoded)
+    return decoded
 
 
 def encode_state(state: State, *, max_bytes: int = MAX_STATE_BYTES) -> bytes:
@@ -463,11 +595,14 @@ def encode_state(state: State, *, max_bytes: int = MAX_STATE_BYTES) -> bytes:
     return encoded
 
 
+def decode_state_value(value: object, *, authoritative: bool = True) -> State:
+    """Decode one parsed state value, applying strict schema migration."""
+    return _decode_state_document(value, authoritative=authoritative)
+
+
 def decode_state(data: bytes | str, *, max_bytes: int = MAX_STATE_BYTES) -> State:
     """Decode and validate state without mutating any caller-owned value."""
-    document = _migrate_state_document(_decode_document(data, max_bytes))
-    decoded = _decode_value(document, State, "state")
-    if not isinstance(decoded, State):
-        _fail("decoded document is not controller state")
-    validate_state(decoded)
-    return decoded
+    return _decode_state_document(
+        _decode_document(data, max_bytes),
+        authoritative=True,
+    )

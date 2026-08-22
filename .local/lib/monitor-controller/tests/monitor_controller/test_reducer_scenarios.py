@@ -22,11 +22,15 @@ from monitor_controller.model import (
     ApplicationFinished,
     ControllerPhase,
     DispatchRejected,
+    EdidEvidence,
+    EdidIntegrity,
+    EventGeneration,
     EventMetadata,
     FinalizationFinished,
     ObservationCompleted,
     ObservationGeneration,
     ObservationKey,
+    PreparationAction,
     PreparationFinished,
     ProbeFinished,
     RequestObservation,
@@ -116,6 +120,257 @@ def test_worker_completion_schedules_from_processing_not_sample_time() -> None:
     assert state.latest_observation is not None
     assert state.latest_observation.observed_at_ms == 0
     assert decision.state.next_timer_ms == 50_000
+
+
+def test_running_preparation_retains_exclusion_across_temporary_edid_absence() -> None:
+    state = _scenario_state(
+        "production_prepare_pending_preparing_prepared",
+        ControllerPhase.VERIFYING,
+        ActionLifecycle.DISPATCHED,
+    )
+    action = state.preparation
+    exact = state.latest_observation
+    assert action is not None
+    assert exact is not None
+    absent = replace(
+        exact,
+        observed_at_ms=exact.observed_at_ms + 1,
+        observation_generation=ObservationGeneration(
+            exact.observation_generation.value + 1
+        ),
+        begin_event_generation=EventGeneration(exact.event_generation.value + 1),
+        end_event_generation=EventGeneration(exact.event_generation.value + 1),
+        base_identity_profiles=(),
+        edid_integrity=(EdidEvidence("DP-1", EdidIntegrity.ABSENT),),
+        eligible_profiles=(),
+        exact_profile=None,
+        observation_key=ObservationKey("temporary-edid-absence"),
+    )
+
+    retained = reduce(
+        state,
+        ObservationCompleted(
+            EventMetadata(absent.observed_at_ms, state.boot_id),
+            absent,
+        ),
+    )
+
+    assert retained.state.preparation == action
+    assert retained.state.preparation_state.value == "preparing"
+    assert retained.state.phase is ControllerPhase.DISCOVER_FAST
+    assert retained.state.verify_since_ms is None
+    assert not any(isinstance(effect, StopAction) for effect in retained.effects)
+
+    completed = reduce(
+        retained.state,
+        PreparationFinished(
+            EventMetadata(absent.observed_at_ms + 1, state.boot_id),
+            action.action_id,
+            WorkerOutcome.SUCCEEDED,
+            0,
+            action.plan_hash,
+        ),
+    )
+    pending = completed.state.preparation
+    assert pending is not None
+    assert pending.lifecycle is ActionLifecycle.RESULT_PENDING
+
+    still_absent = replace(
+        absent,
+        observed_at_ms=absent.observed_at_ms + 2,
+        observation_generation=ObservationGeneration(
+            absent.observation_generation.value + 1
+        ),
+    )
+    retained_result = reduce(
+        completed.state,
+        ObservationCompleted(
+            EventMetadata(still_absent.observed_at_ms, state.boot_id),
+            still_absent,
+        ),
+    )
+    assert retained_result.state.preparation == pending
+
+    restored = replace(
+        exact,
+        observed_at_ms=still_absent.observed_at_ms + 1,
+        observation_generation=ObservationGeneration(
+            still_absent.observation_generation.value + 1
+        ),
+        begin_event_generation=still_absent.end_event_generation,
+        end_event_generation=still_absent.end_event_generation,
+    )
+    accepted = reduce(
+        retained_result.state,
+        ObservationCompleted(
+            EventMetadata(restored.observed_at_ms, state.boot_id),
+            restored,
+        ),
+    )
+    prepared = accepted.state.preparation
+    assert prepared is not None
+    assert prepared.lifecycle is ActionLifecycle.COMPLETED
+    assert accepted.state.preparation_state.value == "prepared"
+    assert accepted.state.verify_since_ms == restored.observed_at_ms
+
+
+def _preparing_state_with_connected_disabled_output() -> tuple[
+    State, PreparationAction
+]:
+    state = _scenario_state(
+        "production_prepare_pending_preparing_prepared",
+        ControllerPhase.VERIFYING,
+        ActionLifecycle.DISPATCHED,
+    )
+    action = state.preparation
+    planning = state.planning
+    observation = state.latest_observation
+    assert action is not None
+    assert planning is not None
+    assert observation is not None
+    active_outputs = ("eDP-1",)
+    profiles = tuple(
+        replace(item, active_outputs=active_outputs)
+        if item.profile == action.profile
+        else item
+        for item in observation.eligible_profiles
+    )
+    admitted = replace(
+        observation,
+        x_active_outputs=active_outputs,
+        eligible_profiles=profiles,
+    )
+    return (
+        replace(
+            state,
+            planning=replace(
+                planning,
+                input_key=replace(
+                    planning.input_key,
+                    active_outputs=active_outputs,
+                ),
+            ),
+            latest_observation=admitted,
+        ),
+        action,
+    )
+
+
+def test_preparation_guard_accepts_connected_but_disabled_output() -> None:
+    state, action = _preparing_state_with_connected_disabled_output()
+    observation = state.latest_observation
+    assert observation is not None
+    fresh = replace(
+        observation,
+        observed_at_ms=observation.observed_at_ms + 1,
+        observation_generation=ObservationGeneration(
+            observation.observation_generation.value + 1
+        ),
+    )
+
+    decision = reduce(
+        state,
+        ObservationCompleted(
+            EventMetadata(fresh.observed_at_ms, state.boot_id),
+            fresh,
+        ),
+    )
+
+    assert decision.state.preparation == action
+    assert decision.state.preparation_state.value == "preparing"
+    assert not any(isinstance(effect, StopAction) for effect in decision.effects)
+
+
+@pytest.mark.parametrize(
+    "active_outputs",
+    [(), ("DP-1", "eDP-1")],
+    ids=("missing", "extra"),
+)
+def test_preparation_guard_stops_active_topology_contradictions(
+    active_outputs: tuple[str, ...],
+) -> None:
+    state, action = _preparing_state_with_connected_disabled_output()
+    observation = state.latest_observation
+    assert observation is not None
+    contradicted = replace(
+        observation,
+        observed_at_ms=observation.observed_at_ms + 1,
+        observation_generation=ObservationGeneration(
+            observation.observation_generation.value + 1
+        ),
+        x_active_outputs=active_outputs,
+        eligible_profiles=(),
+        exact_profile=None,
+        observation_key=ObservationKey("contradictory-active-topology"),
+    )
+
+    decision = reduce(
+        state,
+        ObservationCompleted(
+            EventMetadata(contradicted.observed_at_ms, state.boot_id),
+            contradicted,
+        ),
+    )
+
+    preparation = decision.state.preparation
+    assert preparation is not None
+    assert preparation.lifecycle is ActionLifecycle.STOPPING
+    assert StopAction(action.action_id) in decision.effects
+
+
+@pytest.mark.parametrize(
+    "integrity",
+    [
+        EdidIntegrity.BASE_VALID_EXTENSIONS_INCOMPLETE,
+        EdidIntegrity.BASE_VALID_EXTENSIONS_INVALID,
+    ],
+)
+def test_running_preparation_retains_exclusion_for_broken_extensions(
+    integrity: EdidIntegrity,
+) -> None:
+    state = _scenario_state(
+        "production_prepare_pending_preparing_prepared",
+        ControllerPhase.VERIFYING,
+        ActionLifecycle.DISPATCHED,
+    )
+    action = state.preparation
+    exact = state.latest_observation
+    assert action is not None
+    assert exact is not None
+    external = next(item for item in exact.edid_integrity if item.output == "DP-1")
+    assert external.base_hash is not None
+    broken = replace(
+        exact,
+        observed_at_ms=exact.observed_at_ms + 1,
+        observation_generation=ObservationGeneration(
+            exact.observation_generation.value + 1
+        ),
+        begin_event_generation=EventGeneration(exact.event_generation.value + 1),
+        end_event_generation=EventGeneration(exact.event_generation.value + 1),
+        edid_integrity=tuple(
+            EdidEvidence(item.output, integrity, item.base_hash)
+            if item.output == external.output
+            else item
+            for item in exact.edid_integrity
+        ),
+        eligible_profiles=(),
+        exact_profile=None,
+        observation_key=ObservationKey(f"broken-extensions-{integrity.value}"),
+    )
+
+    retained = reduce(
+        state,
+        ObservationCompleted(
+            EventMetadata(broken.observed_at_ms, state.boot_id),
+            broken,
+        ),
+    )
+
+    assert retained.state.preparation == action
+    assert retained.state.preparation_state.value == "preparing"
+    assert retained.state.phase is ControllerPhase.DISCOVER_FAST
+    assert retained.state.verify_since_ms is None
+    assert not any(isinstance(effect, StopAction) for effect in retained.effects)
 
 
 def test_retained_completed_actions_have_atomic_terminal_evidence() -> None:

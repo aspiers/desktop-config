@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import os
-import signal
+import re
 import stat
 import subprocess
 from collections.abc import Mapping
@@ -16,23 +16,18 @@ from typing import Final, Never, Protocol, final
 from monitor_controller.model import ActionKind, ActionLifecycle, RawEvidenceSource
 from monitor_controller.observer.autorandr import (
     SavedAutorandrProfile,
-    fingerprint_matches,
     parse_saved_profile,
 )
 from monitor_controller.observer.drm import (
     ConnectorKind,
     ConnectorStatus,
-    DrmConnector,
     EvidenceState,
     ReadOnlyTree,
     RootedSysfsReader,
     sample_drm,
 )
 from monitor_controller.observer.evidence import TextCommandEvidence
-from monitor_controller.observer.topology import (
-    CanonicalTopologyEvidence,
-    derive_canonical_topology,
-)
+from monitor_controller.observer.topology import derive_canonical_topology
 from monitor_controller.observer.xrandr import XrandrEvidenceSource, sample_xrandr
 from monitor_controller.runtime.commands import (
     BoundedCommandRunner,
@@ -62,13 +57,13 @@ from monitor_controller.workers.common import (
     WorkerStartupError,
     execute_worker,
     install_cooperative_sigterm_handler,
+    kill_process_group,
     validate_topology_guard,
     validate_worker_startup,
 )
+from monitor_controller.workers.identity import validate_noncontradictory_edids
 
 APPLICATION_COMMAND_TIMEOUT_SECONDS: Final = 90.0
-EDID_BASE_BYTES: Final = 128
-EDID_BASE_HEX_CHARS: Final = EDID_BASE_BYTES * 2
 COMMAND_NOT_FOUND_EXIT_STATUS: Final = 127
 COMMAND_TIMEOUT_EXIT_STATUS: Final = 124
 POST_ACTION_EVIDENCE_EXIT_STATUS: Final = 65
@@ -81,23 +76,8 @@ _AUTORANDR_ARGUMENTS_PREFIX = (
     "gamma",
     "--load",
 )
-_ENVIRONMENT_DENYLIST: Final = frozenset(
-    {
-        "AUTORANDR_CURRENT_PROFILE",
-        "AUTORANDR_MONITORS",
-        "AUTORANDR_PROFILE_FOLDER",
-        "BASH_ENV",
-        "ENV",
-        "LD_LIBRARY_PATH",
-        "LD_PRELOAD",
-        "PYTHONHOME",
-        "PYTHONINSPECT",
-        "PYTHONPATH",
-        "PYTHONSTARTUP",
-        "PYTHONUSERBASE",
-        "WAYLAND_DISPLAY",
-    }
-)
+_TRUSTED_PATH: Final = "/usr/bin:/bin"
+_DISPLAY = re.compile(r"(?:[A-Za-z0-9_.-]+)?:[0-9]+(?:\.[0-9]+)?")
 
 
 @dataclass(frozen=True, slots=True)
@@ -178,14 +158,14 @@ class SubprocessApplyCommands:
             try:
                 status = process.wait(timeout=APPLICATION_COMMAND_TIMEOUT_SECONDS)
             except TimeoutExpired:
-                _kill_process_group(process)
+                kill_process_group(process)
                 process.wait()
                 return ApplyCommandResult(
                     COMMAND_TIMEOUT_EXIT_STATUS,
                     timed_out=True,
                 )
         except BaseException:
-            _kill_process_group(process)
+            kill_process_group(process)
             with contextlib.suppress(OSError):
                 process.wait()
             raise
@@ -312,39 +292,74 @@ def isolated_application_environment(
     action_profile: str,
     base_environment: Mapping[str, str],
 ) -> dict[str, str]:
-    """Replace every autorandr configuration root while preserving X authority."""
+    """Build the exact autorandr environment and preserve only X authority."""
     artifact_root = startup.store.artifact_directory(startup.request.action_id)
-    values = dict(base_environment)
-    authority = values.get("XAUTHORITY")
-    original_home = values.get("HOME")
-    if not authority and values.get("DISPLAY") and original_home:
-        candidate = Path(original_home) / ".Xauthority"
-        try:
-            details = candidate.stat()
-        except OSError:
-            pass
-        else:
-            if stat.S_ISREG(details.st_mode) and os.access(candidate, os.R_OK):
-                authority = str(candidate)
-    for name in _ENVIRONMENT_DENYLIST:
-        values.pop(name, None)
+    display = base_environment.get("DISPLAY")
+    if not display or _DISPLAY.fullmatch(display) is None:
+        _stale("application requires one safe DISPLAY value")
+    authority = _validated_xauthority(base_environment, display)
     profile_directory = artifact_root / "xdg-config" / "autorandr" / action_profile
-    values.update(
-        {
-            "HOME": str(artifact_root / "home"),
-            "MONITOR_CONTROLLER_AUTORANDR_ACTION_ID": startup.request.action_id.value,
-            POSTSWITCH_EVIDENCE_ENVIRONMENT: str(
-                profile_directory / POSTSWITCH_EVIDENCE_FILENAME
-            ),
-            "PYTHONDONTWRITEBYTECODE": "1",
-            "PYTHONNOUSERSITE": "1",
-            "XDG_CONFIG_DIRS": str(artifact_root / "xdg-config-dirs"),
-            "XDG_CONFIG_HOME": str(artifact_root / "xdg-config"),
-        }
-    )
-    if authority is not None:
-        values["XAUTHORITY"] = authority
+    values = {
+        "DISPLAY": display,
+        "HOME": str(artifact_root / "home"),
+        "LANG": "C.UTF-8",
+        "MONITOR_CONTROLLER_AUTORANDR_ACTION_ID": startup.request.action_id.value,
+        "PATH": _TRUSTED_PATH,
+        POSTSWITCH_EVIDENCE_ENVIRONMENT: str(
+            profile_directory / POSTSWITCH_EVIDENCE_FILENAME
+        ),
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONNOUSERSITE": "1",
+        "XDG_CONFIG_DIRS": str(artifact_root / "xdg-config-dirs"),
+        "XDG_CONFIG_HOME": str(artifact_root / "xdg-config"),
+    }
+    values["XAUTHORITY"] = authority
     return values
+
+
+def _validated_xauthority(
+    base_environment: Mapping[str, str],
+    display: str,
+) -> str:
+    """Resolve and read-check X authority before isolating the child HOME."""
+    inherited = base_environment.get("XAUTHORITY")
+    if inherited:
+        authority = Path(inherited)
+        value = inherited
+        source = "inherited XAUTHORITY"
+    else:
+        original_home = base_environment.get("HOME")
+        if not original_home or not _safe_absolute_path(original_home):
+            _stale("application requires safe HOME for the .Xauthority fallback")
+        try:
+            authority = (Path(original_home) / ".Xauthority").resolve()
+        except OSError as error:
+            _stale(f"cannot resolve application HOME .Xauthority: {error}")
+        value = str(authority)
+        source = "HOME .Xauthority fallback"
+    if not _safe_absolute_path(value):
+        _stale(f"application {source} must be one absolute path")
+    detail = (
+        f"application DISPLAY {display!r} requires a readable regular X11 "
+        f"authority file; {source} is unusable: {authority}"
+    )
+    try:
+        authority_stat = authority.stat()
+        if not stat.S_ISREG(authority_stat.st_mode):
+            _stale(detail)
+        with authority.open("rb") as stream:
+            stream.read(1)
+    except OSError as error:
+        _stale(f"{detail}: {error}")
+    return value
+
+
+def _safe_absolute_path(value: str) -> bool:
+    return (
+        bool(value)
+        and not any(character in value for character in "\x00\r\n")
+        and Path(value).is_absolute()
+    )
 
 
 def _validate_materialized_profile(  # noqa: C901, PLR0912
@@ -462,82 +477,13 @@ def _sample_exact_application_topology(
         ),
     )
     validate_topology_guard(request, current)
-    _validate_noncontradictory_edids(profile, begin_drm.connectors, topology)
+    validate_noncontradictory_edids(
+        {item.output: item.value for item in profile.setup},
+        begin_drm.connectors,
+        topology,
+        allow_temporary_absence=False,
+    )
     return current
-
-
-def _validate_noncontradictory_edids(
-    profile: SavedAutorandrProfile,
-    connectors: tuple[DrmConnector, ...],
-    topology: CanonicalTopologyEvidence,
-) -> None:
-    # Re-prove every mapped physical identity from the fresh worker-local EDID.
-    # A setup wildcard may hide extension churn, but it cannot hide any byte of
-    # the 128-byte base block: that would turn a broad autorandr match into
-    # authority to mutate an unproved monitor.
-    patterns = {item.output: item.value for item in profile.setup}
-    proved_outputs: set[str] = set()
-    live_bases: list[bytes] = []
-    for item in connectors:
-        if item.kind is ConnectorKind.VIRTUAL or not item.connected:
-            continue
-        live_output = topology.live_output_for(item.kernel_name)
-        if live_output is None or live_output not in patterns:
-            _stale("connected DRM connector lacks its admitted live mapping")
-        raw = item.edid.raw
-        parsed = item.edid.parsed
-        if raw is None or parsed is None or parsed.base_hash is None:
-            _stale("fresh connector base identity cannot be proved")
-        value = raw.hex()
-        pattern = patterns[live_output]
-        _prove_fixed_saved_base(pattern, value)
-        proved_outputs.add(live_output)
-        live_bases.append(raw[:EDID_BASE_BYTES])
-        if not parsed.fully_ready:
-            continue
-        try:
-            matches = fingerprint_matches(pattern, value)
-        except ValueError as error:
-            _stale(f"materialized setup fingerprint is invalid: {error}")
-        if not matches:
-            _stale("fresh complete connector identity contradicts the admitted mapping")
-    if proved_outputs != set(patterns):
-        _stale("fresh identity proof does not cover the admitted output mapping")
-    if len(live_bases) != len(set(live_bases)):
-        _stale("fresh connector base identities collide")
-
-
-def _prove_fixed_saved_base(pattern: str, live_value: str) -> None:
-    """Require every base nibble to be fixed and equal in the saved pattern."""
-    if pattern.count("*") > 1 or len(live_value) < EDID_BASE_HEX_CHARS:
-        _stale("saved setup cannot prove a complete fresh base identity")
-    if "*" in pattern:
-        prefix, suffix = pattern.split("*", maxsplit=1)
-    else:
-        prefix, suffix = pattern, ""
-    suffix_start = len(live_value) - len(suffix)
-    if suffix_start < 0:
-        _stale("saved setup fingerprint contradicts the fresh connector identity")
-
-    fixed: dict[int, str] = {}
-    for start, value in ((0, prefix), (suffix_start, suffix)):
-        for offset, character in enumerate(value):
-            position = start + offset
-            previous = fixed.get(position)
-            if previous is not None and previous.casefold() != character.casefold():
-                _stale(
-                    "fresh usable connector identity contradicts the saved fixed bytes"
-                )
-            fixed[position] = character
-
-    fixed_base_positions = {
-        position for position in fixed if 0 <= position < EDID_BASE_HEX_CHARS
-    }
-    for position in fixed_base_positions:
-        if fixed[position].casefold() != live_value[position].casefold():
-            _stale("fresh usable connector identity contradicts the admitted mapping")
-    if fixed_base_positions != set(range(EDID_BASE_HEX_CHARS)):
-        _stale("saved setup cannot prove a complete fresh base identity")
 
 
 def _read_enabled_output_evidence(
@@ -610,13 +556,6 @@ def _validate_execution_claim(startup: WorkerStartup) -> None:
 def _raise_if_cancelled(startup: WorkerStartup) -> None:
     if startup.store.stop_intent_if_present(startup.request.action_id) is not None:
         raise WorkerCancelled
-
-
-def _kill_process_group(process: subprocess.Popen[bytes]) -> None:
-    if process.poll() is not None:
-        return
-    with contextlib.suppress(ProcessLookupError):
-        os.killpg(process.pid, signal.SIGKILL)
 
 
 def _stale(detail: str) -> Never:

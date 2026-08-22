@@ -607,6 +607,7 @@ class SerializedController:
             msg = "admitted effect lacks its exact persisted observation proof"
             raise ValueError(msg)
         layout: str | None = None
+        planning_action_id: ActionId | None = None
         probe_base_hash: str | None = None
         probe_edid_integrity = None
         profile_configuration_hashes = ()
@@ -677,11 +678,13 @@ class SerializedController:
                 or planning.input_key.physical_epoch != self._state.physical_epoch
                 or planning.input_key.observation_key != effect.observation_key
                 or planning.input_key.mapping != candidate.mapping.outputs
+                or planning.input_key.active_outputs != observation.x_active_outputs
             ):
                 msg = "desktop effect lacks its exact mapping and plan proof"
                 raise ValueError(msg)
             mapping = candidate.mapping.outputs
             layout = planning.input_key.layout
+            planning_action_id = planning.action_id
         return WorkerRequestContext(
             physical_epoch=self._state.physical_epoch,
             physical_token=observation.physical_token,
@@ -693,6 +696,7 @@ class SerializedController:
                 x_active_outputs=observation.x_active_outputs,
             ),
             layout=layout,
+            planning_action_id=planning_action_id,
             probe_base_hash=probe_base_hash,
             probe_edid_integrity=probe_edid_integrity,
             profile_configuration_hashes=profile_configuration_hashes,

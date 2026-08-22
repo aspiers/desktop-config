@@ -3,7 +3,16 @@
 # Provide no args to list existing settings
 # Provide dark | light | solarized-light to set that theme
 
-. $ZDOTDIR/lib/libfonts.sh
+if [ "${1:-}" = --exact-font ]; then
+    [ "$#" -eq 3 ] && [ -n "$2" ] || {
+        echo "Usage: $0 [--exact-font FONT THEME]" >&2
+        exit 2
+    }
+    medium_font_gnome=$2
+    shift 2
+else
+    . "$ZDOTDIR/lib/libfonts.sh"
+fi
 
 if [ -z "$medium_font_gnome" ]; then
     echo >&2 "Couldn't figure out font for xfce4-terminal"

@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import builtins
 import contextlib
+import hashlib
 import json
 import os
 import stat
@@ -17,6 +18,10 @@ from uuid import UUID
 
 import pytest
 
+from monitor_controller.desktop.fluxbox_renderer import (
+    FluxboxRenderError,
+    render_fluxbox_keys,
+)
 from monitor_controller.desktop.layout import (
     MAX_INCLUDE_DEPTH,
     MAX_LAYOUT_FILE_BYTES,
@@ -27,6 +32,7 @@ from monitor_controller.desktop.layout import (
     resolve_layout,
 )
 from monitor_controller.desktop.plan_codec import (
+    PLAN_SCHEMA_VERSION,
     AtomicPlanStore,
     DesktopPlan,
     DpiSource,
@@ -87,6 +93,7 @@ if TYPE_CHECKING:
 _REPO = next(
     parent for parent in Path(__file__).parents if (parent / ".fluxbox").is_dir()
 )
+_FIXTURES = Path(__file__).parent / "fixtures"
 _INSTANCE = ControllerInstanceId(UUID("12345678-1234-5678-1234-567812345678"))
 _LEGACY_GEOMETRY_FIELDS = (
     "active_height",
@@ -241,6 +248,7 @@ def _case(  # noqa: PLR0913
         layout=layout,
         observation_key=observation_key,
         mapping=mapping,
+        active_outputs=display.topology.x_active_outputs,
         configuration_hashes=captured_profile.configuration_hashes,
     )
     request = RequestPlan(
@@ -365,7 +373,7 @@ def test_real_saved_edids_drive_model_and_complete_plan(  # noqa: PLR0913, PLR09
         plan.dpi.policy_hashes
     )
     assert plan.terminal.theme == "dark"
-    assert plan.emacs.expression == '(load "as-fonts")'
+    assert plan.emacs.expression == "monitor-controller-apply-font-height"
     assert plan.fluxbox.monitor_count == len(plan.guards.display_screens)
     assert plan.keyboard.disposition is KeyboardDisposition.DISCONNECT_ADVANTAGE_360
     assert tuple(item.sequence for item in plan.prepare_actions) == tuple(
@@ -381,7 +389,8 @@ def test_real_saved_edids_drive_model_and_complete_plan(  # noqa: PLR0913, PLR09
         "artifacts/autorandr/config",
         "artifacts/autorandr/setup",
         "artifacts/fluxbox/generator-policy",
-        "artifacts/fluxbox/keys.resolved.erb",
+        "artifacts/fluxbox/keys",
+        "artifacts/fluxbox/keys.erb",
         "artifacts/fluxbox/overlay",
         "artifacts/fluxbox/resolved-sublayouts.json",
         "artifacts/fluxbox/sublayouts.yaml",
@@ -396,13 +405,17 @@ def test_real_saved_edids_drive_model_and_complete_plan(  # noqa: PLR0913, PLR09
     assert all(
         "<s_" not in item.map_command for item in plan.resolved_layout.window_actions
     )
-    resolved_template = next(
+    rendered_keys = next(
         item.content
         for item in bundle.artifacts
-        if item.relative_path == "artifacts/fluxbox/keys.resolved.erb"
+        if item.relative_path == "artifacts/fluxbox/keys"
     )
-    assert b"monitors-connected" not in resolved_template
-    assert b"ENV[" not in resolved_template
+    assert b"<%" not in rendered_keys
+    assert b"%x(" not in rendered_keys
+    monitor_comment = (
+        f"# Number of monitors connected: {len(plan.guards.display_screens)}".encode()
+    )
+    assert monitor_comment in rendered_keys
 
 
 def _profile_with_setup_value(
@@ -486,6 +499,110 @@ def test_primary_model_identity_is_bound_to_saved_to_live_mapping() -> None:
         source.load(bad_request)
 
 
+def _render_fluxbox_expression(template: bytes, expression: str) -> bytes:
+    prelude_end = template.index(b"%>") + len(b"%>")
+    source = template[:prelude_end] + f"\n<%= {expression} %>\n".encode()
+    return render_fluxbox_keys(
+        source,
+        monitor_count=2,
+        host_name="celtic",
+        template_label=".fluxbox/keys.erb",
+        generator_label="bin/fluxbox-gen-config",
+    )
+
+
+def test_closed_fluxbox_renderer_matches_legacy_erb_golden_bytes() -> None:
+    template = (_REPO / ".fluxbox" / "keys.erb").read_bytes()
+    golden_root = _FIXTURES / "fluxbox"
+    expected_hashes = {
+        name: digest
+        for digest, name in (
+            line.split("  ", maxsplit=1)
+            for line in golden_root.joinpath("SHA256SUMS")
+            .read_text(encoding="ascii")
+            .splitlines()
+        )
+    }
+
+    for monitor_count in (1, 2, 3):
+        name = f"keys-{monitor_count}.golden"
+        golden = golden_root.joinpath(name).read_bytes()
+        assert hashlib.sha256(golden).hexdigest() == expected_hashes[name]
+        rendered = render_fluxbox_keys(
+            template,
+            monitor_count=monitor_count,
+            host_name="celtic",
+            template_label=".fluxbox/keys.erb",
+            generator_label="bin/fluxbox-gen-config",
+        )
+        assert rendered == golden
+
+
+def test_closed_fluxbox_renderer_rejects_unknown_execution() -> None:
+    template = (_REPO / ".fluxbox" / "keys.erb").read_bytes()
+    with pytest.raises(FluxboxRenderError, match="unknown Ruby expression"):
+        _render_fluxbox_expression(template, "system('touch /tmp/pwned')")
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        "$(touch /tmp/pwned)",
+        "bad'quote",
+        'bad"quote',
+        r"bad\\escape",
+        "bad\nline",
+        "bad;command",
+        "bad`command`",
+        "bad&command",
+        "bad{brace}",
+    ],
+)
+@pytest.mark.parametrize(
+    "expression",
+    [
+        "notify '{payload}'",
+        "keymode '{payload}'",
+        "keymode 'reorg', '{payload}'",
+        "keymode_done '{payload}'",
+        "notify_transient '{payload}', 'layer'",
+        "notify_transient 'set to top layer', '{payload}'",
+        "delay('{payload}', 500)",
+        "delay(notify('{payload}'), 500)",
+        'next_unhidden "{payload}"',
+    ],
+)
+def test_closed_fluxbox_renderer_rejects_unsafe_helper_text_arguments(
+    expression: str,
+    payload: str,
+) -> None:
+    template = (_REPO / ".fluxbox" / "keys.erb").read_bytes()
+    with pytest.raises(FluxboxRenderError):
+        _render_fluxbox_expression(template, expression.replace("{payload}", payload))
+
+
+@pytest.mark.parametrize(
+    "expression",
+    [
+        "delay('Restart', 501)",
+        "delay('Restart', 500; system('id'))",
+        "delay(notify('Restarted fluxbox'), 501)",
+        "delay(notify('Restarted fluxbox'), 500\n)",
+        'next_unhidden "(Class=Emacs)", focus: false',
+        'next_unhidden "(Class=Emacs)", prev: true',
+        'next_unhidden "(Class=Emacs)", native: true',
+        'next_unhidden "(Class=Emacs)", evil: true',
+        'next_unhidden "(Class=Emacs)", focus: true; system("id")',
+    ],
+)
+def test_closed_fluxbox_renderer_rejects_unsafe_numeric_and_keyword_arguments(
+    expression: str,
+) -> None:
+    template = (_REPO / ".fluxbox" / "keys.erb").read_bytes()
+    with pytest.raises(FluxboxRenderError):
+        _render_fluxbox_expression(template, expression)
+
+
 def test_identical_inputs_have_identical_canonical_bytes_and_hash() -> None:
     source, request = _celtic()
 
@@ -525,6 +642,7 @@ def _request_from_production_profile_capture(
         layout=profile.layout,
         observation_key=template.input_key.observation_key,
         mapping=template.input_key.mapping,
+        active_outputs=template.input_key.active_outputs,
         configuration_hashes=profile.configuration_hashes,
     )
     return replace(template, input_key=admitted)
@@ -703,15 +821,16 @@ def test_plan_codec_rejects_unknown_duplicate_and_tampered_schema() -> None:
     with pytest.raises(PlanCodecError):
         decode_plan(json.dumps(raw).encode())
 
+    version_field = f'"schema_version":{PLAN_SCHEMA_VERSION}'.encode()
     duplicate = encoded.replace(
-        b'"schema_version":1',
-        b'"schema_version":1,"schema_version":1',
+        version_field,
+        version_field + b"," + version_field,
     )
     with pytest.raises(PlanCodecError, match="duplicate"):
         decode_plan(duplicate)
 
     raw = json.loads(encoded)
-    raw["schema_version"] = 2
+    raw["schema_version"] = PLAN_SCHEMA_VERSION - 1
     with pytest.raises(PlanCodecError, match="schema"):
         decode_plan(json.dumps(raw).encode())
 
@@ -1037,7 +1156,7 @@ def test_plan_action_enum_phase_and_artifact_allowlists_are_closed() -> None:
 
     raw = json.loads(encoded)
     raw["emacs"]["expression"] = '(shell-command "arbitrary")'
-    with pytest.raises(PlanCodecError, match="Emacs font expression"):
+    with pytest.raises(PlanCodecError, match="Emacs font function"):
         decode_plan(json.dumps(raw).encode())
 
     raw = json.loads(encoded)
