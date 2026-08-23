@@ -35,6 +35,29 @@ def _require_nonnegative(value: int, field: str) -> None:
         raise ValueError(msg)
 
 
+def _normalize_display(value: str) -> str:
+    """Return an X display address in canonical ``host:display`` form.
+
+    ``:0`` and ``:0.0`` address the same display: the screen number is optional
+    and defaults to 0. Persisting one spelling and later observing the other
+    must not read as a different display, so the default screen suffix is
+    dropped before the value is stored or compared. A non-default screen
+    (``:0.1``) genuinely differs and is preserved.
+
+    Values that are not X display addresses (simulation sentinels such as
+    ``:scenario``) are returned unchanged.
+    """
+    host, separator, rest = value.rpartition(":")
+    if not separator or not rest:
+        return value
+    display, dot, screen = rest.partition(".")
+    if not dot or not display.isdigit() or not screen.isdigit():
+        return value
+    if int(screen) != 0:
+        return value
+    return f"{host}:{display}"
+
+
 def _require_sorted_unique_strings(values: tuple[str, ...], field: str) -> None:
     if values != tuple(sorted(set(values))):
         msg = f"{field} must be sorted and contain no duplicates"
@@ -228,12 +251,17 @@ class ControllerInstanceId:
 
 @dataclass(frozen=True, slots=True)
 class DisplayIdentity:
-    """Explicit X display/seat identity controlled by this state record."""
+    """Explicit X display/seat identity controlled by this state record.
+
+    The address is canonicalised on construction so that equality compares
+    displays rather than spellings; see :func:`_normalize_display`.
+    """
 
     value: str
 
     def __post_init__(self) -> None:
         _require_nonempty(self.value, "display identity")
+        object.__setattr__(self, "value", _normalize_display(self.value))
 
 
 @dataclass(frozen=True, slots=True, order=True)

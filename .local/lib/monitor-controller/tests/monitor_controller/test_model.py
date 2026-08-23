@@ -895,3 +895,36 @@ def test_status_is_read_only_when_authoritative_state_is_missing(
 
     assert '"status": "missing"' in output
     assert not (tmp_path / "monitor-controller").exists()
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        (":0.0", ":0"),
+        (":0", ":0"),
+        (":1.0", ":1"),
+        (":10.0", ":10"),
+        ("host:0.0", "host:0"),
+        # A non-default screen is a genuinely different target.
+        (":0.1", ":0.1"),
+        # Simulation sentinels are not X display addresses.
+        (":scenario", ":scenario"),
+    ],
+)
+def test_display_identity_canonicalises_default_screen_suffix(
+    raw: str,
+    expected: str,
+) -> None:
+    assert DisplayIdentity(raw).value == expected
+
+
+def test_display_identity_compares_equal_across_screen_spellings() -> None:
+    """A display persisted as ':0.0' must match a service observing ':0'.
+
+    Regression for dc-h9y: the shadow controller refused to start for 29 hours
+    because persisted state written under the session's ':0.0' was compared
+    verbatim against the systemd user manager's ':0'.
+    """
+    assert DisplayIdentity(":0.0") == DisplayIdentity(":0")
+    assert DisplayIdentity(":0.0") != DisplayIdentity(":1")
+    assert DisplayIdentity(":0.0") != DisplayIdentity(":0.1")
