@@ -123,6 +123,106 @@ test_unknown_policy_fails_closed () {
     [[ $? -eq 1 ]] && [[ $output == *'refusing unkeyed desktop work'* ]]
 }
 
+# A live incumbent applying the same topology must be left alone: killing it
+# restarts the window manager for no gain, and on 2026-08-23 crashed a
+# 19-second-old Fluxbox (dc-kle).  See dc-9qi.
+test_matching_incumbent_is_left_running () {
+    local tmp output piddir incumbent
+    tmp=$(mktemp -d)
+    trap 'rm -rf "${tmp:-}"; kill "${incumbent:-}" 2>/dev/null' RETURN
+    prepare_manual_home "$tmp"
+    : > "$tmp/setup.log"
+
+    piddir=$tmp/runtime/monitor-system
+    mkdir -p "$piddir"
+    sleep 30 &
+    incumbent=$!
+    printf '%s\n' "$incumbent" > "$piddir/setup-monitor.pid"
+    # prepare_manual_home's monitor-identity stub reports test-token.
+    printf 'test-token\n' > "$piddir/setup-monitor.token"
+
+    output=$(HOME="$tmp/home" \
+        PATH="$tmp/bin:$PATH" \
+        XDG_RUNTIME_DIR="$tmp/runtime" \
+        POSTSWITCH_SETUP_LOG="$tmp/setup.log" \
+        AUTORANDR_CURRENT_PROFILE=manual \
+        bash "$postswitch" 2>&1)
+
+    [[ $output == *'already applying this topology; deferring'* ]] &&
+        kill -0 "$incumbent" 2>/dev/null &&
+        [[ ! -s $tmp/setup.log ]] &&
+        [[ $(cat "$piddir/setup-monitor.pid") == "$incumbent" ]]
+}
+
+# A live incumbent whose topology has been superseded must be stopped, and the
+# claim handed to the new run.
+test_superseded_incumbent_is_stopped () {
+    local tmp output piddir incumbent
+    tmp=$(mktemp -d)
+    trap 'rm -rf "${tmp:-}"; kill "${incumbent:-}" 2>/dev/null' RETURN
+    prepare_manual_home "$tmp"
+    : > "$tmp/setup.log"
+
+    piddir=$tmp/runtime/monitor-system
+    mkdir -p "$piddir"
+    sleep 30 &
+    incumbent=$!
+    printf '%s\n' "$incumbent" > "$piddir/setup-monitor.pid"
+    printf 'stale-token\n' > "$piddir/setup-monitor.token"
+
+    output=$(HOME="$tmp/home" \
+        PATH="$tmp/bin:$PATH" \
+        XDG_RUNTIME_DIR="$tmp/runtime" \
+        POSTSWITCH_SETUP_LOG="$tmp/setup.log" \
+        AUTORANDR_CURRENT_PROFILE=manual \
+        bash "$postswitch" 2>&1)
+
+    for _ in $(seq 1 20); do
+        [[ -s $tmp/setup.log ]] && break
+        sleep 0.1
+    done
+
+    [[ $output == *'stopping stale setup-monitor'* ]] &&
+        [[ $output == *stale-token* ]] &&
+        ! kill -0 "$incumbent" 2>/dev/null &&
+        [[ -s $tmp/setup.log ]] &&
+        [[ $(cat "$piddir/setup-monitor.token") == test-token ]]
+}
+
+# The claim must be exclusive: a second postswitch cannot proceed while
+# another holds the lock, which is what makes the check-and-claim atomic.
+test_claim_is_exclusive () {
+    local tmp piddir lockfile status
+    tmp=$(mktemp -d)
+    trap 'rm -rf "${tmp:-}"' RETURN
+    prepare_manual_home "$tmp"
+    : > "$tmp/setup.log"
+
+    piddir=$tmp/runtime/monitor-system
+    mkdir -p "$piddir"
+    lockfile=$piddir/setup-monitor.lock
+    : > "$lockfile"
+
+    # Hold the lock, then confirm postswitch refuses rather than racing.
+    exec 8>"$lockfile"
+    flock 8
+    HOME="$tmp/home" \
+        PATH="$tmp/bin:$PATH" \
+        XDG_RUNTIME_DIR="$tmp/runtime" \
+        POSTSWITCH_SETUP_LOG="$tmp/setup.log" \
+        AUTORANDR_CURRENT_PROFILE=manual \
+        timeout 5 bash -c 'exec 9>"$1"; flock -n 9 || exit 1' _ "$lockfile"
+    status=$?
+    exec 8>&-
+
+    [[ $status -eq 1 ]] && [[ ! -s $tmp/setup.log ]]
+}
+
+run_test 'matching incumbent is left running' \
+    test_matching_incumbent_is_left_running
+run_test 'superseded incumbent is stopped and replaced' \
+    test_superseded_incumbent_is_stopped
+run_test 'setup-monitor claim is exclusive' test_claim_is_exclusive
 run_test 'controller-owned apply cannot mark or launch desktop work' \
     test_controller_owned_is_always_side_effect_free
 run_test 'active manual apply only writes controller notification' \

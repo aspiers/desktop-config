@@ -103,16 +103,60 @@ if [ -r "$layout_file" ]; then
     layout=$(cat "$layout_file")
 fi
 
-# Kill any stale in-flight setup-monitor before launching a new one:
-# TERM the process group, grace period, then KILL -- mirroring the
-# legacy monitor-watcher's request_stop_setup/enforce_stop_timeout.
+# xrandr state just changed: recompute the libdpy caches and the topology
+# staleness token that setup-monitor's assert_expected_state checks.  Prefer
+# the shared connector/model identity, which ignores transient mode changes;
+# fall back to the old inxi MD5 exactly as setup-monitor does.
+#
+# This runs before the claim below because the token is what distinguishes an
+# incumbent doing the same work from one whose topology has been superseded.
+"$HOME"/bin/clear-dpy-cache
+~/lib/libdpy.py --inxi-json >/dev/null
+expected_token=$("$HOME"/bin/monitor-identity 2>/dev/null)
+if [ -z "$expected_token" ]; then
+    expected_token=$(cat ~/.cache/libdpy/inxi-Gxx.monitors.json.md5 2>/dev/null)
+fi
+
 STOP_GRACE_SECONDS=5
 piddir=${XDG_RUNTIME_DIR:-/tmp}/monitor-system
 mkdir -p "$piddir"
 pidfile=$piddir/setup-monitor.pid
+tokenfile=$piddir/setup-monitor.token
+lockfile=$piddir/setup-monitor.lock
 
-if pid=$(cat "$pidfile" 2>/dev/null) && [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
-    echo "postswitch: stopping stale setup-monitor (pid $pid)" >&2
+# Everything from inspecting the incumbent to recording our own PID happens
+# under one exclusive lock.  Without it this is a check-then-act race: two
+# postswitch runs (typically a manual `autorandr --change` alongside the
+# watcher's own convergence) can both observe no incumbent and both launch,
+# and the loser's setup-monitor gets killed mid-flight -- which on 2026-08-23
+# killed a Fluxbox that had been running for 19 seconds and crashed it
+# (dc-kle).  See dc-9qi.
+exec 9>"$lockfile"
+if ! flock 9; then
+    echo "postswitch: cannot lock $lockfile; refusing to race" >&2
+    exit 1
+fi
+
+claim_stale_or_exit () {
+    local pid incumbent_token
+
+    pid=$(cat "$pidfile" 2>/dev/null) || return 0
+    [ -n "$pid" ] || return 0
+    kill -0 "$pid" 2>/dev/null || return 0
+
+    # An incumbent applying the same topology is already doing this exact
+    # work.  Killing it to start again wastes a full desktop reconfiguration
+    # and restarts the window manager for no gain.
+    incumbent_token=$(cat "$tokenfile" 2>/dev/null)
+    if [ -n "$expected_token" ] && [ "$incumbent_token" = "$expected_token" ]; then
+        echo "postswitch: setup-monitor (pid $pid) already applying this topology; deferring" >&2
+        exit 0
+    fi
+
+    echo "postswitch: stopping stale setup-monitor (pid $pid, token ${incumbent_token:-unknown})" >&2
+    # setup-monitor is launched with setsid, so it leads its own process
+    # group and its PID doubles as that group's PGID.  Signal the group so
+    # its children stop too, falling back to the bare process.
     kill -TERM -- "-$pid" 2>/dev/null || kill -TERM "$pid" 2>/dev/null
     for _ in $(seq 1 "$STOP_GRACE_SECONDS"); do
         kill -0 "$pid" 2>/dev/null || break
@@ -122,18 +166,9 @@ if pid=$(cat "$pidfile" 2>/dev/null) && [ -n "$pid" ] && kill -0 "$pid" 2>/dev/n
         echo "postswitch: force-killing stale setup-monitor after ${STOP_GRACE_SECONDS}s" >&2
         kill -KILL -- "-$pid" 2>/dev/null || kill -KILL "$pid" 2>/dev/null
     fi
-fi
+}
 
-# xrandr state just changed: recompute the libdpy caches and the topology
-# staleness token that setup-monitor's assert_expected_state checks.  Prefer
-# the shared connector/model identity, which ignores transient mode changes;
-# fall back to the old inxi MD5 exactly as setup-monitor does.
-"$HOME"/bin/clear-dpy-cache
-~/lib/libdpy.py --inxi-json >/dev/null
-expected_token=$("$HOME"/bin/monitor-identity 2>/dev/null)
-if [ -z "$expected_token" ]; then
-    expected_token=$(cat ~/.cache/libdpy/inxi-Gxx.monitors.json.md5 2>/dev/null)
-fi
+claim_stale_or_exit
 
 echo "postswitch: launching setup-monitor for layout $layout (token ${expected_token:-unknown})" >&2
 # Async so `autorandr --change` returns quickly; the setsid child
@@ -143,3 +178,8 @@ setsid "$HOME"/bin/setup-monitor --skip-xrandr \
     --layout "$layout" --expected-layout "$layout" \
     ${expected_token:+--expected-md5 "$expected_token"} &
 echo $! > "$pidfile"
+printf '%s\n' "$expected_token" > "$tokenfile"
+
+# Release only after the PID and token are both recorded, so the next
+# postswitch sees a complete claim rather than a half-written one.
+exec 9>&-
