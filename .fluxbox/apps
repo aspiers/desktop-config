@@ -37,12 +37,6 @@
   [Dimensions]	{55% 98%}
 [end]
 
-[app] (name=kitty)
-  [Head]	{1}
-  [Position]	(TopLeft)	{0 0}
-  [Dimensions]	{55% 98%}
-[end]
-
 # Weirdly gnome-terminal --title=foo cannot be reliably matched by
 # (title=foo); it seems that the title is set to ''Terminal' on startup
 # and then changed soon after, creating a race condition.  So match on
@@ -52,6 +46,8 @@
   [Layer]	{4}
   [Position]	(Center)	{0 0}
 [end]
+# Fluxbox applies only the first matching rule, so specific Kitty windows
+# must precede the generic Kitty terminal rule.
 [app] (name=kitty) (title=mutt: .*)
   [Position]	(Center)	{0 0}
 [end]
@@ -72,6 +68,12 @@
 # [Dimensions]	{90% 40%}
 # [Position]	(Bottom)	{0 30%}
 # [Deco]	{NONE}
+[end]
+
+[app] (name=kitty)
+  [Head]	{1}
+  [Position]	(TopLeft)	{0 0}
+  [Dimensions]	{55% 98%}
 [end]
 
 [app] (name=emacs) (title!=Ediff)
