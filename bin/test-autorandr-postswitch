@@ -206,6 +206,8 @@ test_claim_is_exclusive () {
     # Hold the lock, then confirm postswitch refuses rather than racing.
     exec 8>"$lockfile"
     flock 8
+    # The inner shell, not this test process, expands $1.
+    # shellcheck disable=SC2016
     HOME="$tmp/home" \
         PATH="$tmp/bin:$PATH" \
         XDG_RUNTIME_DIR="$tmp/runtime" \
@@ -218,11 +220,60 @@ test_claim_is_exclusive () {
     [[ $status -eq 1 ]] && [[ ! -s $tmp/setup.log ]]
 }
 
+# The claim lock protects only the short check-and-record critical section.
+# setup-monitor and its long-lived desktop children must not inherit it, or a
+# later postswitch blocks forever waiting for (for example) nm-applet to exit.
+test_setup_monitor_does_not_inherit_claim_lock () {
+    local tmp piddir lockfile launched status
+    tmp=$(mktemp -d)
+    trap 'kill "${launched:-}" 2>/dev/null; rm -rf "${tmp:-}"' RETURN
+    prepare_manual_home "$tmp"
+
+    cat > "$tmp/bin/setsid" <<'EOF'
+#!/bin/sh
+exec "$@"
+EOF
+    chmod +x "$tmp/bin/setsid"
+    cat > "$tmp/home/bin/setup-monitor" <<'EOF'
+#!/bin/sh
+if [ -e /proc/$$/fd/9 ]; then
+    printf 'inherited\n' > "$POSTSWITCH_SETUP_LOG"
+else
+    printf 'closed\n' > "$POSTSWITCH_SETUP_LOG"
+fi
+exec sleep 30
+EOF
+    chmod +x "$tmp/home/bin/setup-monitor"
+
+    piddir=$tmp/runtime/monitor-system
+    lockfile=$piddir/setup-monitor.lock
+    HOME="$tmp/home" \
+        PATH="$tmp/bin:$PATH" \
+        XDG_RUNTIME_DIR="$tmp/runtime" \
+        POSTSWITCH_SETUP_LOG="$tmp/setup.log" \
+        AUTORANDR_CURRENT_PROFILE=manual \
+        bash "$postswitch" > "$tmp/output.log" 2>&1 || return
+    launched=$(cat "$piddir/setup-monitor.pid") || return
+    for _ in $(seq 1 20); do
+        [[ -s $tmp/setup.log ]] && break
+        sleep 0.05
+    done
+
+    exec 8>"$lockfile"
+    flock -n 8
+    status=$?
+    exec 8>&-
+
+    [[ $(cat "$tmp/setup.log") == closed ]] && [[ $status -eq 0 ]]
+}
+
 run_test 'matching incumbent is left running' \
     test_matching_incumbent_is_left_running
 run_test 'superseded incumbent is stopped and replaced' \
     test_superseded_incumbent_is_stopped
 run_test 'setup-monitor claim is exclusive' test_claim_is_exclusive
+run_test 'setup-monitor does not inherit the claim lock' \
+    test_setup_monitor_does_not_inherit_claim_lock
 run_test 'controller-owned apply cannot mark or launch desktop work' \
     test_controller_owned_is_always_side_effect_free
 run_test 'active manual apply only writes controller notification' \

@@ -173,10 +173,12 @@ claim_stale_or_exit
 echo "postswitch: launching setup-monitor for layout $layout (token ${expected_token:-unknown})" >&2
 # Async so `autorandr --change` returns quickly; the setsid child
 # inherits the service's journal fds, so output stays visible under
-# SyslogIdentifier=monitor-watcher-ng.
+# SyslogIdentifier=monitor-watcher-ng. Close the claim-lock descriptor in the
+# child before exec: setup-monitor launches long-lived desktop processes, and
+# any inherited copy would keep the flock held after this critical section.
 setsid "$HOME"/bin/setup-monitor --skip-xrandr \
     --layout "$layout" --expected-layout "$layout" \
-    ${expected_token:+--expected-md5 "$expected_token"} &
+    ${expected_token:+--expected-md5 "$expected_token"} 9>&- &
 echo $! > "$pidfile"
 printf '%s\n' "$expected_token" > "$tokenfile"
 
