@@ -1,11 +1,9 @@
 #!/bin/sh
 
-# Don't use gnome-terminal as it can't handle emojis properly!
-
-#xterm-window \
-xfce4-terminal \
-    --geometry 150x50 \
-    --role "mutt: $1" \
+# Keep the title fixed so Fluxbox can identify and place the window.
+kitty \
+    --override initial_window_width=150c \
+    --override initial_window_height=50c \
     --title "mutt: $1" \
-    -x \
+    -- \
     "$@"

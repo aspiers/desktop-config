@@ -52,21 +52,21 @@
   [Layer]	{4}
   [Position]	(Center)	{0 0}
 [end]
-[app] (role=mutt.*)
+[app] (name=kitty) (title=mutt: .*)
   [Position]	(Center)	{0 0}
 [end]
-[app] (role=btop|htop|sudo (powertop|nethogs|iotop|iftop)|nvtop|amdgpu_top|lnav-system|bluetuith.*|rxx)
+[app] (name=kitty) (title=btop|htop|sudo (powertop|nethogs|iotop|iftop)|nvtop|amdgpu_top|lnav-system|bluetuith.*|rxx)
 #  [Iconhidden] {yes}
   [Dimensions] {90% 90%}
   [Position] (Center) {0 0}
 [end]
-[app] (role=ccmonitor)
+[app] (name=kitty) (title=ccmonitor)
   [Iconhidden] {yes}
   [Dimensions] {50% 50%}
   [Position] (BottomRight) {50 30}
 [end]
 
-[app] (role=.* mail sync( daemon)?)
+[app] (name=kitty) (title=.* mail sync( daemon)?)
   [Dimensions]	{90% 90%}
   [Position] (Center) {0 0}
 # [Dimensions]	{90% 40%}

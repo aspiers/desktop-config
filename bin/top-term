@@ -1,12 +1,10 @@
 #!/bin/sh
-. $ZDOTDIR/lib/libfonts.sh
+. "$ZDOTDIR/lib/libfonts.sh"
 
 #Eterm -t top
 unset COLUMNS
 
 geometry=140x60
-theme=$(<~/.config/gnome-terminal-profile)
-profile=${theme:-Dark}
 
 while true; do
     case "$1" in
@@ -36,34 +34,30 @@ while true; do
     esac
 done
 
-: ${title:="$*"}
-: ${role:="$title"}
-
+title=${title:-"$*"}
 cmd="${1:-top}"
 [ -n "$1" ] && shift
 
-#urxvt-256color -fn $small_font -geometry $geometry -e "$cmd" "$@"
-zoom_option=""
 case "$font_size" in
     "")
-        # Default: small font from medium base
-        zoom_option="--zoom $small_font_gnome_zoom_from_medium"
+        kitty_font_size=$small_font_size
         ;;
     large)
-        # Large font from medium base
-        zoom_option="--zoom $large_font_gnome_zoom_from_medium"
+        kitty_font_size=$large_font_size
         ;;
     xl)
-        # XL font from medium base
-        zoom_option="--zoom $xl_font_gnome_zoom_from_medium"
+        kitty_font_size=$xl_font_size
         ;;
 esac
 
-gnome-terminal \
-    --profile=$profile \
-    $zoom_option \
-    --geometry $geometry \
-    --role "$role" \
+geometry_width=${geometry%%x*}
+geometry_height=${geometry#*x}
+
+# --title fixes the OS window title, giving Fluxbox a stable identifier.
+kitty \
+    --override "font_size=$kitty_font_size" \
+    --override "initial_window_width=${geometry_width}c" \
+    --override "initial_window_height=${geometry_height}c" \
     --title "$title" \
     -- \
     "$cmd" "$@"
