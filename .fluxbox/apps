@@ -21,20 +21,46 @@
 #  [Alpha]	{50}
 [end]
 [app] (role=.*Workrave.*)
-  [Layer]	{2}
   [Hidden]	{yes}
   [Sticky]	{yes}
+  [Layer]	{2}
 [end]
 [app] (title=Workrave)
-  [Layer]	{2}
   [Hidden]	{yes}
   [Sticky]	{yes}
+  [Layer]	{2}
 [end]
-
 [app] (name=gnome-terminal-server|xfce4-terminal) (role=gnome-terminal-window-.*|xfce4-terminal-.*)
   [Head]	{1}
-  [Position]	(TopLeft)	{0 0}
   [Dimensions]	{55% 98%}
+  [Position]	(UPPERLEFT)	{0 0}
+[end]
+# Fluxbox applies only the first matching rule, so specific Kitty windows
+# must precede the generic Kitty terminal rule.
+[app] (name=kitty) (title=mutt: .*)
+  [Position]	(CENTER)	{0 0}
+[end]
+[app] (name=kitty) (title=btop|htop|sudo (powertop|nethogs|iotop|iftop)|nvtop|amdgpu_top|lnav-system|bluetuith.*|rxx)
+#  [Iconhidden] {yes}
+  [Dimensions]	{90% 90%}
+  [Position]	(CENTER)	{0 0}
+[end]
+[app] (name=kitty) (title=ccmonitor)
+  [Dimensions]	{50% 50%}
+  [Position]	(LOWERRIGHT)	{50 30}
+  [IconHidden]	{yes}
+[end]
+[app] (name=kitty) (title=.* mail sync( daemon)?)
+  [Dimensions]	{90% 90%}
+  [Position]	(CENTER)	{0 0}
+# [Dimensions]	{90% 40%}
+# [Position]	(Bottom)	{0 30%}
+# [Deco]	{NONE}
+[end]
+[app] (name=kitty)
+  [Head]	{1}
+  [Dimensions]	{55% 98%}
+  [Position]	(UPPERLEFT)	{0 0}
 [end]
 
 # Weirdly gnome-terminal --title=foo cannot be reliably matched by
@@ -43,94 +69,55 @@
 # role instead.
 [app] (role=Chrome fzf)
   [Dimensions]	{90% 90%}
+  [Position]	(CENTER)	{0 0}
   [Layer]	{4}
-  [Position]	(Center)	{0 0}
 [end]
-# Fluxbox applies only the first matching rule, so specific Kitty windows
-# must precede the generic Kitty terminal rule.
-[app] (name=kitty) (title=mutt: .*)
-  [Position]	(Center)	{0 0}
-[end]
-[app] (name=kitty) (title=btop|htop|sudo (powertop|nethogs|iotop|iftop)|nvtop|amdgpu_top|lnav-system|bluetuith.*|rxx)
-#  [Iconhidden] {yes}
-  [Dimensions] {90% 90%}
-  [Position] (Center) {0 0}
-[end]
-[app] (name=kitty) (title=ccmonitor)
-  [Iconhidden] {yes}
-  [Dimensions] {50% 50%}
-  [Position] (BottomRight) {50 30}
-[end]
-
-[app] (name=kitty) (title=.* mail sync( daemon)?)
-  [Dimensions]	{90% 90%}
-  [Position] (Center) {0 0}
-# [Dimensions]	{90% 40%}
-# [Position]	(Bottom)	{0 30%}
-# [Deco]	{NONE}
-[end]
-
-[app] (name=kitty)
-  [Head]	{1}
-  [Position]	(TopLeft)	{0 0}
-  [Dimensions]	{55% 98%}
-[end]
-
 [app] (name=emacs) (title!=Ediff)
   [Head]	{1}
-  [Position]	(TopLeft)	{50% 0}
   [Dimensions]	{47% 90%}
   # This doesn't work :-(
   [FocusNewWindow]	{yes}
+  [Position]	(UPPERLEFT)	{50% 0%}
 [end]
-
 [app] (class=Code|Cursor)
   [Head]	{1}
-  [Position]	(Top)	{0 0}
   [Dimensions]	{100% 98%}
   # This doesn't work :-(
   [FocusNewWindow]	{yes}
+  [Position]	(TOP)	{0 0}
 [end]
-
 [app] (title=Telegram)
+  [Workspace]	{3}
+  [Dimensions]	{96% 89%}
+  [Position]	(UPPERLEFT)	{0 0}
   [Deco]	{0x5e0}
-  [Position]	(TopLeft)	{0 0}
-  [Workspace]	{3}
-  [Dimensions]	{96% 89%}
 [end]
-
 [app] (name=notion-app-enhanced)
-  [Position]	(TopLeft)	{0 0}
   [Workspace]	{2}
+  [Position]	(UPPERLEFT)	{0 0}
 [end]
-
 [app] (title=Beeper|discord|Discord|Discord Updater|Zulip.*)
-  [Position]	(TopLeft)	{0 0}
   [Workspace]	{3}
   [Dimensions]	{96% 89%}
+  [Position]	(UPPERLEFT)	{0 0}
 [end]
-
 [app] (name=slack)
-  [Position]	(TopLeft)	{0 0}
   [Workspace]	{3}
   [Dimensions]	{96% 89%}
+  [Position]	(UPPERLEFT)	{0 0}
 [end]
-
 [app] (head=2)
   [Sticky]	{yes}
 [end]
-
 [app] (name=ksnip|xfce4-display-settings)
   [Sticky]	{yes}
 [end]
-
 [app] (name=pavucontrol)
-  [Position]	(TopRight)	{5% 5%}
   [Dimensions]	{50% 90%}
+  [Position]	(UPPERRIGHT)	{5% 5%}
 [end]
-
 [app] (name=eog)
-  [Deco] {NORMAL}
+  [Deco]	{NORMAL}
 [end]
 [transient] (name=ardour-9.7.0) (class=Ardour-9.7.0) (role=plugin_ui)
   [Layer]	{8}
