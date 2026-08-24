@@ -1,0 +1,105 @@
+[Unit]
+Description=Authoritative monitor controller
+# This unit IS the display authority when running, so every other dispatcher
+# must stop first.  Conflicts= is bidirectional in systemd, but it is declared
+# on both sides anyway: a one-sided declaration silently stops working if this
+# unit is ever masked or replaced, and the failure mode is two authorities
+# dispatching to one display.
+Conflicts=monitor-controller-shadow.service
+Conflicts=monitor-watcher-ng.service
+Conflicts=monitor-watcher.service
+# Ordering as well as conflict: without After=, systemd may start this unit
+# while the outgoing watcher is still shutting down, so both briefly hold
+# authority.  The controller's own lock would then refuse to start.
+After=monitor-controller-shadow.service
+After=monitor-watcher-ng.service
+After=monitor-watcher.service
+PartOf=fluxbox-session.target
+After=fluxbox-session.target
+StartLimitIntervalSec=60s
+StartLimitBurst=5
+
+[Service]
+Type=simple
+SyslogIdentifier=monitor-controller
+Environment=MONITOR_CONTROLLER_NAMESPACE=active
+# Manual autorandr invocations notify this controller instead of launching
+# unkeyed desktop work.  The hook reads this from its own environment; the
+# value here documents the contract that ActivePaths.postswitch_notification
+# must agree with.
+Environment=MONITOR_CONTROLLER_POSTSWITCH_POLICY=active
+Environment=PYTHONUNBUFFERED=1
+Environment=PATH=/usr/bin:/bin
+Environment=XDG_CONFIG_HOME=%h/.config
+Environment=XDG_DATA_HOME=%h/.local/share
+Environment=XDG_STATE_HOME=%h/.local/state
+Environment=XDG_RUNTIME_DIR=%t
+UnsetEnvironment=BASH_ENV ENV LD_LIBRARY_PATH LD_PRELOAD PYTHONHOME PYTHONINSPECT PYTHONPATH PYTHONSTARTUP PYTHONUSERBASE
+# Run the installed locked environment directly.  Service startup never invokes
+# uv, resolves packages, or gets AF_INET/AF_INET6 network access.
+ExecCondition=/usr/bin/test -x %h/.local/share/monitor-controller/venv/bin/python
+ExecStart=%h/.local/share/monitor-controller/venv/bin/python -I -m monitor_controller.active
+Restart=on-failure
+RestartSec=5s
+KillMode=control-group
+TimeoutStopSec=35s
+StandardOutput=journal
+StandardError=journal
+UMask=0077
+
+# The active namespace is writable; the shadow namespace is not even visible.
+# The exclusion is symmetric with the shadow unit, so neither controller can
+# read or overwrite the other's state, plans, or transactions.
+StateDirectory=monitor-controller/active
+StateDirectoryMode=0700
+RuntimeDirectory=monitor-controller/active
+RuntimeDirectoryMode=0700
+ProtectSystem=strict
+# Unlike shadow, this controller dispatches desktop work, which means it must
+# be able to write the desktop configuration state its workers act on.
+ProtectHome=read-only
+ReadWritePaths=%h/.local/state/monitor-controller/active %t/monitor-controller/active
+ReadOnlyPaths=/sys/class/drm /proc/sys/kernel/random/boot_id
+InaccessiblePaths=-%h/.local/state/monitor-controller/shadow -%t/monitor-controller/shadow
+
+# X11 observation unavoidably needs read access to the inherited XAUTHORITY
+# file (which may be in /tmp) and the host /tmp/.X11-unix socket.  Therefore
+# PrivateTmp cannot be enabled.  Home and temporary trees remain non-writable
+# and non-executable; only the fixed installed venv is executable under home.
+NoExecPaths=%h %t /tmp /var/tmp
+ExecPaths=%h/.local/share/monitor-controller/venv
+
+# Rationale as for the shadow unit: PrivateUsers makes the mount-namespace
+# protections effective in a user unit, while PrivateDevices and PrivateIPC
+# are unavailable to an unprivileged user manager and would exit 226/NAMESPACE.
+#
+# This unit deliberately does NOT restrict %t/systemd/private: dispatching
+# worker units requires talking to the user service manager, which is exactly
+# the capability shadow is denied.  That single difference is what makes this
+# controller authoritative and shadow inert.
+PrivateUsers=true
+ProtectClock=true
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectProc=invisible
+NoNewPrivileges=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+SystemCallArchitectures=native
+SystemCallFilter=~@mount @reboot @swap
+SystemCallErrorNumber=EPERM
+RestrictAddressFamilies=AF_UNIX AF_NETLINK
+
+[Install]
+# Deliberately NOT enabled by this file's presence.  Enabling happens only
+# after a successful cutover preflight, so that a stowed-but-unverified unit
+# cannot take authority at the next login.  See the cutover procedure on
+# dc-a5y.17.
+WantedBy=fluxbox-session.target

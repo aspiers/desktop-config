@@ -1,7 +1,16 @@
 [Unit]
 Description=Non-authoritative monitor controller shadow
 # The existing ng watcher remains the sole display authority.  Shadow has no
-# Conflicts= with either watcher and stops with the same Fluxbox session.
+# Conflicts= with either shell watcher, because observing alongside them is
+# the entire point, and stops with the same Fluxbox session.
+#
+# The ACTIVE controller is different.  Shadow observes into a namespace that
+# the active controller takes authority over, so the two must never run
+# together; the active controller's own lock refuses to start while shadow
+# holds its lock, and this Conflicts= makes systemd stop shadow rather than
+# letting that refusal look like a controller failure.  Declared on both sides
+# so the guarantee survives either unit being masked or replaced.
+Conflicts=monitor-controller.service
 PartOf=fluxbox-session.target
 After=fluxbox-session.target
 StartLimitIntervalSec=60s

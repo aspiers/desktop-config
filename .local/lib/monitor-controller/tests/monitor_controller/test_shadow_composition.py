@@ -975,7 +975,20 @@ def test_shadow_service_runs_fixed_venv_without_conflicting_with_watchers() -> N
     assert "uv" not in exec_start
     assert "/bin/sh" not in exec_start
     assert "systemctl" not in exec_start
-    assert not any(line.startswith("Conflicts=") for line in directives)
+    # Shadow must not conflict with either shell watcher: observing alongside
+    # the live authority is the entire point of shadow mode.  It must conflict
+    # with the *active* controller, which takes over the namespace shadow
+    # observes into, so this checks the specific units rather than asserting
+    # that no Conflicts= exists at all.
+    conflicts = {
+        value
+        for line in directives
+        if line.startswith("Conflicts=")
+        for value in line.split("=", 1)[1].split()
+    }
+    assert "monitor-watcher.service" not in conflicts
+    assert "monitor-watcher-ng.service" not in conflicts
+    assert conflicts == {"monitor-controller.service"}
     assert "PartOf=fluxbox-session.target" in directives
     assert "After=fluxbox-session.target" in directives
     assert (

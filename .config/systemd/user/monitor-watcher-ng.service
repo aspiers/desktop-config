@@ -3,6 +3,10 @@ Description=Autorandr monitor convergence watcher
 # Bidirectional in systemd: starting either watcher stops the other,
 # so the legacy unit file needs no changes.
 Conflicts=monitor-watcher.service
+# The active Python controller is the same kind of exclusivity: it dispatches
+# display work, so it and this watcher must never run together.  Declared on
+# both sides so the guarantee survives either unit being masked or replaced.
+Conflicts=monitor-controller.service
 
 # Needs DISPLAY in the systemd --user environment, which only exists
 # once the X session has pushed it in (see 00-systemd-user-env).

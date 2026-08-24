@@ -191,3 +191,88 @@ class TestConflictingUnits:
     def test_active_unit_is_not_self_conflicting(self) -> None:
         """A unit conflicting with itself never starts."""
         assert "monitor-controller.service" not in CONFLICTING_UNITS
+
+
+REPOSITORY = Path(__file__).parents[5]
+UNIT_DIR = REPOSITORY / ".config" / "systemd" / "user"
+
+ACTIVE_UNIT = "monitor-controller.service"
+
+
+def _directives(unit: str, key: str) -> set[str]:
+    """Return every value assigned to one directive in a unit file.
+
+    systemd merges repeated directives, so a unit may legitimately declare
+    `Conflicts=` several times; this collects them all.
+    """
+    text = (UNIT_DIR / unit).read_text(encoding="utf-8")
+    values: set[str] = set()
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith(f"{key}="):
+            values.update(stripped.split("=", 1)[1].split())
+    return values
+
+
+class TestUnitConflictContract:
+    """The unit files must encode exclusivity from both sides.
+
+    systemd treats Conflicts= as bidirectional, so a single declaration is
+    enough at runtime. It is declared on both sides anyway: if one unit is
+    later masked, replaced, or has its file edited, a one-sided declaration
+    silently stops protecting anything, and the failure mode is two
+    dispatchers racing on the same display.
+    """
+
+    def test_active_unit_exists(self) -> None:
+        """Everything else here is vacuous if the file is missing."""
+        assert (UNIT_DIR / ACTIVE_UNIT).is_file()
+
+    @pytest.mark.parametrize("unit", CONFLICTING_UNITS)
+    def test_active_declares_every_conflict(self, unit: str) -> None:
+        """The controller names every dispatcher it must displace."""
+        assert unit in _directives(ACTIVE_UNIT, "Conflicts")
+
+    @pytest.mark.parametrize("unit", CONFLICTING_UNITS)
+    def test_every_conflict_declares_active(self, unit: str) -> None:
+        """The reciprocal half, which is the one easily forgotten."""
+        assert ACTIVE_UNIT in _directives(unit, "Conflicts")
+
+    @pytest.mark.parametrize("unit", CONFLICTING_UNITS)
+    def test_active_is_ordered_after_every_conflict(self, unit: str) -> None:
+        """Conflicts= alone permits a brief overlap during changeover.
+
+        Without After=, systemd may start the controller while the outgoing
+        watcher is still stopping. The controller's lock would refuse to
+        start, which presents as a spurious startup failure.
+        """
+        assert unit in _directives(ACTIVE_UNIT, "After")
+
+    def test_active_runs_the_active_module(self) -> None:
+        """A copy-paste from the shadow unit would launch the wrong root."""
+        exec_start = _directives(ACTIVE_UNIT, "ExecStart")
+        assert "monitor_controller.active" in " ".join(exec_start)
+        assert "monitor_controller.shadow" not in " ".join(exec_start)
+
+    def test_active_declares_the_active_postswitch_policy(self) -> None:
+        """The autorandr hook only notifies the controller under this policy.
+
+        Without it the hook takes its legacy branch and launches unkeyed
+        desktop work, which is exactly what the active controller exists to
+        prevent.
+        """
+        environment = _directives(ACTIVE_UNIT, "Environment")
+        assert "MONITOR_CONTROLLER_POSTSWITCH_POLICY=active" in environment
+        assert "MONITOR_CONTROLLER_NAMESPACE=active" in environment
+
+    def test_active_cannot_reach_the_shadow_namespace(self) -> None:
+        """Active must not read or overwrite shadow's recorded decisions."""
+        inaccessible = " ".join(_directives(ACTIVE_UNIT, "InaccessiblePaths"))
+        assert "monitor-controller/shadow" in inaccessible
+
+    def test_shadow_cannot_reach_the_active_namespace(self) -> None:
+        """The exclusion must be symmetric, or shadow could corrupt active."""
+        inaccessible = " ".join(
+            _directives("monitor-controller-shadow.service", "InaccessiblePaths")
+        )
+        assert "monitor-controller/active" in inaccessible

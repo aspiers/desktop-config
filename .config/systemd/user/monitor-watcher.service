@@ -2,6 +2,10 @@
 Description=Legacy monitor hotplug watcher
 # Bidirectional in systemd: starting either watcher stops the other.
 Conflicts=monitor-watcher-ng.service
+# Same exclusivity against the active Python controller, which also dispatches
+# display work.  Declared on both sides so the guarantee survives either unit
+# being masked or replaced.
+Conflicts=monitor-controller.service
 
 # Needs DISPLAY in the systemd --user environment, which only exists
 # once the X session has pushed it in (see 00-systemd-user-env).
