@@ -380,6 +380,7 @@ main () {
     timing_mark "panel and system tray settled; nm-applet launched"
 
     capture_tray_diag
+    capture_shadow_trace
 }
 
 # Report the window owning the system tray selection, or nothing when there is
@@ -511,6 +512,110 @@ capture_tray_diag() {
         sleep 5
         tray-diag "$out" >/dev/null 2>&1
     ) &
+}
+
+# Snapshot the shadow controller's audit log around a display transition, so
+# the trace scenarios dc-a5y.11 needs accumulate from normal use instead of
+# Adam being asked to perform dock/undock/suspend cycles deliberately.  See
+# AGENTS.md, "Blocking on Hardware Events".
+#
+# The shadow controller already writes a rotating audit log, but rotation can
+# discard a transition before anyone looks at it, and nothing in the log says
+# which of the seven required scenarios a given stretch covers.  This records
+# the tail plus the topology that produced it, which is what makes a capture
+# classifiable afterwards.
+#
+# Cheap and non-fatal by construction: no shadow log means no work, and every
+# failure path returns success so a capture problem can never fail a relayout.
+capture_shadow_trace() {
+    local state_home=${XDG_STATE_HOME:-$HOME/.local/state}
+    local audit=$state_home/monitor-controller/shadow/audit.jsonl
+    local dir=~/.log/shadow-traces
+    local out
+
+    [ -r "$audit" ] || return 0
+
+    mkdir -p "$dir" || return 0
+    out="$dir/$(date +%Y%m%d-%H%M%S).${layout:-unknown}.json"
+
+    (
+        # Let the controller observe and settle before sampling, so the tail
+        # contains this transition rather than only the state preceding it.
+        sleep 8
+
+        {
+            printf '{\n'
+            printf '  "captured_at": "%s",\n' "$(date --iso-8601=seconds)"
+            printf '  "layout": "%s",\n' "${layout:-unknown}"
+            printf '  "expected_layout": "%s",\n' "${expected_layout:-}"
+            printf '  "identity": "%s",\n' "$(monitor-identity 2>/dev/null)"
+            printf '  "uptime_seconds": %s,\n' "$(cut -d' ' -f1 /proc/uptime)"
+            # Cumulative suspended time; a change since the previous capture
+            # identifies a suspend/resume transition rather than a hotplug.
+            printf '  "suspended_seconds": %s,\n' \
+                "$(python3 -c 'import time
+print(int(time.clock_gettime(time.CLOCK_BOOTTIME) - time.clock_gettime(time.CLOCK_MONOTONIC)))' 2>/dev/null || echo null)"
+            printf '  "outputs": '
+            xrandr --query 2>/dev/null |
+                python3 -c 'import json,sys
+outputs=[]
+for line in sys.stdin:
+    parts=line.split()
+    if len(parts)>=2 and parts[1]=="connected":
+        outputs.append({"name":parts[0],
+                        "geometry":next((p for p in parts if "x" in p and "+" in p),None)})
+print(json.dumps(outputs))' 2>/dev/null || printf '[]'
+            printf ',\n  "audit_tail": '
+            # Bounded tail, with each record's full reducer state dropped.
+            # State snapshots are ~20KB each, so keeping them would make a
+            # single capture 2MB and the retained set hundreds of megabytes.
+            # What classifies a transition is the event sequence, the effects,
+            # and the profile the reducer selected -- not its entire state.
+            tail -n 400 "$audit" 2>/dev/null |
+                python3 -c 'import json,sys
+
+def summarise(state):
+    """Keep the few state fields that identify a transition."""
+    if not isinstance(state, dict):
+        return None
+    keep = ("phase", "current_profile", "target_profile",
+            "desktop_finalized_profile", "pending_action",
+            "display_identity", "authority_allowed")
+    return {k: state[k] for k in keep if k in state}
+
+recs = []
+for line in sys.stdin:
+    line = line.strip()
+    if not line:
+        continue
+    try:
+        rec = json.loads(line)
+    except ValueError:
+        continue
+    if isinstance(rec, dict):
+        for field in ("state", "initial_state"):
+            if field in rec:
+                rec[field] = summarise(rec[field])
+        # raw_evidence is ~13KB of verbatim xrandr lines per observation and
+        # is reconstructible from "outputs" above.  live_fingerprints are
+        # kept: they are the EDID identities, which is exactly what the
+        # slow/broken-EDID scenarios turn on.
+        observation = rec.get("event", {}).get("observation")
+        if isinstance(observation, dict):
+            evidence = observation.pop("raw_evidence", None)
+            if evidence is not None:
+                observation["raw_evidence_count"] = len(evidence)
+    recs.append(rec)
+print(json.dumps(recs))' 2>/dev/null || printf '[]'
+            printf '\n}\n'
+        } > "$out" 2>/dev/null
+
+        # Keep the newest 200 captures; older transitions have either been
+        # reconciled into fixtures or are no longer interesting.
+        find "$dir" -maxdepth 1 -name '*.json' -printf '%T@ %p\n' 2>/dev/null |
+            sort -rn | tail -n +201 | cut -d' ' -f2- |
+            while IFS= read -r stale; do rm -f "$stale"; done
+    ) >/dev/null 2>&1 &
 }
 
 main "$@"

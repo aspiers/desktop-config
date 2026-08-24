@@ -1,0 +1,194 @@
+#!/usr/bin/env python3
+"""Report which dc-a5y.11 trace scenarios have been captured so far.
+
+`setup-monitor` snapshots the shadow controller's audit log after every
+relayout into ~/.log/shadow-traces/.  Those captures accumulate from normal
+docking, undocking and suspending rather than from anyone performing a
+checklist, so this tool answers the question that actually matters: which of
+the required scenarios are still missing?
+
+See AGENTS.md, "Blocking on Hardware Events".
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from dataclasses import dataclass, field
+from pathlib import Path
+
+TRACE_DIR = Path.home() / ".log" / "shadow-traces"
+
+# Model strings identifying the external monitors, used to tell a Samsung
+# scenario from an AOC one.
+SAMSUNG = "Odyssey"
+AOC = "AOC"
+
+
+@dataclass
+class Capture:
+    """One snapshot taken around a display transition."""
+
+    path: Path
+    captured_at: str
+    layout: str
+    identity: str
+    outputs: list[dict]
+    suspended_seconds: int | None
+    records: list[dict] = field(repr=False, default_factory=list)
+
+    @property
+    def externals(self) -> list[str]:
+        return [o["name"] for o in self.outputs if o.get("name") != "eDP"]
+
+    @property
+    def event_types(self) -> set[str]:
+        return {r.get("event_type") for r in self.records if r.get("event_type")}
+
+    def observation_span_ms(self) -> int:
+        """Milliseconds between the first and last audit record."""
+        stamps = [
+            r["audit"]["monotonic_ms"]
+            for r in self.records
+            if isinstance(r.get("audit"), dict) and "monotonic_ms" in r["audit"]
+        ]
+        return max(stamps) - min(stamps) if len(stamps) > 1 else 0
+
+
+def load_captures(directory: Path) -> list[Capture]:
+    captures = []
+    for path in sorted(directory.glob("*.json")):
+        try:
+            data = json.loads(path.read_text())
+        except (OSError, ValueError):
+            continue
+        captures.append(
+            Capture(
+                path=path,
+                captured_at=data.get("captured_at", "?"),
+                layout=data.get("layout", "unknown"),
+                identity=data.get("identity", ""),
+                outputs=data.get("outputs") or [],
+                suspended_seconds=data.get("suspended_seconds"),
+                records=data.get("audit_tail") or [],
+            )
+        )
+    return captures
+
+
+def classify(captures: list[Capture]) -> dict[str, list[Capture]]:
+    """Bucket captures against the seven scenarios dc-a5y.11 requires.
+
+    A capture can satisfy more than one scenario; the point is coverage, not
+    a partition.
+    """
+    found: dict[str, list[Capture]] = {
+        "laptop startup": [],
+        "Samsung plug": [],
+        "Samsung slow/broken EDID (>30s)": [],
+        "genuine unplug": [],
+        "suspend/resume to same profile": [],
+        "controller restart mid-verification": [],
+        "AOC connector rename": [],
+    }
+
+    previous: Capture | None = None
+    for capture in captures:
+        externals = capture.externals
+
+        if not externals:
+            # No external output at all: either a laptop-only startup or the
+            # tail of an unplug.  The distinction is whether one was present
+            # in the preceding capture.
+            if previous is not None and previous.externals:
+                found["genuine unplug"].append(capture)
+            else:
+                found["laptop startup"].append(capture)
+
+        if SAMSUNG in capture.identity:
+            if previous is None or SAMSUNG not in previous.identity:
+                found["Samsung plug"].append(capture)
+            if capture.observation_span_ms() > 30_000:
+                found["Samsung slow/broken EDID (>30s)"].append(capture)
+
+        if AOC in capture.identity:
+            # A rename shows up as the same model arriving on a different
+            # connector than last time it was seen.
+            prior_aoc = next(
+                (
+                    c
+                    for c in reversed(captures[: captures.index(capture)])
+                    if AOC in c.identity
+                ),
+                None,
+            )
+            if prior_aoc and prior_aoc.externals != externals:
+                found["AOC connector rename"].append(capture)
+
+        if (
+            previous is not None
+            and capture.suspended_seconds is not None
+            and previous.suspended_seconds is not None
+            and capture.suspended_seconds > previous.suspended_seconds
+            and capture.layout == previous.layout
+        ):
+            found["suspend/resume to same profile"].append(capture)
+
+        if "ControllerStarted" in capture.event_types:
+            found["controller restart mid-verification"].append(capture)
+
+        previous = capture
+
+    return found
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--dir", type=Path, default=TRACE_DIR, help="capture directory"
+    )
+    parser.add_argument("--json", action="store_true", help="machine-readable")
+    args = parser.parse_args()
+
+    if not args.dir.is_dir():
+        print(f"No capture directory yet: {args.dir}", file=sys.stderr)
+        print("It is created by setup-monitor on the next relayout.", file=sys.stderr)
+        return 1
+
+    captures = load_captures(args.dir)
+    found = classify(captures)
+
+    if args.json:
+        print(
+            json.dumps(
+                {
+                    "captures": len(captures),
+                    "scenarios": {k: len(v) for k, v in found.items()},
+                    "outstanding": [k for k, v in found.items() if not v],
+                },
+                indent=2,
+            )
+        )
+        return 0
+
+    print(f"{len(captures)} capture(s) in {args.dir}\n")
+    width = max(len(name) for name in found)
+    for name, matches in found.items():
+        mark = "yes" if matches else " NO"
+        detail = ""
+        if matches:
+            detail = f"  (latest {matches[-1].captured_at[:19]})"
+        print(f"  [{mark}] {name:<{width}}{detail}")
+
+    outstanding = [name for name, matches in found.items() if not matches]
+    if outstanding:
+        print(f"\n{len(outstanding)} scenario(s) still outstanding.")
+        print("These accrue from normal use; nothing needs to be done deliberately.")
+    else:
+        print("\nAll scenarios captured; dc-a5y.11 can be reconciled.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

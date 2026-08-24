@@ -1,0 +1,231 @@
+#!/bin/bash
+
+# Tests for shadow-trace-status, which reports which dc-a5y.11 trace
+# scenarios have accrued from normal use.
+
+set -u
+
+repo=$(cd "$(dirname "$0")/.." && pwd)
+tool=$repo/bin/shadow-trace-status
+failures=0
+
+run_test () {
+    local name=$1
+    shift
+    if "$@"; then
+        printf 'ok - %s\n' "$name"
+    else
+        printf 'not ok - %s\n' "$name" >&2
+        failures=$((failures + 1))
+    fi
+}
+
+# Write one capture.  Args: dir date layout identity suspended outputs
+#                          event_type last_monotonic_ms
+write_capture () {
+    local dir=$1 date=$2 layout=$3 identity=$4 suspended=$5
+    local outputs=$6 event_type=$7 last_ms=$8
+
+    cat > "$dir/$date.$layout.json" <<EOF
+{"captured_at": "${date:0:4}-${date:4:2}-${date:6:2}T10:00:00",
+ "layout": "$layout",
+ "identity": "$identity",
+ "suspended_seconds": $suspended,
+ "outputs": $outputs,
+ "audit_tail": [
+   {"audit": {"monotonic_ms": 1000}, "event_type": "$event_type"},
+   {"audit": {"monotonic_ms": $last_ms}, "event_type": "ObservationCompleted"}
+ ]}
+EOF
+}
+
+EDP='[{"name":"eDP"}]'
+EDP_DP1='[{"name":"eDP"},{"name":"DisplayPort-1"}]'
+EDP_DP2='[{"name":"eDP"},{"name":"DisplayPort-2"}]'
+SAMSUNG_ID='DisplayPort-1=SAMSUNG Odyssey G75F,eDP=BOE'
+AOC_DP1='DisplayPort-1=AOC U28G2G6B,eDP=BOE'
+AOC_DP2='DisplayPort-2=AOC U28G2G6B,eDP=BOE'
+
+test_empty_directory_reports_all_outstanding () {
+    local tmp out
+    tmp=$(mktemp -d)
+    trap 'rm -rf "${tmp:-}"' RETURN
+
+    out=$("$tool" --dir "$tmp" --json 2>&1) || return
+    [[ $(printf '%s' "$out" | python3 -c 'import json,sys; print(len(json.load(sys.stdin)["outstanding"]))') -eq 7 ]]
+}
+
+test_laptop_only_capture_is_startup_not_unplug () {
+    local tmp out
+    tmp=$(mktemp -d)
+    trap 'rm -rf "${tmp:-}"' RETURN
+    write_capture "$tmp" 20260801-100000 celtic "eDP=BOE" 100 "$EDP" ObservationCompleted 2000
+
+    out=$("$tool" --dir "$tmp" --json 2>&1) || return
+    printf '%s' "$out" | python3 -c '
+import json, sys
+d = json.load(sys.stdin)["scenarios"]
+raise SystemExit(0 if d["laptop startup"] == 1 and d["genuine unplug"] == 0 else 1)'
+}
+
+# An external present and then absent is an unplug; an absent-from-the-start
+# capture is a startup.  The distinction is the preceding capture.
+test_external_disappearing_is_an_unplug () {
+    local tmp out
+    tmp=$(mktemp -d)
+    trap 'rm -rf "${tmp:-}"' RETURN
+    write_capture "$tmp" 20260801-100000 celtic+ultrawide "$SAMSUNG_ID" 100 "$EDP_DP1" ObservationCompleted 2000
+    write_capture "$tmp" 20260802-100000 celtic "eDP=BOE" 100 "$EDP" ObservationCompleted 2000
+
+    out=$("$tool" --dir "$tmp" --json 2>&1) || return
+    printf '%s' "$out" | python3 -c '
+import json, sys
+raise SystemExit(0 if json.load(sys.stdin)["scenarios"]["genuine unplug"] == 1 else 1)'
+}
+
+# A rising suspended-seconds counter with an unchanged layout is a
+# suspend/resume that returned to the same profile.
+test_suspend_resume_same_profile_is_detected () {
+    local tmp out
+    tmp=$(mktemp -d)
+    trap 'rm -rf "${tmp:-}"' RETURN
+    write_capture "$tmp" 20260801-100000 celtic "eDP=BOE" 100 "$EDP" ObservationCompleted 2000
+    write_capture "$tmp" 20260802-100000 celtic "eDP=BOE" 900 "$EDP" ObservationCompleted 2000
+
+    out=$("$tool" --dir "$tmp" --json 2>&1) || return
+    printf '%s' "$out" | python3 -c '
+import json, sys
+raise SystemExit(0 if json.load(sys.stdin)["scenarios"]["suspend/resume to same profile"] == 1 else 1)'
+}
+
+# A layout change across a suspend is a different scenario and must not count.
+test_suspend_resume_to_different_profile_does_not_count () {
+    local tmp out
+    tmp=$(mktemp -d)
+    trap 'rm -rf "${tmp:-}"' RETURN
+    write_capture "$tmp" 20260801-100000 celtic "eDP=BOE" 100 "$EDP" ObservationCompleted 2000
+    write_capture "$tmp" 20260802-100000 celtic+ultrawide "$SAMSUNG_ID" 900 "$EDP_DP1" ObservationCompleted 2000
+
+    out=$("$tool" --dir "$tmp" --json 2>&1) || return
+    printf '%s' "$out" | python3 -c '
+import json, sys
+raise SystemExit(0 if json.load(sys.stdin)["scenarios"]["suspend/resume to same profile"] == 0 else 1)'
+}
+
+test_slow_edid_needs_an_observation_span_beyond_30s () {
+    local tmp out
+    tmp=$(mktemp -d)
+    trap 'rm -rf "${tmp:-}"' RETURN
+    write_capture "$tmp" 20260801-100000 celtic+ultrawide "$SAMSUNG_ID" 100 "$EDP_DP1" ObservationCompleted 5000
+
+    out=$("$tool" --dir "$tmp" --json 2>&1) || return
+    printf '%s' "$out" | python3 -c '
+import json, sys
+d = json.load(sys.stdin)["scenarios"]
+raise SystemExit(0 if d["Samsung plug"] == 1
+                 and d["Samsung slow/broken EDID (>30s)"] == 0 else 1)'
+}
+
+test_slow_edid_is_detected_beyond_30s () {
+    local tmp out
+    tmp=$(mktemp -d)
+    trap 'rm -rf "${tmp:-}"' RETURN
+    write_capture "$tmp" 20260801-100000 celtic+ultrawide "$SAMSUNG_ID" 100 "$EDP_DP1" ObservationCompleted 45000
+
+    out=$("$tool" --dir "$tmp" --json 2>&1) || return
+    printf '%s' "$out" | python3 -c '
+import json, sys
+raise SystemExit(0 if json.load(sys.stdin)["scenarios"]["Samsung slow/broken EDID (>30s)"] == 1 else 1)'
+}
+
+# The same monitor model arriving on a different connector is the rename.
+test_aoc_rename_needs_a_connector_change () {
+    local tmp out
+    tmp=$(mktemp -d)
+    trap 'rm -rf "${tmp:-}"' RETURN
+    write_capture "$tmp" 20260801-100000 celtic+external "$AOC_DP1" 100 "$EDP_DP1" ObservationCompleted 2000
+    write_capture "$tmp" 20260802-100000 celtic+external "$AOC_DP1" 100 "$EDP_DP1" ObservationCompleted 2000
+
+    out=$("$tool" --dir "$tmp" --json 2>&1) || return
+    printf '%s' "$out" | python3 -c '
+import json, sys
+raise SystemExit(0 if json.load(sys.stdin)["scenarios"]["AOC connector rename"] == 0 else 1)'
+}
+
+test_aoc_rename_is_detected () {
+    local tmp out
+    tmp=$(mktemp -d)
+    trap 'rm -rf "${tmp:-}"' RETURN
+    write_capture "$tmp" 20260801-100000 celtic+external "$AOC_DP1" 100 "$EDP_DP1" ObservationCompleted 2000
+    write_capture "$tmp" 20260802-100000 celtic+external "$AOC_DP2" 100 "$EDP_DP2" ObservationCompleted 2000
+
+    out=$("$tool" --dir "$tmp" --json 2>&1) || return
+    printf '%s' "$out" | python3 -c '
+import json, sys
+raise SystemExit(0 if json.load(sys.stdin)["scenarios"]["AOC connector rename"] == 1 else 1)'
+}
+
+test_controller_restart_is_detected () {
+    local tmp out
+    tmp=$(mktemp -d)
+    trap 'rm -rf "${tmp:-}"' RETURN
+    write_capture "$tmp" 20260801-100000 celtic "eDP=BOE" 100 "$EDP" ControllerStarted 2000
+
+    out=$("$tool" --dir "$tmp" --json 2>&1) || return
+    printf '%s' "$out" | python3 -c '
+import json, sys
+raise SystemExit(0 if json.load(sys.stdin)["scenarios"]["controller restart mid-verification"] == 1 else 1)'
+}
+
+# A corrupt capture must not abort the report; the rest still counts.
+test_unreadable_capture_is_skipped () {
+    local tmp out
+    tmp=$(mktemp -d)
+    trap 'rm -rf "${tmp:-}"' RETURN
+    write_capture "$tmp" 20260801-100000 celtic "eDP=BOE" 100 "$EDP" ObservationCompleted 2000
+    printf 'not json at all\n' > "$tmp/20260802-100000.broken.json"
+
+    out=$("$tool" --dir "$tmp" --json 2>&1) || return
+    printf '%s' "$out" | python3 -c '
+import json, sys
+d = json.load(sys.stdin)
+raise SystemExit(0 if d["captures"] == 1 and d["scenarios"]["laptop startup"] == 1 else 1)'
+}
+
+test_missing_directory_exits_nonzero () {
+    local tmp
+    tmp=$(mktemp -d)
+    trap 'rm -rf "${tmp:-}"' RETURN
+
+    ! "$tool" --dir "$tmp/does-not-exist" >/dev/null 2>&1
+}
+
+run_test 'empty directory reports all seven outstanding' \
+    test_empty_directory_reports_all_outstanding
+run_test 'laptop-only capture counts as startup, not unplug' \
+    test_laptop_only_capture_is_startup_not_unplug
+run_test 'external disappearing counts as a genuine unplug' \
+    test_external_disappearing_is_an_unplug
+run_test 'suspend/resume to the same profile is detected' \
+    test_suspend_resume_same_profile_is_detected
+run_test 'suspend/resume to a different profile does not count' \
+    test_suspend_resume_to_different_profile_does_not_count
+run_test 'fast EDID is a plug but not a slow-EDID case' \
+    test_slow_edid_needs_an_observation_span_beyond_30s
+run_test 'observation span beyond 30s is a slow-EDID case' \
+    test_slow_edid_is_detected_beyond_30s
+run_test 'same AOC connector twice is not a rename' \
+    test_aoc_rename_needs_a_connector_change
+run_test 'AOC on a different connector is a rename' \
+    test_aoc_rename_is_detected
+run_test 'controller restart is detected' \
+    test_controller_restart_is_detected
+run_test 'unreadable capture is skipped, not fatal' \
+    test_unreadable_capture_is_skipped
+run_test 'missing directory exits non-zero' \
+    test_missing_directory_exits_nonzero
+
+if [[ $failures -ne 0 ]]; then
+    printf '%d test(s) failed\n' "$failures" >&2
+    exit 1
+fi

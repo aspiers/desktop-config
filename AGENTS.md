@@ -140,6 +140,36 @@ mr stow
 - Error handling and logging throughout
 - Follow existing patterns when modifying scripts
 
+### Blocking on Hardware Events
+
+When an investigation needs physical hardware events - docking, undocking,
+suspend/resume, plugging a monitor or USB hub - do **not** hand Adam a
+checklist of scenarios to perform, and do not label the issue as needing
+human attention on those grounds.
+
+Adam docks, undocks and suspends several times a day in normal use, so the
+events arrive on their own within hours. A checklist converts data that was
+going to appear anyway into a task he has to remember and schedule.
+
+Instead, set up a watcher that captures the required evidence the next time
+each event happens naturally. Such a watcher must:
+
+- record exactly what the issue needs, tagged so each required scenario can
+  be recognised as satisfied;
+- cost nothing on the common path, and never delay or risk the desktop
+  pipeline - a failed capture must not fail the operation it observes;
+- prune its own output so it cannot fill the disk; and
+- report which scenarios are still outstanding, rather than asking for them.
+
+`bin/setup-monitor`'s `capture_tray_diag()` is the reference example: it
+snapshots tray and notification state after every relayout into
+`~/.log/tray-diag/`, which is how the nm-applet and notification placement
+bugs were eventually diagnosed from history rather than by asking Adam to
+reproduce them.
+
+Reserve human-attention flags for genuine decisions, credentials, or access
+that only Adam has - not for events that occur naturally in his normal use.
+
 ### Personal Configuration Focus
 
 - Designed for single-user desktop management
