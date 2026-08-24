@@ -5,11 +5,19 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import subprocess
 import sys
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from pathlib import Path
 
+from monitor_controller.active import CONFLICTING_UNITS, ActivePaths
 from monitor_controller.codec import StateCodecError, decode_state
+from monitor_controller.cutover import (
+    build_preflight_report,
+    cutover_commands,
+    rollback_commands,
+    unit_states,
+)
 from monitor_controller.runtime.persistence import StateNamespace
 from monitor_controller.simulation.replay import (
     ReplayFormatError,
@@ -57,6 +65,26 @@ def _parser() -> argparse.ArgumentParser:
         default=StateNamespace.ACTIVE.value,
     )
     status.add_argument("--state-home", type=Path)
+
+    subparsers.add_parser(
+        "preflight",
+        help="check whether the active controller can safely take authority",
+    )
+
+    subparsers.add_parser(
+        "cutover-commands",
+        help="print the cutover command sequence without running anything",
+    )
+
+    rollback = subparsers.add_parser(
+        "rollback-commands",
+        help="print the commands restoring the previous watcher",
+    )
+    rollback.add_argument(
+        "--target",
+        default="monitor-watcher-ng.service",
+        choices=CONFLICTING_UNITS,
+    )
 
     internal = subparsers.add_parser(
         "internal",
@@ -183,6 +211,59 @@ def _status(state_home: Path, namespace: StateNamespace) -> int:
     return 0
 
 
+def _systemctl_is_active(unit: str) -> bool:
+    """Return whether a systemd user unit is active.
+
+    Raises on failure rather than returning False, so unit_states can record
+    the difference between "not running" and "could not tell".
+    """
+    completed = subprocess.run(  # noqa: S603
+        ["systemctl", "--user", "is-active", unit],  # noqa: S607
+        capture_output=True,
+        text=True,
+        timeout=10,
+        check=False,
+    )
+    return completed.stdout.strip() == "active"
+
+
+def _print_commands(args: argparse.Namespace) -> int:
+    """Print a command sequence without executing any of it."""
+    commands = (
+        cutover_commands()
+        if args.command == "cutover-commands"
+        else rollback_commands(args.target)
+    )
+    for command in commands:
+        print(command)
+    return 0
+
+
+def _preflight() -> int:
+    """Report whether the active controller can safely take authority.
+
+    Read-only: nothing is stopped, started, enabled, or disabled. Exits
+    non-zero when any precondition blocks, so it is usable as a gate in a
+    cutover script.
+    """
+    report = build_preflight_report(
+        paths=ActivePaths.from_environment(),
+        active_units=unit_states(CONFLICTING_UNITS, _systemctl_is_active),
+        ambiguities=(),
+        authority_allowed=True,
+    )
+    print(report.render())
+    return 0 if report.ready else 1
+
+
+# Cutover-related subcommands, dispatched by table so main() stays simple.
+_CUTOVER_COMMANDS: dict[str, Callable[[argparse.Namespace], int]] = {
+    "preflight": lambda _args: _preflight(),
+    "cutover-commands": _print_commands,
+    "rollback-commands": _print_commands,
+}
+
+
 def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0911
     """Run only deterministic simulation/replay or read persisted state."""
     args = _parser().parse_args(argv)
@@ -191,6 +272,8 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0911
             return _simulate(args.scenario)
         if args.command == "replay":
             return _replay(args.trace)
+        if args.command in _CUTOVER_COMMANDS:
+            return _CUTOVER_COMMANDS[args.command](args)
         if args.command == "internal":
             if args.internal_command == "tray-diagnostics":
                 return run_tray_diagnostics(
