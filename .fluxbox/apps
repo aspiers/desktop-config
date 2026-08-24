@@ -132,3 +132,6 @@
 [app] (name=eog)
   [Deco] {NORMAL}
 [end]
+[transient] (name=ardour-9.7.0) (class=Ardour-9.7.0) (role=plugin_ui)
+  [Layer]	{8}
+[end]
