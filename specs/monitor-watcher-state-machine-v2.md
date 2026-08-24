@@ -589,4 +589,14 @@ arithmetic-bearing persisted records without partial mutation.
 4. Compare shadow decisions with the existing watcher during real hub cycles.
 5. Add durable desktop-finalizer units and remove postswitch-marker authority.
 6. Switch the service entry point only after synthetic tests and repeated live
-   Samsung reconnects pass; retain `monitor-system legacy` as the rollback.
+   Samsung reconnects pass, with an explicit systemd rollback to either shell
+   watcher.
+
+   `bin/monitor-system` was removed in `1f57823`; rollback is now ordinary
+   `systemctl --user` unit management, which works over SSH with no DISPLAY:
+
+   ```bash
+   monitor-controller rollback-commands --target monitor-watcher-ng.service
+   ```
+
+   prints the exact sequence. See `monitor_controller/cutover.py`.
