@@ -25,6 +25,20 @@ QUIET_SECONDS=${QUIET_SECONDS:-5}
 # postswitch work (Fluxbox/panel restarts) is allowed to begin.
 PROFILE_STABILITY_SECONDS=${PROFILE_STABILITY_SECONDS:-10}
 PROFILE_STABILITY_POLL_SECONDS=${PROFILE_STABILITY_POLL_SECONDS:-1}
+# Resuming from suspend is not an ordinary hotplug.  A DisplayPort link can
+# take minutes to retrain after s2idle exit, during which the external output
+# is simply absent -- indistinguishable from an unplugged monitor.  Ten
+# seconds of "stability" is then met by a laptop-only topology that is not
+# settled at all, and converging on it runs the full desktop pipeline, moving
+# every window onto the laptop (dc-38w: resume 00:48:59, converged on celtic
+# 00:49:19, external finally arrived 00:53:35).
+#
+# So demand far more settling evidence, but only while a resume is recent and
+# only when the topology has no external output -- the case that is actually
+# ambiguous.  Ordinary hotplugs, and resumes where the external came back
+# promptly, keep the normal window.
+POST_RESUME_STABILITY_SECONDS=${POST_RESUME_STABILITY_SECONDS:-90}
+POST_RESUME_GRACE_SECONDS=${POST_RESUME_GRACE_SECONDS:-300}
 RETRY_DELAY_SECONDS=${RETRY_DELAY_SECONDS:-1}
 RECONCILE_TIMEOUT_SECONDS=${RECONCILE_TIMEOUT_SECONDS:-30}
 MAX_RECONCILE_ATTEMPTS=${MAX_RECONCILE_ATTEMPTS:-12}
@@ -45,6 +59,12 @@ postswitch_hook=${MONITOR_WATCHER_NG_POSTSWITCH_HOOK:-$HOME/.config/autorandr/po
 DRM_EVENT_FD=
 DRM_MONITOR_PID=
 LAST_CONVERGED_PROFILE=
+# Cumulative seconds spent suspended, as of the last reconciliation.  A jump
+# means the machine resumed since then.
+LAST_SUSPENDED_SECONDS=
+# Seconds-since-resume, sampled once per reconciliation so every decision
+# within it sees a consistent value.
+SECONDS_SINCE_RESUME=
 
 check_deps () {
     local cmd
@@ -59,6 +79,12 @@ check_deps () {
     if [[ ! $PROFILE_STABILITY_SECONDS =~ ^(0|[1-9][0-9]*)$ ]] ||
        [[ ! $PROFILE_STABILITY_POLL_SECONDS =~ ^[1-9][0-9]*$ ]]; then
         echo "ERROR: PROFILE_STABILITY_SECONDS must be a non-negative integer and PROFILE_STABILITY_POLL_SECONDS a positive integer" >&2
+        exit 1
+    fi
+
+    if [[ ! $POST_RESUME_STABILITY_SECONDS =~ ^(0|[1-9][0-9]*)$ ]] ||
+       [[ ! $POST_RESUME_GRACE_SECONDS =~ ^(0|[1-9][0-9]*)$ ]]; then
+        echo "ERROR: POST_RESUME_STABILITY_SECONDS and POST_RESUME_GRACE_SECONDS must be non-negative integers" >&2
         exit 1
     fi
 }
@@ -611,19 +637,90 @@ wait_before_retry () {
     return 2
 }
 
+# Cumulative seconds this boot has spent suspended.  CLOCK_BOOTTIME counts
+# suspended time and CLOCK_MONOTONIC does not, so their difference only ever
+# grows, and only across a suspend.  This needs no root, no journal parsing
+# and no system sleep hook, and cannot race a resume the way a timestamp file
+# written by a hook would.
+suspended_seconds () {
+    python3 -c 'import time
+print(int(time.clock_gettime(time.CLOCK_BOOTTIME) - time.clock_gettime(time.CLOCK_MONOTONIC)))' 2>/dev/null
+}
+
+# Refresh SECONDS_SINCE_RESUME.  Called once per reconciliation so that a long
+# reconciliation does not see the grace period expire underneath it.
+note_resume_state () {
+    local now
+
+    now=$(suspended_seconds)
+    if [[ -z $now ]]; then
+        # Without a usable clock, assume no recent resume rather than
+        # applying the long window to every ordinary hotplug.
+        SECONDS_SINCE_RESUME=""
+        return 0
+    fi
+
+    if [[ -z $LAST_SUSPENDED_SECONDS ]]; then
+        # First observation this run: nothing to compare against.
+        LAST_SUSPENDED_SECONDS=$now
+        SECONDS_SINCE_RESUME=""
+        return 0
+    fi
+
+    if (( now > LAST_SUSPENDED_SECONDS )); then
+        echo "Resume detected ($((now - LAST_SUSPENDED_SECONDS))s suspended); requiring longer settling for an external-free topology" >&2
+        LAST_SUSPENDED_SECONDS=$now
+        SECONDS_SINCE_RESUME=0
+        RESUME_OBSERVED_AT=$SECONDS
+        return 0
+    fi
+
+    if [[ -n ${RESUME_OBSERVED_AT:-} ]]; then
+        SECONDS_SINCE_RESUME=$((SECONDS - RESUME_OBSERVED_AT))
+    fi
+}
+
+# How long $profile must stay put before it is treated as settled.  A profile
+# with an external output is self-evidently settled: the hardware is present.
+# The ambiguous case is an external-free profile shortly after resume, which
+# looks identical whether the monitor is unplugged or still retraining.
+required_stability_seconds () {
+    local profile=$1
+
+    if [[ -z ${SECONDS_SINCE_RESUME:-} ]] ||
+       (( SECONDS_SINCE_RESUME >= POST_RESUME_GRACE_SECONDS )); then
+        printf '%s\n' "$PROFILE_STABILITY_SECONDS"
+        return 0
+    fi
+
+    if profile_outputs_connected "$profile"; then
+        printf '%s\n' "$PROFILE_STABILITY_SECONDS"
+        return 0
+    fi
+
+    if (( POST_RESUME_STABILITY_SECONDS <= PROFILE_STABILITY_SECONDS )); then
+        printf '%s\n' "$PROFILE_STABILITY_SECONDS"
+        return 0
+    fi
+
+    printf '%s\n' "$POST_RESUME_STABILITY_SECONDS"
+}
+
 wait_for_profile_stability () {
     local profile=$1
     local elapsed=0
-    local interval status detected current
+    local interval status detected current required
 
-    if (( PROFILE_STABILITY_SECONDS > 0 )); then
-        echo "Verifying autorandr profile $profile remains active for ${PROFILE_STABILITY_SECONDS}s" >&2
+    required=$(required_stability_seconds "$profile")
+
+    if (( required > 0 )); then
+        echo "Verifying autorandr profile $profile remains active for ${required}s" >&2
     fi
 
-    while (( elapsed < PROFILE_STABILITY_SECONDS )); do
+    while (( elapsed < required )); do
         interval=$PROFILE_STABILITY_POLL_SECONDS
-        if (( elapsed + interval > PROFILE_STABILITY_SECONDS )); then
-            interval=$((PROFILE_STABILITY_SECONDS - elapsed))
+        if (( elapsed + interval > required )); then
+            interval=$((required - elapsed))
         fi
 
         read_drm_event "$interval"
@@ -647,7 +744,7 @@ wait_for_profile_stability () {
         elapsed=$((elapsed + interval))
     done
 
-    if (( PROFILE_STABILITY_SECONDS > 0 )); then
+    if (( required > 0 )); then
         # Close the final query-to-postswitch gap too. An event arriving while
         # the last autorandr/xrandr queries ran can otherwise remain queued
         # while those queries still describe the old state.
@@ -677,6 +774,7 @@ reconcile () {
     local status
 
     mkdir -p "$runtime_dir"
+    note_resume_state
     pending_profile=$(read_pending_profile)
     if [[ -n $pending_profile ]]; then
         echo "Resuming previously matched autorandr profile $pending_profile" >&2

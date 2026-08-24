@@ -807,6 +807,177 @@ test_postswitch_deferral_records_profile_only () {
         [[ $output == *"deferred desktop reconfiguration"* ]]
 }
 
+# dc-38w: after resume the external monitor may still be retraining, so an
+# external-free topology must not be accepted as settled on the normal
+# 10s window.  Resume 00:48:59 -> converged on celtic 00:49:19 -> external
+# actually arrived 00:53:35, four minutes of windows on the laptop.
+test_post_resume_extends_window_for_external_free_profile () {
+    local tmp required
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' RETURN
+    prepare_watcher "$tmp"
+    PROFILE_STABILITY_SECONDS=10
+    POST_RESUME_STABILITY_SECONDS=90
+    POST_RESUME_GRACE_SECONDS=300
+    SECONDS_SINCE_RESUME=5
+
+    profile_outputs_connected () { return 1; }
+
+    required=$(required_stability_seconds celtic)
+    [[ $required -eq 90 ]]
+}
+
+# A profile whose external output is present is settled by evidence, not by
+# waiting: the hardware is demonstrably there.
+test_post_resume_keeps_normal_window_when_external_present () {
+    local tmp required
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' RETURN
+    prepare_watcher "$tmp"
+    PROFILE_STABILITY_SECONDS=10
+    POST_RESUME_STABILITY_SECONDS=90
+    POST_RESUME_GRACE_SECONDS=300
+    SECONDS_SINCE_RESUME=5
+
+    profile_outputs_connected () { return 0; }
+
+    required=$(required_stability_seconds samsung)
+    [[ $required -eq 10 ]]
+}
+
+# Outside the grace period this is an ordinary unplug, not a slow resume.
+test_ordinary_hotplug_keeps_normal_window () {
+    local tmp required
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' RETURN
+    prepare_watcher "$tmp"
+    PROFILE_STABILITY_SECONDS=10
+    POST_RESUME_STABILITY_SECONDS=90
+    POST_RESUME_GRACE_SECONDS=300
+    SECONDS_SINCE_RESUME=301
+
+    profile_outputs_connected () { return 1; }
+
+    required=$(required_stability_seconds celtic)
+    [[ $required -eq 10 ]]
+}
+
+# With no resume ever observed, behaviour must be exactly as before.
+test_no_resume_observed_keeps_normal_window () {
+    local tmp required
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' RETURN
+    prepare_watcher "$tmp"
+    PROFILE_STABILITY_SECONDS=10
+    POST_RESUME_STABILITY_SECONDS=90
+    SECONDS_SINCE_RESUME=""
+
+    profile_outputs_connected () { return 1; }
+
+    required=$(required_stability_seconds celtic)
+    [[ $required -eq 10 ]]
+}
+
+# A growing cumulative-suspend counter is the resume signal; a static one
+# must not be mistaken for a resume on every reconciliation.
+test_resume_is_detected_from_suspended_seconds_jump () {
+    local tmp output
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' RETURN
+    prepare_watcher "$tmp"
+
+    suspended_seconds () { printf '100\n'; }
+    LAST_SUSPENDED_SECONDS=""
+    SECONDS_SINCE_RESUME="unset"
+
+    # First observation only establishes a baseline.
+    note_resume_state 2>/dev/null
+    [[ -z $SECONDS_SINCE_RESUME ]] || return 1
+    [[ $LAST_SUSPENDED_SECONDS -eq 100 ]] || return 1
+
+    # No change: still no resume.
+    note_resume_state 2>/dev/null
+    [[ -z $SECONDS_SINCE_RESUME ]] || return 1
+
+    # A jump is a resume.  Redirect to a file rather than capturing with
+    # command substitution, which would run note_resume_state in a subshell
+    # and discard the state it sets.
+    suspended_seconds () { printf '400\n'; }
+    note_resume_state 2>"$tmp/log"
+    output=$(cat "$tmp/log")
+    [[ $SECONDS_SINCE_RESUME -eq 0 ]] &&
+        [[ $LAST_SUSPENDED_SECONDS -eq 400 ]] &&
+        [[ $output == *"Resume detected"* ]] &&
+        [[ $output == *"300s suspended"* ]]
+}
+
+# Without a usable clock, fall back to current behaviour rather than
+# applying the long window to every ordinary hotplug.
+test_unavailable_clock_falls_back_to_normal_window () {
+    local tmp required
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' RETURN
+    prepare_watcher "$tmp"
+    PROFILE_STABILITY_SECONDS=10
+    POST_RESUME_STABILITY_SECONDS=90
+
+    suspended_seconds () { return 1; }
+    profile_outputs_connected () { return 1; }
+
+    note_resume_state 2>/dev/null
+    [[ -z $SECONDS_SINCE_RESUME ]] || return 1
+
+    required=$(required_stability_seconds celtic)
+    [[ $required -eq 10 ]]
+}
+
+# The real clock must actually work on this machine, not merely be mocked.
+test_suspended_seconds_reads_a_real_clock () {
+    local tmp value
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' RETURN
+    prepare_watcher "$tmp"
+
+    value=$(suspended_seconds)
+    [[ -n $value ]] && [[ $value =~ ^(0|[1-9][0-9]*)$ ]]
+}
+
+# End-to-end: the extended window is what wait_for_profile_stability uses.
+test_stability_window_honours_post_resume_requirement () {
+    local tmp output
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' RETURN
+    prepare_watcher "$tmp"
+    PROFILE_STABILITY_SECONDS=10
+    POST_RESUME_STABILITY_SECONDS=90
+    POST_RESUME_GRACE_SECONDS=300
+    SECONDS_SINCE_RESUME=1
+
+    profile_outputs_connected () { return 1; }
+    # Fail immediately so the test does not actually wait 90s; the announced
+    # window is what is under test.
+    read_drm_event () { return 0; }
+
+    output=$(wait_for_profile_stability celtic 2>&1)
+    [[ $output == *"remains active for 90s"* ]]
+}
+
+run_test 'post-resume extends window for external-free profile' \
+    test_post_resume_extends_window_for_external_free_profile
+run_test 'post-resume keeps normal window when external is present' \
+    test_post_resume_keeps_normal_window_when_external_present
+run_test 'ordinary hotplug keeps the normal stability window' \
+    test_ordinary_hotplug_keeps_normal_window
+run_test 'no observed resume keeps the normal stability window' \
+    test_no_resume_observed_keeps_normal_window
+run_test 'resume is detected from a suspended-seconds jump' \
+    test_resume_is_detected_from_suspended_seconds_jump
+run_test 'unavailable clock falls back to the normal window' \
+    test_unavailable_clock_falls_back_to_normal_window
+run_test 'suspended_seconds reads a real clock' \
+    test_suspended_seconds_reads_a_real_clock
+run_test 'stability window honours the post-resume requirement' \
+    test_stability_window_honours_post_resume_requirement
 run_test 'DRM event during apply causes a retry' test_event_during_apply_is_retried
 run_test 'detected-but-not-current profile causes a retry' test_detected_but_not_current_is_retried
 run_test 'previously matched profile is explicitly retried' test_previously_matched_profile_is_explicitly_retried
