@@ -14,11 +14,11 @@
 [app] (title=lnav-system)
   [Head]	{1}
   [Dimensions]	{96% 17%}
-  [Position]	(BottomLeft)	{0 0}
-  [Sticky]	{yes}
+  [Position]	(LOWERLEFT)	{0 0}
+  [Deco]	{NORMAL}
   [Hidden]	{yes}
-  [Alpha]	{50}
-  [Deco]	{NONE}
+  [Sticky]	{yes}
+#  [Alpha]	{50}
 [end]
 [app] (role=.*Workrave.*)
   [Layer]	{2}
