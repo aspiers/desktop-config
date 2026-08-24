@@ -1,20 +1,34 @@
-# Autorandr-based monitor management (experimental)
+# Autorandr-based monitor management
 
-How to use and understand the hybrid monitor management PoC from
+How to use and understand the hybrid monitor management described in
 [specs/autorandr-hybrid-monitor-plan.md](../specs/autorandr-hybrid-monitor-plan.md).
+
+> **Start with [The monitor system](monitor-system.md)** for the overview,
+> the architecture diagram, and the common cookbook recipes. This document is
+> the autorandr deep-dive: profile capture, EDID quirks, the login sequence,
+> and known limitations.
+>
+> No longer experimental: `monitor-watcher-ng.service` (the autorandr path)
+> has been the enabled, authoritative watcher since `1f57823` (2026-08-06),
+> which replaced `bin/monitor-system` with ordinary systemd
+> enable/disable. The legacy watcher remains available as a rollback target.
 
 Two switchable systems coexist:
 
 - **legacy** — the original custom stack (`monitor-watcher` →
   `get-layout` → `setup-monitor` incl. its hardcoded `xrandr` calls).
   Always available as a fallback; nothing in it depends on autorandr.
-- **autorandr** — experimental: [autorandr](https://github.com/phillipberndt/autorandr)
+- **autorandr** — the current default: [autorandr](https://github.com/phillipberndt/autorandr)
   handles profile detection and xrandr application; everything else
   (panels, DPI, terminals, fluxbox layout, ...) still runs through
   `setup-monitor`.
 
 Exactly one is active at a time (the systemd units `Conflicts=` each
 other). The choice persists across logins.
+
+A third service, `monitor-controller.service`, is the Python replacement for
+both. It is installed but not enabled, and conflicts with both watchers. See
+[The monitor system](monitor-system.md#cutover-not-yet-done).
 
 ## Daily use
 
@@ -24,7 +38,7 @@ systemctl --user is-enabled monitor-watcher.service monitor-watcher-ng.service
 systemctl --user is-active  monitor-watcher.service monitor-watcher-ng.service
 autorandr                  # saved profiles, with (detected)/(current)
 
-# switch to the experimental system
+# switch to the autorandr system (the current default)
 systemctl --user disable --now monitor-watcher.service
 systemctl --user enable  --now monitor-watcher-ng.service
 
@@ -33,7 +47,7 @@ systemctl --user disable --now monitor-watcher-ng.service
 systemctl --user enable  --now monitor-watcher.service
 ```
 
-Watch what the experimental system is doing:
+Watch what the watcher is doing:
 
 ```sh
 journalctl --user -f -t monitor-watcher-ng

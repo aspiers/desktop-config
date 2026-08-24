@@ -1,0 +1,19 @@
+#!/bin/sh
+# Run the monitor-controller CLI from its installed locked environment.
+#
+# The venv is created by .local/lib/monitor-controller/install.sh and is what
+# the systemd units execute, so invoking it here means the command line and
+# the service always agree about which code is deployed.  Running the module
+# from the source tree instead would let them disagree silently.
+set -eu
+
+venv=${XDG_DATA_HOME:-$HOME/.local/share}/monitor-controller/venv
+entry=$venv/bin/monitor-controller
+
+if [ ! -x "$entry" ]; then
+    printf '%s\n' "monitor-controller is not installed at $entry" >&2
+    printf '%s\n' "Run: .local/lib/monitor-controller/install.sh" >&2
+    exit 1
+fi
+
+exec "$entry" "$@"
