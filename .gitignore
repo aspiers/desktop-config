@@ -40,3 +40,4 @@ tasks/
 .beads.embedded.*/
 .beads.failed-server-restore.*/
 .beads.failed-server-attempt/
+/docs/*.html
