@@ -29,6 +29,7 @@ from monitor_controller.observer.drm import ReadOnlyTree, RootedSysfsReader
 from monitor_controller.observer.evidence import TextCommandEvidence
 from monitor_controller.observer.snapshot import (
     CanonicalSnapshotCoordinator,
+    ObserverCommands,
     StaticSavedProfiles,
 )
 from monitor_controller.runtime.commands import (
@@ -238,9 +239,9 @@ def test_exact_profile_requires_complete_current_unique_mapping(tmp_path: Path) 
     assert [request.arguments for request in runner.requests] == [
         ("xrandr", "--query"),
         ("xrandr", "--props"),
-        ("autorandr", "--fingerprint"),
-        ("autorandr", "--detected"),
-        ("autorandr", "--current"),
+        ("autorandr", "--match-edid", "--fingerprint"),
+        ("autorandr", "--match-edid", "--detected"),
+        ("autorandr", "--match-edid", "--current"),
     ]
     assert all(request.timeout_seconds == 5 for request in runner.requests)
 
@@ -308,7 +309,7 @@ def test_command_timeout_is_explicit_invalid_hashed_evidence(tmp_path: Path) -> 
 
     observation = coordinator(
         RootedSysfsReader(root),
-        _FixtureRunner(commands, timed_out="autorandr --fingerprint"),
+        _FixtureRunner(commands, timed_out="autorandr --match-edid --fingerprint"),
         profiles,
     ).observe()
 
@@ -516,3 +517,61 @@ def test_command_request_rejects_unbounded_timeout(timeout: float) -> None:
             "test:bad-timeout",
             timeout,
         )
+
+
+def test_every_autorandr_query_matches_on_edid() -> None:
+    """Connector numbering is not stable; monitor identity is.
+
+    Regression for the live failure this caught: the AOC is saved on
+    `DisplayPort-2` and currently sits on `DisplayPort-1`. Without
+    `--match-edid`, `autorandr --detected` returns nothing, no profile is
+    eligible, and the controller reports an unsupported topology for a
+    monitor it can identify perfectly well. `bin/monitor-watcher-ng` has
+    always passed the flag; the observer did not.
+    """
+    commands = ObserverCommands()
+    for arguments in (
+        commands.autorandr_fingerprint,
+        commands.autorandr_detected,
+        commands.autorandr_current,
+    ):
+        assert arguments[0] == "autorandr"
+        assert "--match-edid" in arguments
+
+
+def test_apply_path_does_not_match_on_edid() -> None:
+    """Observation matches by EDID; application deliberately must not.
+
+    The apply worker loads a transaction-local copy of the profile whose
+    connector names are already rewritten to the proven live outputs and
+    hashed into the request. Letting autorandr recompute that bijection at
+    apply time would discard the admitted mapping. Asserted here as well as
+    in the apply worker's own tests, because the two rules are easy to
+    conflate once observation starts passing the flag.
+    """
+    source = (
+        Path(__file__).parents[2] / "monitor_controller" / "workers" / "apply.py"
+    ).read_text(encoding="utf-8")
+    assert "--match-edid" not in source
+
+
+def test_renamed_connector_still_resolves_to_an_exact_profile(
+    tmp_path: Path,
+) -> None:
+    """The whole point: a monitor on a different connector is still matched.
+
+    `exact-aoc` fixes the AOC's real EDID against a connector it was not
+    saved on, so this fails outright if identity ever regresses to connector
+    names.
+    """
+    root, commands, profiles = load_manifest(tmp_path, "exact-aoc")
+
+    observation = coordinator(
+        RootedSysfsReader(root), _FixtureRunner(commands), profiles
+    ).observe()
+
+    assert observation.valid
+    assert observation.exact_profile == "celtic+AOC-U28G2G6B"
+    mapping = observation.eligible_profiles[0].mapping
+    saved, live = mapping[0].saved_output, mapping[0].live_output
+    assert saved != live, "fixture must exercise a renamed connector"

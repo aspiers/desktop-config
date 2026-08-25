@@ -15,9 +15,9 @@
   "commands": {
     "xrandr --query": "xrandr/inactive.query",
     "xrandr --props": "xrandr/inactive.props",
-    "autorandr --fingerprint": "snapshots/probe-samsung.fingerprint",
-    "autorandr --detected": "autorandr/commands/empty.out",
-    "autorandr --current": "autorandr/commands/empty.out"
+    "autorandr --match-edid --fingerprint": "snapshots/probe-samsung.fingerprint",
+    "autorandr --match-edid --detected": "autorandr/commands/empty.out",
+    "autorandr --match-edid --current": "autorandr/commands/empty.out"
   },
   "profiles": ["celtic+Samsung-Odyssey-G75F"]
 }

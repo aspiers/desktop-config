@@ -16,9 +16,9 @@
   "commands": {
     "xrandr --query": "xrandr/aoc-rename.query",
     "xrandr --props": "xrandr/aoc-rename.props",
-    "autorandr --fingerprint": "autorandr/commands/aoc-renamed.fingerprint",
-    "autorandr --detected": "snapshots/exact-aoc.detected",
-    "autorandr --current": "snapshots/exact-aoc.current"
+    "autorandr --match-edid --fingerprint": "autorandr/commands/aoc-renamed.fingerprint",
+    "autorandr --match-edid --detected": "snapshots/exact-aoc.detected",
+    "autorandr --match-edid --current": "snapshots/exact-aoc.current"
   },
   "profiles": ["celtic+AOC-U28G2G6B"]
 }

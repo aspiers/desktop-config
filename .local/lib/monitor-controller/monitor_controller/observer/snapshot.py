@@ -124,13 +124,37 @@ class StaticSavedProfiles:
 
 @dataclass(frozen=True, slots=True)
 class ObserverCommands:
-    """Documented command arrays used by the canonical observer."""
+    """Documented command arrays used by the canonical observer.
+
+    Every autorandr query passes ``--match-edid``, matching what
+    `bin/monitor-watcher-ng`'s `autorandr_command()` already does. Without it
+    autorandr matches saved profiles on *connector name*, so a monitor that
+    moves to a different connector stops being detected at all — the
+    controller then sees no eligible profile and reports an unsupported
+    topology for hardware it can identify perfectly well. Connector numbering
+    is not stable across reboots, docks or firmware updates.
+
+    Note the asymmetry: observation matches by EDID, application deliberately
+    does not. The apply worker loads a transaction-local copy of the profile
+    with connector names already rewritten to the proven live outputs and
+    hashed into the request, so autorandr must not independently recompute
+    that bijection. See the state-machine spec, and
+    `test_apply_module_has_no_implicit_selection_or_desktop_orchestration`,
+    which asserts ``--match-edid`` never appears in the apply worker.
+
+    ``--match-edid`` writes its rename decisions ("renaming display X to Y")
+    to stderr, so parsed stdout is unaffected.
+    """
 
     xrandr_query: tuple[str, ...] = ("xrandr", "--query")
     xrandr_properties: tuple[str, ...] = ("xrandr", "--props")
-    autorandr_fingerprint: tuple[str, ...] = ("autorandr", "--fingerprint")
-    autorandr_detected: tuple[str, ...] = ("autorandr", "--detected")
-    autorandr_current: tuple[str, ...] = ("autorandr", "--current")
+    autorandr_fingerprint: tuple[str, ...] = (
+        "autorandr",
+        "--match-edid",
+        "--fingerprint",
+    )
+    autorandr_detected: tuple[str, ...] = ("autorandr", "--match-edid", "--detected")
+    autorandr_current: tuple[str, ...] = ("autorandr", "--match-edid", "--current")
 
 
 class _CommandXrandrSource(XrandrEvidenceSource):
