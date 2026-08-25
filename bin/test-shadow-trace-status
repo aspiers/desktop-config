@@ -46,12 +46,27 @@ SAMSUNG_ID='DisplayPort-1=SAMSUNG Odyssey G75F,eDP=BOE'
 AOC_DP1='DisplayPort-1=AOC U28G2G6B,eDP=BOE'
 AOC_DP2='DisplayPort-2=AOC U28G2G6B,eDP=BOE'
 
+# EDID prefixes through the manufacturer ID, which is all the tool reads to
+# tell one model from another.  Real values, so a change to the offset fails
+# here rather than only against the live profiles.
+EDID_AOC=00ffffffffffff0005e30228690100000a1f0103
+EDID_SAMSUNG=00ffffffffffff004c2d67794b433031
+
+# Write a saved autorandr profile.  Args: dir name connector edid
+write_profile () {
+    local dir=$1 name=$2 connector=$3 edid=$4
+    mkdir -p "$dir/profiles/$name"
+    printf '%s %s\n' "$connector" "$edid" > "$dir/profiles/$name/setup"
+    printf 'eDP 00ffffffffffff0009e5b40c00000000\n' >> "$dir/profiles/$name/setup"
+    printf 'output %s\n' "$connector" > "$dir/profiles/$name/config"
+}
+
 test_empty_directory_reports_all_outstanding () {
     local tmp out
     tmp=$(mktemp -d)
     trap 'rm -rf "${tmp:-}"' RETURN
 
-    out=$("$tool" --dir "$tmp" --json 2>&1) || return
+    out=$("$tool" --dir "$tmp" --autorandr-dir "$tmp/profiles" --json 2>&1) || return
     [[ $(printf '%s' "$out" | python3 -c 'import json,sys; print(len(json.load(sys.stdin)["outstanding"]))') -eq 7 ]]
 }
 
@@ -61,7 +76,7 @@ test_laptop_only_capture_is_startup_not_unplug () {
     trap 'rm -rf "${tmp:-}"' RETURN
     write_capture "$tmp" 20260801-100000 celtic "eDP=BOE" 100 "$EDP" ObservationCompleted 2000
 
-    out=$("$tool" --dir "$tmp" --json 2>&1) || return
+    out=$("$tool" --dir "$tmp" --autorandr-dir "$tmp/profiles" --json 2>&1) || return
     printf '%s' "$out" | python3 -c '
 import json, sys
 d = json.load(sys.stdin)["scenarios"]
@@ -77,7 +92,7 @@ test_external_disappearing_is_an_unplug () {
     write_capture "$tmp" 20260801-100000 celtic+ultrawide "$SAMSUNG_ID" 100 "$EDP_DP1" ObservationCompleted 2000
     write_capture "$tmp" 20260802-100000 celtic "eDP=BOE" 100 "$EDP" ObservationCompleted 2000
 
-    out=$("$tool" --dir "$tmp" --json 2>&1) || return
+    out=$("$tool" --dir "$tmp" --autorandr-dir "$tmp/profiles" --json 2>&1) || return
     printf '%s' "$out" | python3 -c '
 import json, sys
 raise SystemExit(0 if json.load(sys.stdin)["scenarios"]["genuine unplug"] == 1 else 1)'
@@ -92,7 +107,7 @@ test_suspend_resume_same_profile_is_detected () {
     write_capture "$tmp" 20260801-100000 celtic "eDP=BOE" 100 "$EDP" ObservationCompleted 2000
     write_capture "$tmp" 20260802-100000 celtic "eDP=BOE" 900 "$EDP" ObservationCompleted 2000
 
-    out=$("$tool" --dir "$tmp" --json 2>&1) || return
+    out=$("$tool" --dir "$tmp" --autorandr-dir "$tmp/profiles" --json 2>&1) || return
     printf '%s' "$out" | python3 -c '
 import json, sys
 raise SystemExit(0 if json.load(sys.stdin)["scenarios"]["suspend/resume to same profile"] == 1 else 1)'
@@ -106,7 +121,7 @@ test_suspend_resume_to_different_profile_does_not_count () {
     write_capture "$tmp" 20260801-100000 celtic "eDP=BOE" 100 "$EDP" ObservationCompleted 2000
     write_capture "$tmp" 20260802-100000 celtic+ultrawide "$SAMSUNG_ID" 900 "$EDP_DP1" ObservationCompleted 2000
 
-    out=$("$tool" --dir "$tmp" --json 2>&1) || return
+    out=$("$tool" --dir "$tmp" --autorandr-dir "$tmp/profiles" --json 2>&1) || return
     printf '%s' "$out" | python3 -c '
 import json, sys
 raise SystemExit(0 if json.load(sys.stdin)["scenarios"]["suspend/resume to same profile"] == 0 else 1)'
@@ -118,7 +133,7 @@ test_slow_edid_needs_an_observation_span_beyond_30s () {
     trap 'rm -rf "${tmp:-}"' RETURN
     write_capture "$tmp" 20260801-100000 celtic+ultrawide "$SAMSUNG_ID" 100 "$EDP_DP1" ObservationCompleted 5000
 
-    out=$("$tool" --dir "$tmp" --json 2>&1) || return
+    out=$("$tool" --dir "$tmp" --autorandr-dir "$tmp/profiles" --json 2>&1) || return
     printf '%s' "$out" | python3 -c '
 import json, sys
 d = json.load(sys.stdin)["scenarios"]
@@ -132,7 +147,7 @@ test_slow_edid_is_detected_beyond_30s () {
     trap 'rm -rf "${tmp:-}"' RETURN
     write_capture "$tmp" 20260801-100000 celtic+ultrawide "$SAMSUNG_ID" 100 "$EDP_DP1" ObservationCompleted 45000
 
-    out=$("$tool" --dir "$tmp" --json 2>&1) || return
+    out=$("$tool" --dir "$tmp" --autorandr-dir "$tmp/profiles" --json 2>&1) || return
     printf '%s' "$out" | python3 -c '
 import json, sys
 raise SystemExit(0 if json.load(sys.stdin)["scenarios"]["Samsung slow/broken EDID (>30s)"] == 1 else 1)'
@@ -146,7 +161,7 @@ test_aoc_rename_needs_a_connector_change () {
     write_capture "$tmp" 20260801-100000 celtic+external "$AOC_DP1" 100 "$EDP_DP1" ObservationCompleted 2000
     write_capture "$tmp" 20260802-100000 celtic+external "$AOC_DP1" 100 "$EDP_DP1" ObservationCompleted 2000
 
-    out=$("$tool" --dir "$tmp" --json 2>&1) || return
+    out=$("$tool" --dir "$tmp" --autorandr-dir "$tmp/profiles" --json 2>&1) || return
     printf '%s' "$out" | python3 -c '
 import json, sys
 raise SystemExit(0 if json.load(sys.stdin)["scenarios"]["AOC connector rename"] == 0 else 1)'
@@ -159,10 +174,87 @@ test_aoc_rename_is_detected () {
     write_capture "$tmp" 20260801-100000 celtic+external "$AOC_DP1" 100 "$EDP_DP1" ObservationCompleted 2000
     write_capture "$tmp" 20260802-100000 celtic+external "$AOC_DP2" 100 "$EDP_DP2" ObservationCompleted 2000
 
-    out=$("$tool" --dir "$tmp" --json 2>&1) || return
+    out=$("$tool" --dir "$tmp" --autorandr-dir "$tmp/profiles" --json 2>&1) || return
     printf '%s' "$out" | python3 -c '
 import json, sys
 raise SystemExit(0 if json.load(sys.stdin)["scenarios"]["AOC connector rename"] == 1 else 1)'
+}
+
+# The case that was invisible until dc-12h surfaced it: every capture agrees
+# with every other, and all of them disagree with the profile autorandr is
+# trying to match.  Comparing captures against each other can never see this.
+test_rename_predating_every_capture_is_detected () {
+    local tmp out
+    tmp=$(mktemp -d)
+    trap 'rm -rf "${tmp:-}"' RETURN
+    write_profile "$tmp" celtic+AOC DisplayPort-2 "$EDID_AOC"
+    write_capture "$tmp" 20260801-100000 celtic+external "$AOC_DP1" 100 "$EDP_DP1" ObservationCompleted 2000
+    write_capture "$tmp" 20260802-100000 celtic+external "$AOC_DP1" 100 "$EDP_DP1" ObservationCompleted 2000
+
+    out=$("$tool" --dir "$tmp" --autorandr-dir "$tmp/profiles" --json 2>&1) || return
+    printf '%s' "$out" | python3 -c '
+import json, sys
+raise SystemExit(0 if json.load(sys.stdin)["scenarios"]["AOC connector rename"] > 0 else 1)'
+}
+
+test_profile_agreeing_with_captures_is_not_a_rename () {
+    local tmp out
+    tmp=$(mktemp -d)
+    trap 'rm -rf "${tmp:-}"' RETURN
+    write_profile "$tmp" celtic+AOC DisplayPort-1 "$EDID_AOC"
+    write_capture "$tmp" 20260801-100000 celtic+external "$AOC_DP1" 100 "$EDP_DP1" ObservationCompleted 2000
+
+    out=$("$tool" --dir "$tmp" --autorandr-dir "$tmp/profiles" --json 2>&1) || return
+    printf '%s' "$out" | python3 -c '
+import json, sys
+raise SystemExit(0 if json.load(sys.stdin)["scenarios"]["AOC connector rename"] == 0 else 1)'
+}
+
+# A Samsung profile on another connector says nothing about the AOC.  Keying
+# on the EDID vendor rather than the profile name is what keeps these apart.
+test_other_model_profile_does_not_trigger_aoc_rename () {
+    local tmp out
+    tmp=$(mktemp -d)
+    trap 'rm -rf "${tmp:-}"' RETURN
+    write_profile "$tmp" celtic+Samsung DisplayPort-9 "$EDID_SAMSUNG"
+    write_profile "$tmp" celtic+AOC DisplayPort-1 "$EDID_AOC"
+    write_capture "$tmp" 20260801-100000 celtic+external "$AOC_DP1" 100 "$EDP_DP1" ObservationCompleted 2000
+
+    out=$("$tool" --dir "$tmp" --autorandr-dir "$tmp/profiles" --json 2>&1) || return
+    printf '%s' "$out" | python3 -c '
+import json, sys
+raise SystemExit(0 if json.load(sys.stdin)["scenarios"]["AOC connector rename"] == 0 else 1)'
+}
+
+# Both signals fire on the second capture: it differs from the first, and it
+# mismatches the saved profile.  Coverage counts captures, not signals, so it
+# must be counted once.  `_is_aoc_rename` returning a bool makes that
+# structural, and this test is what stops a future edit from appending per
+# signal instead.
+test_rename_is_not_double_counted () {
+    local tmp out
+    tmp=$(mktemp -d)
+    trap 'rm -rf "${tmp:-}"' RETURN
+    write_profile "$tmp" celtic+AOC DisplayPort-1 "$EDID_AOC"
+    write_capture "$tmp" 20260801-100000 celtic+external "$AOC_DP1" 100 "$EDP_DP1" ObservationCompleted 2000
+    write_capture "$tmp" 20260802-100000 celtic+external "$AOC_DP2" 100 "$EDP_DP2" ObservationCompleted 2000
+
+    out=$("$tool" --dir "$tmp" --autorandr-dir "$tmp/profiles" --json 2>&1) || return
+    printf '%s' "$out" | python3 -c '
+import json, sys
+raise SystemExit(0 if json.load(sys.stdin)["scenarios"]["AOC connector rename"] == 1 else 1)'
+}
+
+test_missing_profile_directory_is_not_fatal () {
+    local tmp out
+    tmp=$(mktemp -d)
+    trap 'rm -rf "${tmp:-}"' RETURN
+    write_capture "$tmp" 20260801-100000 celtic+external "$AOC_DP1" 100 "$EDP_DP1" ObservationCompleted 2000
+
+    out=$("$tool" --dir "$tmp" --autorandr-dir "$tmp/absent" --json 2>&1) || return
+    printf '%s' "$out" | python3 -c '
+import json, sys
+raise SystemExit(0 if json.load(sys.stdin)["scenarios"]["AOC connector rename"] == 0 else 1)'
 }
 
 test_controller_restart_is_detected () {
@@ -171,7 +263,7 @@ test_controller_restart_is_detected () {
     trap 'rm -rf "${tmp:-}"' RETURN
     write_capture "$tmp" 20260801-100000 celtic "eDP=BOE" 100 "$EDP" ControllerStarted 2000
 
-    out=$("$tool" --dir "$tmp" --json 2>&1) || return
+    out=$("$tool" --dir "$tmp" --autorandr-dir "$tmp/profiles" --json 2>&1) || return
     printf '%s' "$out" | python3 -c '
 import json, sys
 raise SystemExit(0 if json.load(sys.stdin)["scenarios"]["controller restart mid-verification"] == 1 else 1)'
@@ -185,7 +277,7 @@ test_unreadable_capture_is_skipped () {
     write_capture "$tmp" 20260801-100000 celtic "eDP=BOE" 100 "$EDP" ObservationCompleted 2000
     printf 'not json at all\n' > "$tmp/20260802-100000.broken.json"
 
-    out=$("$tool" --dir "$tmp" --json 2>&1) || return
+    out=$("$tool" --dir "$tmp" --autorandr-dir "$tmp/profiles" --json 2>&1) || return
     printf '%s' "$out" | python3 -c '
 import json, sys
 d = json.load(sys.stdin)
@@ -216,6 +308,16 @@ run_test 'observation span beyond 30s is a slow-EDID case' \
     test_slow_edid_is_detected_beyond_30s
 run_test 'same AOC connector twice is not a rename' \
     test_aoc_rename_needs_a_connector_change
+run_test 'rename predating every capture is detected' \
+    test_rename_predating_every_capture_is_detected
+run_test 'profile agreeing with captures is not a rename' \
+    test_profile_agreeing_with_captures_is_not_a_rename
+run_test 'another model on another connector is not an AOC rename' \
+    test_other_model_profile_does_not_trigger_aoc_rename
+run_test 'a capture matching both rules counts once' \
+    test_rename_is_not_double_counted
+run_test 'missing profile directory is not fatal' \
+    test_missing_profile_directory_is_not_fatal
 run_test 'AOC on a different connector is a rename' \
     test_aoc_rename_is_detected
 run_test 'controller restart is detected' \

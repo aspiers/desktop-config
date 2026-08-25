@@ -19,11 +19,51 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 TRACE_DIR = Path.home() / ".log" / "shadow-traces"
+AUTORANDR_DIR = Path.home() / ".config" / "autorandr"
 
 # Model strings identifying the external monitors, used to tell a Samsung
 # scenario from an AOC one.
 SAMSUNG = "Odyssey"
 AOC = "AOC"
+
+# EDID manufacturer IDs, as they appear at bytes 8-9 of the saved hex blob.
+# Matching a profile to a model by its filename would be circular: the point
+# is to detect a profile whose *connector* no longer matches reality, and the
+# name says nothing about connectors.
+EDID_VENDORS = {"05e3": AOC, "4c2d": SAMSUNG}
+_EDID_VENDOR_OFFSET = 16
+_EDID_VENDOR_END = 20
+
+
+def saved_profile_connectors(directory: Path) -> dict[str, set[str]]:
+    """Map each monitor model to the connectors its saved profiles record.
+
+    A rename is only visible against the saved profiles: a capture history
+    that begins *after* the connector changed shows one consistent connector
+    throughout and looks perfectly healthy, while autorandr silently fails to
+    match. That is the live situation with the AOC (`dc-12h`).
+    """
+    by_model: dict[str, set[str]] = {}
+    if not directory.is_dir():
+        return by_model
+    for profile in sorted(directory.iterdir()):
+        setup = profile / "setup"
+        if not profile.is_dir() or not setup.is_file():
+            continue
+        try:
+            lines = setup.read_text().splitlines()
+        except OSError:
+            continue
+        for line in lines:
+            parts = line.split()
+            if len(parts) < 2 or parts[0] == "eDP":
+                continue
+            connector, edid = parts[0], parts[1]
+            vendor = edid[_EDID_VENDOR_OFFSET:_EDID_VENDOR_END].lower()
+            model = EDID_VENDORS.get(vendor)
+            if model is not None:
+                by_model.setdefault(model, set()).add(connector)
+    return by_model
 
 
 @dataclass
@@ -77,12 +117,54 @@ def load_captures(directory: Path) -> list[Capture]:
     return captures
 
 
-def classify(captures: list[Capture]) -> dict[str, list[Capture]]:
+def _is_aoc_rename(
+    capture: Capture,
+    captures: list[Capture],
+    saved_connectors: dict[str, set[str]],
+) -> bool:
+    """Return whether this capture shows the AOC on an unexpected connector.
+
+    Two independent signals, because each is blind to the other's case:
+
+    * the connector differs from the last capture that saw this monitor —
+      catches a rename that happens *during* the capture history; and
+    * the connector appears in no saved profile for this monitor — catches a
+      rename that predates every capture, where the captures all agree with
+      each other and autorandr has been failing to match the whole time.
+    """
+    externals = capture.externals
+    if not externals:
+        return False
+    prior = next(
+        (
+            c
+            for c in reversed(captures[: captures.index(capture)])
+            if AOC in c.identity
+        ),
+        None,
+    )
+    if prior is not None and prior.externals != externals:
+        return True
+    saved = saved_connectors.get(AOC)
+    return bool(saved) and not saved.intersection(externals)
+
+
+def classify(
+    captures: list[Capture],
+    saved_connectors: dict[str, set[str]] | None = None,
+) -> dict[str, list[Capture]]:
     """Bucket captures against the seven scenarios dc-a5y.11 requires.
 
     A capture can satisfy more than one scenario; the point is coverage, not
     a partition.
+
+    *saved_connectors* maps a monitor model to the connectors its saved
+    autorandr profiles name. Without it a rename is only detectable between
+    two captures, which misses the case where the rename predates every
+    capture — precisely when it is doing damage, because autorandr has been
+    silently failing to match all along.
     """
+    saved_connectors = saved_connectors or {}
     found: dict[str, list[Capture]] = {
         "laptop startup": [],
         "Samsung plug": [],
@@ -112,19 +194,10 @@ def classify(captures: list[Capture]) -> dict[str, list[Capture]]:
             if capture.observation_span_ms() > 30_000:
                 found["Samsung slow/broken EDID (>30s)"].append(capture)
 
-        if AOC in capture.identity:
-            # A rename shows up as the same model arriving on a different
-            # connector than last time it was seen.
-            prior_aoc = next(
-                (
-                    c
-                    for c in reversed(captures[: captures.index(capture)])
-                    if AOC in c.identity
-                ),
-                None,
-            )
-            if prior_aoc and prior_aoc.externals != externals:
-                found["AOC connector rename"].append(capture)
+        if AOC in capture.identity and _is_aoc_rename(
+            capture, captures, saved_connectors
+        ):
+            found["AOC connector rename"].append(capture)
 
         if (
             previous is not None
@@ -148,6 +221,12 @@ def main() -> int:
     parser.add_argument(
         "--dir", type=Path, default=TRACE_DIR, help="capture directory"
     )
+    parser.add_argument(
+        "--autorandr-dir",
+        type=Path,
+        default=AUTORANDR_DIR,
+        help="saved autorandr profiles, checked for connector renames",
+    )
     parser.add_argument("--json", action="store_true", help="machine-readable")
     args = parser.parse_args()
 
@@ -157,7 +236,8 @@ def main() -> int:
         return 1
 
     captures = load_captures(args.dir)
-    found = classify(captures)
+    saved = saved_profile_connectors(args.autorandr_dir)
+    found = classify(captures, saved)
 
     if args.json:
         print(
