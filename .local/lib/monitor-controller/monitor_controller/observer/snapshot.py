@@ -515,14 +515,31 @@ def _eligible_profiles(
     autorandr: AutorandrObservation,
     x_connected: tuple[str, ...],
 ) -> tuple[tuple[ProfileMatch, ...], bool]:
+    """Select candidates by EDID identity, not by connector name.
+
+    Eligibility used to iterate ``autorandr.detected_profiles``, which meant
+    the controller could only consider profiles autorandr had already matched
+    — and autorandr matches on *connector name*. A monitor that moves to a
+    different connector therefore became invisible: `autorandr --detected`
+    returns nothing, the loop body never ran, and the controller reported an
+    unsupported topology for hardware it could identify perfectly well.
+
+    Connector numbering is not stable across reboots, docks or firmware
+    updates, so it cannot be the basis of identity. ``resolve_output_mapping``
+    matches saved EDID fingerprints to live outputs and requires a complete
+    unique bijection, so it answers "is this monitor present?" rather than
+    "is it plugged into the same socket as last time?".
+
+    ``autorandr.detected_profiles`` is still used to flag disagreement
+    (see *inconsistent*), but no longer decides what is eligible.
+    """
     by_name = {item.name: item for item in profiles}
     values: list[ProfileMatch] = []
-    inconsistent = False
-    for name in autorandr.detected_profiles:
-        profile = by_name.get(name)
-        if profile is None:
-            inconsistent = True
-            continue
+    # A name autorandr reports that we have no saved profile for means the two
+    # views of the profile set have diverged, which is worth surfacing even
+    # though detection no longer gates eligibility.
+    inconsistent = any(name not in by_name for name in autorandr.detected_profiles)
+    for profile in profiles:
         result = resolve_output_mapping(profile, autorandr.fingerprints, x_connected)
         if result.mapping is None:
             continue
