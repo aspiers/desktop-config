@@ -3,8 +3,15 @@
 host=${HOST:-${HOSTNAME:-`hostname`}}
 host=${host%%.*}
 
+# Only session-specific variables belong here. This script cannot run until
+# the X session starts, by which time systemd --user has long since reached
+# default.target, so anything a service needs at startup is already too late.
+# The static parts of the environment (PATH, ZDOTDIR, ZDOT_*_HOOKS) are
+# therefore written to environment.d by .cfg-post.d/xsession-progs instead,
+# and read by systemd's environment generator before any unit starts.
+#
+# DISPLAY and XAUTHLOCALHOSTNAME cannot move: there is no correct DISPLAY
+# until X is up, and XAUTHLOCALHOSTNAME is derived from the hostname.
 systemctl --user set-environment \
-    PATH=/home/adam/bin:/usr/local/bin:/usr/X11R6/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin \
-    ZDOTDIR=$ZDOTDIR \
     DISPLAY=:0 \
-    XAUTHLOCALHOSTNAME=$host
+    XAUTHLOCALHOSTNAME="$host"
