@@ -14,6 +14,13 @@ if [ $# -gt 1 ]; then
 fi
 network="${1:-`nm-current-connection`}"
 
+# Fail loudly rather than degrading to a no-op. Sourcing an unset $ZDOTDIR
+# silently yields /.shared_env, and an unset $ZDOT_FIND_HOOKS makes the hook
+# search a no-op, so the script would find zero hooks and still exit 0 --
+# quietly disabling every network handler while appearing to succeed.
+[ -n "$ZDOTDIR" ] || die "$me: ZDOTDIR not set; refusing to run with no environment"
+[ -n "$ZDOT_FIND_HOOKS" ] || die "$me: ZDOT_FIND_HOOKS not set; refusing to run with no environment"
+
 source $ZDOTDIR/.shared_env
 
 source $ZDOT_FIND_HOOKS "$HOOK_DIR" | while read hook; do
