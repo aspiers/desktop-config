@@ -253,7 +253,7 @@ Control Mod4 w :Exec ksnip -a
 Control Shift Mod4 s :Exec ksnip
 Control Mod1 Mod4 s :Exec ksnip -m
 
-Mod4 u :Exec fluxbox-focus-or-launch --toggle -r 'bluetuith.*' top-term --xl bluetuith --no-warning
+Mod4 u :Exec fluxbox-focus-or-launch --toggle 'bluetuith.*' top-term --xl bluetuith --no-warning
 Shift Mod4 u :Exec fluxbox-focus-or-launch --toggle -c Blueman-manager blueman-manager
 
 Control Mod1 Mod4 b :Exec blank-all-screens
@@ -316,7 +316,7 @@ Control Mod4 c :Exec chrome-session-tabs 'calendar.google.com/calendar/u/1'
 Shift Mod4 r :Exec chrome-session-tabs 'app.reclaim.ai'
 
 # useful as a calculator
-Control Mod1 Mod4 n :Exec fluxbox-focus-or-launch --toggle -r 'node' top-term --geometry 100x25 node
+Control Mod1 Mod4 n :Exec fluxbox-focus-or-launch --toggle 'node' top-term --geometry 100x25 node
 
 #Mod4 e :MacroCmd {Exec wmctrl -x -a emacs} {Delay {Exec focus-active-window} 300000}
 Mod4 e  :Exec fluxbox-focus-window 'NextWindow (Class=Emacs) (FocusHidden=no) (Minimized=no)'
