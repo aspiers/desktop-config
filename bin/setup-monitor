@@ -276,8 +276,16 @@ setup_overlay() {
         return
     fi
 
-    # Second priority: host-specific overlay
-    if [ -e ~/.fluxbox/overlay."$localhost_nickname" ]; then
+    # Second priority: the host overlay, but ONLY for the bare host layout.
+    #
+    # The host overlay is sized for this host's internal panel alone.  On a
+    # host whose nickname is also a layout name (celtic), an unqualified
+    # match here silently captures every multi-monitor layout that lacks its
+    # own overlay file, applying laptop HiDPI font sizes to an external
+    # monitor.  Requiring an exact layout match sends those layouts on to the
+    # DPI-aware generator below instead.
+    if [ "$layout" = "$localhost_nickname" ] &&
+           [ -e ~/.fluxbox/overlay."$localhost_nickname" ]; then
         ln -sf "overlay.$localhost_nickname" ~/.fluxbox/overlay
         return
     fi
