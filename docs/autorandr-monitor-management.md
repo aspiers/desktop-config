@@ -8,6 +8,11 @@ How to use and understand the hybrid monitor management described in
 > the autorandr deep-dive: profile capture, EDID quirks, the login sequence,
 > and known limitations.
 >
+> The Python replacement for both shell watchers is described in
+> [The monitor controller](monitor-controller.md). It sits on top of this
+> autorandr layer rather than replacing it, so everything here still applies
+> after the cutover.
+>
 > No longer experimental: `monitor-watcher-ng.service` (the autorandr path)
 > has been the enabled, authoritative watcher since `1f57823` (2026-08-06),
 > which replaced `bin/monitor-system` with ordinary systemd

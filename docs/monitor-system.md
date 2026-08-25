@@ -3,15 +3,19 @@
 How your displays get configured when you plug something in, and what to do
 when they don't.
 
-This is the operator's guide and the place to start.
+This is the operator's guide and the place to start. Three documents cover
+three layers, in the order they arrived:
 
-- For **autorandr specifics** — capturing profiles, EDID quirks, the login
-  sequence, known limitations — see
-  [Autorandr-based monitor management][autorandr-doc]. That document goes
-  much deeper on the layer this one summarises.
-- For **why** the system is built this way, see
-  [the Python architecture spec][arch] and [the state machine spec][v2].
+| Document | Covers |
+| --- | --- |
+| **This one** | The whole picture, and everyday operations |
+| [The monitor controller][controller-doc] | The **new** Python state machine that will replace the shell watcher |
+| [Autorandr-based monitor management][autorandr-doc] | The autorandr layer both watchers sit on: profile capture, EDID quirks, known limitations |
 
+For **why** the system is built this way, see
+[the Python architecture spec][arch] and [the state machine spec][v2].
+
+[controller-doc]: monitor-controller.md
 [autorandr-doc]: autorandr-monitor-management.md
 [arch]: ../specs/monitor-controller-python-architecture.md
 [v2]: ../specs/monitor-watcher-state-machine-v2.md
@@ -247,6 +251,7 @@ journalctl --user -u monitor-controller-shadow --since today
 
 Its decision stream is at
 `~/.local/state/monitor-controller/shadow/audit.jsonl` (rotated).
+[The monitor controller][controller-doc] explains what those decisions mean.
 
 ### How close is the Python controller to taking over?
 
@@ -305,7 +310,8 @@ against a working one, diff two captures.
 ## Cutover (not yet done)
 
 The Python controller is intended to replace the shell watcher. It is not
-authoritative yet.
+authoritative yet. See [The monitor controller][controller-doc] for what it
+is and why it exists; this is just the switchover procedure.
 
 **Preconditions:** the seven trace scenarios captured and reconciled
 (`dc-a5y.11`), the service entry point implemented (`dc-9aa`), and
