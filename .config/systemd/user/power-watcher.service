@@ -10,6 +10,13 @@ Description=Reapply screen lock profile when switching between AC and battery
 SyslogIdentifier=power-watcher
 ExecStart=/bin/sh -c ${HOME}/bin/power-watcher
 Restart=always
+
+# Space restarts beyond the default StartLimitBurst=5 / StartLimitIntervalSec=10s
+# window. Without this an immediate startup failure -- check_deps exiting 1 when
+# the environment is not yet in place -- burns all five restarts in about a
+# second and latches start-limit-hit, leaving the service dead indefinitely
+# rather than recovering once the cause clears.
+RestartSec=5
 NoNewPrivileges=true
 StandardOutput=journal
 StandardError=journal
