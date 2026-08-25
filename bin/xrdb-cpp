@@ -13,25 +13,37 @@ eval $($ZDOTDIR/lib/libdpy.py)
 #echo >&2 "! display: ${dpy_width}x${dpy_height}; DPI: $dpi"
 
 read_localhost_nickname
-case "$localhost_nickname" in
-    ionian)
-        xrdb_dpi=96
-        ;;
-    aegean)
-        xrdb_dpi=192
-        ;;
-    celtic)
-        if large-monitor-connected; then
-            xrdb_dpi=192
-        else
-            xrdb_dpi=96
-        fi
-        ;;
-    *)
-        echo >&2 "! Didn't recognise localhost_nickname of '$localhost_nickname'; falling back to x DPI of $dpy_x_dpi from xdpyinfo"
-        xrdb_dpi=$dpy_x_dpi
-        ;;
-esac
+
+# Xft.dpi drives every Xft client that scales point sizes itself, kitty
+# included, so it must describe the primary monitor rather than a guess.  The
+# old per-host table only distinguished "large monitor" from "no monitor" and
+# hardcoded 192, which is 1.38x too large on a 139 DPI ultrawide and made
+# every kitty cell 19px wide instead of 14px.
+#
+# libdpy.py already computes the real figure from the EDID physical size; it
+# is the same source bin/set-layout-dpi feeds to xfconf, so the two agree.
+eval "$(
+    $ZDOTDIR/lib/libdpy.py --get-monitor-properties 2>/dev/null |
+        python3 -c '
+import json, sys
+
+try:
+    monitor = json.load(sys.stdin)
+except ValueError:
+    raise SystemExit(0)
+for key in ("dpi", "width_px", "height_px"):
+    value = monitor.get(key)
+    if isinstance(value, int) and value > 0:
+        print(f"primary_{key}={value}")
+'
+)"
+
+if [ -n "$primary_dpi" ]; then
+    xrdb_dpi=$primary_dpi
+else
+    echo >&2 "! Could not detect primary monitor DPI; falling back to x DPI of $dpy_x_dpi from xdpyinfo"
+    xrdb_dpi=$dpy_x_dpi
+fi
 
 emacs_version=$( emacs --version | awk '{print $3; exit 0}' )
 emacs_major_version=${emacs_version%%.*}
@@ -85,13 +97,20 @@ emacs_geometry=${emacs_geometry}${emacs_position}
 
 # N.B. HOME and ZDOTDIR will probably expand to the wrong thing when
 # applications which depend on them are run on a different host via ssh.
+# libdpy.py has never emitted screen_primary_*, so these expanded to nothing
+# and every "#if PRIMARY_WIDTH ..." test failed with "operator has no left
+# operand".  xrdb-as discards cpp's stderr at login, so the breakage was
+# silent and the guarded resources (Xcursor*size among them) never applied.
+: "${primary_width_px:=${dpy_width:-0}}"
+: "${primary_height_px:=${dpy_height:-0}}"
+
 cpp -I $ZDOTDIR/.Xresources.d \
     -DHOME=$HOME -DZDOTDIR=$ZDOTDIR \
     -DDPY_WIDTH=$dpy_width \
     -DDPY_HEIGHT=$dpy_height \
-    -DPRIMARY_WIDTH=$screen_primary_width \
-    -DPRIMARY_HEIGHT=$screen_primary_height \
-    -DPRIMARY_X_DPI=$screen_primary_x_dpi \
+    -DPRIMARY_WIDTH=$primary_width_px \
+    -DPRIMARY_HEIGHT=$primary_height_px \
+    -DPRIMARY_X_DPI=$xrdb_dpi \
     -DSECONDARY_WIDTH=$screen_secondary_width \
     -DSECONDARY_HEIGHT=$screen_secondary_height \
     -DSECONDARY_X_DPI=$screen_secondary_x_dpi \
