@@ -313,7 +313,10 @@ def _celtic() -> tuple[FilesystemDesktopPlanningInputSource, RequestPlan]:
             "Samsung Odyssey G75F",
             139,
             DpiSource.PHYSICAL_SIZE,
-            OverlaySelection.HOST,
+            # No .fluxbox/overlay.celtic+ultrawide exists, and the host overlay
+            # is laptop-sized, so this layout must reach the DPI-aware
+            # generator rather than inherit overlay.celtic.
+            OverlaySelection.DYNAMIC,
             1976,
         ),
         (
@@ -416,6 +419,42 @@ def test_real_saved_edids_drive_model_and_complete_plan(  # noqa: PLR0913, PLR09
         f"# Number of monitors connected: {len(plan.guards.display_screens)}".encode()
     )
     assert monitor_comment in rendered_keys
+
+
+def test_host_overlay_serves_only_the_bare_host_layout() -> None:
+    """A multi-monitor layout must not inherit the laptop's host overlay.
+
+    ``.fluxbox/overlay.celtic`` is sized for the internal 2880x1920 panel.
+    Because the host nickname is also a layout name, an unqualified host
+    match would apply those HiDPI fonts to every layout lacking its own
+    overlay file, which is how the 139 DPI ultrawide ended up drawing
+    ``sans-16:bold`` window titles.
+    """
+    bare_source, bare_request = _celtic()
+    bare_plan = build_desktop_plan(bare_source.load(bare_request)).plan
+    # For the bare host layout the two roles name the same file, so the
+    # layout branch claims it first; either way overlay.celtic is what the
+    # laptop-only layout must still receive.
+    assert bare_plan.overlay.selection is OverlaySelection.LAYOUT
+    assert bare_plan.overlay.source_path == ".fluxbox/overlay.celtic"
+
+    source, request = _case(
+        sequence=4,
+        profile="celtic+Samsung-Odyssey-G75F",
+        layout="celtic+ultrawide",
+        external="DisplayPort-1",
+        external_size=(5120, 2160, 930, 400),
+    )
+    plan = build_desktop_plan(source.load(request)).plan
+    assert plan.overlay.selection is OverlaySelection.DYNAMIC
+    assert plan.overlay.source_path is None
+
+    overlay = next(
+        item.content
+        for item in build_desktop_plan(source.load(request)).artifacts
+        if item.relative_path == "artifacts/fluxbox/overlay"
+    )
+    assert b"sans-16:bold" not in overlay
 
 
 def _profile_with_setup_value(

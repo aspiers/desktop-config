@@ -1213,11 +1213,23 @@ def _overlay_intent(
     configuration = inputs.configuration
     layout_overlay = configuration.one(InputRole.LAYOUT_OVERLAY)
     host_overlay = configuration.one(InputRole.HOST_OVERLAY)
+    # The host overlay is sized for this host's internal panel alone, so it
+    # may only serve the bare host layout.  On a host whose nickname is also a
+    # layout name (celtic), matching it for any layout captures every
+    # multi-monitor layout that has no overlay file of its own and applies
+    # laptop HiDPI fonts to an external monitor -- which is how the 139 DPI
+    # ultrawide came to draw sans-16:bold window titles.
+    #
+    # For that one eligible layout both roles name the same file, so the
+    # layout branch below already serves it and OverlaySelection.HOST is
+    # never planned.  The role is still declared, and its hash still guards
+    # the plan, so that editing overlay.<host> reliably invalidates it.
+    host_overlay_is_eligible = resolved.layout == inputs.context.host_name
     if layout_overlay.content is not None:
         selection = OverlaySelection.LAYOUT
         source = layout_overlay.path
         content = layout_overlay.content
-    elif host_overlay.content is not None:
+    elif host_overlay.content is not None and host_overlay_is_eligible:
         selection = OverlaySelection.HOST
         source = host_overlay.path
         content = host_overlay.content
