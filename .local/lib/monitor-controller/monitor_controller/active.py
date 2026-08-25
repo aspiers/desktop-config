@@ -17,12 +17,17 @@ Any of those failing aborts startup rather than degrading, because a
 half-authoritative controller is worse than none: two dispatchers racing on
 the same display produce exactly the colliding-relayout failures this whole
 subsystem exists to eliminate.
+
+A fourth precondition gates the module entry point rather than the
+composition: cutover must have been explicitly authorised. See
+:func:`main`.
 """
 
 from __future__ import annotations
 
 import fcntl
 import os
+import sys
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -63,6 +68,13 @@ CONFLICTING_UNITS: tuple[str, ...] = (
 )
 
 ACTIVE_OBSERVATION_TIMEOUT_SECONDS = SHADOW_OBSERVATION_TIMEOUT_SECONDS
+
+# The deliberate act which authorises this controller to take display
+# authority. Deliberately absent from the stowed unit file: stowing, enabling,
+# and starting the service must all be insufficient on their own, so that
+# authority is only ever taken by someone who meant to take it.
+CUTOVER_AUTHORIZATION_VARIABLE = "MONITOR_CONTROLLER_CUTOVER_AUTHORIZED"
+CUTOVER_AUTHORIZATION_VALUE = "i-have-run-preflight"
 
 
 class ActiveStartupError(RuntimeError):
@@ -325,3 +337,85 @@ def compose_active_controller(
         store=adapters.store,
         audit=adapters.audit,
     )
+
+
+def _require_active_namespace(environ: Mapping[str, str]) -> None:
+    """Refuse to run as the authority without the active namespace declared.
+
+    Mirrors shadow's check. Its real value is catching a unit file that
+    launched the wrong composition root, which would otherwise present as a
+    controller writing to a namespace nobody is reading.
+    """
+    if environ.get("MONITOR_CONTROLLER_NAMESPACE") != "active":
+        msg = "MONITOR_CONTROLLER_NAMESPACE must be exactly 'active'"
+        raise ActiveStartupError(msg)
+
+
+def cutover_authorization_error(environ: Mapping[str, str]) -> str | None:
+    """Return why cutover is unauthorised, or None when it is authorised.
+
+    Taking display authority is a deliberate, maintainer-approved act, not a
+    consequence of the unit existing. Everything else in this module can be
+    installed, stowed, and inspected safely; this is the one step that must
+    not happen by accident, so it is gated on evidence of intent rather than
+    on the code merely being present.
+
+    The gate is an environment variable the unit does not set. Enabling and
+    starting the service is therefore not enough — someone has to add it,
+    which cannot happen by stowing a file or by systemd retrying a start.
+    """
+    if environ.get(CUTOVER_AUTHORIZATION_VARIABLE) == CUTOVER_AUTHORIZATION_VALUE:
+        return None
+    return (
+        "cutover is not authorised: the active controller would take display "
+        f"authority from {', '.join(CONFLICTING_UNITS)}. This unit refuses to "
+        "start until that switch is deliberate.\n"
+        "  Before authorising, confirm readiness:\n"
+        "    monitor-controller preflight\n"
+        "    shadow-trace-status\n"
+        f"  To authorise, set {CUTOVER_AUTHORIZATION_VARIABLE}"
+        f"={CUTOVER_AUTHORIZATION_VALUE} in the unit:\n"
+        "    systemctl --user edit monitor-controller.service\n"
+        "  To roll back to the shell watcher:\n"
+        "    systemctl --user disable --now monitor-controller.service\n"
+        "    systemctl --user enable --now monitor-watcher-ng.service"
+    )
+
+
+def main() -> int:
+    """Refuse to take display authority unless cutover was authorised.
+
+    Fails closed and loudly. The failure this exists to prevent is quiet: the
+    unit previously ran a module with no entry point, so it imported cleanly,
+    exited 0, and systemd recorded a healthy start for a controller that did
+    not exist. An inert authority that reports success is worse than one that
+    reports failure, because nothing prompts anyone to look.
+
+    Once authorised, this composes the real observer, dispatcher and
+    supervisor under the authority lock, mirroring
+    :func:`monitor_controller.shadow.main`.
+    """
+    try:
+        _require_active_namespace(os.environ)
+    except ActiveStartupError as error:
+        print(f"monitor-controller: {error}", file=sys.stderr)
+        return 1
+    unauthorized = cutover_authorization_error(os.environ)
+    if unauthorized is not None:
+        print(f"monitor-controller: {unauthorized}", file=sys.stderr)
+        return 1
+    # Reached only with cutover explicitly authorised. Building the live
+    # composition is dc-a5y.17's remaining acceptance criterion; until it
+    # lands, refuse rather than start a controller that would observe and
+    # dispatch nothing.
+    print(
+        "monitor-controller: cutover is authorised, but the live active "
+        "composition is not implemented yet (dc-a5y.17). Refusing to run as "
+        "an authority that would dispatch nothing.",
+        file=sys.stderr,
+    )
+    return 1
+
+
+if __name__ == "__main__":  # pragma: no cover - fixed-venv module entry point
+    raise SystemExit(main())

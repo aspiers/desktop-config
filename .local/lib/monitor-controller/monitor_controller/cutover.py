@@ -25,6 +25,8 @@ from typing import TYPE_CHECKING, Protocol
 
 from monitor_controller.active import (
     CONFLICTING_UNITS,
+    CUTOVER_AUTHORIZATION_VALUE,
+    CUTOVER_AUTHORIZATION_VARIABLE,
     ActiveAuthorityLock,
     ActivePaths,
     ActiveStartupError,
@@ -302,6 +304,9 @@ def cutover_commands() -> tuple[str, ...]:
     Enablement comes last and only after verification, so a failed start
     cannot leave a broken controller to be retried automatically at the next
     login.
+
+    The authorisation drop-in comes first, because without it the controller
+    refuses to start — and by then the shell watcher has already been stopped.
     """
     stops = tuple(f"systemctl --user stop {unit}" for unit in CONFLICTING_UNITS)
     disables = tuple(
@@ -310,6 +315,14 @@ def cutover_commands() -> tuple[str, ...]:
         if unit != "monitor-controller-shadow.service"
     )
     return (
+        # Authorise before stopping anything: the controller will not start
+        # without this, and discovering that after the watcher has stopped
+        # leaves the desktop unmanaged for no reason.
+        (
+            "systemctl --user edit monitor-controller.service"
+            f"  # add [Service] Environment={CUTOVER_AUTHORIZATION_VARIABLE}"
+            f"={CUTOVER_AUTHORIZATION_VALUE}"
+        ),
         "systemctl --user daemon-reload",
         *stops,
         *disables,

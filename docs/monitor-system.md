@@ -314,8 +314,12 @@ authoritative yet. See [The monitor controller][controller-doc] for what it
 is and why it exists; this is just the switchover procedure.
 
 **Preconditions:** the seven trace scenarios captured and reconciled
-(`dc-a5y.11`), the service entry point implemented (`dc-9aa`), and
-`monitor-controller preflight` reporting ready.
+(`dc-a5y.11`), and `monitor-controller preflight` reporting ready.
+
+Until cutover is authorised the controller refuses to start, naming what is
+missing. Starting it also stops the shell watcher via `Conflicts=`, so a
+refused start still leaves the desktop unmanaged until you restart
+`monitor-watcher-ng.service`.
 
 **When those hold:**
 

@@ -16,7 +16,12 @@ from typing import TypedDict
 import pytest
 
 from monitor_controller import cli
-from monitor_controller.active import CONFLICTING_UNITS, ActivePaths
+from monitor_controller.active import (
+    CONFLICTING_UNITS,
+    CUTOVER_AUTHORIZATION_VALUE,
+    CUTOVER_AUTHORIZATION_VARIABLE,
+    ActivePaths,
+)
 from monitor_controller.cutover import (
     CheckStatus,
     build_preflight_report,
@@ -335,6 +340,34 @@ class TestCommandSequences:
         """No command may need DISPLAY; rollback often happens over SSH."""
         for command in (*cutover_commands(), *rollback_commands()):
             assert command.startswith("systemctl --user ")
+
+    def test_cutover_authorizes_before_stopping_the_watcher(self) -> None:
+        """The controller refuses to start unauthorised.
+
+        Sequencing authorisation after the stops would discover that only once
+        the shell watcher is already down, leaving the desktop unmanaged for
+        no reason at all.
+        """
+        commands = cutover_commands()
+        authorize = next(
+            index
+            for index, command in enumerate(commands)
+            if CUTOVER_AUTHORIZATION_VARIABLE in command
+        )
+        first_stop = next(
+            index
+            for index, command in enumerate(commands)
+            if command.startswith("systemctl --user stop ")
+        )
+        assert authorize < first_stop
+
+    def test_cutover_names_the_exact_authorization_value(self) -> None:
+        """A near-miss value is refused, so the sequence must be copyable."""
+        commands = " ".join(cutover_commands())
+        assert (
+            f"{CUTOVER_AUTHORIZATION_VARIABLE}={CUTOVER_AUTHORIZATION_VALUE}"
+            in commands
+        )
 
 
 class TestCutoverCli:

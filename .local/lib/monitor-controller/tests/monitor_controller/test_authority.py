@@ -16,9 +16,13 @@ import pytest
 
 from monitor_controller.active import (
     CONFLICTING_UNITS,
+    CUTOVER_AUTHORIZATION_VALUE,
+    CUTOVER_AUTHORIZATION_VARIABLE,
     ActiveAuthorityLock,
     ActivePaths,
     ActiveStartupError,
+    cutover_authorization_error,
+    main,
 )
 
 
@@ -276,3 +280,113 @@ class TestUnitConflictContract:
             _directives("monitor-controller-shadow.service", "InaccessiblePaths")
         )
         assert "monitor-controller/active" in inaccessible
+
+
+class TestCutoverAuthorization:
+    """The gate on taking display authority.
+
+    The defect these guard is quiet rather than loud: the unit used to run a
+    module with no entry point, so it imported cleanly, exited 0, and systemd
+    recorded a healthy start for a controller that did not exist. Nothing
+    prompts anyone to investigate a service that reports success.
+    """
+
+    def test_unauthorized_environment_is_refused(self) -> None:
+        """The default state must be refusal, not authority."""
+        assert cutover_authorization_error({}) is not None
+
+    def test_authorization_names_what_to_do(self) -> None:
+        """A refusal nobody can act on merely relocates the confusion."""
+        message = cutover_authorization_error({})
+        assert message is not None
+        assert CUTOVER_AUTHORIZATION_VARIABLE in message
+        assert "monitor-controller preflight" in message
+        # Rollback must be reachable from the failure itself: whoever reads
+        # this may have no working display to go looking with.
+        assert "monitor-watcher-ng.service" in message
+
+    def test_exact_authorization_is_accepted(self) -> None:
+        """Otherwise the gate could never be passed deliberately either."""
+        environ = {CUTOVER_AUTHORIZATION_VARIABLE: CUTOVER_AUTHORIZATION_VALUE}
+        assert cutover_authorization_error(environ) is None
+
+    @pytest.mark.parametrize("value", ["", "1", "true", "yes", "I-HAVE-RUN-PREFLIGHT"])
+    def test_near_miss_values_are_refused(self, value: str) -> None:
+        """A truthy-looking value must not authorise a display takeover.
+
+        Accepting "1" or "true" would make authority reachable by the kind of
+        blanket environment setting that gets applied to a whole session.
+        """
+        environ = {CUTOVER_AUTHORIZATION_VARIABLE: value}
+        assert cutover_authorization_error(environ) is not None
+
+    def test_unit_file_does_not_authorize_itself(self) -> None:
+        """Stowing, enabling, and starting must all be insufficient.
+
+        If the unit carried the authorisation, the gate would be satisfied by
+        the file's mere presence, which is exactly the accident it exists to
+        prevent.
+        """
+        text = (UNIT_DIR / ACTIVE_UNIT).read_text(encoding="utf-8")
+        assert CUTOVER_AUTHORIZATION_VARIABLE not in text
+
+
+class TestActiveEntryPoint:
+    """`python -m monitor_controller.active` must fail closed and say why."""
+
+    def test_wrong_namespace_is_refused(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """A unit launching the wrong composition root must not run."""
+        monkeypatch.setenv("MONITOR_CONTROLLER_NAMESPACE", "shadow")
+        assert main() == 1
+        assert "must be exactly 'active'" in capsys.readouterr().err
+
+    def test_unauthorized_start_exits_non_zero(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """The regression: an accidentally enabled unit must fail visibly."""
+        monkeypatch.setenv("MONITOR_CONTROLLER_NAMESPACE", "active")
+        monkeypatch.delenv(CUTOVER_AUTHORIZATION_VARIABLE, raising=False)
+        assert main() == 1
+        assert "not authorised" in capsys.readouterr().err
+
+    def test_authorized_start_still_refuses_until_composition_lands(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """Authorisation alone must not start an authority that does nothing.
+
+        Passing the gate before the live composition exists would produce the
+        original defect in a new place: a running unit holding authority and
+        dispatching nothing. This test is the reminder to delete when
+        dc-a5y.17 lands.
+        """
+        monkeypatch.setenv("MONITOR_CONTROLLER_NAMESPACE", "active")
+        monkeypatch.setenv(
+            CUTOVER_AUTHORIZATION_VARIABLE,
+            CUTOVER_AUTHORIZATION_VALUE,
+        )
+        assert main() == 1
+        assert "not implemented yet" in capsys.readouterr().err
+
+    def test_no_path_through_main_returns_success(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """Exit 0 is what systemd reads as "the controller is running".
+
+        Until one genuinely runs, no environment may produce it.
+        """
+        for namespace in ("active", "shadow", ""):
+            for authorization in ("", CUTOVER_AUTHORIZATION_VALUE, "1"):
+                monkeypatch.setenv("MONITOR_CONTROLLER_NAMESPACE", namespace)
+                monkeypatch.setenv(CUTOVER_AUTHORIZATION_VARIABLE, authorization)
+                assert main() != 0
+                capsys.readouterr()

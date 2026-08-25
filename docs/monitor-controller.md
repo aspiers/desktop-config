@@ -234,9 +234,29 @@ rename.
 **These accrue from normal use.** Docking, undocking and suspending record
 themselves; nothing needs performing deliberately. Tracked as `dc-a5y.11`.
 
-Also outstanding: the service entry point (`dc-9aa` — the unit currently
-starts a module with no `main()`), and the live cutover itself (`dc-a5y.17`),
-which needs explicit approval.
+Also outstanding: the live cutover itself (`dc-a5y.17`), which needs explicit
+approval.
+
+Until then the unit refuses to start, and says why. Taking display authority
+needs a deliberate act that stowing, enabling, and starting the service do not
+supply between them — an authorisation variable the unit file deliberately
+does not carry:
+
+```console
+$ systemctl --user start monitor-controller.service
+$ journalctl --user -u monitor-controller -n 3 --no-pager -o cat
+monitor-controller: cutover is not authorised: the active controller would
+take display authority from monitor-controller-shadow.service, ...
+```
+
+The failure is deliberate. An entry point that started cleanly and did nothing
+would report success for a controller that does not exist, and nothing prompts
+anyone to investigate a healthy-looking service.
+
+> Note that starting this unit **stops the shell watcher**, because they
+> declare `Conflicts=`. That is correct for a real cutover but surprising when
+> merely testing the refusal: it leaves the desktop unmanaged until you
+> `systemctl --user start monitor-watcher-ng.service` again.
 
 ### When the time comes
 
