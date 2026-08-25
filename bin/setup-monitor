@@ -301,6 +301,11 @@ setup_overlay() {
     title_font=$(printf "%.0f" "$(echo "$base_font * $scale_factor" | bc)")
     menu_font=$(printf "%.0f" "$(echo "($base_font + 1) * $scale_factor" | bc)")
 
+    # A previous relayout may have left ~/.fluxbox/overlay as a symlink to a
+    # checked-in overlay.<layout> file.  Writing without removing it first
+    # follows the link and overwrites that source file with generated content.
+    rm -f ~/.fluxbox/overlay
+
     cat > ~/.fluxbox/overlay <<EOF
 window.borderWidth:               1
 window.handleWidth:               8
