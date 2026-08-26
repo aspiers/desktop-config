@@ -1,5 +1,15 @@
 # NVMe / Crash Investigation
 
+> **Update 2026-08-26**: The suspend/hibernate crash mechanism asserted
+> below is **not established**. It rests on 2 crashes out of ~8, and the
+> 2026-08-25 crash contradicts it (kernel log ends 20:09:07, userspace ran
+> to 21:20:59, no PM entry). Treat "Crash cause" claims in this document as
+> a hypothesis, not a finding. The *firmware counter bug* is well
+> evidenced and unaffected by this caveat. Recommended action 2 has been
+> withdrawn — see that section. Crash capture on this machine is
+> non-functional (beads `dc-dqs` ramoops, `dc-ydo` coredumps, kdump
+> disabled), which is why the question remains open.
+
 ## TL;DR
 
 The machine crashes because the NVMe firmware (SGW00110) has a bug that causes
@@ -254,9 +264,29 @@ Possible contributing factors to suspend/hibernate crashes:
 1. **Email Kingston support** for the SGW00115 binary (see "How to update on
    Linux" section above for the suggested message and `nvme-cli` commands).
 
-2. **While waiting**, optionally add `nvme_core.default_ps_max_latency_us=0`
+2. ~~**While waiting**, optionally add `nvme_core.default_ps_max_latency_us=0`
    to the kernel cmdline to disable NVMe power state management and reduce
-   the risk of suspend hangs.
+   the risk of suspend hangs.~~
+
+   **WITHDRAWN 2026-08-26 — do not do this.** Applied and reverted the same
+   day; see bead `dc-byp` for the full evaluation. Two reasons:
+
+   - **Battery cost is severe.** This is a Framework Laptop 13, and the
+     parameter pins the drive in PS0 (9.00 W) instead of letting APST park
+     it in PS4 (0.3 W) after 100 ms idle — a continuous ~8.7 W idle penalty,
+     30× the idle drive power, to avoid an 8 ms exit latency. The original
+     recommendation did not account for this being a battery-powered machine.
+   - **The evidence never supported it.** The suspend/hibernate hypothesis
+     rests on 2 crashes out of ~8. The 2026-08-25 crash contradicts it: the
+     kernel log ends at 20:09:07 while userspace ran to 21:20:59 with no PM
+     entry, and a 71-minute kernel/userspace gap argues against a suspend
+     hang. APST also governs *runtime idle* transitions, not system suspend,
+     and no NVMe timeouts, controller resets, or I/O errors appear in any
+     log. The firmware→PM causal chain in this document is inferred, not
+     demonstrated — Kingston's notes describe a *counter* bug and say
+     nothing about suspend or PCIe power states.
+
+   Re-apply only if working crash capture implicates the NVMe or PM path.
 
 3. **After firmware update**, run a new short self-test to confirm all clear:
    ```bash
