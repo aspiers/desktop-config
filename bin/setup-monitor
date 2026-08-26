@@ -293,7 +293,11 @@ setup_overlay() {
     # Fallback: generate dynamically based on DPI
     echo "Generating dynamic overlay"
     local scale_factor
-    local base_font=10
+    # Matches the hand-written external-monitor overlays, which all settled on
+    # sans-12:bold (celtic+BenQ, celtic+BenQ+Dell, celtic+external).  Fluxbox
+    # sizes these in points and Xft.dpi now carries the monitor's real DPI, so
+    # a fixed base stays the same physical size as monitors change.
+    local base_font=12
     local title_font
     local menu_font
 
@@ -310,10 +314,10 @@ setup_overlay() {
 window.borderWidth:               1
 window.handleWidth:               8
 window.font:                      sans-${title_font}:bold
-window.title.height:              $(( 24 + (title_font - 10) * 2 ))
+window.title.height:              $(( 32 + (title_font - 12) * 2 ))
 menu.title.font:                  sans-${title_font}:bold
 menu.frame.font:                  sans-${menu_font}
-menu.titleHeight:                 $(( 20 + (title_font - 10) * 2 ))
+menu.titleHeight:                 $(( 26 + (title_font - 12) * 2 ))
 menu.itemHeight:                  10
 EOF
 }
