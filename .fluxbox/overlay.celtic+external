@@ -1,4 +1,4 @@
-h!window.borderWidth:               1
+!window.borderWidth:               1
 !window.bevelWidth:                1
 !window.borderColor:               #718541
 window.handleWidth:               8
