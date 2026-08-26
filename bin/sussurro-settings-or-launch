@@ -1,0 +1,74 @@
+#!/bin/bash
+#
+# Start sussurro if it isn't running; otherwise toggle its settings window.
+#
+# Sussurro is a long-running dictation daemon: the tray icon and the hotkey
+# grab only exist while it runs, so the useful gesture from a key binding is
+# "make sure it's up" -- never "stop it", which would take the hotkeys down
+# with it. Once it is up the same key toggles its settings window, which is
+# otherwise reachable only through the tray menu.
+#
+# Toggling settings goes over sussurro's trigger socket rather than by launching
+# a second process, because a second instance would find the socket taken and
+# refuse to start (see removeStaleSocket in internal/trigger/server.go).
+
+set -u
+
+SOCKET="${XDG_RUNTIME_DIR:-/tmp}/sussurro.sock"
+
+# send COMMAND
+#
+# Writes one command to the trigger socket and prints the reply. Fails if
+# nothing is listening, which is how we tell "not running" from "running".
+send () {
+    local command="$1"
+
+    if [ -n "${SUSSURRO_NC:-}" ]; then
+        printf '%s\n' "$command" | $SUSSURRO_NC -U "$SOCKET" 2>/dev/null
+        return
+    fi
+
+    # socat and netcat differ in their UNIX-socket flags, and neither is
+    # guaranteed present. Try each, then fall back to bash's own /dev/tcp-style
+    # redirection, which cannot do UNIX sockets -- hence the explicit failure.
+    if command -v socat >/dev/null 2>&1; then
+        printf '%s\n' "$command" | socat - "UNIX-CONNECT:$SOCKET" 2>/dev/null
+    elif command -v nc >/dev/null 2>&1; then
+        printf '%s\n' "$command" | nc -U "$SOCKET" 2>/dev/null
+    else
+        echo >&2 "$(basename "$0"): need socat or nc to talk to $SOCKET"
+        return 1
+    fi
+}
+
+main () {
+    # A stale socket file outlives a crashed run, so its presence proves
+    # nothing; only a successful exchange does.
+    if reply=$(send settings) && [ -n "$reply" ]; then
+        case "$reply" in
+            SETTINGS) exit 0 ;;
+            *'unknown command'*)
+                # Running, but predates the settings command. Notify rather
+                # than failing mutely: the fix is to rebuild and restart, and a
+                # key binding has nowhere else to report that.
+                echo >&2 "$(basename "$0"): running sussurro has no settings command; rebuild and restart it"
+                notify-send -t 5000 "Sussurro" \
+                    "This build has no settings command.\nRebuild and restart sussurro." 2>/dev/null
+                exit 1
+                ;;
+            ERROR*)
+                # Running, but refusing -- most likely --no-ui. Say so rather
+                # than launching a second instance that cannot start anyway.
+                echo >&2 "$(basename "$0"): sussurro declined: $reply"
+                notify-send -t 5000 "Sussurro" "Settings unavailable: $reply" 2>/dev/null
+                exit 1
+                ;;
+        esac
+    fi
+
+    # Nothing listening: start it detached so it survives this script, and
+    # discard its output rather than leaking it into the WM's log.
+    setsid sussurro >/dev/null 2>&1 < /dev/null &
+}
+
+main "$@"
