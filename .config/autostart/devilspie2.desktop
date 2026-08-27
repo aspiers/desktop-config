@@ -1,0 +1,17 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=DevilsPie2
+Exec=devilspie2
+# Suppresses /etc/xdg/autostart/devilspie2.desktop, which the devilspie2
+# package ships and which autostarts it in any XDG session regardless of
+# intent.  The package is currently uninstalled, so this is a safety net
+# in case it returns as a dependency or gets reinstalled.
+#
+# Window placement here is fluxbox's job (.fluxbox/apps, .fluxbox/layouts);
+# see also .xsession-progs.d/person-adam.spiers/05-devilspie, which has
+# disabled devilspie since long before this.  When devilspie2 also runs it
+# applies its rules *after* fluxbox, silently overriding them: an
+# lnav-system window landed on the bottom layer, undecorated and skipping
+# the tasklist, so Super-/ cycling missed it.
+Hidden=true
