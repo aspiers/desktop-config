@@ -8,6 +8,12 @@ Description=Sussurro dictation daemon
 PartOf=graphical-session.target
 After=graphical-session.target
 
+# sussurro and Epicenter both grab super+8 and super+9 as global hotkeys.
+# X allows only one client per grab, so whichever starts second dies with
+# BadAccess on GrabKey (request code 33) -- see dc-9yi. Conflicts= makes
+# starting either one stop the other, so the collision cannot happen.
+Conflicts=epicenter.service
+
 [Service]
 SyslogIdentifier=sussurro
 
