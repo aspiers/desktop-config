@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# Run the Beeper AppImage at NoNewPrivs=0 (see run-with-new-privs) so its
+# FUSE mount works regardless of how the launching terminal was started.
+# Glob expanded by the shell; systemd-run won't glob for us.
+exec run-with-new-privs "$(echo ~/software/comms/Beeper-4*.AppImage)" "$@"
