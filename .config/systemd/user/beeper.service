@@ -1,0 +1,43 @@
+[Unit]
+Description=Beeper messaging client
+
+# graphical-session.target rather than a window-manager specific target:
+# every desktop environment raises it (gnome-session.target and
+# plasma-workspace.target bind to it, as does fluxbox-session.target here),
+# so Beeper follows whichever desktop is in use rather than being tied to
+# fluxbox.  Same reasoning as keyboard-watcher.service.
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+SyslogIdentifier=beeper
+
+# Beeper ships as a FUSE AppImage, and fusermount needs its setuid bit
+# honoured.  NoNewPrivileges is therefore deliberately NOT set here: it is a
+# one-way latch that makes the kernel ignore that setuid bit, and the mount
+# fails with "fusermount: mount failed: Operation not permitted".  This unit
+# is forked by the systemd --user manager, which runs at NoNewPrivs=0, so it
+# already gets what bin/run-with-new-privs exists to obtain for interactive
+# callers -- hence we invoke the AppImage directly rather than through that
+# wrapper, which would only nest a second transient unit inside this one.
+#
+# The manager's environment lacks the X/DBus session, so go via
+# run-with-local-X-display to source ~/.Xdisplay.$host (DISPLAY, XAUTHORITY,
+# DBUS_SESSION_BUS_ADDRESS, ...).
+#
+# The glob keeps this working across Beeper upgrades; the packaged
+# .desktop files hardcode a version and silently rot when it changes.
+ExecStart=/bin/bash -c 'exec ${HOME}/bin/run-with-local-X-display "$(echo ${HOME}/software/comms/Beeper-4*.AppImage)"'
+
+Restart=on-failure
+RestartSec=5s
+
+# Electron leaves a tree of renderer and zygote processes behind.
+KillMode=control-group
+TimeoutStopSec=20s
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=graphical-session.target
