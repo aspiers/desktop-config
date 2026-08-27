@@ -97,6 +97,15 @@
   [Dimensions]	{96% 89%}
   [Position]	(UPPERLEFT)	{0 0}
 [end]
+# Matched on class rather than name: LM Studio's real window is
+# ("lm studio", "LM Studio"), while the Electron helper windows it also maps
+# are ("lm-studio", "Lm-studio") -- matching the latter would place 10x10 and
+# 200x200 helpers and leave the GUI itself unplaced.
+[app] (class=LM Studio)
+  [Workspace]	{3}
+  [Dimensions]	{96% 89%}
+  [Position]	(UPPERLEFT)	{0 0}
+[end]
 [app] (head=2)
   [Sticky]	{yes}
 [end]

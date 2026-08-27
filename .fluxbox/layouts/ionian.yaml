@@ -38,6 +38,8 @@ windows:
 
   <INCLUDE common/kraken>
 
+  <INCLUDE common/lm-studio>
+
   - - (Class=Pavucontrol)
     - <unstick>
     - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 6} {MoveTo 2% 2%} {ResizeTo 40% 35%}

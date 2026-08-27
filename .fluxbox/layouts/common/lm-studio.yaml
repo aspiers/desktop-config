@@ -1,0 +1,8 @@
+# LM Studio's real window has WM_CLASS ("lm studio", "LM Studio") and role
+# browser-window; the Electron helpers it also maps are ("lm-studio",
+# "Lm-studio") 10x10 and 200x200 windows.  Matching the hyphenated name would
+# therefore move the helpers and leave the actual GUI where it was, so match
+# the spaced class instead.
+- - (Class=LM Studio)
+  - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 3} {MoveTo <s_primary_col1_left> <s_primary_row1_top>} {ResizeTo <s_primary_active_width> <s_primary_active_height>}
+  - <unstick>

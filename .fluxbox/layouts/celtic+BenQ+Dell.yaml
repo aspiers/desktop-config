@@ -71,6 +71,8 @@ windows:
 
   <INCLUDE common/kraken>
 
+  <INCLUDE common/lm-studio>
+
   - - (Class=Pavucontrol)
     - <stick>
     - MacroCmd {<s_celtic_SetHead>} {MoveTo 2% 2%} {ResizeTo 40% 35%}

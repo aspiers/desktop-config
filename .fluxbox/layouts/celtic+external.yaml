@@ -58,6 +58,8 @@ windows:
 
   <INCLUDE common/kraken>
 
+  <INCLUDE common/lm-studio>
+
   <INCLUDE common/system-tools-secondary>
 
   <INCLUDE common/chrysalis-multi>
