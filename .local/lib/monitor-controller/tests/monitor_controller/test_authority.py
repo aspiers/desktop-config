@@ -8,12 +8,17 @@ colliding-relayout failures this subsystem exists to eliminate.
 
 from __future__ import annotations
 
+import asyncio
 import fcntl
 import os
 from pathlib import Path
+from types import SimpleNamespace
+from typing import Self
+from uuid import UUID
 
 import pytest
 
+from monitor_controller import active
 from monitor_controller.active import (
     CONFLICTING_UNITS,
     CUTOVER_AUTHORIZATION_VALUE,
@@ -21,9 +26,51 @@ from monitor_controller.active import (
     ActiveAuthorityLock,
     ActivePaths,
     ActiveStartupError,
+    NonStartingDispatcher,
     cutover_authorization_error,
+    load_active_state,
     main,
+    run_active,
 )
+from monitor_controller.model import (
+    BootId,
+    ControllerInstanceId,
+    ControllerPhase,
+    DisplayIdentity,
+    State,
+)
+from monitor_controller.runtime.dispatcher import (
+    DispatchStartResult,
+    PreparedDispatch,
+    WorkerActivity,
+    WorkerCompletion,
+)
+from monitor_controller.runtime.persistence import AtomicStateStore, StateNamespace
+from monitor_controller.runtime.recovery import WorkerNamespaceSnapshot
+
+_STOP_MARKER = "stop here"
+_UNAUTHORIZED_BUILD = "composition built without authorisation"
+_STUB_REACHED = "the non-starting wrapper must refuse before delegating"
+_INJECTED_FAILURE = "injected monitor failure"
+
+
+class _NullLock:
+    """Stand in for the authority lock so main() can be tested without one.
+
+    main() must hold the real lock for its whole lifetime, which a unit test
+    cannot do meaningfully; lock behaviour is covered by
+    :class:`TestActiveAuthorityLock` instead.
+    """
+
+    def __init__(self, *_args: object, **_kwargs: object) -> None:
+        """Accept the real lock's arguments and ignore them."""
+
+    def __enter__(self) -> Self:
+        """Acquire nothing."""
+        return self
+
+    def __exit__(self, *_exc: object) -> None:
+        """Release nothing."""
 
 
 def _paths(root: Path) -> ActivePaths:
@@ -355,38 +402,480 @@ class TestActiveEntryPoint:
         assert main() == 1
         assert "not authorised" in capsys.readouterr().err
 
-    def test_authorized_start_still_refuses_until_composition_lands(
+    def test_authorized_start_builds_the_real_composition(
         self,
         monkeypatch: pytest.MonkeyPatch,
-        capsys: pytest.CaptureFixture[str],
     ) -> None:
-        """Authorisation alone must not start an authority that does nothing.
+        """Past the gate, main() must actually compose and run the controller.
 
-        Passing the gate before the live composition exists would produce the
-        original defect in a new place: a running unit holding authority and
-        dispatching nothing. This test is the reminder to delete when
-        dc-a5y.17 lands.
+        Replaces an earlier test asserting main() refused even when authorised,
+        which was correct only while the composition was unimplemented. That
+        refusal is what silently stopped the 2026-08-25 cutover after both
+        watchers had already been stopped.
         """
         monkeypatch.setenv("MONITOR_CONTROLLER_NAMESPACE", "active")
         monkeypatch.setenv(
             CUTOVER_AUTHORIZATION_VARIABLE,
             CUTOVER_AUTHORIZATION_VALUE,
         )
-        assert main() == 1
-        assert "not implemented yet" in capsys.readouterr().err
+        composed: list[str] = []
 
-    def test_no_path_through_main_returns_success(
+        def _fail_before_running(*_args: object, **_kwargs: object) -> object:
+            # Proves main() got as far as composing, without needing a display,
+            # a lock, or a real event loop in a unit test.
+            composed.append("built")
+            raise ActiveStartupError(_STOP_MARKER)
+
+        monkeypatch.setattr(active, "build_active_composition", _fail_before_running)
+        monkeypatch.setattr(active, "ActiveAuthorityLock", _NullLock)
+
+        assert main() == 1
+        assert composed == ["built"], "main() must build the live composition"
+
+    def test_unauthorized_start_never_builds_the_composition(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """The gate must come before any composition work."""
+        monkeypatch.setenv("MONITOR_CONTROLLER_NAMESPACE", "active")
+        monkeypatch.delenv(CUTOVER_AUTHORIZATION_VARIABLE, raising=False)
+
+        def _must_not_run(*_args: object, **_kwargs: object) -> object:
+            raise AssertionError(_UNAUTHORIZED_BUILD)
+
+        monkeypatch.setattr(active, "build_active_composition", _must_not_run)
+        assert main() == 1
+        assert "not authorised" in capsys.readouterr().err
+
+    def test_no_unauthorized_environment_returns_success(
         self,
         monkeypatch: pytest.MonkeyPatch,
         capsys: pytest.CaptureFixture[str],
     ) -> None:
         """Exit 0 is what systemd reads as "the controller is running".
 
-        Until one genuinely runs, no environment may produce it.
+        No environment lacking both the active namespace and the authorisation
+        may produce it. The authorised combination is excluded because it now
+        legitimately runs, which a unit test cannot do.
         """
         for namespace in ("active", "shadow", ""):
-            for authorization in ("", CUTOVER_AUTHORIZATION_VALUE, "1"):
+            for authorization in ("", "1"):
                 monkeypatch.setenv("MONITOR_CONTROLLER_NAMESPACE", namespace)
                 monkeypatch.setenv(CUTOVER_AUTHORIZATION_VARIABLE, authorization)
                 assert main() != 0
                 capsys.readouterr()
+        # Authorised but in the wrong namespace must still refuse.
+        monkeypatch.setenv("MONITOR_CONTROLLER_NAMESPACE", "shadow")
+        monkeypatch.setenv(CUTOVER_AUTHORIZATION_VARIABLE, CUTOVER_AUTHORIZATION_VALUE)
+        assert main() != 0
+        capsys.readouterr()
+
+
+class _StubDispatcher:
+    """Satisfy ActionDispatcher without doing anything.
+
+    Only the read-only methods can ever be reached through
+    :class:`NonStartingDispatcher`; the rest exist to satisfy the protocol.
+    """
+
+    async def write_request(
+        self, *_args: object, **_kwargs: object
+    ) -> PreparedDispatch:
+        """Unreachable through the non-starting wrapper."""
+        raise AssertionError(_STUB_REACHED)
+
+    async def start(self, *_args: object, **_kwargs: object) -> DispatchStartResult:
+        """Unreachable through the non-starting wrapper."""
+        raise AssertionError(_STUB_REACHED)
+
+    async def discard_prepared(self, *_args: object, **_kwargs: object) -> None:
+        """Unreachable through the non-starting wrapper."""
+        raise AssertionError(_STUB_REACHED)
+
+    async def stop(self, *_args: object, **_kwargs: object) -> None:
+        """Unreachable through the non-starting wrapper."""
+        raise AssertionError(_STUB_REACHED)
+
+    async def worker_activity(
+        self, *_args: object, **_kwargs: object
+    ) -> WorkerActivity:
+        """Report the safest possible answer; the wrapper delegates this."""
+        return WorkerActivity.INACTIVE
+
+    async def worker_completion(
+        self, *_args: object, **_kwargs: object
+    ) -> WorkerCompletion | None:
+        """Report no terminal evidence; the wrapper delegates this."""
+        return None
+
+
+class _StubScanner:
+    """Return a fixed worker-namespace snapshot, or raise."""
+
+    def __init__(
+        self,
+        snapshot: WorkerNamespaceSnapshot | None = None,
+        error: Exception | None = None,
+    ) -> None:
+        """Bind the canned outcome without touching systemd."""
+        self._snapshot = snapshot or WorkerNamespaceSnapshot()
+        self._error = error
+        self.namespaces: list[StateNamespace] = []
+
+    def scan(self, namespace: StateNamespace) -> WorkerNamespaceSnapshot:
+        """Record the namespace asked for, then return or raise."""
+        self.namespaces.append(namespace)
+        if self._error is not None:
+            raise self._error
+        return self._snapshot
+
+
+def _active_store(root: Path) -> AtomicStateStore:
+    """Build an active-namespace store whose state home already exists."""
+    state_home = root / "state"
+    state_home.mkdir(parents=True, exist_ok=True)
+    return AtomicStateStore(state_home, StateNamespace.ACTIVE)
+
+
+def _identity() -> tuple[BootId, ControllerInstanceId, DisplayIdentity]:
+    """Return a fixed, deterministic controller identity."""
+    return (
+        BootId(UUID("11111111-1111-1111-1111-111111111111")),
+        ControllerInstanceId(UUID("22222222-2222-2222-2222-222222222222")),
+        DisplayIdentity(":0"),
+    )
+
+
+class TestLoadActiveState:
+    """State loading, boot-id handling, and the authority verdict."""
+
+    def test_non_active_namespace_is_refused(self, tmp_path: Path) -> None:
+        """Loading shadow state into the authority would cross namespaces."""
+        boot, instance, display = _identity()
+        store = AtomicStateStore(tmp_path / "state", StateNamespace.SHADOW)
+        with pytest.raises(ActiveStartupError, match="non-active state namespace"):
+            load_active_state(
+                store,
+                boot_id=boot,
+                controller_instance=instance,
+                display_identity=display,
+                scanner=_StubScanner(),
+            )
+
+    def test_absent_state_recovers_before_taking_authority(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """A first run has no state, so it must observe before dispatching.
+
+        Recovery reports "authoritative state is missing" and withholds
+        authority until a fresh observation arrives. That is deliberate: with
+        no record of what was last applied, dispatching immediately could fight
+        a display the controller has never looked at.
+        """
+        boot, instance, display = _identity()
+        store = _active_store(tmp_path)
+        scanner = _StubScanner()
+
+        result = load_active_state(
+            store,
+            boot_id=boot,
+            controller_instance=instance,
+            display_identity=display,
+            scanner=scanner,
+        )
+
+        assert not result.authority_allowed
+        assert result.requires_fresh_observation
+        assert result.state.boot_id == boot
+        assert result.state.display_identity == display
+        # Recovery must scan the active namespace, never shadow's.
+        assert scanner.namespaces == [StateNamespace.ACTIVE]
+
+    def test_mismatched_display_identity_is_refused(self, tmp_path: Path) -> None:
+        """State from a different X display describes a different session."""
+        boot, instance, display = _identity()
+        store = _active_store(tmp_path)
+        store.save(
+            State(
+                boot_id=boot,
+                controller_instance=instance,
+                display_identity=DisplayIdentity(":9"),
+            )
+        )
+        with pytest.raises(ActiveStartupError, match="display identity"):
+            load_active_state(
+                store,
+                boot_id=boot,
+                controller_instance=instance,
+                display_identity=display,
+                scanner=_StubScanner(),
+            )
+
+    def test_boot_change_keeps_identity_but_drops_temporal_state(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """Monotonic values are meaningless across boots; identity is not.
+
+        Discarding the whole record would lose the finalized profile and the
+        sequence high-water marks, so a reboot would re-apply work already
+        done and could reuse action IDs.
+        """
+        boot, instance, display = _identity()
+        previous_boot = BootId(UUID("33333333-3333-3333-3333-333333333333"))
+        store = _active_store(tmp_path)
+        store.save(
+            State(
+                boot_id=previous_boot,
+                controller_instance=instance,
+                display_identity=display,
+                desktop_finalized_profile="celtic+external",
+                action_sequence_high_water=7,
+                transition_sequence_high_water=4,
+            )
+        )
+
+        result = load_active_state(
+            store,
+            boot_id=boot,
+            controller_instance=instance,
+            display_identity=display,
+            scanner=_StubScanner(),
+        )
+
+        assert result.state.boot_id == boot
+        assert result.state.desktop_finalized_profile == "celtic+external"
+        assert result.state.action_sequence_high_water >= 7
+        assert result.state.transition_sequence_high_water >= 4
+
+    def test_unreadable_state_denies_authority_rather_than_discarding(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """Corrupt state must not be silently replaced by a blank one.
+
+        In-flight transactions may still exist in the worker namespace, so the
+        controller has to start into recovery rather than assume a clean slate.
+        """
+        boot, instance, display = _identity()
+        store = _active_store(tmp_path)
+        store.path.parent.mkdir(parents=True, exist_ok=True)
+        store.path.write_text("{ not json", encoding="utf-8")
+
+        result = load_active_state(
+            store,
+            boot_id=boot,
+            controller_instance=instance,
+            display_identity=display,
+            scanner=_StubScanner(),
+        )
+
+        assert not result.authority_allowed
+        assert result.state.phase is ControllerPhase.RECOVERING
+
+    def test_scanner_failure_denies_authority_without_raising(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """A controller that cannot see the workers must not dispatch.
+
+        It must still *start*, though: exiting would leave the desktop with no
+        manager at all, which is strictly worse than a recovering one.
+        """
+        boot, instance, display = _identity()
+        store = _active_store(tmp_path)
+
+        result = load_active_state(
+            store,
+            boot_id=boot,
+            controller_instance=instance,
+            display_identity=display,
+            scanner=_StubScanner(error=OSError("systemctl unreachable")),
+        )
+
+        assert not result.authority_allowed
+        assert result.state.phase is ControllerPhase.RECOVERING
+        assert result.reasons
+
+    def test_surviving_worker_denies_authority(self, tmp_path: Path) -> None:
+        """An unaccounted worker may still be driving xrandr."""
+        boot, instance, display = _identity()
+        store = _active_store(tmp_path)
+
+        result = load_active_state(
+            store,
+            boot_id=boot,
+            controller_instance=instance,
+            display_identity=display,
+            scanner=_StubScanner(
+                WorkerNamespaceSnapshot(ambiguities=("unknown worker survived",)),
+            ),
+        )
+
+        assert not result.authority_allowed
+
+
+class TestNonStartingDispatcher:
+    """The dry-run dispatcher must refuse everything that acts."""
+
+    @staticmethod
+    def _dispatcher() -> NonStartingDispatcher:
+        """Wrap a stub delegate; the delegate is never reached by these tests."""
+        return NonStartingDispatcher(_StubDispatcher())
+
+    @pytest.mark.parametrize(
+        ("method", "arguments"),
+        [
+            ("write_request", (None, None)),
+            ("start", (None, None)),
+            ("discard_prepared", (None,)),
+            ("stop", (None, None)),
+        ],
+    )
+    def test_acting_methods_refuse(
+        self,
+        method: str,
+        arguments: tuple[object, ...],
+    ) -> None:
+        """Preflight must never write, start, discard, or stop anything."""
+        dispatcher = self._dispatcher()
+        with pytest.raises(ActiveStartupError, match="dry-run dispatcher refuses"):
+            asyncio.run(getattr(dispatcher, method)(*arguments))
+
+    def test_it_satisfies_the_dispatcher_protocol(self) -> None:
+        """Every protocol method must exist, or a dry run would crash late."""
+        for name in (
+            "write_request",
+            "start",
+            "discard_prepared",
+            "stop",
+            "worker_activity",
+            "worker_completion",
+        ):
+            assert callable(getattr(self._dispatcher(), name))
+
+
+class _RecordingController:
+    """Run until cancelled, recording every lifecycle call run_active makes."""
+
+    def __init__(self) -> None:
+        """Start with nothing recorded."""
+        self.notifications = 0
+        self.cancelled = False
+        self.closed = False
+
+    async def run(self) -> None:
+        """Block until cancelled, noting that cancellation arrived."""
+        try:
+            await asyncio.Event().wait()
+        except asyncio.CancelledError:
+            self.cancelled = True
+            raise
+
+    def notify_drm_hint(self) -> None:
+        """Count one forwarded DRM wake-up hint."""
+        self.notifications += 1
+
+    async def close(self) -> None:
+        """Record that the controller was closed."""
+        self.closed = True
+
+
+class _FailingMonitor:
+    """Forward exactly one hint, then fail, to force the shutdown path."""
+
+    def __init__(self) -> None:
+        """Start not yet shut down."""
+        self.shutdown = False
+
+    async def run(self, notify: object) -> None:
+        """Notify once, then raise, recording that shutdown was reached."""
+        try:
+            assert callable(notify)
+            notify()
+            raise RuntimeError(_INJECTED_FAILURE)
+        finally:
+            self.shutdown = True
+
+
+class _RecordingTransactions:
+    """Record whether the transaction store's descriptors were released."""
+
+    def __init__(self) -> None:
+        """Start open."""
+        self.closed = False
+
+    def close(self) -> None:
+        """Record release."""
+        self.closed = True
+
+
+class TestRunActive:
+    """The asyncio run loop, and what it must release on the way out."""
+
+    def test_it_forwards_uevents_and_releases_every_resource(self) -> None:
+        """A DRM hint must reach the controller, and nothing may be left open.
+
+        Active has one resource shadow does not: the transaction store holds
+        retained directory descriptors, so failing to close it leaks them for
+        the life of the session.
+        """
+
+        async def exercise() -> None:
+            controller = _RecordingController()
+            monitor = _FailingMonitor()
+            transactions = _RecordingTransactions()
+            planner_closed: list[bool] = []
+            composition = SimpleNamespace(
+                controller=controller,
+                planner=SimpleNamespace(close=lambda: planner_closed.append(True)),
+                transactions=transactions,
+            )
+
+            with pytest.raises(RuntimeError, match="injected monitor failure"):
+                await run_active(composition, monitor)  # type: ignore[arg-type]
+
+            assert controller.notifications == 1
+            assert controller.cancelled
+            assert controller.closed
+            assert monitor.shutdown
+            assert planner_closed == [True]
+            assert transactions.closed, "transaction descriptors must be released"
+
+        asyncio.run(exercise())
+
+    def test_a_controller_exiting_on_its_own_is_an_error(self) -> None:
+        """The controller must run until cancelled; a clean return is a bug.
+
+        Returning would leave systemd believing the unit succeeded while the
+        display has no manager — the same silent-success failure mode as the
+        entry point that exited 0 without composing anything.
+        """
+
+        class QuietController:
+            async def run(self) -> None:
+                return
+
+            def notify_drm_hint(self) -> None:
+                return
+
+            async def close(self) -> None:
+                return
+
+        class IdleMonitor:
+            async def run(self, notify: object) -> None:
+                del notify
+                await asyncio.Event().wait()
+
+        async def exercise() -> None:
+            composition = SimpleNamespace(
+                controller=QuietController(),
+                planner=SimpleNamespace(close=lambda: None),
+                transactions=None,
+            )
+            with pytest.raises(ActiveStartupError, match="exited unexpectedly"):
+                await run_active(composition, IdleMonitor())  # type: ignore[arg-type]
+
+        asyncio.run(exercise())

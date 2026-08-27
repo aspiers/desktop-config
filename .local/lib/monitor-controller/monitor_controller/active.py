@@ -25,35 +25,80 @@ composition: cutover must have been explicitly authorised. See
 
 from __future__ import annotations
 
+import asyncio
 import fcntl
 import os
+import socket
 import sys
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from types import TracebackType
 from typing import TYPE_CHECKING, Self
+from uuid import uuid4
 
+from monitor_controller.codec import StateCodecError
 from monitor_controller.desktop.plan_codec import AtomicPlanStore
 from monitor_controller.desktop.planner import (
     AtomicDesktopPlanningAdapter,
     DesktopPlanningInputSource,
+    FilesystemDesktopPlanningInputSource,
 )
+from monitor_controller.model import (
+    BootId,
+    ControllerInstanceId,
+    DisplayIdentity,
+    State,
+)
+from monitor_controller.observer.drm import RootedSysfsReader
+from monitor_controller.observer.snapshot import (
+    CanonicalSnapshotCoordinator,
+    StaticSavedProfiles,
+)
+from monitor_controller.runtime.audit import RotatingAuditLog
+from monitor_controller.runtime.commands import BoundedCommandRunner
 from monitor_controller.runtime.controller import (
     ObservationAdapter,
     SerializedController,
 )
+from monitor_controller.runtime.persistence import AtomicStateStore, StateNamespace
+from monitor_controller.runtime.recovery import (
+    WorkerNamespaceScanner,
+    recover_state,
+)
+from monitor_controller.runtime.scheduler import AsyncioMonotonicClock, SchedulerClock
+from monitor_controller.runtime.systemd import (
+    SystemdDispatcher,
+    SystemdRecoveryScanner,
+    SystemdSupervisor,
+)
+from monitor_controller.runtime.transactions import TransactionStore
 from monitor_controller.shadow import (
     SHADOW_OBSERVATION_TIMEOUT_SECONDS,
+    AsyncSnapshotObserver,
+    DrmUeventMonitor,
     GenerationBridge,
+    PlanningDisplayBridge,
+    ProcBootIdSource,
+    ShadowDesktopContextSource,
+    SnapshotDesktopDisplaySource,
+    UeventMonitor,
+    load_saved_profiles,
 )
 
 if TYPE_CHECKING:
-    from monitor_controller.model import State
-    from monitor_controller.runtime.audit import RotatingAuditLog
-    from monitor_controller.runtime.dispatcher import ActionDispatcher
-    from monitor_controller.runtime.persistence import AtomicStateStore
-    from monitor_controller.runtime.scheduler import SchedulerClock
+    from monitor_controller.model import ActionId, ActionLifecycle, WorkerUnit
+    from monitor_controller.runtime.dispatcher import (
+        ActionDispatcher,
+        DispatchEffect,
+        DispatchStartResult,
+        FinalDispatchFence,
+        PreparedDispatch,
+        WorkerActivity,
+        WorkerCompletion,
+        WorkerRequestContext,
+    )
+    from monitor_controller.runtime.recovery import RecoveryResult
 
 _DIRECTORY_MODE = 0o700
 _LOCK_MODE = 0o600
@@ -305,6 +350,83 @@ class ActiveComposition:
     plan_store: AtomicPlanStore
     store: AtomicStateStore
     audit: RotatingAuditLog
+    # Recovery's authority verdict, carried rather than raised: a controller
+    # denied authority must still start, or the desktop has no manager at all.
+    recovery: RecoveryResult | None = None
+    # Retained so run_active() can release the store's directory descriptors.
+    transactions: TransactionStore | None = None
+
+
+class NonStartingDispatcher:
+    """Wrap a real dispatcher so preflight can build one without using it.
+
+    Every method that could mutate the display or the manager refuses; the
+    read-only queries delegate, so the wiring is genuinely exercised. Preflight
+    must be safe to run speculatively, and building the composition already
+    proves what it needs to prove — that the venv, the paths and the wiring are
+    sound. Starting a worker would prove that by doing the very thing preflight
+    exists to avoid doing prematurely.
+
+    Delegation is written out rather than done through ``__getattr__`` so the
+    type checker verifies this really satisfies ``ActionDispatcher``, and so
+    that a method added to the protocol later fails loudly here instead of
+    silently reaching the real dispatcher.
+    """
+
+    def __init__(self, delegate: ActionDispatcher) -> None:
+        """Bind the real dispatcher without invoking it."""
+        self._delegate = delegate
+
+    _REFUSAL = "dry-run dispatcher refuses to {}; preflight must not act"
+
+    def _refuse(self, operation: str) -> ActiveStartupError:
+        """Return the error explaining why a dry run will not act."""
+        msg = self._REFUSAL.format(operation)
+        return ActiveStartupError(msg)
+
+    async def write_request(
+        self,
+        effect: DispatchEffect,
+        context: WorkerRequestContext,
+    ) -> PreparedDispatch:
+        """Refuse: writing a request would create durable transaction state."""
+        del effect, context
+        operation = "write a request"
+        raise self._refuse(operation)
+
+    async def start(
+        self,
+        prepared: PreparedDispatch,
+        final_fence: FinalDispatchFence,
+    ) -> DispatchStartResult:
+        """Refuse: starting a worker is exactly what a dry run must not do."""
+        del prepared, final_fence
+        operation = "start a worker"
+        raise self._refuse(operation)
+
+    async def discard_prepared(self, prepared: PreparedDispatch) -> None:
+        """Refuse: nothing can have been prepared by a dry run."""
+        del prepared
+        operation = "discard a prepared request"
+        raise self._refuse(operation)
+
+    async def stop(
+        self,
+        action_id: ActionId,
+        terminal_lifecycle: ActionLifecycle,
+    ) -> None:
+        """Refuse: a dry run must not cancel a real in-flight worker."""
+        del action_id, terminal_lifecycle
+        operation = "stop a worker"
+        raise self._refuse(operation)
+
+    async def worker_activity(self, unit: WorkerUnit) -> WorkerActivity:
+        """Delegate: querying the manager mutates nothing."""
+        return await self._delegate.worker_activity(unit)
+
+    async def worker_completion(self, unit: WorkerUnit) -> WorkerCompletion | None:
+        """Delegate: reading a terminal result mutates nothing."""
+        return await self._delegate.worker_completion(unit)
 
 
 def compose_active_controller(
@@ -382,6 +504,290 @@ def cutover_authorization_error(environ: Mapping[str, str]) -> str | None:
     )
 
 
+def load_active_state(
+    store: AtomicStateStore,
+    *,
+    boot_id: BootId,
+    controller_instance: ControllerInstanceId,
+    display_identity: DisplayIdentity,
+    scanner: WorkerNamespaceScanner,
+) -> RecoveryResult:
+    """Load authoritative active state and reconcile it against real workers.
+
+    Diverges from :func:`monitor_controller.shadow.load_shadow_state` in the
+    way that matters: shadow cancels every persisted recovery unit, because a
+    null-dispatch namespace cannot have created one. Active *can* have created
+    them, and one may still be driving xrandr right now, so they must be
+    reconciled against the service manager rather than terminalized.
+
+    That reconciliation is :func:`recover_state`'s job, and it may decline
+    authority. This function returns its verdict intact rather than raising:
+    refusing to start would leave the desktop with no manager at all, which is
+    strictly worse than starting into a non-dispatching state that can recover.
+
+    Unreadable state is the one case that is *not* silently discarded. It is
+    passed to recovery as a corruption, which denies authority and forces a
+    fresh observation, because silently starting from a blank state would
+    abandon in-flight transactions the worker namespace still contains.
+    """
+    if store.namespace is not StateNamespace.ACTIVE:
+        msg = "active composition refuses a non-active state namespace"
+        raise ActiveStartupError(msg)
+    persisted: State | None = None
+    corruption: Exception | None = None
+    if store.path.exists():
+        try:
+            persisted = store.load()
+        except (OSError, StateCodecError, ValueError) as error:
+            # Deliberately not fatal, and deliberately not discarded either.
+            # Recovery denies authority on corruption, so the controller starts
+            # into RECOVERING and reconciles from the worker namespace.
+            corruption = error
+    if persisted is not None and persisted.display_identity != display_identity:
+        msg = (
+            "active state display identity does not match this service: "
+            f"{persisted.display_identity.value!r} != {display_identity.value!r}"
+        )
+        raise ActiveStartupError(msg)
+    if persisted is not None and persisted.boot_id != boot_id:
+        # Absolute monotonic values are meaningful only on their source boot.
+        # Preserve non-temporal identity history, but force recovery through a
+        # fresh startup observation before any scheduler deadline is armed.
+        persisted = State(
+            boot_id=boot_id,
+            controller_instance=controller_instance,
+            display_identity=display_identity,
+            desktop_finalized_profile=persisted.desktop_finalized_profile,
+            baseline_adoption=persisted.desktop_finalized_profile is None,
+            action_sequence_high_water=persisted.action_sequence_high_water,
+            transition_sequence_high_water=persisted.transition_sequence_high_water,
+            action_tombstones=persisted.action_tombstones,
+        )
+    return recover_state(
+        persisted,
+        current_boot_id=boot_id,
+        controller_instance=controller_instance,
+        display_identity=display_identity,
+        namespace=StateNamespace.ACTIVE,
+        scanner=scanner,
+        corruption=corruption,
+    )
+
+
+def _active_theme(paths: ActivePaths) -> str:
+    """Read the desktop theme, defaulting to dark when unset."""
+    path = paths.config_home / "theme"
+    if not path.exists():
+        return "dark"
+    try:
+        value = path.read_text(encoding="utf-8").strip()
+    except OSError as error:
+        msg = f"desktop theme is unreadable: {path}"
+        raise ActiveStartupError(msg) from error
+    if value not in {"dark", "light"}:
+        msg = "desktop theme must be exactly dark or light"
+        raise ActiveStartupError(msg)
+    return value
+
+
+def _desktop_configuration_root(paths: ActivePaths) -> Path:
+    """Resolve the desktop configuration tree, refusing anything unusable."""
+    try:
+        root = paths.desktop_configuration_root.resolve(strict=True)
+    except OSError as error:
+        msg = "desktop configuration root cannot be resolved"
+        raise ActiveStartupError(msg) from error
+    if not root.is_dir():
+        msg = "desktop configuration root is not a directory"
+        raise ActiveStartupError(msg)
+    return root
+
+
+def build_active_composition(
+    paths: ActivePaths,
+    environ: Mapping[str, str] | None = None,
+    *,
+    dispatching: bool = True,
+) -> ActiveComposition:
+    """Build the real observer, persistence, and systemd dispatch authority.
+
+    Structurally parallel to
+    :func:`monitor_controller.shadow.build_shadow_composition`, with three
+    deliberate differences:
+
+    * **The dispatcher is real.** ``SystemdDispatcher`` over
+      ``SystemdSupervisor``, writing to a ``TransactionStore`` in the active
+      namespace. This is the whole difference between observing and acting.
+    * **No autorandr isolation namespace.** Shadow copies saved profiles into a
+      hook-free tree so its observations cannot trigger anything. Active
+      applies for real, so it must read the live configuration; an isolated
+      copy would make it plan against profiles it would not then apply.
+    * **Recovery may decline authority**, and that verdict is carried on the
+      composition rather than raised.
+
+    Observation queries autorandr with ``--match-edid``; application must not.
+    See ``ObserverCommands`` for why that asymmetry is load-bearing.
+
+    *dispatching* exists for preflight's dry run: with it false the composition
+    is built exactly as it would be, but no worker unit can be started, so the
+    build can be exercised speculatively without becoming an authority.
+    """
+    values = os.environ if environ is None else environ
+    display_value = values.get("DISPLAY")
+    if not display_value:
+        msg = "DISPLAY is required for canonical active observation"
+        raise ActiveStartupError(msg)
+    boot_source = ProcBootIdSource()
+    boot_id = boot_source.current_boot_id()
+    instance = ControllerInstanceId(uuid4())
+    display = DisplayIdentity(display_value)
+
+    store = AtomicStateStore(paths.state_home, StateNamespace.ACTIVE)
+    if store.path != paths.state_file:
+        msg = "active state store escaped its declared namespace"
+        raise ActiveStartupError(msg)
+
+    transactions = TransactionStore(paths.transaction_namespace)
+    supervisor = SystemdSupervisor()
+    recovery = load_active_state(
+        store,
+        boot_id=boot_id,
+        controller_instance=instance,
+        display_identity=display,
+        scanner=SystemdRecoveryScanner(transactions, supervisor),
+    )
+    initial = recovery.state
+
+    clock = AsyncioMonotonicClock()
+    bridge = GenerationBridge(initial.event_generation)
+    display_bridge = PlanningDisplayBridge()
+    planning_source = FilesystemDesktopPlanningInputSource(
+        root=_desktop_configuration_root(paths),
+        display=display_bridge,
+        context=ShadowDesktopContextSource(
+            host_name=socket.gethostname().split(".", maxsplit=1)[0],
+            theme=_active_theme(paths),
+        ),
+    )
+    # Read the live profiles, not an isolated copy: these are the profiles this
+    # controller will actually apply.
+    profiles = StaticSavedProfiles(
+        tuple(
+            planning_source.complete_profile(profile)
+            for profile in load_saved_profiles(paths.autorandr_profiles)
+        )
+    )
+    coordinator = CanonicalSnapshotCoordinator(
+        drm_tree=RootedSysfsReader(Path("/sys/class/drm")),
+        command_runner=BoundedCommandRunner(),
+        profiles=profiles,
+        boot_id_source=boot_source,
+        clock=clock,
+        event_generation_source=bridge,
+        initial_observation_generation=initial.observation_generation,
+    )
+    display_bridge.bind(SnapshotDesktopDisplaySource(coordinator))
+    dispatcher: ActionDispatcher = SystemdDispatcher(
+        transactions,
+        supervisor,
+        autorandr_profiles=profiles,
+    )
+    if not dispatching:
+        dispatcher = NonStartingDispatcher(dispatcher)
+    composition = compose_active_controller(
+        paths=paths,
+        initial_state=initial,
+        adapters=ActiveControllerAdapters(
+            store=store,
+            observer=AsyncSnapshotObserver(coordinator),
+            planning_source=planning_source,
+            audit=RotatingAuditLog(paths.audit_log, initial),
+            clock=clock,
+            dispatcher=dispatcher,
+            generation_bridge=bridge,
+        ),
+    )
+    return replace(composition, recovery=recovery, transactions=transactions)
+
+
+async def run_active(
+    composition: ActiveComposition,
+    monitor: UeventMonitor | None = None,
+) -> None:
+    """Run one controller and one DRM producer, cancelling both on any exit.
+
+    Mirrors :func:`monitor_controller.shadow.run_shadow`. Unlike shadow, this
+    can reach a quiescent verified state, because its dispatcher actually
+    prepares the desktop.
+    """
+    producer = DrmUeventMonitor() if monitor is None else monitor
+    controller_task = asyncio.create_task(
+        composition.controller.run(),
+        name="monitor-controller-consumer",
+    )
+    monitor_task = asyncio.create_task(
+        producer.run(composition.controller.notify_drm_hint),
+        name="monitor-controller-uevents",
+    )
+    tasks = (controller_task, monitor_task)
+    try:
+        done, _pending = await asyncio.wait(
+            tasks,
+            return_when=asyncio.FIRST_COMPLETED,
+        )
+        completed = next(iter(done))
+        error = completed.exception()
+        if error is not None:
+            raise error
+        msg = f"active runtime task exited unexpectedly: {completed.get_name()}"
+        raise ActiveStartupError(msg)
+    finally:
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+        await composition.controller.close()
+        composition.planner.close()
+        if composition.transactions is not None:
+            composition.transactions.close()
+
+
+# Argument which asks this module to prove it can start, then exit without
+# taking authority. Preflight uses it; see cutover.check_entry_point_runs.
+DRY_RUN_ARGUMENT = "--dry-run"
+
+
+def dry_run(environ: Mapping[str, str]) -> int:
+    """Prove the entry point can start, without taking authority or dispatching.
+
+    This exists because preflight previously reported six green checks for a
+    binary that could not start at all: every check examined the *environment*,
+    none asked whether the controller runs. The cutover then stopped both
+    watchers and failed, leaving the desktop unmanaged until rollback.
+
+    Deliberately does *not* acquire the authority lock, start a worker, or
+    build the dispatcher. Preflight must be safe to run speculatively — a
+    preflight that cannot be run speculatively will not be run at all — so
+    this proves only what can be proven without side effects:
+
+    * the module imports under the unit's own `python -I`, catching a broken
+      or half-installed venv; and
+    * the composition root can be built for the resolved paths, catching the
+      missing-implementation case that actually bit.
+
+    Everything the lock would prove is already covered by
+    `cutover.check_authority_lock_free`.
+    """
+    try:
+        _require_active_namespace(environ)
+        paths = ActivePaths.from_environment(environ)
+        build_active_composition(paths, environ, dispatching=False).planner.close()
+    except (ActiveStartupError, OSError, ValueError) as error:
+        print(f"monitor-controller: dry run failed: {error}", file=sys.stderr)
+        return 1
+    print("monitor-controller: dry run succeeded; the controller can start")
+    return 0
+
+
 def main() -> int:
     """Refuse to take display authority unless cutover was authorised.
 
@@ -393,7 +799,7 @@ def main() -> int:
 
     Once authorised, this composes the real observer, dispatcher and
     supervisor under the authority lock, mirroring
-    :func:`monitor_controller.shadow.main`.
+    :func:`monitor_controller.shadow.main`, and runs until cancelled.
     """
     try:
         _require_active_namespace(os.environ)
@@ -404,17 +810,31 @@ def main() -> int:
     if unauthorized is not None:
         print(f"monitor-controller: {unauthorized}", file=sys.stderr)
         return 1
-    # Reached only with cutover explicitly authorised. Building the live
-    # composition is dc-a5y.17's remaining acceptance criterion; until it
-    # lands, refuse rather than start a controller that would observe and
-    # dispatch nothing.
-    print(
-        "monitor-controller: cutover is authorised, but the live active "
-        "composition is not implemented yet (dc-a5y.17). Refusing to run as "
-        "an authority that would dispatch nothing.",
-        file=sys.stderr,
-    )
-    return 1
+    if DRY_RUN_ARGUMENT in sys.argv[1:]:
+        return dry_run(os.environ)
+    try:
+        paths = ActivePaths.from_environment()
+        with ActiveAuthorityLock(paths.authority_lock, paths.shadow_authority_lock):
+            composition = build_active_composition(paths)
+            recovery = composition.recovery
+            if recovery is not None and not recovery.authority_allowed:
+                # Deliberately not fatal. Recovery denies authority when it
+                # cannot account for the worker namespace; the controller then
+                # starts into RECOVERING and dispatches nothing until a fresh
+                # observation resolves it. Exiting instead would leave the
+                # desktop with no manager at all, which is strictly worse.
+                print(
+                    "monitor-controller: starting without dispatch authority: "
+                    + ("; ".join(recovery.reasons) or "recovery denied authority"),
+                    file=sys.stderr,
+                )
+            asyncio.run(run_active(composition))
+    except KeyboardInterrupt:
+        return 0
+    except Exception as error:  # noqa: BLE001 - service composition boundary
+        print(f"monitor-controller: {error}", file=sys.stderr)
+        return 1
+    return 0
 
 
 if __name__ == "__main__":  # pragma: no cover - fixed-venv module entry point

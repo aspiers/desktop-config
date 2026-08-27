@@ -18,22 +18,37 @@ run speculatively will not be run at all.
 
 from __future__ import annotations
 
+import os
 import shutil
+import subprocess
 from dataclasses import dataclass, field
 from enum import StrEnum
+from pathlib import Path
 from typing import TYPE_CHECKING, Protocol
 
 from monitor_controller.active import (
     CONFLICTING_UNITS,
     CUTOVER_AUTHORIZATION_VALUE,
     CUTOVER_AUTHORIZATION_VARIABLE,
+    DRY_RUN_ARGUMENT,
     ActiveAuthorityLock,
     ActivePaths,
     ActiveStartupError,
 )
+from monitor_controller.active import (
+    CUTOVER_AUTHORIZATION_VALUE as _AUTHORIZATION_VALUE,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping, Sequence
+
+
+class EntryPointRunner(Protocol):
+    """Run the controller's dry run and report its status and output."""
+
+    def __call__(self, python: Path, /) -> tuple[int, str]:
+        """Return the exit status and combined output."""
+        ...
 
 
 class UnitActivityProbe(Protocol):
@@ -107,6 +122,38 @@ class PreflightReport:
 # unit's symlink from this target's .wants/ directory is what "do not start at
 # login" actually means; `systemctl --user disable` does that *and* deletes the
 # unit file itself, which for a Stow-managed tree is the repository symlink.
+# The module the unit's ExecStart runs. Kept beside the check that invokes it
+# so a rename cannot leave preflight testing a module that no longer exists.
+ACTIVE_MODULE = "monitor_controller.active"
+
+# Bounded: a dry run builds a composition and exits, so anything slower than
+# this is itself a problem worth reporting rather than waiting out.
+_DRY_RUN_TIMEOUT_SECONDS = 60.0
+
+
+def _run_entry_point_dry_run(python: Path) -> tuple[int, str]:
+    """Run the unit's own interpreter and module with `--dry-run`.
+
+    Uses `-I` and the same namespace and authorisation the unit sets, so this
+    exercises the real deployed entry point rather than an approximation of it.
+    The authorisation value is supplied here because the dry run takes no
+    authority; withholding it would only test the authorisation gate.
+    """
+    completed = subprocess.run(  # noqa: S603 - fixed argv, no shell
+        [str(python), "-I", "-m", ACTIVE_MODULE, DRY_RUN_ARGUMENT],
+        capture_output=True,
+        text=True,
+        timeout=_DRY_RUN_TIMEOUT_SECONDS,
+        check=False,
+        env={
+            **os.environ,
+            "MONITOR_CONTROLLER_NAMESPACE": "active",
+            "MONITOR_CONTROLLER_CUTOVER_AUTHORIZED": _AUTHORIZATION_VALUE,
+        },
+    )
+    return completed.returncode, completed.stderr or completed.stdout
+
+
 INSTALL_TARGET = "fluxbox-session.target"
 
 # Every unit whose login start-up this module may suppress. The controller's
@@ -274,6 +321,58 @@ def check_authority_lock_free(paths: ActivePaths) -> CheckResult:
     )
 
 
+def check_entry_point_runs(
+    paths: ActivePaths,
+    *,
+    runner: EntryPointRunner | None = None,
+) -> CheckResult:
+    """Confirm the controller can actually start, by starting it.
+
+    Every other check here examines the *environment*. None of them asked
+    whether the controller runs, and on 2026-08-25 all six reported green for a
+    binary that could not start at all: the cutover stopped both watchers, the
+    controller refused, and the desktop was unmanaged until rollback.
+
+    The near miss was `check_locked_install`, which proves the venv's python
+    exists and is executable — not that the module starts.
+
+    So this runs the unit's own interpreter and module, exactly as the unit
+    would, with `--dry-run`. That mode builds the full composition and then
+    exits without acquiring the authority lock or starting any worker, so this
+    check remains safe to run speculatively.
+    """
+    python = paths.fixed_venv / "bin" / "python"
+    if not python.is_file():
+        return CheckResult(
+            name="controller starts",
+            status=CheckStatus.FAIL,
+            detail=f"missing {python}; see the locked install check",
+        )
+    invoke = runner or _run_entry_point_dry_run
+    try:
+        status, output = invoke(python)
+    except OSError as error:
+        return CheckResult(
+            name="controller starts",
+            status=CheckStatus.UNKNOWN,
+            detail=f"cannot run the entry point: {error}",
+        )
+    if status != 0:
+        return CheckResult(
+            name="controller starts",
+            status=CheckStatus.FAIL,
+            detail=(
+                f"{python} -m {ACTIVE_MODULE} {DRY_RUN_ARGUMENT} exited "
+                f"{status}: {output.strip() or '<no output>'}"
+            ),
+        )
+    return CheckResult(
+        name="controller starts",
+        status=CheckStatus.OK,
+        detail="entry point composed and exited cleanly",
+    )
+
+
 def check_rollback_available() -> CheckResult:
     """Confirm the rollback path is usable before it is needed.
 
@@ -319,13 +418,14 @@ def rollback_commands(target: str = "monitor-watcher-ng.service") -> tuple[str, 
     )
 
 
-def build_preflight_report(
+def build_preflight_report(  # noqa: PLR0913 - keyword-only report inputs
     *,
     paths: ActivePaths,
     active_units: Mapping[str, bool | None],
     ambiguities: Sequence[str],
     authority_allowed: bool,
     recovery_reasons: Sequence[str] = (),
+    entry_point_runner: EntryPointRunner | None = None,
 ) -> PreflightReport:
     """Run every precondition and return the combined go/no-go report.
 
@@ -335,6 +435,10 @@ def build_preflight_report(
     return PreflightReport(
         results=(
             check_locked_install(paths),
+            # Immediately after the install check, and before anything about
+            # the environment: a controller that cannot start makes every
+            # later verdict irrelevant.
+            check_entry_point_runs(paths, runner=entry_point_runner),
             check_no_conflicting_authority(active_units),
             check_authority_lock_free(paths),
             check_no_surviving_workers(ambiguities),

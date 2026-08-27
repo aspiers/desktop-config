@@ -237,7 +237,14 @@ themselves; nothing needs performing deliberately. Tracked as `dc-a5y.11`.
 Also outstanding: the live cutover itself (`dc-a5y.17`), which needs explicit
 approval.
 
-Until then the unit refuses to start, and says why. Taking display authority
+The controller itself is now complete — `build_active_composition()` wires the
+real observer, systemd dispatcher and transaction store, and `run_active()`
+runs it. Preflight proves that by *running* it (`--dry-run`, which composes
+everything and exits without taking the authority lock or starting a worker),
+because an earlier preflight reported six green checks for a binary that could
+not start at all.
+
+Without authorisation the unit still refuses to start, and says why. Taking display authority
 needs a deliberate act that stowing, enabling, and starting the service do not
 supply between them — an authorisation variable the unit file deliberately
 does not carry:
@@ -265,11 +272,11 @@ monitor-controller preflight          # read-only; exits non-zero if unsafe
 monitor-controller cutover-commands   # prints the sequence, runs nothing
 ```
 
-Preflight refuses on: a missing locked install, another dispatcher running,
-a held authority lock, a surviving worker it cannot account for, recovery
-declining authority, or an unusable rollback path. An *undetermined* unit
-state also blocks — "cannot tell whether the old watcher is running" is
-exactly when starting a second authority does damage.
+Preflight refuses on: a missing locked install, a controller that cannot start,
+another dispatcher running, a held authority lock, a surviving worker it cannot
+account for, recovery declining authority, or an unusable rollback path. An
+*undetermined* unit state also blocks — "cannot tell whether the old watcher is
+running" is exactly when starting a second authority does damage.
 
 Rollback works over SSH with no display:
 

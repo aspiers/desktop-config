@@ -26,8 +26,10 @@ from monitor_controller.cutover import (
     INSTALL_TARGET,
     SUPPRESSIBLE_UNITS,
     CheckStatus,
+    PreflightReport,
     build_preflight_report,
     check_authority_lock_free,
+    check_entry_point_runs,
     check_locked_install,
     check_no_conflicting_authority,
     check_no_surviving_workers,
@@ -607,3 +609,126 @@ class TestCutoverCli:
         """Argparse rejects a bad target before any command is printed."""
         with pytest.raises(SystemExit):
             cli.main(["rollback-commands", "--target", "nonsense.service"])
+
+
+_EXEC_FORMAT_ERROR = "exec format error"
+
+
+class TestEntryPointCheck:
+    """Preflight must prove the controller starts, not just that it exists.
+
+    The 2026-08-25 cutover reported six green checks for a binary that could
+    not start at all. Every check examined the environment; none ran the thing.
+    """
+
+    @staticmethod
+    def _paths_with_python(tmp_path: Path) -> ActivePaths:
+        """Build paths whose fixed venv contains an executable python."""
+        paths = ActivePaths(
+            data_home=tmp_path / "data",
+            state_home=tmp_path / "state",
+            runtime_dir=tmp_path / "runtime",
+            config_home=tmp_path / "config",
+            desktop_configuration_root=tmp_path / "desktop-config",
+        )
+        python = paths.fixed_venv / "bin" / "python"
+        python.parent.mkdir(parents=True)
+        python.write_text("#!/bin/sh\nexit 0\n")
+        python.chmod(0o755)
+        return paths
+
+    def test_nonzero_exit_blocks_the_cutover(self, tmp_path: Path) -> None:
+        """The regression itself: a controller that cannot start must block.
+
+        This assertion would have failed before `dc-a5y.21`, when the entry
+        point refused with "the live active composition is not implemented yet"
+        while preflight still reported ready.
+        """
+        paths = self._paths_with_python(tmp_path)
+        result = check_entry_point_runs(
+            paths,
+            runner=lambda _python: (1, "composition is not implemented yet"),
+        )
+        assert result.status is CheckStatus.FAIL
+        assert result.blocking
+        assert "not implemented yet" in result.detail
+
+    def test_clean_exit_passes(self, tmp_path: Path) -> None:
+        """A controller that starts and exits cleanly must not block."""
+        paths = self._paths_with_python(tmp_path)
+        result = check_entry_point_runs(paths, runner=lambda _python: (0, ""))
+        assert result.status is CheckStatus.OK
+        assert not result.blocking
+
+    def test_missing_python_reports_the_install(self, tmp_path: Path) -> None:
+        """Without the venv there is nothing to run; say so precisely."""
+        paths = ActivePaths(
+            data_home=tmp_path / "data",
+            state_home=tmp_path / "state",
+            runtime_dir=tmp_path / "runtime",
+            config_home=tmp_path / "config",
+            desktop_configuration_root=tmp_path / "desktop-config",
+        )
+        result = check_entry_point_runs(paths, runner=lambda _python: (0, ""))
+        assert result.status is CheckStatus.FAIL
+        assert "locked install" in result.detail
+
+    def test_unrunnable_entry_point_is_unknown_not_ok(self, tmp_path: Path) -> None:
+        """An undetermined result must never read as a passing one."""
+        paths = self._paths_with_python(tmp_path)
+
+        def _explode(_python: Path) -> tuple[int, str]:
+            raise OSError(_EXEC_FORMAT_ERROR)
+
+        result = check_entry_point_runs(paths, runner=_explode)
+        assert result.status is CheckStatus.UNKNOWN
+        assert result.blocking
+
+    def test_preflight_is_not_ready_when_the_entry_point_fails(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """The bead's core criterion, at report level.
+
+        Every other input is set to its passing value, so this proves the entry
+        point alone is enough to block.
+        """
+        paths = self._paths_with_python(tmp_path)
+        report = build_preflight_report(
+            paths=paths,
+            active_units=dict.fromkeys(CONFLICTING_UNITS, False),
+            ambiguities=(),
+            authority_allowed=True,
+            entry_point_runner=lambda _python: (1, "refused"),
+        )
+        assert not report.ready
+        assert any(check.name == "controller starts" for check in report.blockers)
+
+    def test_the_check_runs_before_any_destructive_step(self) -> None:
+        """It must be reached before the watchers are stopped.
+
+        Preflight itself changes nothing, but its *order* is what makes a
+        failure cheap: the operator stops reading at the first blocker.
+        """
+        names = [check.name for check in _passing_report().results]
+        assert names.index("controller starts") < names.index(
+            "no conflicting authority"
+        )
+
+
+def _passing_report() -> PreflightReport:
+    """Build a report with every input at its passing value."""
+    root = Path("/nonexistent-preflight-order-probe")
+    return build_preflight_report(
+        paths=ActivePaths(
+            data_home=root / "data",
+            state_home=root / "state",
+            runtime_dir=root / "runtime",
+            config_home=root / "config",
+            desktop_configuration_root=root / "desktop-config",
+        ),
+        active_units=dict.fromkeys(CONFLICTING_UNITS, False),
+        ambiguities=(),
+        authority_allowed=True,
+        entry_point_runner=lambda _python: (0, ""),
+    )
