@@ -1,0 +1,56 @@
+app:
+  name: "Sussurro"
+  debug: false
+  log_level: "info" # debug, info, warn, error
+  skip_llm_cleanup: true
+  dictionary:
+    [
+      "dolt",
+      "sshfs",
+      "autorandr",
+      "bluetuith",
+      "journald",
+      "systemd",
+      "skilletto",
+      "agentsview",
+      "Claude",
+      "pi",
+      "herdr",
+    ]
+
+audio:
+  sample_rate: 16000
+  channels: 1
+  bit_depth: 16
+  buffer_size: 1024
+  # Safety cap that bounds memory, not an expected limit. At 16 kHz mono
+  # float32 this is roughly 7.2MB. Reaching it stops the recording mid
+  # sentence, so it is set well beyond normal dictation; the overlay shows
+  # the buffer filling as it approaches.
+  max_duration: "2m"
+  # Shortest recording sent to recognition. Below this whisper reports stock
+  # phrases invented from near-silence rather than saying it heard nothing.
+  min_duration: "300ms"
+
+models:
+  asr:
+    path: "/home/adam/.sussurro/models/ggml-small.bin"
+    type: "whisper"
+    threads: 16
+  llm:
+    path: "/home/adam/.sussurro/models/qwen3-sussurro-q4_k_m.gguf"
+    context_size: 4096
+    gpu_layers: 99
+    threads: 4
+
+hotkey:
+  trigger: "super+8"
+  mode: "push-to-talk" # push-to-talk or toggle
+  toggle: "super+9"
+  push_to_talk: "super+8"
+
+injection:
+  method: "keyboard"
+workflow:
+  delivery:
+    clipboard_only: true
