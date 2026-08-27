@@ -11,15 +11,6 @@
   [Hidden]	{yes}
   [Sticky]	{yes}
 [end]
-[app] (title=lnav-system)
-  [Head]	{1}
-  [Dimensions]	{96% 17%}
-  [Position]	(LOWERLEFT)	{0 0}
-  [Deco]	{NORMAL}
-  [Hidden]	{yes}
-  [Sticky]	{yes}
-#  [Alpha]	{50}
-[end]
 [app] (role=.*Workrave.*)
   [Hidden]	{yes}
   [Sticky]	{yes}

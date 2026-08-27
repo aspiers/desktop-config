@@ -1,5 +1,1 @@
 <INCLUDE common/gkrellm>
-
-- - (Title=lnav-system)
-  - <stick>
-  - MacroCmd {<s_primary_SetHead>} {ResizeTo <s_primary_active_width_pc> <s_primary_logs_height_pc>} {MoveTo 0 <s_primary_panel_height> BottomLeft} {SetAlpha 50}

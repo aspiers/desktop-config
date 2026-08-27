@@ -27,10 +27,6 @@ windows:
 
   <INCLUDE common/gkrellm>
 
-  - - (Title=lnav-system)
-    - <stick>
-    - MacroCmd {<s_celtic_SetHead>} {ResizeTo 100% <s_celtic_logs_height_pc>} {MoveTo 0 <s_celtic_panel_height> BottomLeft} {SetAlpha 50}
-
   <INCLUDE common/terminal-windows>
 
   <INCLUDE common/top-term-windows-secondary>
