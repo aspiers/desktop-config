@@ -1,0 +1,35 @@
+[Unit]
+Description=Sussurro dictation daemon
+
+# graphical-session.target rather than a window-manager specific target:
+# sussurro puts up a tray icon and an overlay, so it needs a graphical
+# session, but it is not tied to fluxbox. Every desktop raises this target.
+# Same reasoning as keyboard-watcher.service.
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+SyslogIdentifier=sussurro
+
+# The manager's environment lacks the X/DBus session, so go via
+# run-with-local-X-display to source ~/.Xdisplay.$host (DISPLAY, XAUTHORITY,
+# DBUS_SESSION_BUS_ADDRESS, ...). XDG_RUNTIME_DIR, which sussurro needs for
+# its trigger socket at $XDG_RUNTIME_DIR/sussurro.sock, is already in the
+# manager's environment and so is inherited directly.
+ExecStart=%h/bin/run-with-local-X-display %h/bin/sussurro
+
+Restart=on-failure
+RestartSec=5s
+
+# Only one instance can hold the trigger socket: a second finds it taken and
+# refuses to start (removeStaleSocket in internal/trigger/server.go). Killing
+# the whole control group on stop keeps a crashed run from leaving children
+# behind that would block the restart.
+KillMode=control-group
+TimeoutStopSec=15s
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=graphical-session.target

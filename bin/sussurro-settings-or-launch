@@ -66,7 +66,16 @@ main () {
         esac
     fi
 
-    # Nothing listening: start it detached so it survives this script, and
+    # Nothing listening: start it. Prefer the systemd user unit, which is what
+    # autostarts sussurro at login, so this key binding adopts the running
+    # instance's supervision instead of creating a second, unmanaged one --
+    # two instances would fight over the trigger socket and only one would win.
+    if systemctl --user --quiet list-unit-files sussurro.service >/dev/null 2>&1; then
+        systemctl --user start sussurro.service
+        return
+    fi
+
+    # No unit installed: start it detached so it survives this script, and
     # discard its output rather than leaking it into the WM's log.
     setsid sussurro >/dev/null 2>&1 < /dev/null &
 }
