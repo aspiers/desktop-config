@@ -1,0 +1,105 @@
+#!/bin/bash
+#
+# Strip "legacy" (non session-management-aware) clients from XFCE's saved
+# session, so they stop being relaunched on every login.
+#
+# xfce4-session records X clients that don't speak XSMP as LegacyN_* keys in
+# its session snapshot, then replays them at startup: xfsm_legacy_load_session()
+# reads LegacyCount and loops `for (i = 0; i < count; ++i)`, queueing each
+# LegacyN_Command for xfsm_start_application(). Setting LegacyCount=0 therefore
+# disables the replay outright.
+#
+# This bit us with a snapshot frozen at 2026-01-06 that kept resurrecting
+# `whispering` and `org.gnome.Terminal` at every login (dc-slu, dc-2rv). The
+# snapshot is stale precisely because SaveOnExit and AutoSave are both false,
+# so once cleaned it stays clean -- but the file lives under ~/.cache and is
+# not stow-managed, hence this script rather than a hand edit.
+
+set -euo pipefail
+
+session_dir="${XDG_CACHE_HOME:-$HOME/.cache}/sessions"
+
+usage () {
+    cat <<EOF
+Usage: ${0##*/} [--dry-run] [FILE]
+
+Removes LegacyN_* client entries from an XFCE saved session and sets
+LegacyCount=0, so those clients are no longer restarted on login.
+
+With no FILE, operates on every xfce4-session-* snapshot in
+$session_dir.
+
+  --dry-run   Report what would change without writing anything.
+EOF
+}
+
+dry_run=false
+files=()
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --dry-run) dry_run=true; shift ;;
+        -h|--help) usage; exit 0 ;;
+        -*) echo >&2 "ERROR: unknown option $1"; usage >&2; exit 2 ;;
+        *) files+=("$1"); shift ;;
+    esac
+done
+
+if [ ${#files[@]} -eq 0 ]; then
+    # Snapshots are named xfce4-session-<host>:<display>; the colon means
+    # globbing is the only sane way to collect them.
+    shopt -s nullglob
+    files=("$session_dir"/xfce4-session-*)
+    shopt -u nullglob
+fi
+
+if [ ${#files[@]} -eq 0 ]; then
+    echo "No XFCE session snapshots found in $session_dir"
+    exit 0
+fi
+
+changed=0
+
+for file in "${files[@]}"; do
+    case "$file" in
+        *.bak-*) continue ;;
+    esac
+    [ -f "$file" ] || continue
+
+    count=$(sed -n 's/^LegacyCount=\(.*\)$/\1/p' "$file" | head -1)
+
+    if [ -z "$count" ] || [ "$count" = 0 ]; then
+        echo "$file: no legacy clients; nothing to do"
+        continue
+    fi
+
+    echo "$file: $count legacy client(s) to remove:"
+    sed -n 's/^Legacy[0-9]*_Command=\(.*\),*$/  - \1/p' "$file"
+
+    if $dry_run; then
+        continue
+    fi
+
+    # Keep a dated backup the first time we touch a given snapshot, so the
+    # original list of legacy clients stays recoverable.
+    backup="$file.bak-$(date +%Y-%m-%d)"
+    [ -e "$backup" ] || cp -a "$file" "$backup"
+
+    tmp=$(mktemp "$file.XXXXXX")
+    sed -e '/^Legacy[0-9]*_\(Screen\|Command\|ClientMachine\)=/d' \
+        -e 's/^LegacyCount=.*/LegacyCount=0/' \
+        "$file" > "$tmp"
+    # Preserve ownership/permissions from the original rather than mktemp's 0600.
+    chmod --reference="$file" "$tmp"
+    mv "$tmp" "$file"
+
+    echo "$file: cleaned (backup at $backup)"
+    changed=$((changed + 1))
+done
+
+if [ "$changed" -gt 0 ]; then
+    echo
+    echo "Cleaned $changed snapshot(s). Verify SaveOnExit stays false, or the"
+    echo "legacy clients will be recorded again on the next logout:"
+    echo "  xfconf-query -c xfce4-session -p /general/SaveOnExit"
+fi
