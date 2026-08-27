@@ -1,0 +1,89 @@
+#!/bin/bash
+
+set -euo pipefail
+
+repo=$(cd "$(dirname "$0")/.." && pwd)
+watcher=$repo/bin/keyboard-watcher
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+
+mkdir -p "$tmp/home/bin" "$tmp/home/.log" "$tmp/mock-bin"
+
+cat > "$tmp/home/bin/setup-keyboard" <<'EOF'
+#!/bin/sh
+echo setup >> "$KEYBOARD_WATCHER_TEST_CALLS"
+EOF
+chmod +x "$tmp/home/bin/setup-keyboard"
+
+cat > "$tmp/mock-bin/udevadm" <<'EOF'
+#!/bin/sh
+cat "$KEYBOARD_WATCHER_TEST_EVENTS"
+EOF
+cat > "$tmp/mock-bin/logger" <<'EOF'
+#!/bin/sh
+:
+EOF
+cat > "$tmp/mock-bin/sleep" <<'EOF'
+#!/bin/sh
+:
+EOF
+chmod +x "$tmp/mock-bin/udevadm" "$tmp/mock-bin/logger" "$tmp/mock-bin/sleep"
+
+cat > "$tmp/events" <<'EOF'
+UDEV  [1.000000] add      /devices/virtual/misc/uhid/0005:1D50:615E.0026/input/input81 (input)
+ACTION=add
+DEVPATH=/devices/virtual/misc/uhid/0005:1D50:615E.0026/input/input81
+ID_INPUT_KEYBOARD=1
+ID_BUS=bluetooth
+
+UDEV  [1.010000] add      /devices/virtual/misc/uhid/0005:1D50:615E.0026/input/input81/event21 (input)
+ACTION=add
+DEVPATH=/devices/virtual/misc/uhid/0005:1D50:615E.0026/input/input81/event21
+ID_INPUT_KEYBOARD=1
+ID_BUS=bluetooth
+
+UDEV  [2.000000] add      /devices/virtual/input/input83 (input)
+ACTION=add
+DEVPATH=/devices/virtual/input/input83
+ID_INPUT_KEYBOARD=1
+
+UDEV  [2.010000] add      /devices/virtual/input/input83/event20 (input)
+ACTION=add
+DEVPATH=/devices/virtual/input/input83/event20
+ID_INPUT_KEYBOARD=1
+
+UDEV  [3.000000] add      /devices/pci0000:00/usb1/1-1/input/input90 (input)
+ACTION=add
+DEVPATH=/devices/pci0000:00/usb1/1-1/input/input90
+ID_INPUT_KEYBOARD=1
+ID_BUS=usb
+
+UDEV  [3.010000] add      /devices/pci0000:00/usb1/1-1/input/input90/event8 (input)
+ACTION=add
+DEVPATH=/devices/pci0000:00/usb1/1-1/input/input90/event8
+ID_INPUT_KEYBOARD=1
+ID_BUS=usb
+
+UDEV  [4.000000] add      /devices/pci0000:00/usb1/1-2/input/input91 (input)
+ACTION=add
+DEVPATH=/devices/pci0000:00/usb1/1-2/input/input91
+ID_INPUT_KEYBOARD=1
+ID_INPUT_MOUSE=1
+ID_BUS=usb
+
+EOF
+
+calls=$tmp/calls
+PATH="$tmp/mock-bin:$PATH" \
+HOME="$tmp/home" \
+KEYBOARD_WATCHER_TEST_CALLS="$calls" \
+KEYBOARD_WATCHER_TEST_EVENTS="$tmp/events" \
+    "$watcher" >/dev/null
+
+actual=$(wc -l < "$calls")
+if [[ $actual -ne 2 ]]; then
+    echo "not ok - expected initial setup plus one physical keyboard setup; got $actual calls" >&2
+    exit 1
+fi
+
+echo "ok - virtual input events are ignored and physical keyboard bursts are coalesced"

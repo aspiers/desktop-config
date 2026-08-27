@@ -5,15 +5,16 @@
 #
 # See also the other *-watcher services.
 #
-# Reads udevadm monitor in property mode and only re-runs keyboard
-# setup for events on input devices that look like real keyboards
-# (ID_INPUT_KEYBOARD=1 and not ID_INPUT_MOUSE=1). Bluetooth/USB mice
-# advertising consumer-control keys would otherwise churn this every
-# time they wake/sleep.
+# Reads udevadm monitor in property mode and only re-runs keyboard setup for
+# physical keyboard parent devices. Virtual devices include Bluetooth
+# reconnects and input-remapper interfaces; neither requires reapplying the
+# global X keymap. Ignoring event* children also turns one physical attach
+# burst into one setup run. Mouse interfaces remain excluded because some
+# advertise consumer-control keys.
 
 SETUP=$HOME/bin/setup-keyboard
 
-if ! which $SETUP >&/dev/null; then
+if ! command -v "$SETUP" >&/dev/null; then
     echo "ERROR: Couldn't find $SETUP; aborting." >&2
     exit 1
 fi
@@ -30,7 +31,9 @@ $SETUP
 # terminated by a blank line. -s input restricts to input subsystem.
 udevadm monitor -u -p -s input | tee "$log" | awk '
     /^$/ {
-        if (action != "" && kbd && !mouse) {
+        if (action != "" && kbd && !mouse &&
+            devpath !~ "^/devices/virtual/" &&
+            devpath !~ "/event[0-9]+$") {
             print action, devpath
             fflush()
         }
