@@ -43,6 +43,8 @@ windows:
 
   <INCLUDE common/communication>
 
+  <INCLUDE common/kraken>
+
   <INCLUDE common/system-tools-secondary>
 
   <INCLUDE common/chrysalis-multi>

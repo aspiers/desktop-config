@@ -37,6 +37,8 @@ windows:
 
   <INCLUDE common/communication>
 
+  <INCLUDE common/kraken>
+
   - - (Class=Pavucontrol)
     - <unstick>
     - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 6} {MoveTo 42% 1%} {ResizeTo 32% 35%}

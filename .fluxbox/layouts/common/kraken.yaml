@@ -1,0 +1,6 @@
+# Kraken Desktop sets no WM_CLASS at all (both fields are empty), so it
+# can only be matched on its title; Class=^$ keeps that loose title match
+# from catching browser windows etc. which happen to mention Kraken.
+- - (Class=^$) (Title=Kraken)
+  - <unstick>
+  - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 6} {MoveTo <s_primary_col1_left> <s_primary_row1_top>} {ResizeTo <s_primary_active_width> <s_primary_active_height>}
