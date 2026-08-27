@@ -1,0 +1,37 @@
+# Overrides /etc/xdg/autostart/gnome-keyring-ssh.desktop to stop the GNOME
+# keyring's ssh component from autostarting a second ssh-agent.
+#
+# Two agents were starting on every X login:
+#
+#   1. /usr/bin/ssh-agent /usr/bin/gpg-agent --sh --daemon ... xinitrc
+#      from openSUSE's /usr/etc/X11/xdm/scripts/11-ssh-agent, wrapping the
+#      whole session, setting both SSH_AUTH_SOCK and SSH_AGENT_PID;
+#
+#   2. /usr/bin/ssh-agent -D -a /run/user/1000/keyring/.ssh
+#      started by this entry, ~2.4s later, which overwrites SSH_AUTH_SOCK
+#      but never sets SSH_AGENT_PID.
+#
+# 09-ssh-vars is meant to suppress (1) when the keyring will provide an
+# agent, but its guard tests $GNOME_KEYRING_PID / $GNOME_KEYRING_CONTROL,
+# which are absent from the session environment here, so it never fires.
+# Reordering cannot fix that: the keyring's ssh component does not exist
+# yet at the point the decision is made.
+#
+# The result was recalc_ssh_agent_cache aborting with "2 pids found", so
+# the shell got no agent at all.  Agent (1) is kept because it sets both
+# variables and matches the existing ~/.ssh setup; this one is disabled
+# here rather than via usessh=no because /usr/etc is vendor-owned and
+# overwritten on update, whereas ~/.config/autostart is ours.
+#
+# Only the ssh component is affected - gnome-keyring still provides
+# secrets and PKCS#11 via its own autostart entries.
+
+[Desktop Entry]
+Type=Application
+Name=SSH Key Agent
+Comment=GNOME Keyring: SSH Agent (disabled - see comment above)
+Exec=/usr/bin/gnome-keyring-daemon --start --components=ssh
+OnlyShowIn=GNOME;Unity;MATE;XFCE;
+X-GNOME-AutoRestart=false
+X-GNOME-Autostart-Notify=true
+Hidden=true
