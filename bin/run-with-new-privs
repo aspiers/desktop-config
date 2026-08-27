@@ -24,8 +24,10 @@ if [ $# -eq 0 ]; then
     exit 2
 fi
 
-unit=$(basename "$1")-$$
+identifier=$(basename "$1")
+unit=$identifier-$$
 
-exec systemd-run --user --unit="$unit" \
+exec systemd-run --user --collect --unit="$unit" \
     -p StandardOutput=journal -p StandardError=journal \
+    -p "SyslogIdentifier=$identifier" \
     run-with-local-X-display "$@"

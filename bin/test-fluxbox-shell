@@ -1,0 +1,63 @@
+#!/bin/bash
+
+set -euo pipefail
+
+repo=$(cd "$(dirname "$0")/.." && pwd)
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+mkdir -p "$tmp/bin"
+
+cat > "$tmp/bin/systemd-run" <<'EOF'
+#!/bin/bash
+printf '%s\0' "$@" > "$FLUXBOX_SHELL_TEST_ARGS"
+env -0 > "$FLUXBOX_SHELL_TEST_ENV"
+EOF
+chmod +x "$tmp/bin/systemd-run"
+
+args_file=$tmp/args
+env_file=$tmp/env
+command="slack --flag 'two words'"
+PATH="$tmp/bin:$PATH" \
+DISPLAY=:99 \
+FLUXBOX_SHELL_TEST_SENTINEL=present \
+FLUXBOX_SHELL_TEST_ARGS="$args_file" \
+FLUXBOX_SHELL_TEST_ENV="$env_file" \
+    "$repo/bin/fluxbox-shell" -c "$command"
+
+mapfile -d '' -t args < "$args_file"
+joined=$(printf '%s\n' "${args[@]}")
+
+require_arg () {
+    local expected=$1
+    if ! grep -Fxq -- "$expected" <<< "$joined"; then
+        echo "not ok - systemd-run is missing argument: $expected" >&2
+        exit 1
+    fi
+}
+
+require_arg --user
+require_arg --collect
+require_arg --same-dir
+require_arg --expand-environment=no
+require_arg StandardOutput=journal
+require_arg StandardError=journal
+require_arg ExitType=cgroup
+require_arg SyslogIdentifier=slack
+require_arg "DISPLAY"
+require_arg "FLUXBOX_SHELL_TEST_SENTINEL"
+require_arg /bin/zsh
+require_arg -c
+require_arg "$command"
+
+unit=$(printf '%s\n' "${args[@]}" | grep -E '^--unit=app-fluxbox-slack-[0-9]+-[0-9]+$' || true)
+if [[ -z $unit ]]; then
+    echo "not ok - transient unit is not named for Slack: ${args[*]}" >&2
+    exit 1
+fi
+
+if ! grep -zFxq 'FLUXBOX_SHELL_TEST_SENTINEL=present' "$env_file"; then
+    echo "not ok - caller environment did not reach systemd-run" >&2
+    exit 1
+fi
+
+echo "ok - Fluxbox command gets an app-labelled journal service"

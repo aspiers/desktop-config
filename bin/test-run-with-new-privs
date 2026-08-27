@@ -1,0 +1,44 @@
+#!/bin/bash
+
+set -euo pipefail
+
+repo=$(cd "$(dirname "$0")/.." && pwd)
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+mkdir -p "$tmp/bin"
+
+cat > "$tmp/bin/systemd-run" <<'EOF'
+#!/bin/bash
+printf '%s\0' "$@" > "$RUN_WITH_NEW_PRIVS_TEST_ARGS"
+EOF
+chmod +x "$tmp/bin/systemd-run"
+
+args_file=$tmp/args
+PATH="$tmp/bin:$PATH" RUN_WITH_NEW_PRIVS_TEST_ARGS="$args_file" \
+    "$repo/bin/run-with-new-privs" /usr/lib/slack/slack --flag
+
+mapfile -d '' -t args < "$args_file"
+joined=$(printf '%s\n' "${args[@]}")
+require_arg () {
+    local expected=$1
+    if ! grep -Fxq -- "$expected" <<< "$joined"; then
+        echo "not ok - systemd-run is missing argument: $expected" >&2
+        exit 1
+    fi
+}
+
+require_arg --user
+require_arg --collect
+unit=$(printf '%s\n' "${args[@]}" | grep -E '^--unit=slack-[0-9]+$' || true)
+if [[ -z $unit ]]; then
+    echo "not ok - transient unit is not named for Slack" >&2
+    exit 1
+fi
+require_arg StandardOutput=journal
+require_arg StandardError=journal
+require_arg SyslogIdentifier=slack
+require_arg run-with-local-X-display
+require_arg /usr/lib/slack/slack
+require_arg --flag
+
+echo "ok - app service journal stream is labelled with the executable"

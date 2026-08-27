@@ -5,7 +5,7 @@
 # - There's no way to reliably tell whether a program is minimized
 #   vs. not running.
 
-me=$(basename $0)
+me=$(basename "$0")
 
 CONFIG_DIR="$HOME/.config/fluxbox-focus-or-launch"
 DESKTOP_FILE="$CONFIG_DIR/previous-desktop.txt"
@@ -18,7 +18,7 @@ usage () {
         shift
     fi
 
-    me=$(basename $0)
+    me=$(basename "$0")
 
     cat <<EOF >&2
 Usage: $me [OPTIONS] WINDOW-PATTERN LAUNCH-CMD
@@ -100,7 +100,9 @@ main () {
     # for the security reasons mentioned in the fluxbox-remote(1) man
     # page.  So we have to launch programs ourselves.
     echo "Launching $* ..."
-    nohup "$@" </dev/null &
+    # Start through the user manager so the application gets a fresh journal
+    # stream labelled with its own executable rather than this helper.
+    run-with-new-privs "$@"
 
     if [ -n "$focus_after_launch" ]; then
         # N.B. this can steal focus unexpectedly if launching takes
@@ -115,14 +117,16 @@ store_current_desktop () {
     mkdir -p "$CONFIG_DIR"
 
     # Get current desktop/workspace number
-    local current_desktop=$(xdotool get_desktop)
+    local current_desktop
+    current_desktop=$(xdotool get_desktop)
     echo "$current_desktop" > "$DESKTOP_FILE"
     echo "Stored current desktop: $current_desktop"
 }
 
 restore_previous_desktop () {
     if [ -f "$DESKTOP_FILE" ]; then
-        local previous_desktop=$(cat "$DESKTOP_FILE")
+        local previous_desktop
+        previous_desktop=$(cat "$DESKTOP_FILE")
         echo "Restoring previous desktop: $previous_desktop"
         xdotool set_desktop "$previous_desktop"
         rm "$DESKTOP_FILE"
@@ -160,22 +164,25 @@ get_fluxbox_pattern () {
 }
 
 fetch_window () {
-    local fluxbox_pattern=$(get_fluxbox_pattern)
-    local current_desktop=$(<"$DESKTOP_FILE")
+    local fluxbox_pattern current_desktop
+    fluxbox_pattern=$(get_fluxbox_pattern)
+    current_desktop=$(<"$DESKTOP_FILE")
     echo "Fetching window matching $fluxbox_pattern to current workspace..."
     cmd="MacroCmd {TakeToWorkspace $(( current_desktop + 1 ))} {If {Matches (Stuck=no)} {Stick}}"
     fluxbox-remote "ForEach {$cmd} {Matches $fluxbox_pattern}"
 }
 
 hide_window () {
-    local fluxbox_pattern=$(get_fluxbox_pattern)
+    local fluxbox_pattern
+    fluxbox_pattern=$(get_fluxbox_pattern)
     echo "Hiding window matching $fluxbox_pattern..."
     cmd="MacroCmd {If {Matches (Stuck=yes)} {Stick}} {SendToWorkspace 6} {Minimize}"
     fluxbox-remote "ForEach {$cmd} {Matches $fluxbox_pattern}"
 }
 
 focus_window () {
-    local fluxbox_pattern=$(get_fluxbox_pattern)
+    local fluxbox_pattern
+    fluxbox_pattern=$(get_fluxbox_pattern)
     echo "NextWindow $fluxbox_pattern"
     fluxbox-remote "NextWindow $fluxbox_pattern"
     sleep 0.1
@@ -197,7 +204,7 @@ wait_until_window_focused () {
     sleep=0.1
     while (( $(echo "$sleep < 30" | bc) )); do
         echo "Sleeping $sleep ..."
-        sleep $sleep
+        sleep "$sleep"
         focus_window
         exit_if_window_focused
         sleep=$(echo "$sleep * 2" | bc)

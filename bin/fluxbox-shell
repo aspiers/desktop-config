@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# Fluxbox passes every Exec command to $SHELL -c. Run that shell in a
+# transient user service so it receives a fresh journal stream instead of
+# inheriting Fluxbox's stream and its fixed SYSLOG_IDENTIFIER.
+
+set -euo pipefail
+
+if [[ ${1:-} != -c || $# -ne 2 ]]; then
+    exec /bin/zsh "$@"
+fi
+
+command=$2
+remainder=${command#"${command%%[![:space:]]*}"}
+
+# Use the first simple command word as the journal label. Fall back for shell
+# syntax such as a leading subshell; _COMM and _SYSTEMD_USER_UNIT still retain
+# the process identity in those cases.
+while [[ $remainder =~ ^(exec|nohup|command)[[:space:]]+ ]]; do
+    remainder=${remainder#"${BASH_REMATCH[0]}"}
+done
+while [[ $remainder =~ ^[A-Za-z_][A-Za-z0-9_]*=[^[:space:]]+[[:space:]]+ ]]; do
+    remainder=${remainder#"${BASH_REMATCH[0]}"}
+done
+simple_word_re='^([^[:space:]";|&]+)'
+if [[ $remainder =~ $simple_word_re ]]; then
+    identifier=${BASH_REMATCH[1]##*/}
+else
+    identifier=fluxbox-command
+fi
+identifier=${identifier//[^A-Za-z0-9_.@-]/-}
+[[ -n $identifier ]] || identifier=fluxbox-command
+
+# A transient service starts from the user manager, so explicitly preserve the
+# launcher's environment. This has the same visibility as normal inheritance,
+# but opens new stdout/stderr sockets for the command.
+environment_args=()
+while IFS='=' read -r -d '' name _; do
+    [[ $name =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] || continue
+    environment_args+=(-E "$name")
+done < <(env -0)
+
+unit="app-fluxbox-$identifier-$$-$RANDOM"
+exec systemd-run --user --collect --same-dir --expand-environment=no \
+    --unit="$unit" \
+    -p StandardOutput=journal -p StandardError=journal \
+    -p ExitType=cgroup -p "SyslogIdentifier=$identifier" \
+    "${environment_args[@]}" -E SHELL=/bin/zsh \
+    /bin/zsh -c "$command"

@@ -1,0 +1,65 @@
+#!/bin/bash
+
+set -euo pipefail
+
+repo=$(cd "$(dirname "$0")/.." && pwd)
+parent_unit=fluxbox-journal-test-$$-$RANDOM
+literal_var=FLUXBOX_UNSET_LITERAL_$$
+literal="\$$literal_var"
+command="printf '%s\\n' '$literal'"
+since=$(date --iso-8601=seconds)
+
+# Reproduce the real failure boundary: the parent stream is labelled fluxbox,
+# then the Fluxbox shell must open a fresh stream without letting systemd-run
+# expand shell variables before zsh sees them.
+systemd-run --user --wait --collect --expand-environment=no \
+    --unit="$parent_unit" \
+    -p StandardOutput=journal -p StandardError=journal \
+    -p SyslogIdentifier=fluxbox \
+    "$repo/bin/fluxbox-shell" -c "$command" >/dev/null
+
+entry=
+for _ in $(seq 1 30); do
+    entry=$(journalctl --user --since "$since" -o json --no-pager |
+        jq -c --arg literal "$literal" \
+            'select((.MESSAGE | type) == "string" and .MESSAGE == $literal) |
+             {SYSLOG_IDENTIFIER, _COMM, _SYSTEMD_USER_UNIT, MESSAGE}' |
+        tail -n 1)
+    [[ -n $entry ]] && break
+    sleep 0.1
+done
+
+if [[ -z $entry ]]; then
+    echo "not ok - marker did not reach the journal unchanged" >&2
+    exit 1
+fi
+if ! jq -e '
+    .SYSLOG_IDENTIFIER == "printf" and
+    .SYSLOG_IDENTIFIER != "fluxbox" and
+    (._SYSTEMD_USER_UNIT | startswith("app-fluxbox-printf-"))
+' <<< "$entry" >/dev/null; then
+    echo "not ok - marker retained the parent journal identity: $entry" >&2
+    exit 1
+fi
+
+# The shell often backgrounds a graphical application and exits. ExitType=cgroup
+# must keep that service alive long enough for the descendant to run.
+background_marker=FLUXBOX_BACKGROUND_$$
+background_command="(sleep 0.1; printf '%s\\n' '$background_marker') &"
+"$repo/bin/fluxbox-shell" -c "$background_command" >/dev/null
+background_entry=
+for _ in $(seq 1 30); do
+    background_entry=$(journalctl --user --since "$since" -o json --no-pager |
+        jq -c --arg marker "$background_marker" \
+            'select((.MESSAGE | type) == "string" and .MESSAGE == $marker) |
+             {SYSLOG_IDENTIFIER, _SYSTEMD_USER_UNIT, MESSAGE}' |
+        tail -n 1)
+    [[ -n $background_entry ]] && break
+    sleep 0.1
+done
+if [[ -z $background_entry ]]; then
+    echo "not ok - background descendant was lost when its shell exited" >&2
+    exit 1
+fi
+
+echo "ok - inherited stream, shell expansion, and background lifecycle are correct"

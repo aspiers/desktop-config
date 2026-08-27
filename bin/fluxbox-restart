@@ -290,8 +290,18 @@ retry_with_backoff () {
     return 0
 }
 
+require_fluxbox_shell () {
+    local shell_path=$1
+
+    if [ ! -f "$shell_path" ] || [ ! -x "$shell_path" ]; then
+        error "Fluxbox command shell is missing or not executable: $shell_path"
+        return 1
+    fi
+}
+
 main () {
     local fluxbox_unit
+    local fluxbox_shell=${FLUXBOX_SHELL:-$HOME/bin/fluxbox-shell}
 
     me=$(basename $0)
 
@@ -301,6 +311,8 @@ main () {
         error "\$SSH_CONNECTION is set to $SSH_CONNECTION; cowardly aborting."
         exit 1
     fi
+
+    require_fluxbox_shell "$fluxbox_shell" || exit 1
 
     # Needed to fix corrupted xfce4-panel which happens after display
     # reconfiguration.  Solution is to switch back to xfwm4 for a
@@ -336,6 +348,10 @@ main () {
     # (fluxbox's own -log still writes ~/.log/fluxbox.log; stdout/stderr
     # go to the journal: journalctl --user -u fluxbox-\*.)
     #
+    # Fluxbox passes Exec commands to $SHELL. The dedicated wrapper starts
+    # each command in a transient service with a fresh journal stream;
+    # otherwise every child inherits SYSLOG_IDENTIFIER=fluxbox forever.
+    #
     # KillMode=process is essential. Everything fluxbox launches -- from its
     # menu, its keybindings, or a session script -- is forked as a child and
     # so joins this unit's cgroup. Under the default KillMode=control-group,
@@ -346,6 +362,7 @@ main () {
     systemd-run --user --unit="${fluxbox_unit%.service}" \
         -p StandardOutput=journal -p StandardError=journal \
         -p KillMode=process \
+        -E "SHELL=$fluxbox_shell" \
         fluxbox -log ~/.log/fluxbox.log
     ensure_unit_started "$fluxbox_unit" 10 || exit 1
     record_desktop_fluxbox_unit "$fluxbox_unit" || {

@@ -31,6 +31,26 @@ assert_equal () {
     fi
 }
 
+if require_fluxbox_shell "$tmp_dir/missing-shell" 2>/dev/null; then
+    fail "rejects a missing Fluxbox command shell"
+else
+    pass "rejects a missing Fluxbox command shell"
+fi
+mkdir "$tmp_dir/shell-directory"
+if require_fluxbox_shell "$tmp_dir/shell-directory" 2>/dev/null; then
+    fail "rejects a directory as the Fluxbox command shell"
+else
+    pass "rejects a directory as the Fluxbox command shell"
+fi
+fluxbox_shell=$tmp_dir/fluxbox-shell
+print '#!/bin/sh' > "$fluxbox_shell"
+chmod +x "$fluxbox_shell"
+if require_fluxbox_shell "$fluxbox_shell"; then
+    pass "accepts an executable Fluxbox command shell"
+else
+    fail "accepts an executable Fluxbox command shell"
+fi
+
 pgrep () {
     printf '%s\n' 123 456
 }
@@ -138,9 +158,16 @@ else
     pass "contains no process-name-scoped Fluxbox kill"
 fi
 
+if grep -Fq -- '-E "SHELL=$fluxbox_shell"' \
+    "$repo_root/bin/fluxbox-restart"; then
+    pass "routes Fluxbox Exec commands through the journal wrapper"
+else
+    fail "routes Fluxbox Exec commands through the journal wrapper"
+fi
+
 if [ "$failures" -ne 0 ]; then
     print -u2 "$failures test(s) failed"
     exit 1
 fi
 
-print "1..11"
+print "1..15"
