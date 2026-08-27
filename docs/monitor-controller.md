@@ -279,6 +279,21 @@ monitor-controller rollback-commands --target monitor-watcher-ng.service
 
 Copy those somewhere reachable **before** attempting a cutover.
 
+Neither sequence uses `systemctl --user disable`, and that is deliberate.
+These unit files are GNU Stow symlinks into this repository, and `disable`
+removes the unit symlink as well as the `.wants/` link:
+
+```
+Removed '/home/adam/.config/systemd/user/monitor-watcher-ng.service'.
+```
+
+That is what broke the 2026-08-25 rollback attempt: the following `enable`
+failed with "Unit monitor-watcher-ng.service does not exist", at the exact
+moment the display was already unmanaged, and the symlinks had to be restored
+by hand. `mask` is no alternative either — it refuses outright on a unit that
+is already a symlink. So both sequences delete only the `.wants/` link, which
+is the half of `disable` that was actually wanted; `enable` restores it.
+
 ## Poking at it safely
 
 The reducer is pure, so you can explore decisions without any hardware:

@@ -23,6 +23,8 @@ from monitor_controller.active import (
     ActivePaths,
 )
 from monitor_controller.cutover import (
+    INSTALL_TARGET,
+    SUPPRESSIBLE_UNITS,
     CheckStatus,
     build_preflight_report,
     check_authority_lock_free,
@@ -32,6 +34,7 @@ from monitor_controller.cutover import (
     check_recovery_authority,
     cutover_commands,
     rollback_commands,
+    suppress_at_login_command,
     unit_states,
 )
 
@@ -337,9 +340,16 @@ class TestCommandSequences:
         )
 
     def test_every_command_is_ssh_safe(self) -> None:
-        """No command may need DISPLAY; rollback often happens over SSH."""
+        """No command may need DISPLAY; rollback often happens over SSH.
+
+        Asserted as "needs no display", not "is a systemctl call": suppressing
+        a unit's login start-up is a filesystem operation (see
+        `suppress_at_login_command`), and is equally safe over SSH.
+        """
         for command in (*cutover_commands(), *rollback_commands()):
-            assert command.startswith("systemctl --user ")
+            assert command.startswith(
+                ("systemctl --user ", "rm -f ${XDG_CONFIG_HOME:-$HOME/.config}/")
+            )
 
     def test_cutover_authorizes_before_stopping_the_watcher(self) -> None:
         """The controller refuses to start unauthorised.
@@ -368,6 +378,168 @@ class TestCommandSequences:
             f"{CUTOVER_AUTHORIZATION_VARIABLE}={CUTOVER_AUTHORIZATION_VALUE}"
             in commands
         )
+
+
+class TestSuppressionRoundTrip:
+    """Prove cutover then rollback restores the starting state.
+
+    The 2026-08-25 rollback failed because `systemctl --user disable` deleted
+    the stowed unit symlinks, so the subsequent `enable` had nothing to enable.
+    These tests execute the filesystem half of both sequences against a real
+    symlink farm shaped like the deployed one.
+    """
+
+    @staticmethod
+    def _stow_farm(tmp_path: Path) -> tuple[Path, Path, Path]:
+        """Build repository, unit and wants directories mirroring deployment."""
+        repository = tmp_path / "repository"
+        unit_dir = tmp_path / "config" / "systemd" / "user"
+        wants = unit_dir / f"{INSTALL_TARGET}.wants"
+        repository.mkdir(parents=True)
+        wants.mkdir(parents=True)
+        for unit in SUPPRESSIBLE_UNITS:
+            source = repository / unit
+            source.write_text("[Unit]\n")
+            # Exactly the deployed shape: the unit file is a symlink into the
+            # repository, and enabling adds a second link under .wants/.
+            (unit_dir / unit).symlink_to(source)
+            (wants / unit).symlink_to(source)
+        return repository, unit_dir, wants
+
+    @staticmethod
+    def _replay(commands: tuple[str, ...], unit_dir: Path, repository: Path) -> None:
+        """Replay a sequence's effect on the unit directory.
+
+        Only three kinds of command change the filesystem, and each is modelled
+        as systemd itself behaves:
+
+        * `rm -f .../<target>.wants/<unit>` — suppression, verbatim;
+        * `systemctl --user enable <unit>` — recreates the `.wants/` link,
+          which is why suppression has to be reversible; and
+        * `systemctl --user disable <unit>` — removes the `.wants/` link **and
+          the unit symlink**, the behaviour probed on the live system and the
+          direct cause of the failed rollback.
+
+        Modelling disable faithfully is what makes these tests non-vacuous:
+        reintroducing it makes them fail rather than silently pass.
+        """
+        prefix = "rm -f ${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/"
+        wants = unit_dir / f"{INSTALL_TARGET}.wants"
+        for command in commands:
+            if command.startswith(prefix):
+                (unit_dir / command[len(prefix) :]).unlink(missing_ok=True)
+            elif command.startswith("systemctl --user enable "):
+                unit = command.removeprefix("systemctl --user enable ")
+                link = wants / unit
+                if not link.exists():
+                    link.symlink_to(repository / unit)
+            elif command.startswith("systemctl --user disable "):
+                unit = command.removeprefix("systemctl --user disable ")
+                (wants / unit).unlink(missing_ok=True)
+                (unit_dir / unit).unlink(missing_ok=True)
+
+    def test_cutover_never_deletes_a_unit_symlink(self, tmp_path: Path) -> None:
+        """The regression itself: disable removed the repository symlink."""
+        repository, unit_dir, _wants = self._stow_farm(tmp_path)
+        self._replay(cutover_commands(), unit_dir, repository)
+        for unit in SUPPRESSIBLE_UNITS:
+            assert (unit_dir / unit).is_symlink(), f"{unit} unit symlink was deleted"
+
+    def test_cutover_then_rollback_restores_every_unit_file(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """No unit file may be lost across the round trip.
+
+        This is the criterion the failed rollback violated: after the round
+        trip `monitor-watcher-ng.service` did not exist, so `enable` failed.
+        """
+        repository, unit_dir, _wants = self._stow_farm(tmp_path)
+        before = sorted(path.name for path in unit_dir.iterdir() if path.is_symlink())
+
+        self._replay(cutover_commands(), unit_dir, repository)
+        self._replay(rollback_commands(), unit_dir, repository)
+
+        after = sorted(path.name for path in unit_dir.iterdir() if path.is_symlink())
+        assert after == before
+
+    def test_rollback_leaves_its_target_enabled(self, tmp_path: Path) -> None:
+        """Rollback's whole purpose: the watcher runs again, including at login."""
+        repository, unit_dir, wants = self._stow_farm(tmp_path)
+        target = "monitor-watcher-ng.service"
+
+        self._replay(cutover_commands(), unit_dir, repository)
+        assert not (wants / target).exists(), "cutover should suppress the watcher"
+
+        self._replay(rollback_commands(target), unit_dir, repository)
+        assert (wants / target).is_symlink(), "rollback must restore login start-up"
+
+    def test_rollback_would_fail_if_cutover_disabled_units(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """Non-vacuity: prove the round trip breaks with the old sequence.
+
+        Without this, the tests above would pass just as well against a
+        `_replay` that quietly ignored disable.
+        """
+        repository, unit_dir, _wants = self._stow_farm(tmp_path)
+        target = "monitor-watcher-ng.service"
+        old_cutover = (
+            f"systemctl --user stop {target}",
+            f"systemctl --user disable {target}",
+        )
+
+        self._replay(old_cutover, unit_dir, repository)
+
+        assert not (unit_dir / target).exists(), (
+            "disable must delete the stowed unit symlink, else this test proves nothing"
+        )
+        # Which is exactly why the real rollback's enable failed.
+        self._replay(rollback_commands(target), unit_dir, repository)
+        assert not (unit_dir / target).exists()
+
+    def test_rollback_suppresses_the_controller_at_login(self) -> None:
+        """Otherwise a failed controller restarts at the next login."""
+        commands = rollback_commands()
+        assert suppress_at_login_command("monitor-controller.service") in commands
+
+    def test_rollback_no_longer_disables_anything(self) -> None:
+        """`disable` is what deleted the stowed symlinks."""
+        for command in rollback_commands():
+            assert "systemctl --user disable" not in command
+
+    def test_cutover_no_longer_disables_anything(self) -> None:
+        """Same regression, cutover side."""
+        for command in cutover_commands():
+            assert "systemctl --user disable" not in command
+
+    def test_suppression_targets_the_wants_link_not_the_unit(self) -> None:
+        """Deleting the unit file is precisely the bug being fixed."""
+        command = suppress_at_login_command("monitor-watcher-ng.service")
+        assert f"{INSTALL_TARGET}.wants/monitor-watcher-ng.service" in command
+        assert command.rstrip().endswith(
+            f"{INSTALL_TARGET}.wants/monitor-watcher-ng.service"
+        )
+
+    def test_suppression_rejects_an_unknown_unit(self) -> None:
+        """A typo must not produce an rm targeting an unintended path."""
+        with pytest.raises(ValueError, match="unknown unit"):
+            suppress_at_login_command("not-a-unit.service")
+
+    def test_cutover_reloads_after_suppressing(self) -> None:
+        """Enablement is cached by systemd; without a reload the change is unseen."""
+        commands = cutover_commands()
+        suppression = commands.index(
+            suppress_at_login_command("monitor-watcher-ng.service")
+        )
+        reload_after = next(
+            index
+            for index, command in enumerate(commands)
+            if command == "systemctl --user daemon-reload" and index > suppression
+        )
+        start = commands.index(f"systemctl --user start {ACTIVE_UNIT}")
+        assert suppression < reload_after < start
 
 
 class TestCutoverCli:

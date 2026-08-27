@@ -103,6 +103,52 @@ class PreflightReport:
         return "\n".join([*lines, "", verdict])
 
 
+# The target the stowed units declare in their [Install] sections. Removing a
+# unit's symlink from this target's .wants/ directory is what "do not start at
+# login" actually means; `systemctl --user disable` does that *and* deletes the
+# unit file itself, which for a Stow-managed tree is the repository symlink.
+INSTALL_TARGET = "fluxbox-session.target"
+
+# Every unit whose login start-up this module may suppress. The controller's
+# own unit belongs here as well as the ones it displaces: rollback has to stop
+# *it* starting at login, and it is stow-managed identically.
+SUPPRESSIBLE_UNITS: tuple[str, ...] = (
+    *CONFLICTING_UNITS,
+    "monitor-controller.service",
+)
+
+
+def suppress_at_login_command(unit: str) -> str:
+    """Return the command stopping *unit* starting at login, without disabling it.
+
+    `systemctl --user disable` cannot be used here. These unit files are GNU
+    Stow symlinks into the repository, and disable removes the unit symlink as
+    well as the `.wants/` link:
+
+        Removed '/home/adam/.config/systemd/user/monitor-watcher-ng.service'.
+
+    That deletion is what broke the 2026-08-25 rollback: `enable` then failed
+    with "Unit monitor-watcher-ng.service does not exist", at the exact moment
+    the display was already unmanaged. Recovery needed the symlinks recreated
+    by hand.
+
+    `systemctl --user mask` is not an alternative: it refuses outright on a
+    unit that is already a symlink, with "File ... already exists and is a
+    symlink".
+
+    Removing only the `.wants/` link is precisely the half of disable that is
+    wanted. It leaves `is-enabled` reporting `linked` rather than `disabled`,
+    and `enable` restores it, so the cutover/rollback round trip is lossless.
+    """
+    if unit not in SUPPRESSIBLE_UNITS:
+        msg = f"unknown unit: {unit}"
+        raise ValueError(msg)
+    return (
+        f"rm -f ${{XDG_CONFIG_HOME:-$HOME/.config}}/systemd/user/"
+        f"{INSTALL_TARGET}.wants/{unit}"
+    )
+
+
 def check_locked_install(paths: ActivePaths) -> CheckResult:
     """Confirm the controller runs from the installer-owned locked venv.
 
@@ -263,7 +309,10 @@ def rollback_commands(target: str = "monitor-watcher-ng.service") -> tuple[str, 
         raise ValueError(msg)
     return (
         "systemctl --user stop monitor-controller.service",
-        "systemctl --user disable monitor-controller.service",
+        # Suppress rather than disable, for the same reason as cutover: the
+        # controller's own unit file is a Stow symlink too.
+        suppress_at_login_command("monitor-controller.service"),
+        "systemctl --user daemon-reload",
         f"systemctl --user enable {target}",
         f"systemctl --user start {target}",
         f"systemctl --user status --no-pager {target}",
@@ -309,8 +358,10 @@ def cutover_commands() -> tuple[str, ...]:
     refuses to start — and by then the shell watcher has already been stopped.
     """
     stops = tuple(f"systemctl --user stop {unit}" for unit in CONFLICTING_UNITS)
-    disables = tuple(
-        f"systemctl --user disable {unit}"
+    # Not `systemctl --user disable`: that deletes the stowed unit symlink and
+    # leaves rollback unable to re-enable it. See suppress_at_login_command().
+    suppressions = tuple(
+        suppress_at_login_command(unit)
         for unit in CONFLICTING_UNITS
         if unit != "monitor-controller-shadow.service"
     )
@@ -325,7 +376,8 @@ def cutover_commands() -> tuple[str, ...]:
         ),
         "systemctl --user daemon-reload",
         *stops,
-        *disables,
+        *suppressions,
+        "systemctl --user daemon-reload",
         "systemctl --user start monitor-controller.service",
         "systemctl --user status --no-pager monitor-controller.service",
         # Only now, with the controller proven running, make it survive login.
