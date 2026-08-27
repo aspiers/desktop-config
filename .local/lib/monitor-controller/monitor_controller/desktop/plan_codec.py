@@ -524,7 +524,9 @@ class DesktopPlan:
             self.fluxbox.resolved_sublayouts_artifact: (
                 "artifacts/fluxbox/resolved-sublayouts.json"
             ),
-            self.fluxbox.rendered_keys_artifact: "artifacts/fluxbox/keys",
+            self.fluxbox.rendered_keys_artifact: (
+                "artifacts/fluxbox/keys"  # gitleaks:allow
+            ),
             self.windows.source_artifact: "artifacts/layout/expanded.yaml",
             self.windows.actions_artifact: "artifacts/layout/window-actions.json",
         }

@@ -1,0 +1,16 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Git-ignored local runtime data"
+paths = [
+  '''^\.config/chrysalis/''',
+  '''^\.refact/''',
+  '''^tmp/''',
+]
+
+[[allowlists]]
+description = "Monitor audit trace fixture uses key as a state-field suffix"
+paths = [
+  '''^\.local/lib/monitor-controller/tests/monitor_controller/fixtures/traces/live_samsung_restart_steady\.audit\.jsonl$''',
+]

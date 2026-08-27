@@ -1,0 +1,16 @@
+# Historical false positives predating inline gitleaks:allow annotations.
+1ba39c23589ad5f7d44ded8f71e319cae002fd47:specs/spikes/monitor-watcher-state-machine.sh:generic-api-key:131
+1ba39c23589ad5f7d44ded8f71e319cae002fd47:specs/spikes/monitor-watcher-state-machine.sh:generic-api-key:72
+6d6644f623b07b2b3a8c61075fbdd5761f0432c5:.local/lib/monitor-controller/monitor_controller/desktop/plan_codec.py:generic-api-key:527
+6d6644f623b07b2b3a8c61075fbdd5761f0432c5:specs/spikes/monitor-watcher-state-machine.sh:generic-api-key:131
+6d6644f623b07b2b3a8c61075fbdd5761f0432c5:specs/spikes/monitor-watcher-state-machine.sh:generic-api-key:139
+6d6644f623b07b2b3a8c61075fbdd5761f0432c5:specs/spikes/monitor-watcher-state-machine.sh:generic-api-key:72
+6d6644f623b07b2b3a8c61075fbdd5761f0432c5:specs/spikes/monitor-watcher-state-machine.sh:generic-api-key:80
+c3ae28bbe9e6d2bd65f327cc29d61a709781241c:.local/lib/monitor-controller/monitor_controller/desktop/plan_codec.py:generic-api-key:527
+c3ae28bbe9e6d2bd65f327cc29d61a709781241c:specs/spikes/monitor-watcher-state-machine.sh:generic-api-key:131
+c3ae28bbe9e6d2bd65f327cc29d61a709781241c:specs/spikes/monitor-watcher-state-machine.sh:generic-api-key:139
+c3ae28bbe9e6d2bd65f327cc29d61a709781241c:specs/spikes/monitor-watcher-state-machine.sh:generic-api-key:72
+c3ae28bbe9e6d2bd65f327cc29d61a709781241c:specs/spikes/monitor-watcher-state-machine.sh:generic-api-key:80
+cdcdc227cc6475a2cc03e65531e64382134929e8:specs/spikes/monitor-watcher-state-machine.sh:generic-api-key:120
+cdcdc227cc6475a2cc03e65531e64382134929e8:specs/spikes/monitor-watcher-state-machine.sh:generic-api-key:69
+f85be0b713969b0812435879c5ba5fe1cb70de9e:.local/lib/monitor-controller/monitor_controller/desktop/plan_codec.py:generic-api-key:527
