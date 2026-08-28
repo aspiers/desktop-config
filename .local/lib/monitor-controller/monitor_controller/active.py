@@ -73,6 +73,7 @@ from monitor_controller.runtime.systemd import (
     SystemdSupervisor,
 )
 from monitor_controller.runtime.transactions import TransactionStore
+from monitor_controller.safeio import read_bounded_text
 from monitor_controller.shadow import (
     SHADOW_OBSERVATION_TIMEOUT_SECONDS,
     AsyncSnapshotObserver,
@@ -574,16 +575,18 @@ def load_active_state(
     )
 
 
-def _active_theme(paths: ActivePaths) -> str:
-    """Read the desktop theme, defaulting to dark when unset."""
+def active_theme(paths: ActivePaths) -> str:
+    """Read the desktop theme, defaulting to dark when unset.
+
+    Uses the guarded reader rather than `Path.read_text()`. An earlier version
+    of this function did not, which left the *authoritative* controller
+    reading a startup file less carefully than the non-authoritative one
+    (`dc-t53`).
+    """
     path = paths.config_home / "theme"
     if not path.exists():
         return "dark"
-    try:
-        value = path.read_text(encoding="utf-8").strip()
-    except OSError as error:
-        msg = f"desktop theme is unreadable: {path}"
-        raise ActiveStartupError(msg) from error
+    value = read_bounded_text(path, "desktop:theme", ActiveStartupError).strip()
     if value not in {"dark", "light"}:
         msg = "desktop theme must be exactly dark or light"
         raise ActiveStartupError(msg)
@@ -666,7 +669,7 @@ def build_active_composition(
         display=display_bridge,
         context=ShadowDesktopContextSource(
             host_name=socket.gethostname().split(".", maxsplit=1)[0],
-            theme=_active_theme(paths),
+            theme=active_theme(paths),
         ),
     )
     # Read the live profiles, not an isolated copy: these are the profiles this

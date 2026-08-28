@@ -67,6 +67,7 @@ from monitor_controller.runtime.controller import (
 from monitor_controller.runtime.dispatcher import NullDispatcher
 from monitor_controller.runtime.persistence import AtomicStateStore, StateNamespace
 from monitor_controller.runtime.scheduler import AsyncioMonotonicClock, SchedulerClock
+from monitor_controller.safeio import read_bounded_text
 
 _NETLINK_KOBJECT_UEVENT = 15
 _UEVENT_GROUP = 1
@@ -490,36 +491,21 @@ def compose_shadow_controller(
 
 
 def _bounded_text_evidence(path: Path, reference: str) -> TextCommandEvidence:
-    descriptor: int | None = None
-    try:
-        descriptor = os.open(
-            path,
-            os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW,
-        )
-        if not stat.S_ISREG(os.fstat(descriptor).st_mode):
-            msg = f"saved autorandr input is not a regular file: {reference}"
-            raise ShadowStartupError(msg)
-        with os.fdopen(descriptor, "rb") as stream:
-            descriptor = None
-            raw = stream.read(MAX_COMMAND_BYTES + 1)
-    except OSError as error:
-        msg = f"cannot read saved autorandr profile input {reference}"
-        raise ShadowStartupError(msg) from error
-    finally:
-        if descriptor is not None:
-            os.close(descriptor)
-    if len(raw) > MAX_COMMAND_BYTES:
-        msg = f"saved autorandr profile input is too large: {reference}"
-        raise ShadowStartupError(msg)
-    try:
-        text = raw.decode("utf-8")
-    except UnicodeDecodeError as error:
-        msg = f"saved autorandr profile input is not UTF-8: {reference}"
-        raise ShadowStartupError(msg) from error
+    """Wrap a guarded read as observation evidence.
+
+    The guarding lives in :func:`monitor_controller.safeio.read_bounded_text`,
+    shared with the active composition root; this only labels the result as
+    autorandr-profile evidence for the observer.
+    """
     return TextCommandEvidence(
         source=RawEvidenceSource.AUTORANDR_PROFILES,
         reference=reference,
-        stdout=text,
+        stdout=read_bounded_text(
+            path,
+            reference,
+            ShadowStartupError,
+            max_bytes=MAX_COMMAND_BYTES,
+        ),
     )
 
 
@@ -766,11 +752,17 @@ def load_shadow_state(
     return replace(persisted, controller_instance=controller_instance)
 
 
-def _shadow_theme(paths: ShadowPaths) -> str:
+def shadow_theme(paths: ShadowPaths) -> str:
+    """Read the desktop theme, defaulting to dark when unset.
+
+    Public so a test can assert it agrees with
+    :func:`monitor_controller.active.active_theme`. The two are the same
+    function written twice, and drifted apart once already (`dc-t53`).
+    """
     path = paths.config_home / "theme"
     if not path.exists():
         return "dark"
-    value = _bounded_text_evidence(path, "desktop:theme").stdout.strip()
+    value = read_bounded_text(path, "desktop:theme", ShadowStartupError).strip()
     if value not in {"dark", "light"}:
         msg = "desktop theme must be exactly dark or light"
         raise ShadowStartupError(msg)
@@ -821,7 +813,7 @@ def build_shadow_composition(
         display=display_bridge,
         context=ShadowDesktopContextSource(
             host_name=socket.gethostname().split(".", maxsplit=1)[0],
-            theme=_shadow_theme(paths),
+            theme=shadow_theme(paths),
         ),
     )
     profiles = StaticSavedProfiles(
