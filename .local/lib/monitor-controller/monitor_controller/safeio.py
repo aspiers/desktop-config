@@ -25,7 +25,9 @@ checks while the non-authoritative one kept them (`dc-t53`).
 from __future__ import annotations
 
 import os
+import shutil
 import stat
+import subprocess
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -93,3 +95,54 @@ def read_bounded_text(
     except UnicodeDecodeError as decode_error:
         msg = f"{reference} is not valid UTF-8: {path}"
         raise error(msg) from decode_error
+
+
+# The dots-per-inch that a scale factor of 1.0 corresponds to, when the live
+# value cannot be read. Matches lib/libdpy.py's fallback.
+DEFAULT_REFERENCE_DPI: int = 96
+
+# The desktop setting holding the live value. bin/set-layout-dpi writes it, so
+# it changes during a relayout.
+_XSETTINGS_DPI = ("xfconf-query", "-c", "xsettings", "-p", "/Xft/DPI")
+
+# Generous: this runs once at startup, and a hung query should not wedge the
+# controller.
+_QUERY_TIMEOUT_SECONDS = 5.0
+
+
+def read_reference_dpi(default: int = DEFAULT_REFERENCE_DPI) -> int:
+    """Read the desktop's current dots-per-inch, falling back to *default*.
+
+    Call this **once at startup**, never during planning. Planning has to be
+    reproducible so a plan can be re-checked against reality before it is
+    applied, and this value is precisely one that moves: `bin/set-layout-dpi`
+    writes it as part of a relayout. Reading it mid-plan would mean the plan
+    and its verification disagreed for reasons unrelated to the display.
+
+    Mirrors `calculate_ui_scale_factor` in `lib/libdpy.py`, which reads the
+    same setting and falls back the same way. The two must agree, or the shell
+    and Python paths compute different font and panel sizes from the same
+    display (`dc-qu6`).
+    """
+    executable = shutil.which(_XSETTINGS_DPI[0])
+    if executable is None:
+        return default
+    try:
+        completed = subprocess.run(  # noqa: S603 - fixed argv, no shell
+            [executable, *_XSETTINGS_DPI[1:]],
+            capture_output=True,
+            text=True,
+            timeout=_QUERY_TIMEOUT_SECONDS,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return default
+    if completed.returncode != 0:
+        return default
+    try:
+        value = int(completed.stdout.strip())
+    except ValueError:
+        return default
+    # A non-positive reading would make the scale zero or negative, which is
+    # worse than falling back.
+    return value if value > 0 else default

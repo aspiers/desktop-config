@@ -67,7 +67,11 @@ from monitor_controller.runtime.controller import (
 from monitor_controller.runtime.dispatcher import NullDispatcher
 from monitor_controller.runtime.persistence import AtomicStateStore, StateNamespace
 from monitor_controller.runtime.scheduler import AsyncioMonotonicClock, SchedulerClock
-from monitor_controller.safeio import read_bounded_text
+from monitor_controller.safeio import (
+    DEFAULT_REFERENCE_DPI,
+    read_bounded_text,
+    read_reference_dpi,
+)
 
 _NETLINK_KOBJECT_UEVENT = 15
 _UEVENT_GROUP = 1
@@ -407,6 +411,7 @@ class ShadowDesktopContextSource:
 
     host_name: str
     theme: str
+    reference_dpi: int = DEFAULT_REFERENCE_DPI
 
     def context_for(
         self,
@@ -421,7 +426,7 @@ class ShadowDesktopContextSource:
             host_name=self.host_name,
             is_laptop=self.host_name == "celtic",
             theme=self.theme,
-            reference_dpi=96,
+            reference_dpi=self.reference_dpi,
             primary_monitor_output=primary.output,
             primary_monitor_model=primary.model,
             primary_monitor_identity_hash=primary.evidence_hash,
@@ -814,6 +819,9 @@ def build_shadow_composition(
         context=ShadowDesktopContextSource(
             host_name=socket.gethostname().split(".", maxsplit=1)[0],
             theme=shadow_theme(paths),
+            # Read once here, not during planning: planning must be
+            # reproducible, and set-layout-dpi moves this value mid-relayout.
+            reference_dpi=read_reference_dpi(),
         ),
     )
     profiles = StaticSavedProfiles(

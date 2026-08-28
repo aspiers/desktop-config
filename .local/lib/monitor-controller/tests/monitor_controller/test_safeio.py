@@ -10,13 +10,21 @@ with none of these checks while the non-authoritative one kept them
 from __future__ import annotations
 
 import os
+import shutil
+import subprocess
+import sys
 import threading
 from pathlib import Path
 
 import pytest
 
 from monitor_controller.active import ActivePaths, ActiveStartupError, active_theme
-from monitor_controller.safeio import MAX_CONFIGURATION_BYTES, read_bounded_text
+from monitor_controller.safeio import (
+    DEFAULT_REFERENCE_DPI,
+    MAX_CONFIGURATION_BYTES,
+    read_bounded_text,
+    read_reference_dpi,
+)
 from monitor_controller.shadow import ShadowPaths, ShadowStartupError, shadow_theme
 
 
@@ -212,3 +220,146 @@ def test_both_composition_roots_read_the_theme_identically(tmp_path: Path) -> No
         active_theme(active)
     with pytest.raises(ShadowStartupError):
         shadow_theme(shadow)
+
+
+class TestReadReferenceDpi:
+    """Reading the desktop's current dots-per-inch, and failing softly."""
+
+    @staticmethod
+    def _fake_query(tmp_path: Path, body: str) -> None:
+        """Put a fake xfconf-query first on PATH."""
+        fake = tmp_path / "bin"
+        fake.mkdir(exist_ok=True)
+        script = fake / "xfconf-query"
+        script.write_text(f"#!/bin/sh\n{body}\n", encoding="utf-8")
+        script.chmod(0o755)
+        os.environ["PATH"] = f"{fake}:{os.environ['PATH']}"
+
+    def test_it_reads_the_configured_value(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """The ordinary case."""
+        monkeypatch.setenv("PATH", os.environ["PATH"])
+        self._fake_query(tmp_path, "echo 139")
+        assert read_reference_dpi() == 139
+
+    def test_absent_command_falls_back(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """A host without xfconf must still start."""
+        monkeypatch.setenv("PATH", "/nonexistent")
+        assert read_reference_dpi() == DEFAULT_REFERENCE_DPI
+
+    def test_failing_command_falls_back(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """An unset property exits non-zero; that is not an error here."""
+        monkeypatch.setenv("PATH", os.environ["PATH"])
+        self._fake_query(tmp_path, "exit 1")
+        assert read_reference_dpi() == DEFAULT_REFERENCE_DPI
+
+    def test_unparseable_output_falls_back(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Whatever xfconf prints, it must not crash startup."""
+        monkeypatch.setenv("PATH", os.environ["PATH"])
+        self._fake_query(tmp_path, "echo 'Property does not exist'")
+        assert read_reference_dpi() == DEFAULT_REFERENCE_DPI
+
+    def test_nonpositive_value_falls_back(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Zero would make every computed scale zero."""
+        monkeypatch.setenv("PATH", os.environ["PATH"])
+        self._fake_query(tmp_path, "echo 0")
+        assert read_reference_dpi() == DEFAULT_REFERENCE_DPI
+
+    def test_the_default_is_overridable(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Callers may supply their own fallback."""
+        monkeypatch.setenv("PATH", "/nonexistent")
+        assert read_reference_dpi(default=120) == 120
+
+    def test_it_matches_the_legacy_fallback(self) -> None:
+        """The shell falls back to 96 too.
+
+        If these diverge, the two paths compute different font and panel sizes
+        on any host without xfconf (`dc-qu6`).
+        """
+        legacy = Path("/home/adam/.GIT/adamspiers.org/desktop-config/lib/libdpy.py")
+        if not legacy.is_file():
+            pytest.skip("legacy libdpy.py not present")
+        assert "reference_dpi = 96" in legacy.read_text(encoding="utf-8")
+        assert DEFAULT_REFERENCE_DPI == 96
+
+
+def test_shell_and_python_agree_on_the_reference_dpi() -> None:
+    """Both must read the same value from the same setting.
+
+    This is the divergence `dc-qu6` records: the shell read the live
+    dots-per-inch while the planner assumed 96, so on a 139 dpi display one
+    computed a scale of 1.0 and the other 1.46. Since the scale is
+    `physical_dpi / reference_dpi` on both sides, agreeing on the reference is
+    what makes the scales agree.
+
+    Runs against the real desktop, so it skips where there is none.
+    """
+    if shutil.which("xfconf-query") is None:
+        pytest.skip("xfconf-query not installed")
+    xfconf = shutil.which("xfconf-query")
+    if xfconf is None:  # pragma: no cover - guarded by the skip above
+        pytest.skip("xfconf-query not installed")
+    probe = subprocess.run(  # noqa: S603 - fixed argv, resolved path, no shell
+        [xfconf, "-c", "xsettings", "-p", "/Xft/DPI"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if probe.returncode != 0:
+        pytest.skip("Xft.DPI is not set on this host")
+
+    assert read_reference_dpi() == int(probe.stdout.strip())
+
+
+def test_the_scale_changes_with_the_reference() -> None:
+    """Guards the assertion above against being vacuous.
+
+    If `read_reference_dpi` silently returned the fallback, the test above
+    would still pass on a host where Xft.DPI happens to be 96. This proves the
+    reference actually moves the answer, using libdpy as the oracle since both
+    sides use the same formula.
+    """
+    legacy_root = Path("/home/adam/.GIT/adamspiers.org/desktop-config/lib")
+    if not (legacy_root / "libdpy.py").is_file():
+        pytest.skip("legacy libdpy.py not present")
+    if not os.environ.get("DISPLAY"):
+        pytest.skip("no X display")
+
+    def _scale(reference: int) -> float:
+        program = (
+            f"import sys; sys.path.insert(0, {str(legacy_root)!r}); import libdpy; "
+            f"print(libdpy.calculate_ui_scale_factor(reference_dpi={reference}))"
+        )
+        result = subprocess.run(  # noqa: S603 - fixed argv, no shell
+            [sys.executable, "-c", program],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.returncode != 0:
+            pytest.skip(f"legacy libdpy unavailable: {result.stderr.strip()[:120]}")
+        return float(result.stdout.strip())
+
+    live = read_reference_dpi()
+    if live == DEFAULT_REFERENCE_DPI:
+        pytest.skip("live reference equals the fallback; nothing to distinguish")
+
+    assert _scale(live) != _scale(DEFAULT_REFERENCE_DPI), (
+        "the reference dpi must change the computed scale, "
+        "or this comparison proves nothing"
+    )

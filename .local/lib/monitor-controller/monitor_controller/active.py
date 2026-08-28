@@ -73,7 +73,7 @@ from monitor_controller.runtime.systemd import (
     SystemdSupervisor,
 )
 from monitor_controller.runtime.transactions import TransactionStore
-from monitor_controller.safeio import read_bounded_text
+from monitor_controller.safeio import read_bounded_text, read_reference_dpi
 from monitor_controller.shadow import (
     SHADOW_OBSERVATION_TIMEOUT_SECONDS,
     AsyncSnapshotObserver,
@@ -670,6 +670,9 @@ def build_active_composition(
         context=ShadowDesktopContextSource(
             host_name=socket.gethostname().split(".", maxsplit=1)[0],
             theme=active_theme(paths),
+            # Read once here, not during planning: planning must be
+            # reproducible, and set-layout-dpi moves this value mid-relayout.
+            reference_dpi=read_reference_dpi(),
         ),
     )
     # Read the live profiles, not an isolated copy: these are the profiles this
