@@ -3,20 +3,7 @@ app:
   debug: false
   log_level: "info" # debug, info, warn, error
   skip_llm_cleanup: true
-  dictionary:
-    [
-      "dolt",
-      "sshfs",
-      "autorandr",
-      "bluetuith",
-      "journald",
-      "systemd",
-      "skilletto",
-      "agentsview",
-      "Claude",
-      "pi",
-      "herdr",
-    ]
+  dictionary: ["dolt","sshfs","autorandr","bluetuith","journald","systemd","skilletto","agentsview","Claude","pi","herdr","Xero","omarchy","symlink"]
 
 audio:
   sample_rate: 16000
