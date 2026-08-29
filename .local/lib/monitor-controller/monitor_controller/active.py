@@ -26,15 +26,16 @@ composition: cutover must have been explicitly authorised. See
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import fcntl
 import os
 import socket
 import sys
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, replace
 from pathlib import Path
 from types import TracebackType
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING, Self, final
 from uuid import uuid4
 
 from monitor_controller.codec import StateCodecError
@@ -48,6 +49,7 @@ from monitor_controller.model import (
     BootId,
     ControllerInstanceId,
     DisplayIdentity,
+    EventGeneration,
     State,
 )
 from monitor_controller.observer.drm import RootedSysfsReader
@@ -202,6 +204,19 @@ class ActivePaths:
         )
 
     @property
+    def event_generation_file(self) -> Path:
+        """Return the producer-generation fence the finalize worker re-reads.
+
+        The path is part of the contract with `monitor-finalize@.service`,
+        which passes it as ``--event-generation-file``; the finalizer refuses
+        the disruptive boundary when this file is missing, malformed, or
+        differs from its admitted generation.
+        """
+        return (
+            self.runtime_dir / "monitor-controller" / "active" / "event-generation"
+        )
+
+    @property
     def autorandr_profiles(self) -> Path:
         """Return the explicitly selected read-only saved-profile source."""
         return self.config_home / "autorandr"
@@ -321,6 +336,61 @@ class ActiveAuthorityLock:
             os.close(descriptor)
 
 
+@final
+class GenerationFencePublisher:
+    """Atomically mirror the producer generation into the finalizer's fence.
+
+    Failure handling is asymmetric on purpose: the finalizer treats a missing
+    or malformed fence as refusal, while a *stale* fence would let it pass a
+    boundary new hints should have rejected. So a failed write removes the
+    fence (best effort) rather than leaving the previous value behind, and
+    nothing here ever raises into hint delivery.
+    """
+
+    def __init__(
+        self,
+        path: Path,
+        *,
+        on_failure: Callable[[str], None] | None = None,
+    ) -> None:
+        """Bind the fence path without creating it."""
+        if not path.is_absolute():
+            msg = f"event-generation fence path must be absolute: {path}"
+            raise ActiveStartupError(msg)
+        self._path = path
+        self._temporary = path.with_name(path.name + ".tmp")
+        self._on_failure = on_failure
+
+    def publish(self, generation: EventGeneration) -> None:
+        """Replace the fence with one owned 0600 regular ASCII record."""
+        try:
+            self._path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+            flags = (
+                os.O_WRONLY
+                | os.O_CREAT
+                | os.O_TRUNC
+                | getattr(os, "O_CLOEXEC", 0)
+                | getattr(os, "O_NOFOLLOW", 0)
+            )
+            descriptor = os.open(self._temporary, flags, 0o600)
+            try:
+                os.write(descriptor, f"{generation.value}\n".encode("ascii"))
+                os.fsync(descriptor)
+            finally:
+                os.close(descriptor)
+            self._temporary.replace(self._path)
+        except OSError as error:
+            self.withdraw()
+            if self._on_failure is not None:
+                self._on_failure(f"cannot publish event-generation fence: {error}")
+
+    def withdraw(self) -> None:
+        """Best-effort removal, making any surviving finalizer refuse."""
+        for path in (self._temporary, self._path):
+            with contextlib.suppress(OSError):
+                path.unlink(missing_ok=True)
+
+
 @dataclass(frozen=True, slots=True)
 class ActiveControllerAdapters:
     """Adapters accepted by the active composition root.
@@ -337,6 +407,7 @@ class ActiveControllerAdapters:
     clock: SchedulerClock
     dispatcher: ActionDispatcher
     generation_bridge: GenerationBridge | None = None
+    generation_fence: GenerationFencePublisher | None = None
     adapter_timeout_seconds: float = ACTIVE_OBSERVATION_TIMEOUT_SECONDS
 
 
@@ -356,6 +427,8 @@ class ActiveComposition:
     recovery: RecoveryResult | None = None
     # Retained so run_active() can release the store's directory descriptors.
     transactions: TransactionStore | None = None
+    # Retained so run_active() can withdraw the finalizer's fence on exit.
+    generation_fence: GenerationFencePublisher | None = None
 
 
 class NonStartingDispatcher:
@@ -439,6 +512,7 @@ def compose_active_controller(
     """Compose active mode around the caller-supplied dispatch authority."""
     plan_store = AtomicPlanStore(paths.plan_store)
     planner = AtomicDesktopPlanningAdapter(adapters.planning_source, plan_store)
+    fence = adapters.generation_fence
     controller = SerializedController(
         initial_state=initial_state,
         store=adapters.store,
@@ -448,9 +522,14 @@ def compose_active_controller(
         audit=adapters.audit,
         clock=adapters.clock,
         adapter_timeout_seconds=adapters.adapter_timeout_seconds,
+        generation_published=None if fence is None else fence.publish,
     )
     if adapters.generation_bridge is not None:
         adapters.generation_bridge.bind(controller.current_generation)
+    if fence is not None:
+        # Publish before any dispatch is possible, so a finalizer admitted
+        # against the recovered generation finds a live fence immediately.
+        fence.publish(controller.event_generation)
     return ActiveComposition(
         paths=paths,
         controller=controller,
@@ -459,6 +538,7 @@ def compose_active_controller(
         plan_store=plan_store,
         store=adapters.store,
         audit=adapters.audit,
+        generation_fence=fence,
     )
 
 
@@ -700,6 +780,15 @@ def build_active_composition(
     )
     if not dispatching:
         dispatcher = NonStartingDispatcher(dispatcher)
+    audit = RotatingAuditLog(paths.audit_log, initial)
+
+    def _fence_failure(detail: str) -> None:
+        audit.append_runtime_failure(
+            boundary="event-generation-fence",
+            detail=detail,
+            recorded_at_ms=clock.monotonic_ms(),
+        )
+
     composition = compose_active_controller(
         paths=paths,
         initial_state=initial,
@@ -707,10 +796,14 @@ def build_active_composition(
             store=store,
             observer=AsyncSnapshotObserver(coordinator),
             planning_source=planning_source,
-            audit=RotatingAuditLog(paths.audit_log, initial),
+            audit=audit,
             clock=clock,
             dispatcher=dispatcher,
             generation_bridge=bridge,
+            generation_fence=GenerationFencePublisher(
+                paths.event_generation_file,
+                on_failure=_fence_failure,
+            ),
         ),
     )
     return replace(composition, recovery=recovery, transactions=transactions)
@@ -755,6 +848,10 @@ async def run_active(
         composition.planner.close()
         if composition.transactions is not None:
             composition.transactions.close()
+        if composition.generation_fence is not None:
+            # No authority means no fresh fence: any surviving finalizer must
+            # refuse its boundary rather than trust the last published value.
+            composition.generation_fence.withdraw()
 
 
 # Argument which asks this module to prove it can start, then exit without

@@ -26,6 +26,7 @@ from monitor_controller.active import (
     ActiveAuthorityLock,
     ActivePaths,
     ActiveStartupError,
+    GenerationFencePublisher,
     NonStartingDispatcher,
     cutover_authorization_error,
     load_active_state,
@@ -37,6 +38,7 @@ from monitor_controller.model import (
     ControllerInstanceId,
     ControllerPhase,
     DisplayIdentity,
+    EventGeneration,
     State,
 )
 from monitor_controller.runtime.dispatcher import (
@@ -47,6 +49,8 @@ from monitor_controller.runtime.dispatcher import (
 )
 from monitor_controller.runtime.persistence import AtomicStateStore, StateNamespace
 from monitor_controller.runtime.recovery import WorkerNamespaceSnapshot
+from monitor_controller.runtime.transactions import TransactionStore
+from monitor_controller.workers.finalize import FileSystemdFinalizationFence
 
 _STOP_MARKER = "stop here"
 _UNAUTHORIZED_BUILD = "composition built without authorisation"
@@ -832,6 +836,7 @@ class TestRunActive:
                 controller=controller,
                 planner=SimpleNamespace(close=lambda: planner_closed.append(True)),
                 transactions=transactions,
+                generation_fence=None,
             )
 
             with pytest.raises(RuntimeError, match="injected monitor failure"):
@@ -874,8 +879,71 @@ class TestRunActive:
                 controller=QuietController(),
                 planner=SimpleNamespace(close=lambda: None),
                 transactions=None,
+                generation_fence=None,
             )
             with pytest.raises(ActiveStartupError, match="exited unexpectedly"):
                 await run_active(composition, IdleMonitor())  # type: ignore[arg-type]
 
         asyncio.run(exercise())
+
+
+class TestGenerationFencePublisher:
+    """The finalizer's file fence must always be publishable or absent."""
+
+    def test_round_trips_through_the_finalize_worker_reader(
+        self, tmp_path: Path
+    ) -> None:
+        """The published record must satisfy the worker's strict reader."""
+        path = tmp_path / "runtime" / "event-generation"
+        publisher = GenerationFencePublisher(path)
+        publisher.publish(EventGeneration(42))
+
+        store = TransactionStore(tmp_path / "transactions")
+        try:
+            fence = FileSystemdFinalizationFence(
+                generation_file=path,
+                transaction_store=store,
+                environment={},
+            )
+            assert fence.current_event_generation() == EventGeneration(42)
+        finally:
+            store.close()
+        assert path.read_bytes() == b"42\n"
+        assert (path.stat().st_mode & 0o777) == 0o600
+
+    def test_republish_replaces_the_previous_generation(self, tmp_path: Path) -> None:
+        """Each increment must supersede the last record atomically."""
+        path = tmp_path / "event-generation"
+        publisher = GenerationFencePublisher(path)
+        publisher.publish(EventGeneration(1))
+        publisher.publish(EventGeneration(7))
+        assert path.read_bytes() == b"7\n"
+
+    def test_write_failure_withdraws_rather_than_going_stale(
+        self, tmp_path: Path
+    ) -> None:
+        """A stale fence would pass a boundary new hints should reject."""
+        parent = tmp_path / "blocked"
+        parent.write_text("a file, not a directory")
+        failures: list[str] = []
+        publisher = GenerationFencePublisher(
+            parent / "event-generation", on_failure=failures.append
+        )
+        publisher.publish(EventGeneration(3))
+        assert failures
+        assert "event-generation" in failures[0]
+        assert not (parent / "event-generation").exists()
+
+    def test_withdraw_removes_the_fence_and_its_temporary(self, tmp_path: Path) -> None:
+        """After authority exits, any surviving finalizer must refuse."""
+        path = tmp_path / "event-generation"
+        publisher = GenerationFencePublisher(path)
+        publisher.publish(EventGeneration(5))
+        publisher.withdraw()
+        assert not path.exists()
+        assert not path.with_name(path.name + ".tmp").exists()
+
+    def test_relative_path_is_refused(self) -> None:
+        """The unit contract names an absolute runtime path."""
+        with pytest.raises(ActiveStartupError):
+            GenerationFencePublisher(Path("relative/event-generation"))

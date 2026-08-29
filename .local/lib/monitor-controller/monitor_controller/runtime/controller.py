@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable
 from typing import Protocol, cast
 
 from monitor_controller.model import (
@@ -128,6 +129,7 @@ class SerializedController:
         clock: SchedulerClock,
         planning_timeout_seconds: float = DEFAULT_PLANNING_TIMEOUT_SECONDS,
         adapter_timeout_seconds: float = DEFAULT_ADAPTER_TIMEOUT_SECONDS,
+        generation_published: Callable[[EventGeneration], None] | None = None,
     ) -> None:
         """Bind explicit adapters without reading the display or starting a task."""
         if planning_timeout_seconds <= 0:
@@ -148,6 +150,7 @@ class SerializedController:
         self._queue: asyncio.Queue[Event] = asyncio.Queue()
         self._scheduler = DeadlineScheduler(self._queue, clock)
         self._event_generation = initial_state.event_generation.value
+        self._generation_published = generation_published
         self._consumer_task: asyncio.Task[object] | None = None
         self._planning_tasks: dict[ActionId, asyncio.Task[None]] = {}
         self._worker_monitor_tasks: dict[ActionId, asyncio.Task[None]] = {}
@@ -181,10 +184,21 @@ class SerializedController:
         """Implement the canonical observer's generation-source protocol."""
         return self.event_generation
 
+    def _publish_generation(self) -> None:
+        """Mirror the producer-side generation into the finalizer's file fence.
+
+        The publisher owns failure handling and must never raise; a raise here
+        would break hint delivery, which is worse than a stale fence the
+        finalizer already treats as refusal.
+        """
+        if self._generation_published is not None:
+            self._generation_published(EventGeneration(self._event_generation))
+
     def notify_drm_hint(self, *, observed_at_ms: int | None = None) -> EventGeneration:
         """Increment generation before atomically enqueueing one coalescible hint."""
         self._event_generation += 1
         generation = EventGeneration(self._event_generation)
+        self._publish_generation()
         now_ms = (
             self._clock.monotonic_ms() if observed_at_ms is None else observed_at_ms
         )
@@ -385,6 +399,7 @@ class SerializedController:
                 decision.state.event_generation.value,
             )
         )
+        self._publish_generation()
         self._audit.append_decision(
             prior_state,
             event,

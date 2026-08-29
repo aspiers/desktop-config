@@ -352,6 +352,7 @@ def check_worker_unit_paths(
     expected = {
         "--transaction-root": paths.transaction_namespace,
         "--plan-root": paths.plan_store,
+        "--event-generation-file": paths.event_generation_file,
     }
     problems: list[str] = []
     for template in WORKER_UNIT_TEMPLATES:

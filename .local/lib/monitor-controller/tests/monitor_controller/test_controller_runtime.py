@@ -463,6 +463,7 @@ def _controller(  # noqa: PLR0913
     planner: _Planner | None = None,
     dispatcher: _Dispatcher | None = None,
     audit: RotatingAuditLog | None = None,
+    generation_published: Callable[[EventGeneration], None] | None = None,
 ) -> tuple[SerializedController, _Store, _Observer, _Planner, _Dispatcher, _Clock]:
     initial = state or _state()
     state_store = store or _Store()
@@ -479,6 +480,7 @@ def _controller(  # noqa: PLR0913
         audit=audit or RotatingAuditLog(tmp_path / "audit.jsonl", initial),
         clock=clock,
         adapter_timeout_seconds=0.05,
+        generation_published=generation_published,
     )
     snapshot_observer.generation_source = controller.current_generation
     action_dispatcher.persisted_before_write = lambda: bool(
@@ -1368,3 +1370,25 @@ def test_query_failure_is_an_explicit_event_and_holds_exclusion_until_stop_ack(
         await controller.close()
 
     asyncio.run(exercise())
+
+
+def test_generation_increments_are_published_to_the_fence_sink(
+    tmp_path: Path,
+) -> None:
+    """Every producer-side increment must reach the finalizer's file fence.
+
+    The finalize worker re-reads the published generation at its disruptive
+    boundary; a hint that increments the generation without reaching the sink
+    would let a stale finalization pass that fence (dc-jxm).
+    """
+    published: list[EventGeneration] = []
+    controller, _store, _observer, _planner, _dispatcher, _clock = _controller(
+        tmp_path,
+        generation_published=published.append,
+    )
+
+    first = controller.notify_drm_hint(observed_at_ms=1)
+    second = controller.notify_drm_hint(observed_at_ms=2)
+
+    assert published == [first, second]
+    assert published[-1] == controller.event_generation
