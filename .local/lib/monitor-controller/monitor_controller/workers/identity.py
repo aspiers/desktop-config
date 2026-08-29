@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Mapping
-from typing import TYPE_CHECKING, Never
+from typing import TYPE_CHECKING
 
 from monitor_controller.observer.autorandr import fingerprint_matches
 from monitor_controller.observer.drm import (
@@ -12,7 +12,7 @@ from monitor_controller.observer.drm import (
     DrmConnector,
     EvidenceState,
 )
-from monitor_controller.workers.common import WorkerStartupError
+from monitor_controller.workers.common import stale as _stale
 
 if TYPE_CHECKING:
     from monitor_controller.observer.topology import CanonicalTopologyEvidence
@@ -86,6 +86,3 @@ def prove_fixed_saved_base(pattern: str, live_value: str) -> None:
     if saved_base.casefold() != live_base.casefold():
         _stale("fresh usable connector identity contradicts admitted mapping")
 
-
-def _stale(detail: str) -> Never:
-    raise WorkerStartupError(detail)

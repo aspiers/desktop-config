@@ -15,7 +15,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from subprocess import TimeoutExpired
-from typing import TYPE_CHECKING, Final, Never, Protocol, final
+from typing import TYPE_CHECKING, Final, Protocol, final
 
 from monitor_controller.desktop.plan_codec import (
     AtomicPlanStore,
@@ -52,14 +52,21 @@ from monitor_controller.runtime.transactions import (
     parse_action_id,
 )
 from monitor_controller.workers.common import (
+    CommandResult,
     CurrentTopology,
     WorkerCancelled,
     WorkerExecution,
     WorkerStartup,
     WorkerStartupError,
     execute_worker,
-    kill_process_group,
+    run_leaf_command,
     validate_worker_startup,
+)
+from monitor_controller.workers.common import (
+    atomic_replace as _atomic_replace,
+)
+from monitor_controller.workers.common import (
+    stale as _stale,
 )
 from monitor_controller.workers.desktop_guard import (
     sample_exact_desktop_topology,
@@ -69,9 +76,6 @@ from monitor_controller.workers.desktop_guard import (
 FINALIZATION_PROOF_MS: Final = 10_000
 FINALIZE_COMMAND_TIMEOUT_SECONDS: Final = 120.0
 TRAY_TIMEOUT_EXIT_STATUS: Final = 69
-COMMAND_NOT_FOUND_EXIT_STATUS: Final = 127
-COMMAND_TIMEOUT_EXIT_STATUS: Final = 124
-MAX_COMMAND_EXIT_STATUS: Final = 255
 _XRANDR_QUERY = ("xrandr", "--query")
 _XRANDR_PROPERTIES = ("xrandr", "--props")
 _FINALIZATION_PAYLOAD_FIELDS: Final = frozenset(
@@ -152,20 +156,8 @@ type FinalizeOperation = (
 )
 
 
-@dataclass(frozen=True, slots=True)
-class FinalizeCommandResult:
-    """Bounded status from one typed finalization operation."""
-
-    exit_status: int
-    timed_out: bool = False
-
-    def __post_init__(self) -> None:
-        if not 0 <= self.exit_status <= MAX_COMMAND_EXIT_STATUS:
-            msg = "finalize command exit status must be between zero and 255"
-            raise ValueError(msg)
-        if self.timed_out and self.exit_status != COMMAND_TIMEOUT_EXIT_STATUS:
-            msg = "timed-out finalize command requires status 124"
-            raise ValueError(msg)
+# Shared bounded result shape; retained under the worker's historical name.
+FinalizeCommandResult = CommandResult
 
 
 class FinalizeCommands(XrandrEvidenceSource, Protocol):
@@ -218,36 +210,11 @@ class SubprocessFinalizeLeafRunner:
         timeout_seconds: float = FINALIZE_COMMAND_TIMEOUT_SECONDS,
     ) -> FinalizeCommandResult:
         """Run one leaf and clean its process session on timeout or failure."""
-        try:
-            process = subprocess.Popen(  # noqa: S603
-                arguments,
-                env=dict(environment),
-                shell=False,
-                start_new_session=True,
-                stderr=subprocess.DEVNULL,
-                stdin=subprocess.DEVNULL,
-                stdout=subprocess.DEVNULL,
-            )
-        except OSError:
-            return FinalizeCommandResult(COMMAND_NOT_FOUND_EXIT_STATUS)
-        try:
-            try:
-                status = process.wait(timeout=timeout_seconds)
-            except TimeoutExpired:
-                kill_process_group(process)
-                process.wait()
-                return FinalizeCommandResult(
-                    COMMAND_TIMEOUT_EXIT_STATUS,
-                    timed_out=True,
-                )
-        except BaseException:
-            kill_process_group(process)
-            with contextlib.suppress(OSError):
-                process.wait()
-            raise
-        if status < 0:
-            status = min(MAX_COMMAND_EXIT_STATUS, 128 + abs(status))
-        return FinalizeCommandResult(min(status, MAX_COMMAND_EXIT_STATUS))
+        return run_leaf_command(
+            arguments,
+            environment=environment,
+            timeout_seconds=timeout_seconds,
+        )
 
 
 @final
@@ -830,29 +797,6 @@ def _finalize_environment(
     return environment
 
 
-def _atomic_replace(destination: Path, content: bytes) -> None:
-    destination.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-    descriptor, temporary_name = tempfile.mkstemp(
-        prefix=f".{destination.name}.",
-        dir=destination.parent,
-    )
-    temporary = Path(temporary_name)
-    try:
-        os.fchmod(descriptor, 0o600)
-        with os.fdopen(descriptor, "wb", closefd=True) as stream:
-            stream.write(content)
-            stream.flush()
-            os.fsync(stream.fileno())
-        temporary.replace(destination)
-        directory = os.open(destination.parent, os.O_RDONLY | os.O_DIRECTORY)
-        try:
-            os.fsync(directory)
-        finally:
-            os.close(directory)
-    finally:
-        temporary.unlink(missing_ok=True)
-
-
 def run_tray_diagnostics(  # noqa: PLR0913
     *,
     transaction_root: Path,
@@ -898,5 +842,3 @@ def run_tray_diagnostics(  # noqa: PLR0913
     return result.exit_status
 
 
-def _stale(detail: str) -> Never:
-    raise WorkerStartupError(detail)

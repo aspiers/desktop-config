@@ -7,14 +7,33 @@ import contextlib
 import os
 import signal
 import subprocess
+import tempfile
 import time
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Final, Never
 
 from monitor_controller.model import ActionKind, ActionLifecycle, PhysicalToken
+from monitor_controller.observer.drm import (
+    ConnectorKind,
+    ConnectorStatus,
+    DrmSnapshot,
+    EvidenceState,
+    ReadOnlyTree,
+    sample_drm,
+)
+from monitor_controller.observer.topology import (
+    CanonicalTopologyEvidence,
+    derive_canonical_topology,
+)
+from monitor_controller.observer.xrandr import (
+    XrandrEvidenceSource,
+    XrandrSnapshot,
+    sample_xrandr,
+)
 from monitor_controller.runtime.transactions import (
+    BoundRecordKind,
     BoundTransactionRecord,
     ExpectedTopology,
     TransactionProtocolError,
@@ -32,6 +51,9 @@ TIMED_OUT_EXIT_STATUS: Final = 124
 WORKER_EXCEPTION_EXIT_STATUS: Final = 70
 MAX_EXIT_STATUS: Final = 255
 MAX_RESULT_DETAIL_LENGTH: Final = 512
+COMMAND_NOT_FOUND_EXIT_STATUS: Final = 127
+COMMAND_TIMEOUT_EXIT_STATUS: Final = 124
+MAX_COMMAND_EXIT_STATUS: Final = 255
 
 
 class WorkerStartupError(RuntimeError):
@@ -40,6 +62,183 @@ class WorkerStartupError(RuntimeError):
 
 class WorkerCancelled(BaseException):
     """SIGTERM or a durable stop intent interrupted a mutating boundary."""
+
+
+def stale(detail: str) -> Never:
+    """Refuse a worker boundary whose identity or evidence cannot be proven."""
+    raise WorkerStartupError(detail)
+
+
+@dataclass(frozen=True, slots=True)
+class CommandResult:
+    """Bounded terminal status from one exact worker command."""
+
+    exit_status: int
+    timed_out: bool = False
+
+    def __post_init__(self) -> None:
+        if not 0 <= self.exit_status <= MAX_COMMAND_EXIT_STATUS:
+            msg = "worker command exit status must be between zero and 255"
+            raise ValueError(msg)
+        if self.timed_out and self.exit_status != COMMAND_TIMEOUT_EXIT_STATUS:
+            msg = "timed-out worker command requires status 124"
+            raise ValueError(msg)
+
+
+def run_leaf_command(
+    arguments: tuple[str, ...],
+    *,
+    environment: Mapping[str, str],
+    timeout_seconds: float,
+    input_bytes: bytes | None = None,
+) -> CommandResult:
+    """Run one exact leaf in a separately killable process session, no shell."""
+    try:
+        process = subprocess.Popen(  # noqa: S603
+            arguments,
+            env=dict(environment),
+            shell=False,
+            start_new_session=True,
+            stderr=subprocess.DEVNULL,
+            stdin=(subprocess.PIPE if input_bytes is not None else subprocess.DEVNULL),
+            stdout=subprocess.DEVNULL,
+        )
+    except OSError:
+        return CommandResult(COMMAND_NOT_FOUND_EXIT_STATUS)
+    try:
+        try:
+            _stdout, _stderr = process.communicate(
+                input=input_bytes,
+                timeout=timeout_seconds,
+            )
+        except subprocess.TimeoutExpired:
+            kill_process_group(process)
+            process.communicate()
+            return CommandResult(COMMAND_TIMEOUT_EXIT_STATUS, timed_out=True)
+    except BaseException:
+        kill_process_group(process)
+        with contextlib.suppress(OSError):
+            process.communicate()
+        raise
+    status = process.returncode
+    if status < 0:
+        status = min(MAX_COMMAND_EXIT_STATUS, 128 + abs(status))
+    return CommandResult(min(status, MAX_COMMAND_EXIT_STATUS))
+
+
+def atomic_replace(destination: Path, content: bytes, *, mode: int = 0o600) -> None:
+    """Write content beside the destination and rename over it durably."""
+    destination.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{destination.name}.",
+        dir=destination.parent,
+    )
+    temporary = Path(temporary_name)
+    try:
+        os.fchmod(descriptor, mode)
+        with os.fdopen(descriptor, "wb", closefd=True) as stream:
+            stream.write(content)
+            stream.flush()
+            os.fsync(stream.fileno())
+        temporary.replace(destination)
+        directory = os.open(destination.parent, os.O_RDONLY | os.O_DIRECTORY)
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def payload_text(request: TransactionRequest, name: str) -> str:
+    """Return one required non-empty request payload string or refuse."""
+    try:
+        value = request.payload_value(name)
+    except TransactionProtocolError as error:
+        raise WorkerStartupError(str(error)) from error
+    if not isinstance(value, str) or not value:
+        stale(f"worker request {name} is not non-empty text")
+    return value
+
+
+def raise_if_cancelled(startup: WorkerStartup) -> None:
+    """Honour a durable keyed stop intent at a cooperative boundary."""
+    if startup.store.stop_intent_if_present(startup.request.action_id) is not None:
+        raise WorkerCancelled
+
+
+def validate_execution_claim(startup: WorkerStartup, kind: ActionKind) -> None:
+    """Require this invocation's exact durable execution claim for its kind."""
+    request = startup.request
+    claim = startup.execution_claim
+    if (
+        claim is None
+        or claim.record_kind is not BoundRecordKind.EXECUTION_CLAIM
+        or claim.action_id != request.action_id
+        or claim.action_kind is not kind
+        or claim.unit_name != request.unit_name
+        or claim.request_sha256 != request.request_sha256
+    ):
+        stale("worker lacks its exact durable execution claim")
+
+
+@dataclass(frozen=True, slots=True)
+class SampledTopology:
+    """Everything one trustworthy worker-boundary sample proved."""
+
+    current: CurrentTopology
+    drm: DrmSnapshot
+    topology: CanonicalTopologyEvidence
+    xrandr: XrandrSnapshot
+
+
+def sample_exact_topology(
+    request: TransactionRequest,
+    drm_tree: ReadOnlyTree,
+    commands: XrandrEvidenceSource,
+) -> SampledTopology:
+    """Prove the display evidence is trustworthy and matches the admitted request.
+
+    This is the evidence-freshness prologue every mutating worker boundary
+    repeats: double-sampled DRM with an equality check, complete scan state,
+    valid XRandR, certain connector status, unique DRM/X correspondence, and
+    kernel/X agreement, guarded against the request's expected topology. It
+    exists exactly once so a tightened check reaches every worker (dc-c6e).
+    """
+    begin_drm = sample_drm(drm_tree)
+    xrandr = sample_xrandr(commands)
+    end_drm = sample_drm(drm_tree)
+    if begin_drm != end_drm:
+        stale("DRM evidence changed during the worker-local sample")
+    if begin_drm.scan_state is not EvidenceState.AVAILABLE:
+        stale("DRM connector scan is not complete")
+    if not xrandr.valid:
+        stale("XRandR query and properties evidence is invalid or torn")
+    if any(
+        item.kind is not ConnectorKind.VIRTUAL
+        and (
+            item.status_state is not EvidenceState.AVAILABLE
+            or item.status is ConnectorStatus.UNKNOWN
+        )
+        for item in begin_drm.connectors
+    ):
+        stale("DRM connector status evidence is uncertain")
+    topology = derive_canonical_topology(begin_drm, xrandr)
+    if topology.inconsistent:
+        stale("DRM and X connector identity is contradictory or non-unique")
+    if set(topology.kernel_connected_outputs) != set(topology.x_connected_outputs):
+        stale("kernel and X connected topologies differ")
+    current = CurrentTopology(
+        physical_token=topology.physical_token,
+        topology=ExpectedTopology(
+            kernel_connected_outputs=topology.kernel_connected_outputs,
+            kernel_external_outputs=topology.kernel_external_outputs,
+            x_connected_outputs=topology.x_connected_outputs,
+            x_active_outputs=topology.x_active_outputs,
+        ),
+    )
+    validate_topology_guard(request, current)
+    return SampledTopology(current, begin_drm, topology, xrandr)
 
 
 def kill_process_group(process: subprocess.Popen[bytes]) -> None:

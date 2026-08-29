@@ -5,14 +5,12 @@ from __future__ import annotations
 import contextlib
 import json
 import os
-import subprocess
 import tempfile
 from collections.abc import Generator, Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from subprocess import TimeoutExpired
-from typing import TYPE_CHECKING, Final, Never, Protocol, final
+from typing import TYPE_CHECKING, Final, Protocol, final
 
 from monitor_controller.desktop.plan_codec import (
     AtomicPlanStore,
@@ -46,15 +44,23 @@ from monitor_controller.runtime.transactions import (
     parse_action_id,
 )
 from monitor_controller.workers.common import (
+    CommandResult,
     CurrentTopology,
-    WorkerCancelled,
     WorkerExecution,
     WorkerStartup,
-    WorkerStartupError,
     execute_worker,
     install_cooperative_sigterm_handler,
-    kill_process_group,
+    run_leaf_command,
     validate_worker_startup,
+)
+from monitor_controller.workers.common import (
+    atomic_replace as _atomic_replace,
+)
+from monitor_controller.workers.common import (
+    raise_if_cancelled as _raise_if_cancelled,
+)
+from monitor_controller.workers.common import (
+    stale as _stale,
 )
 from monitor_controller.workers.desktop_guard import (
     sample_exact_desktop_topology,
@@ -62,9 +68,6 @@ from monitor_controller.workers.desktop_guard import (
 )
 
 PREPARE_COMMAND_TIMEOUT_SECONDS: Final = 90.0
-COMMAND_NOT_FOUND_EXIT_STATUS: Final = 127
-COMMAND_TIMEOUT_EXIT_STATUS: Final = 124
-MAX_COMMAND_EXIT_STATUS: Final = 255
 _XRANDR_QUERY = ("xrandr", "--query")
 _XRANDR_PROPERTIES = ("xrandr", "--props")
 _PREPARATION_PAYLOAD_FIELDS: Final = frozenset(
@@ -142,20 +145,8 @@ type PrepareOperation = (
 )
 
 
-@dataclass(frozen=True, slots=True)
-class PrepareCommandResult:
-    """Bounded status from one typed preparation leaf operation."""
-
-    exit_status: int
-    timed_out: bool = False
-
-    def __post_init__(self) -> None:
-        if not 0 <= self.exit_status <= MAX_COMMAND_EXIT_STATUS:
-            msg = "prepare command exit status must be between zero and 255"
-            raise ValueError(msg)
-        if self.timed_out and self.exit_status != COMMAND_TIMEOUT_EXIT_STATUS:
-            msg = "timed-out prepare command requires status 124"
-            raise ValueError(msg)
+# Shared bounded result shape; retained under the worker's historical name.
+PrepareCommandResult = CommandResult
 
 
 class PrepareCommands(XrandrEvidenceSource, Protocol):
@@ -194,39 +185,12 @@ class SubprocessPrepareLeafRunner:
         timeout_seconds: float = PREPARE_COMMAND_TIMEOUT_SECONDS,
     ) -> PrepareCommandResult:
         """Run one leaf in a separately killable process group."""
-        try:
-            process = subprocess.Popen(  # noqa: S603
-                arguments,
-                env=dict(environment),
-                shell=False,
-                start_new_session=True,
-                stderr=subprocess.DEVNULL,
-                stdin=(
-                    subprocess.PIPE if input_bytes is not None else subprocess.DEVNULL
-                ),
-                stdout=subprocess.DEVNULL,
-            )
-        except OSError:
-            return PrepareCommandResult(COMMAND_NOT_FOUND_EXIT_STATUS)
-        try:
-            try:
-                _stdout, _stderr = process.communicate(
-                    input=input_bytes,
-                    timeout=timeout_seconds,
-                )
-            except TimeoutExpired:
-                kill_process_group(process)
-                process.communicate()
-                return PrepareCommandResult(COMMAND_TIMEOUT_EXIT_STATUS, timed_out=True)
-        except BaseException:
-            kill_process_group(process)
-            with contextlib.suppress(OSError):
-                process.communicate()
-            raise
-        status = process.returncode
-        if status < 0:
-            status = min(MAX_COMMAND_EXIT_STATUS, 128 + abs(status))
-        return PrepareCommandResult(min(status, MAX_COMMAND_EXIT_STATUS))
+        return run_leaf_command(
+            arguments,
+            environment=environment,
+            timeout_seconds=timeout_seconds,
+            input_bytes=input_bytes,
+        )
 
 
 @final
@@ -662,33 +626,3 @@ def _leaf_bindings(
         _stale(f"desktop plan lacks captured leaf implementation: {error.args[0]}")
 
 
-def _raise_if_cancelled(startup: WorkerStartup) -> None:
-    if startup.store.stop_intent_if_present(startup.request.action_id) is not None:
-        raise WorkerCancelled
-
-
-def _atomic_replace(destination: Path, content: bytes, *, mode: int = 0o600) -> None:
-    destination.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-    descriptor, temporary_name = tempfile.mkstemp(
-        prefix=f".{destination.name}.",
-        dir=destination.parent,
-    )
-    temporary = Path(temporary_name)
-    try:
-        os.fchmod(descriptor, mode)
-        with os.fdopen(descriptor, "wb", closefd=True) as stream:
-            stream.write(content)
-            stream.flush()
-            os.fsync(stream.fileno())
-        temporary.replace(destination)
-        directory = os.open(destination.parent, os.O_RDONLY | os.O_DIRECTORY)
-        try:
-            os.fsync(directory)
-        finally:
-            os.close(directory)
-    finally:
-        temporary.unlink(missing_ok=True)
-
-
-def _stale(detail: str) -> Never:
-    raise WorkerStartupError(detail)

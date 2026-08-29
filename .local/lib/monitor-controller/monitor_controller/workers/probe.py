@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import subprocess
-from dataclasses import dataclass
 from pathlib import Path
 from subprocess import TimeoutExpired
-from typing import Final, Never, Protocol, final
+from typing import TYPE_CHECKING, Final, Protocol, final
 
 from monitor_controller.model import (
     BROKEN_EXTENSION_EDID_INTEGRITIES,
@@ -16,47 +15,53 @@ from monitor_controller.model import (
 )
 from monitor_controller.observer.drm import (
     ConnectorKind,
-    ConnectorStatus,
     DrmConnector,
-    EvidenceState,
     ReadOnlyTree,
     RootedSysfsReader,
-    sample_drm,
 )
 from monitor_controller.observer.evidence import RawEvidenceSource, TextCommandEvidence
-from monitor_controller.observer.topology import derive_canonical_topology
 from monitor_controller.observer.xrandr import (
     XrandrEvidenceSource,
     XrandrOutput,
-    sample_xrandr,
 )
 from monitor_controller.runtime.commands import (
     BoundedCommandRunner,
     CommandRequest,
     CommandRunner,
 )
-from monitor_controller.runtime.transactions import (
-    BoundRecordKind,
-    ExpectedTopology,
-    TransactionProtocolError,
-    TransactionRequest,
-)
 from monitor_controller.workers.common import (
+    COMMAND_NOT_FOUND_EXIT_STATUS,
+    COMMAND_TIMEOUT_EXIT_STATUS,
+    CommandResult,
     CurrentTopology,
-    WorkerCancelled,
     WorkerExecution,
     WorkerStartup,
-    WorkerStartupError,
     execute_worker,
     install_cooperative_sigterm_handler,
-    validate_topology_guard,
     validate_worker_startup,
 )
+from monitor_controller.workers.common import (
+    payload_text as _payload_text,
+)
+from monitor_controller.workers.common import (
+    raise_if_cancelled as _raise_if_cancelled,
+)
+from monitor_controller.workers.common import (
+    sample_exact_topology as _sample_exact_topology,
+)
+from monitor_controller.workers.common import (
+    stale as _stale,
+)
+from monitor_controller.workers.common import (
+    validate_execution_claim as _validate_execution_claim_for,
+)
+
+if TYPE_CHECKING:
+    from monitor_controller.runtime.transactions import (
+        TransactionRequest,
+    )
 
 PROBE_COMMAND_TIMEOUT_SECONDS: Final = 10.0
-COMMAND_NOT_FOUND_EXIT_STATUS: Final = 127
-COMMAND_TIMEOUT_EXIT_STATUS: Final = 124
-MAX_COMMAND_EXIT_STATUS: Final = 255
 EXPECTED_CONNECTED_OUTPUTS: Final = 2
 _XRANDR_QUERY = ("xrandr", "--query")
 _XRANDR_PROPERTIES = ("xrandr", "--props")
@@ -71,20 +76,8 @@ _PROBE_PAYLOAD_FIELDS: Final = frozenset(
 )
 
 
-@dataclass(frozen=True, slots=True)
-class ProbeCommandResult:
-    """Bounded terminal status from the sole mutating XRandR command."""
-
-    exit_status: int
-    timed_out: bool = False
-
-    def __post_init__(self) -> None:
-        if not 0 <= self.exit_status <= MAX_COMMAND_EXIT_STATUS:
-            msg = "probe command exit status must be between zero and 255"
-            raise ValueError(msg)
-        if self.timed_out and self.exit_status != COMMAND_TIMEOUT_EXIT_STATUS:
-            msg = "timed-out probe command requires status 124"
-            raise ValueError(msg)
+# Shared bounded result shape; retained under the worker's historical name.
+ProbeCommandResult = CommandResult
 
 
 class ProbeCommands(XrandrEvidenceSource, Protocol):
@@ -228,40 +221,11 @@ def _sample_exact_probe_topology(
     commands: ProbeCommands,
 ) -> CurrentTopology:
     admitted_integrity = _validate_probe_authorization(request)
-    begin_drm = sample_drm(drm_tree)
-    xrandr = sample_xrandr(commands)
-    end_drm = sample_drm(drm_tree)
-    if begin_drm != end_drm:
-        _stale("DRM evidence changed during the worker-local sample")
-    if begin_drm.scan_state is not EvidenceState.AVAILABLE:
-        _stale("DRM connector scan is not complete")
-    if not xrandr.valid:
-        _stale("XRandR query and properties evidence is invalid or torn")
-    if any(
-        item.kind is not ConnectorKind.VIRTUAL
-        and (
-            item.status_state is not EvidenceState.AVAILABLE
-            or item.status is ConnectorStatus.UNKNOWN
-        )
-        for item in begin_drm.connectors
-    ):
-        _stale("DRM connector status evidence is uncertain")
-
-    topology = derive_canonical_topology(begin_drm, xrandr)
-    if topology.inconsistent:
-        _stale("DRM and XRandR connector correspondence is not unique")
-    if set(topology.kernel_connected_outputs) != set(topology.x_connected_outputs):
-        _stale("kernel and X connected topologies differ")
-    current = CurrentTopology(
-        physical_token=topology.physical_token,
-        topology=ExpectedTopology(
-            kernel_connected_outputs=topology.kernel_connected_outputs,
-            kernel_external_outputs=topology.kernel_external_outputs,
-            x_connected_outputs=topology.x_connected_outputs,
-            x_active_outputs=topology.x_active_outputs,
-        ),
-    )
-    validate_topology_guard(request, current)
+    sampled = _sample_exact_topology(request, drm_tree, commands)
+    current = sampled.current
+    begin_drm = sampled.drm
+    topology = sampled.topology
+    xrandr = sampled.xrandr
 
     output = _payload_text(request, "probe_output")
     internal = _payload_text(request, "internal_output")
@@ -351,34 +315,7 @@ def _validate_probe_authorization(request: TransactionRequest) -> EdidIntegrity:
     return integrity
 
 
-def _payload_text(request: TransactionRequest, name: str) -> str:
-    try:
-        value = request.payload_value(name)
-    except TransactionProtocolError as error:
-        raise WorkerStartupError(str(error)) from error
-    if not isinstance(value, str) or not value:
-        _stale(f"probe request {name} is not non-empty text")
-    return value
-
-
 def _validate_execution_claim(startup: WorkerStartup) -> None:
-    request = startup.request
-    claim = startup.execution_claim
-    if (
-        claim is None
-        or claim.record_kind is not BoundRecordKind.EXECUTION_CLAIM
-        or claim.action_id != request.action_id
-        or claim.action_kind is not ActionKind.PROBE
-        or claim.unit_name != request.unit_name
-        or claim.request_sha256 != request.request_sha256
-    ):
-        _stale("worker lacks its exact durable execution claim")
+    _validate_execution_claim_for(startup, ActionKind.PROBE)
 
 
-def _raise_if_cancelled(startup: WorkerStartup) -> None:
-    if startup.store.stop_intent_if_present(startup.request.action_id) is not None:
-        raise WorkerCancelled
-
-
-def _stale(detail: str) -> Never:
-    raise WorkerStartupError(detail)

@@ -2,33 +2,28 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Never, Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from monitor_controller.model import ActionId, RawEvidenceSource
 from monitor_controller.observer.autorandr import (
     SavedAutorandrProfile,
     parse_saved_profile,
 )
-from monitor_controller.observer.drm import (
-    ConnectorKind,
-    ConnectorStatus,
-    EvidenceState,
-    ReadOnlyTree,
-    sample_drm,
-)
 from monitor_controller.observer.evidence import TextCommandEvidence
-from monitor_controller.observer.topology import derive_canonical_topology
-from monitor_controller.observer.xrandr import XrandrEvidenceSource, sample_xrandr
+from monitor_controller.observer.xrandr import XrandrEvidenceSource
 from monitor_controller.runtime.transactions import ExpectedTopology, TransactionRequest
 from monitor_controller.workers.common import (
     CurrentTopology,
-    WorkerStartupError,
-    validate_topology_guard,
+    sample_exact_topology,
+)
+from monitor_controller.workers.common import (
+    stale as _stale,
 )
 from monitor_controller.workers.identity import validate_noncontradictory_edids
 
 if TYPE_CHECKING:
     from monitor_controller.desktop.plan_codec import DesktopPlanBundle
+    from monitor_controller.observer.drm import ReadOnlyTree
 
 
 class DesktopTopologyCommands(XrandrEvidenceSource, Protocol):
@@ -78,39 +73,8 @@ def sample_exact_desktop_topology(
     allow_temporary_edid_absence: bool,
 ) -> CurrentTopology:
     """Re-prove exact connected/active topology and non-contradictory identity."""
-    begin_drm = sample_drm(drm_tree)
-    xrandr = sample_xrandr(commands)
-    end_drm = sample_drm(drm_tree)
-    if begin_drm != end_drm:
-        _stale("DRM evidence changed during desktop boundary sample")
-    if begin_drm.scan_state is not EvidenceState.AVAILABLE:
-        _stale("DRM connector scan is not complete")
-    if not xrandr.valid:
-        _stale("XRandR query and properties evidence is invalid or torn")
-    if any(
-        item.kind is not ConnectorKind.VIRTUAL
-        and (
-            item.status_state is not EvidenceState.AVAILABLE
-            or item.status is ConnectorStatus.UNKNOWN
-        )
-        for item in begin_drm.connectors
-    ):
-        _stale("DRM connector status evidence is uncertain")
-    topology = derive_canonical_topology(begin_drm, xrandr)
-    if topology.inconsistent:
-        _stale("DRM and X connector identity is contradictory or non-unique")
-    if set(topology.kernel_connected_outputs) != set(topology.x_connected_outputs):
-        _stale("kernel and X connected topologies differ")
-    current = CurrentTopology(
-        topology.physical_token,
-        ExpectedTopology(
-            topology.kernel_connected_outputs,
-            topology.kernel_external_outputs,
-            topology.x_connected_outputs,
-            topology.x_active_outputs,
-        ),
-    )
-    validate_topology_guard(request, current)
+    sampled = sample_exact_topology(request, drm_tree, commands)
+    current = sampled.current
     profile = staged_profile(request, bundle)
     saved_to_live = {
         item.saved_output: item.live_output for item in request.output_mapping
@@ -120,8 +84,8 @@ def sample_exact_desktop_topology(
     patterns = {saved_to_live[item.output]: item.value for item in profile.setup}
     validate_noncontradictory_edids(
         patterns,
-        begin_drm.connectors,
-        topology,
+        sampled.drm.connectors,
+        sampled.topology,
         allow_temporary_absence=allow_temporary_edid_absence,
     )
     return current
@@ -168,7 +132,3 @@ def _profile_evidence(path: str, content: bytes) -> TextCommandEvidence:
         f"staged-plan:{path}",
         content.decode("utf-8", errors="strict"),
     )
-
-
-def _stale(detail: str) -> Never:
-    raise WorkerStartupError(detail)
