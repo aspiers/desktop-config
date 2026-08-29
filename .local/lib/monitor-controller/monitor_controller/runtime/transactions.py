@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import contextlib
-import ctypes
 import errno
 import hashlib
 import json
@@ -33,6 +32,29 @@ from monitor_controller.model import (
     TransitionId,
     TransitionKey,
 )
+from monitor_controller.safeio import (
+    DIRECTORY_OPEN_FLAGS as _DIRECTORY_OPEN_FLAGS,
+)
+from monitor_controller.safeio import (
+    FILE_READ_FLAGS as _FILE_READ_FLAGS,
+)
+from monitor_controller.safeio import SHA256_VALUE
+from monitor_controller.safeio import (
+    open_absolute_directory as _shared_open_absolute_directory,
+)
+from monitor_controller.safeio import (
+    read_verified_file_at as _shared_read_verified_file_at,
+)
+from monitor_controller.safeio import (
+    relative_regular_files_at as _shared_relative_regular_files_at,
+)
+from monitor_controller.safeio import (
+    rename_noreplace_at as _shared_rename_noreplace_at,
+)
+from monitor_controller.safeio import (
+    validate_leaf_name as _shared_validate_leaf_name,
+)
+from monitor_controller.strictjson import strict_loads
 
 TRANSACTION_SCHEMA_VERSION: Final = 1
 MAX_TRANSACTION_BYTES: Final = 128 * 1024
@@ -50,7 +72,7 @@ MAX_TRANSACTION_ARTIFACT_COMPONENT_CHARS: Final = 255
 _ARTIFACT_ROOT: Final = "artifacts"
 _MIN_ARTIFACT_PATH_PARTS: Final = 2
 _RENAME_NOREPLACE: Final = 1
-_SHA256_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
+_SHA256_PATTERN = SHA256_VALUE
 _ACTION_ID_PATTERN = re.compile(
     r"^(plan|probe|application|preparation|finalization)-"
     r"([0-9a-f]{32})-([1-9][0-9]*)$"
@@ -67,15 +89,6 @@ _STOPPABLE_LIFECYCLES: Final = frozenset(
         ActionLifecycle.TIMED_OUT,
         ActionLifecycle.UNKNOWN,
     }
-)
-_DIRECTORY_OPEN_FLAGS: Final = (
-    os.O_RDONLY
-    | getattr(os, "O_CLOEXEC", 0)
-    | getattr(os, "O_DIRECTORY", 0)
-    | getattr(os, "O_NOFOLLOW", 0)
-)
-_FILE_READ_FLAGS: Final = (
-    os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
 )
 
 # Action payloads deliberately have a shallow, closed JSON value domain.  The
@@ -1537,11 +1550,7 @@ def _decode_object(payload: bytes) -> dict[str, object]:
         raise TransactionProtocolError(msg)
     try:
         text = payload.decode("utf-8", errors="strict")
-        raw = json.loads(
-            text,
-            object_pairs_hook=_unique_object,
-            parse_constant=_reject_constant,
-        )
+        raw = strict_loads(text, TransactionProtocolError)
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
         msg = "transaction is not valid UTF-8 JSON"
         raise TransactionProtocolError(msg) from error
@@ -1549,21 +1558,6 @@ def _decode_object(payload: bytes) -> dict[str, object]:
         msg = "transaction JSON root must be an object"
         raise TransactionProtocolError(msg)
     return cast("dict[str, object]", raw)
-
-
-def _unique_object(pairs: list[tuple[str, object]]) -> dict[str, object]:
-    result: dict[str, object] = {}
-    for key, value in pairs:
-        if key in result:
-            msg = f"duplicate JSON field: {key}"
-            raise TransactionProtocolError(msg)
-        result[key] = value
-    return result
-
-
-def _reject_constant(value: str) -> None:
-    msg = f"non-finite JSON number is forbidden: {value}"
-    raise TransactionProtocolError(msg)
 
 
 def _require_keys(
@@ -1800,40 +1794,18 @@ def _artifact_file_paths_at(action_directory_fd: int) -> tuple[str, ...]:
     except OSError as error:
         msg = "cannot safely open transaction artifact root"
         raise TransactionProtocolError(msg) from error
-    paths: list[str] = []
-
-    def walk(descriptor: int, prefix: tuple[str, ...]) -> None:
-        _validate_directory_descriptor(descriptor, "transaction artifact directory")
-        try:
-            names = tuple(sorted(os.listdir(descriptor)))
-        except OSError as error:
-            msg = "transaction artifact directory cannot be enumerated"
-            raise TransactionProtocolError(msg) from error
-        for name in names:
-            _validate_leaf_name(name)
-            try:
-                details = os.stat(name, dir_fd=descriptor, follow_symlinks=False)
-            except OSError as error:
-                msg = "transaction artifact metadata cannot be read"
-                raise TransactionProtocolError(msg) from error
-            relative = (*prefix, name)
-            if stat.S_ISDIR(details.st_mode):
-                child = os.open(name, _DIRECTORY_OPEN_FLAGS, dir_fd=descriptor)
-                try:
-                    walk(child, relative)
-                finally:
-                    os.close(child)
-            elif stat.S_ISREG(details.st_mode):
-                paths.append("/".join(relative))
-            else:
-                msg = "transaction artifact tree contains a non-regular entry"
-                raise TransactionProtocolError(msg)
-
     try:
-        walk(root, (_ARTIFACT_ROOT,))
+        return _shared_relative_regular_files_at(
+            root,
+            validate_directory=lambda fd: _validate_directory_descriptor(
+                fd, "transaction artifact directory"
+            ),
+            reference="transaction artifact tree",
+            error=TransactionProtocolError,
+            prefix=(_ARTIFACT_ROOT,),
+        )
     finally:
         os.close(root)
-    return tuple(paths)
 
 
 def _rename_noreplace_at(directory_fd: int, source: str, target: str) -> None:
@@ -1841,32 +1813,14 @@ def _rename_noreplace_at(directory_fd: int, source: str, target: str) -> None:
     _validate_leaf_name(source)
     _validate_leaf_name(target)
     _validate_directory_descriptor(directory_fd, "transaction root")
-    library = ctypes.CDLL(None, use_errno=True)
-    renameat2 = getattr(library, "renameat2", None)
-    if renameat2 is None:
-        msg = "renameat2(RENAME_NOREPLACE) is unavailable"
-        raise TransactionProtocolError(msg)
-    renameat2.argtypes = (
-        ctypes.c_int,
-        ctypes.c_char_p,
-        ctypes.c_int,
-        ctypes.c_char_p,
-        ctypes.c_uint,
-    )
-    renameat2.restype = ctypes.c_int
-    result = renameat2(
+    if not _shared_rename_noreplace_at(
         directory_fd,
-        os.fsencode(source),
-        directory_fd,
-        os.fsencode(target),
-        _RENAME_NOREPLACE,
-    )
-    if result == 0:
-        return
-    error_number = ctypes.get_errno()
-    if error_number == errno.EEXIST:
-        raise FileExistsError(error_number, os.strerror(error_number), target)
-    raise OSError(error_number, os.strerror(error_number), target)
+        source,
+        target,
+        "transaction publish",
+        TransactionProtocolError,
+    ):
+        raise FileExistsError(errno.EEXIST, os.strerror(errno.EEXIST), target)
 
 
 def _remove_child_directory_at(parent_directory_fd: int, name: str) -> None:
@@ -2035,81 +1989,30 @@ def _read_regular_file_at(
     expected_mode: int = _FILE_MODE,
 ) -> bytes:
     """Read one final file through a retained parent descriptor and O_NOFOLLOW."""
-    _validate_leaf_name(name)
-    _validate_directory_descriptor(directory_fd, "transaction action directory")
-    try:
-        descriptor = os.open(name, _FILE_READ_FLAGS, dir_fd=directory_fd)
-    except OSError as error:
-        if isinstance(error, FileNotFoundError):
-            raise
-        msg = f"cannot safely open transaction file {name}"
-        raise TransactionProtocolError(msg) from error
-    try:
-        before = os.fstat(descriptor)
-        _validate_regular_file_details(before, name, expected_mode=expected_mode)
-        chunks: list[bytes] = []
-        remaining = before.st_size
-        while remaining:
-            chunk = os.read(descriptor, min(remaining, 64 * 1024))
-            if not chunk:
-                msg = f"transaction file {name} was truncated while reading"
-                raise TransactionProtocolError(msg)
-            chunks.append(chunk)
-            remaining -= len(chunk)
-        if os.read(descriptor, 1):
-            msg = f"transaction file {name} grew while reading"
-            raise TransactionProtocolError(msg)
-        after = os.fstat(descriptor)
-        _validate_regular_file_details(after, name, expected_mode=expected_mode)
-        if _stable_file_details(before) != _stable_file_details(after):
-            msg = f"transaction file {name} metadata changed while reading"
-            raise TransactionProtocolError(msg)
-        _validate_directory_descriptor(
-            directory_fd,
-            "transaction action directory",
-        )
-        return b"".join(chunks)
-    finally:
-        os.close(descriptor)
+    return _shared_read_verified_file_at(
+        directory_fd,
+        name,
+        validate_file=lambda details: _validate_regular_file_details(
+            details, name, expected_mode=expected_mode
+        ),
+        validate_parent=lambda fd: _validate_directory_descriptor(
+            fd, "transaction action directory"
+        ),
+        reference="transaction file",
+        error=TransactionProtocolError,
+        wrap_open_errors=True,
+    )
 
 
-def _open_absolute_directory(path: Path, *, create: bool) -> int:  # noqa: C901
+def _open_absolute_directory(path: Path, *, create: bool) -> int:
     """Resolve/create an absolute directory one O_NOFOLLOW component at a time."""
-    parts = path.parts
-    if not parts or parts[0] != "/" or any(part in {".", ".."} for part in parts[1:]):
-        msg = "transaction root path is not a canonical absolute directory"
-        raise TransactionProtocolError(msg)
-    descriptor = os.open("/", _DIRECTORY_OPEN_FLAGS)
-    try:
-        for part in parts[1:]:
-            try:
-                child = os.open(part, _DIRECTORY_OPEN_FLAGS, dir_fd=descriptor)
-            except FileNotFoundError:
-                if not create:
-                    os.close(descriptor)
-                    return -1
-                try:
-                    os.mkdir(part, _DIRECTORY_MODE, dir_fd=descriptor)
-                except FileExistsError:
-                    pass
-                else:
-                    _sync_descriptor(descriptor)
-                try:
-                    child = os.open(part, _DIRECTORY_OPEN_FLAGS, dir_fd=descriptor)
-                except OSError as error:
-                    msg = "created transaction directory cannot be safely opened"
-                    raise TransactionProtocolError(msg) from error
-                os.fchmod(child, _DIRECTORY_MODE)
-            except OSError as error:
-                msg = "transaction root component cannot be safely opened"
-                raise TransactionProtocolError(msg) from error
-            os.close(descriptor)
-            descriptor = child
-        return descriptor  # noqa: TRY300
-    except Exception:
-        if descriptor >= 0:
-            os.close(descriptor)
-        raise
+    return _shared_open_absolute_directory(
+        path,
+        create=create,
+        mode=_DIRECTORY_MODE,
+        reference="transaction root",
+        error=TransactionProtocolError,
+    )
 
 
 def _validate_regular_file_details(
@@ -2130,20 +2033,6 @@ def _validate_regular_file_details(
         raise TransactionProtocolError(msg)
 
 
-def _stable_file_details(details: os.stat_result) -> tuple[int, ...]:
-    return (
-        details.st_dev,
-        details.st_ino,
-        details.st_mode,
-        details.st_uid,
-        details.st_gid,
-        details.st_nlink,
-        details.st_size,
-        details.st_mtime_ns,
-        details.st_ctime_ns,
-    )
-
-
 def _validate_directory_descriptor(descriptor: int, name: str) -> None:
     try:
         details = os.fstat(descriptor)
@@ -2161,9 +2050,7 @@ def _validate_directory_descriptor(descriptor: int, name: str) -> None:
 
 
 def _validate_leaf_name(name: str) -> None:
-    if not name or name in {".", ".."} or "/" in name or "\x00" in name:
-        msg = "transaction file name is not a safe leaf"
-        raise TransactionProtocolError(msg)
+    _shared_validate_leaf_name(name, "transaction file name", TransactionProtocolError)
 
 
 def _sync_descriptor(descriptor: int) -> None:

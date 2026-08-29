@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Final
 
 from monitor_controller.runtime.transactions import TransactionArtifact
+from monitor_controller.safeio import SHA256_VALUE
 
 if TYPE_CHECKING:
     from monitor_controller.model import OutputMapping
@@ -16,7 +17,7 @@ if TYPE_CHECKING:
 _ACTION_PROFILE = re.compile(r"^application-[0-9a-f]{32}-[1-9][0-9]*$")
 _OUTPUT_NAME = re.compile(r"^[^\s\x00-\x1f\x7f]+$")
 _OPTION_NAME = re.compile(r"^[a-z][a-z0-9_-]*$")
-_SHA256 = re.compile(r"^sha256:[0-9a-f]{64}$")
+_SHA256 = SHA256_VALUE
 _CONTROL_CHARACTER_BOUNDARY: Final = 32
 _MAX_OUTPUT_NAME_CHARS: Final = 128
 _CONNECTOR_REFERENCE_OPTIONS: Final = frozenset(

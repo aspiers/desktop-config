@@ -25,6 +25,7 @@ from .model import (
     State,
     bound_action_tombstones,
 )
+from .strictjson import strict_loads
 
 MAX_STATE_BYTES: int = 1_048_576
 MAX_JSON_INTEGER: int = (1 << 53) - 1
@@ -57,34 +58,6 @@ def _fail(message: str) -> Never:
     raise StateCodecError(message)
 
 
-def _object_from_pairs(pairs: list[tuple[str, object]]) -> dict[str, object]:
-    result: dict[str, object] = {}
-    for key, value in pairs:
-        if key in result:
-            _fail(f"duplicate JSON field: {key}")
-        result[key] = value
-    return result
-
-
-def _parse_integer(value: str) -> int:
-    try:
-        parsed = int(value)
-    except ValueError as error:  # JSON invokes parse_int only for integer tokens.
-        message = "JSON integer token is invalid"
-        raise StateCodecError(message) from error
-    if not -MAX_JSON_INTEGER <= parsed <= MAX_JSON_INTEGER:
-        _fail("JSON integer is outside the supported range")
-    return parsed
-
-
-def _reject_float(value: str) -> Never:
-    _fail(f"floating-point JSON number is forbidden: {value}")
-
-
-def _reject_constant(value: str) -> object:
-    _fail(f"non-finite JSON number is forbidden: {value}")
-
-
 def _decode_document(data: bytes | str, max_bytes: int) -> object:
     if isinstance(data, bytes):
         size = len(data)
@@ -105,12 +78,11 @@ def _decode_document(data: bytes | str, max_bytes: int) -> object:
     if not text:
         _fail("state record is empty")
     try:
-        return json.loads(
+        return strict_loads(
             text,
-            object_pairs_hook=_object_from_pairs,
-            parse_int=_parse_integer,
-            parse_float=_reject_float,
-            parse_constant=_reject_constant,
+            StateCodecError,
+            reject_floats=True,
+            max_integer=MAX_JSON_INTEGER,
         )
     except StateCodecError:
         raise

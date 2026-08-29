@@ -4,12 +4,9 @@
 from __future__ import annotations
 
 import contextlib
-import ctypes
-import errno
 import hashlib
 import json
 import os
-import re
 import stat
 from dataclasses import dataclass, replace
 from enum import StrEnum
@@ -34,6 +31,29 @@ from monitor_controller.model import (
     PlanningInputKey,
     TransitionId,
 )
+from monitor_controller.safeio import (
+    DIRECTORY_OPEN_FLAGS as _DIRECTORY_OPEN_FLAGS,
+)
+from monitor_controller.safeio import SHA256_VALUE
+from monitor_controller.safeio import (
+    open_absolute_directory as _shared_open_absolute_directory,
+)
+from monitor_controller.safeio import (
+    read_verified_file_at as _shared_read_verified_file_at,
+)
+from monitor_controller.safeio import (
+    relative_regular_files_at as _shared_relative_regular_files_at,
+)
+from monitor_controller.safeio import (
+    rename_noreplace_at as _shared_rename_noreplace_at,
+)
+from monitor_controller.safeio import (
+    stable_file_details as _stable_file_details,
+)
+from monitor_controller.safeio import (
+    validate_leaf_name as _shared_validate_leaf_name,
+)
+from monitor_controller.strictjson import strict_loads
 
 from .layout import DisplayScreenSnapshot, ResolvedLayout  # noqa: TC001
 
@@ -54,16 +74,7 @@ _GENERATED_KEYS_PATH: Final = ".fluxbox/keys"
 _EMACS_FONT_EXPRESSION: Final = "monitor-controller-apply-font-height"
 _PANEL_POSITION: Final = "p=8;x=0;y=0"
 _TERMINAL_FONT_NAME: Final = "SauceCodePro Nerd Font"
-_DIRECTORY_OPEN_FLAGS: Final = (
-    os.O_RDONLY
-    | getattr(os, "O_CLOEXEC", 0)
-    | getattr(os, "O_DIRECTORY", 0)
-    | getattr(os, "O_NOFOLLOW", 0)
-)
-_FILE_READ_FLAGS: Final = (
-    os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
-)
-_SHA256 = re.compile(r"^sha256:[0-9a-f]{64}$")
+_SHA256 = SHA256_VALUE
 
 
 class PlanCodecError(ValueError):
@@ -979,13 +990,7 @@ def decode_plan(payload: bytes) -> DesktopPlan:
         raise PlanCodecError("desktop plan is empty or exceeds its size limit")
     try:
         text = payload.decode("utf-8", errors="strict")
-        document = json.loads(
-            text,
-            object_pairs_hook=_object_from_pairs,
-            parse_int=_parse_integer,
-            parse_float=_reject_float,
-            parse_constant=_reject_constant,
-        )
+        document = strict_loads(text, PlanCodecError, reject_floats=True)
         decoded = decode_schema_value(document, DesktopPlan)
     except (
         UnicodeDecodeError,
@@ -1021,30 +1026,6 @@ def _hash_component(digest: _HashWriter, path: bytes, content: bytes) -> None:
     digest.update(path)
     digest.update(len(content).to_bytes(8, "big"))
     digest.update(content)
-
-
-def _object_from_pairs(pairs: list[tuple[str, object]]) -> dict[str, object]:
-    result: dict[str, object] = {}
-    for key, value in pairs:
-        if key in result:
-            raise PlanCodecError(f"duplicate desktop plan field: {key}")
-        result[key] = value
-    return result
-
-
-def _parse_integer(value: str) -> int:
-    try:
-        return int(value)
-    except ValueError as error:
-        raise PlanCodecError("desktop plan integer token is invalid") from error
-
-
-def _reject_float(value: str) -> object:
-    raise PlanCodecError(f"desktop plan floats are forbidden: {value}")
-
-
-def _reject_constant(value: str) -> object:
-    raise PlanCodecError(f"desktop plan non-finite values are forbidden: {value}")
 
 
 def _content_hash(content: bytes) -> str:
@@ -1192,30 +1173,19 @@ def _read_relative_file_at(directory_fd: int, path: str, maximum: int) -> bytes:
 
 
 def _read_private_file_at(directory_fd: int, name: str, maximum: int) -> bytes:
-    _validate_leaf_name(name)
-    _validate_private_directory_descriptor(directory_fd, "plan parent directory")
-    descriptor = os.open(name, _FILE_READ_FLAGS, dir_fd=directory_fd)
-    try:
-        before = os.fstat(descriptor)
-        _validate_private_file_details(before, name, maximum)
-        chunks: list[bytes] = []
-        remaining = before.st_size
-        while remaining:
-            chunk = os.read(descriptor, min(remaining, 64 * 1024))
-            if not chunk:
-                raise PlanCodecError("staged plan file was truncated during read")
-            chunks.append(chunk)
-            remaining -= len(chunk)
-        if os.read(descriptor, 1):
-            raise PlanCodecError("staged plan file grew during read")
-        after = os.fstat(descriptor)
-        _validate_private_file_details(after, name, maximum)
-        if _stable_file_details(before) != _stable_file_details(after):
-            raise ImmutablePlanError("staged plan file metadata changed during read")
-        _validate_private_directory_descriptor(directory_fd, "plan parent directory")
-        return b"".join(chunks)
-    finally:
-        os.close(descriptor)
+    return _shared_read_verified_file_at(
+        directory_fd,
+        name,
+        validate_file=lambda details: _validate_private_file_details(
+            details, name, maximum
+        ),
+        validate_parent=lambda fd: _validate_private_directory_descriptor(
+            fd, "plan parent directory"
+        ),
+        reference="staged plan file",
+        error=PlanCodecError,
+        changed_error=ImmutablePlanError,
+    )
 
 
 def _validate_private_file_details(
@@ -1257,57 +1227,19 @@ def _inode_details(details: os.stat_result) -> tuple[int, ...]:
     )
 
 
-def _stable_file_details(details: os.stat_result) -> tuple[int, ...]:
-    """Return substitution-sensitive metadata while deliberately excluding atime."""
-    return (
-        details.st_dev,
-        details.st_ino,
-        details.st_mode,
-        details.st_uid,
-        details.st_gid,
-        details.st_nlink,
-        details.st_size,
-        details.st_mtime_ns,
-        details.st_ctime_ns,
-    )
-
-
 def _relative_regular_files_at(root_fd: int) -> tuple[str, ...]:
-    values: list[str] = []
-
-    def walk(descriptor: int, prefix: tuple[str, ...]) -> None:
-        _validate_private_directory_descriptor(descriptor, "plan tree directory")
-        try:
-            names = tuple(sorted(os.listdir(descriptor)))
-        except OSError as error:
-            raise PlanCodecError(
-                "staged plan directory cannot be enumerated"
-            ) from error
-        for name in names:
-            _validate_leaf_name(name)
-            try:
-                details = os.stat(name, dir_fd=descriptor, follow_symlinks=False)
-            except OSError as error:
-                raise PlanCodecError("staged plan metadata cannot be read") from error
-            relative = (*prefix, name)
-            if stat.S_ISDIR(details.st_mode):
-                try:
-                    child = os.open(name, _DIRECTORY_OPEN_FLAGS, dir_fd=descriptor)
-                except OSError as error:
-                    raise PlanCodecError(
-                        "staged plan directory cannot be opened"
-                    ) from error
-                try:
-                    walk(child, relative)
-                finally:
-                    os.close(child)
-            elif stat.S_ISREG(details.st_mode):
-                values.append("/".join(relative))
-            else:
-                raise PlanCodecError("staged plan tree contains an unsafe entry")
-
-    walk(root_fd, ())
-    return tuple(sorted(values))
+    return tuple(
+        sorted(
+            _shared_relative_regular_files_at(
+                root_fd,
+                validate_directory=lambda fd: _validate_private_directory_descriptor(
+                    fd, "plan tree directory"
+                ),
+                reference="staged plan tree",
+                error=PlanCodecError,
+            )
+        )
+    )
 
 
 def _fsync_tree_at(root_fd: int) -> None:
@@ -1375,77 +1307,27 @@ def _rename_noreplace_at(directory_fd: int, source: str, target: str) -> bool:
     _validate_leaf_name(source)
     _validate_leaf_name(target)
     _validate_private_directory_descriptor(directory_fd, "plan staging root")
-    library = ctypes.CDLL(None, use_errno=True)
-    renameat2 = getattr(library, "renameat2", None)
-    if renameat2 is None:
-        raise PlanCodecError("renameat2(RENAME_NOREPLACE) is unavailable")
-    renameat2.argtypes = (
-        ctypes.c_int,
-        ctypes.c_char_p,
-        ctypes.c_int,
-        ctypes.c_char_p,
-        ctypes.c_uint,
-    )
-    renameat2.restype = ctypes.c_int
-    result = renameat2(
+    return _shared_rename_noreplace_at(
         directory_fd,
-        os.fsencode(source),
-        directory_fd,
-        os.fsencode(target),
-        _RENAME_NOREPLACE,
+        source,
+        target,
+        "plan staging",
+        PlanCodecError,
     )
-    if result == 0:
-        return True
-    number = ctypes.get_errno()
-    if number == errno.EEXIST:
-        return False
-    raise OSError(number, os.strerror(number), target)
 
 
-def _open_absolute_directory(  # noqa: C901 - safe component-wise open/create
-    path: Path,
-    *,
-    create: bool,
-) -> int:
-    parts = path.parts
-    if not parts or parts[0] != "/" or any(part in {".", ".."} for part in parts[1:]):
-        raise PlanCodecError("plan root must be a canonical absolute directory")
-    descriptor = os.open("/", _DIRECTORY_OPEN_FLAGS)
-    try:
-        for part in parts[1:]:
-            try:
-                child = os.open(part, _DIRECTORY_OPEN_FLAGS, dir_fd=descriptor)
-            except FileNotFoundError:
-                if not create:
-                    os.close(descriptor)
-                    return -1
-                created = False
-                try:
-                    os.mkdir(part, _PRIVATE_DIRECTORY_MODE, dir_fd=descriptor)
-                    created = True
-                except FileExistsError:
-                    pass
-                child = os.open(part, _DIRECTORY_OPEN_FLAGS, dir_fd=descriptor)
-                if created:
-                    os.fchmod(child, _PRIVATE_DIRECTORY_MODE)
-                    _sync_descriptor(descriptor)
-            except OSError as error:
-                raise PlanCodecError(
-                    "plan root component cannot be safely opened"
-                ) from error
-            os.close(descriptor)
-            descriptor = child
-    except Exception:
-        if descriptor >= 0:
-            os.close(descriptor)
-        raise
-    else:
-        return descriptor
+def _open_absolute_directory(path: Path, *, create: bool) -> int:
+    return _shared_open_absolute_directory(
+        path,
+        create=create,
+        mode=_PRIVATE_DIRECTORY_MODE,
+        reference="plan root",
+        error=PlanCodecError,
+    )
 
 
 def _validate_leaf_name(name: str) -> None:
-    if not name or name in {".", ".."} or "/" in name or "\x00" in name:
-        raise PlanCodecError("plan path component is not a safe leaf")
+    _shared_validate_leaf_name(name, "plan path component", PlanCodecError)
 
 
 def _sync_descriptor(descriptor: int) -> None:

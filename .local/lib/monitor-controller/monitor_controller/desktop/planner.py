@@ -28,6 +28,19 @@ from monitor_controller.model import (
 )
 from monitor_controller.observer.autorandr import parse_saved_profile
 from monitor_controller.observer.evidence import TextCommandEvidence
+from monitor_controller.safeio import (
+    DIRECTORY_OPEN_FLAGS as _DIRECTORY_OPEN_FLAGS,
+)
+from monitor_controller.safeio import (
+    FILE_READ_FLAGS as _FILE_READ_FLAGS,
+)
+from monitor_controller.safeio import SHA256_VALUE
+from monitor_controller.safeio import (
+    open_absolute_directory as _shared_open_absolute_directory,
+)
+from monitor_controller.safeio import (
+    stable_file_details as _stable_file_details,
+)
 
 if TYPE_CHECKING:
     from monitor_controller.observer.autorandr import SavedAutorandrProfile
@@ -93,15 +106,6 @@ _FINALIZE_ACTIONS: Final = (
     PlannedActionKind.RESTART_NM_APPLET,
     PlannedActionKind.CAPTURE_TRAY_DIAGNOSTICS,
 )
-_DIRECTORY_OPEN_FLAGS: Final = (
-    os.O_RDONLY
-    | getattr(os, "O_CLOEXEC", 0)
-    | getattr(os, "O_DIRECTORY", 0)
-    | getattr(os, "O_NOFOLLOW", 0)
-)
-_FILE_READ_FLAGS: Final = (
-    os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
-)
 _MIN_DIRECTORY_LINK_COUNT: Final = 2
 _EDID_BASE_BYTES: Final = 128
 _EDID_BASE_HEX_CHARS: Final = _EDID_BASE_BYTES * 2
@@ -114,7 +118,7 @@ _EDID_VENDOR_LETTERS: Final = 26
 _ASCII_PRINTABLE_MIN: Final = 32
 _ASCII_PRINTABLE_MAX: Final = 126
 _EDID_IDENTITY_HASH_DOMAIN: Final = b"monitor-controller-edid-model-v1\x00"
-_SHA256_VALUE = re.compile(r"^sha256:[0-9a-f]{64}$")
+_SHA256_VALUE = SHA256_VALUE
 _EDID_MODEL_KEY = re.compile(r"^[A-Z]{3}:[0-9a-f]{4}$")
 _EDID_VENDOR_NAMES: Final = {
     "AOC": ("AOC", None),
@@ -1490,28 +1494,19 @@ def _hash_configuration_component(digest: _Digest, label: bytes, value: bytes) -
 
 
 def _open_configuration_root(path: Path) -> int:
-    parts = path.parts
-    if not parts or parts[0] != "/" or any(part in {".", ".."} for part in parts[1:]):
-        raise DesktopPlanningError("configuration root must be canonical and absolute")
-    descriptor = os.open("/", _DIRECTORY_OPEN_FLAGS)
-    try:
-        for component in parts[1:]:
-            try:
-                child = os.open(component, _DIRECTORY_OPEN_FLAGS, dir_fd=descriptor)
-            except OSError as error:
-                raise DesktopPlanningError(
-                    "configuration root component cannot be safely opened"
-                ) from error
-            _validate_configuration_directory(child)
-            os.close(descriptor)
-            descriptor = child
-        _validate_configuration_directory(descriptor)
-    except Exception:
-        if descriptor >= 0:
-            os.close(descriptor)
-        raise
-    else:
-        return descriptor
+    descriptor = _shared_open_absolute_directory(
+        path,
+        create=False,
+        mode=0o700,
+        reference="configuration root",
+        error=DesktopPlanningError,
+        validate=_validate_configuration_directory,
+    )
+    if descriptor < 0:
+        raise DesktopPlanningError(
+            "configuration root component cannot be safely opened"
+        )
+    return descriptor
 
 
 def _validate_configuration_directory(descriptor: int) -> None:
@@ -1537,17 +1532,3 @@ def _validate_configuration_file(details: os.stat_result, logical: str) -> None:
             f"configuration {logical!r} is not a bounded regular file"
         )
 
-
-def _stable_file_details(details: os.stat_result) -> tuple[int, ...]:
-    """Exclude atime, which ordinary reads are allowed to update."""
-    return (
-        details.st_dev,
-        details.st_ino,
-        details.st_mode,
-        details.st_uid,
-        details.st_gid,
-        details.st_nlink,
-        details.st_size,
-        details.st_mtime_ns,
-        details.st_ctime_ns,
-    )

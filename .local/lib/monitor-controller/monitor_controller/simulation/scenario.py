@@ -8,7 +8,7 @@ from collections import Counter
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import NoReturn, cast
+from typing import cast
 from uuid import UUID
 
 from ..model import (
@@ -78,6 +78,7 @@ from ..model import (
     WorkerUnit,
 )
 from ..reducer import reduce
+from ..strictjson import strict_loads
 
 SCENARIO_SCHEMA_VERSION: int = 2
 _LEGACY_SCENARIO_SCHEMA_VERSION: int = 1
@@ -279,19 +280,6 @@ class ScenarioResult:
         return self.decisions[-1].state
 
 
-def _reject_nonfinite_constant(value: str) -> NoReturn:
-    raise ScenarioFormatError(f"non-finite JSON number is forbidden: {value}")
-
-
-def _reject_duplicate_pairs(pairs: list[tuple[str, object]]) -> dict[str, object]:
-    result: dict[str, object] = {}
-    for key, value in pairs:
-        if key in result:
-            raise ScenarioFormatError(f"duplicate JSON field: {key}")
-        result[key] = value
-    return result
-
-
 def _object(value: object, where: str) -> dict[str, object]:
     if not isinstance(value, dict):
         raise ScenarioFormatError(f"{where} must be a JSON object")
@@ -350,11 +338,7 @@ def _boolean(value: object, where: str) -> bool:
 def load_scenarios(path: Path) -> tuple[Scenario, ...]:
     """Strictly decode all scenarios from *path*, rejecting duplicate fields."""
     try:
-        data = json.loads(
-            path.read_text(),
-            object_pairs_hook=_reject_duplicate_pairs,
-            parse_constant=_reject_nonfinite_constant,
-        )
+        data = strict_loads(path.read_text(), ScenarioFormatError)
     except (OSError, json.JSONDecodeError) as error:
         raise ScenarioFormatError(f"cannot decode {path}: {error}") from error
     root = _object(data, "scenario document")
