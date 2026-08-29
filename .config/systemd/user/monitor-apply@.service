@@ -9,8 +9,8 @@ Environment=PATH=/usr/bin:/bin
 Environment=PYTHONUNBUFFERED=1
 PassEnvironment=DISPLAY XAUTHORITY
 UnsetEnvironment=BASH_ENV ENV LD_LIBRARY_PATH LD_PRELOAD PYTHONHOME PYTHONINSPECT PYTHONPATH PYTHONSTARTUP PYTHONUSERBASE
-ExecStart=%h/.local/share/monitor-controller/venv/bin/python -I -m monitor_controller.cli internal apply --transaction-root %t/monitor-system/transactions --action-id %I --unit %n --sysfs-root /sys/class/drm
-ExecStopPost=%h/.local/share/monitor-controller/venv/bin/python -I -m monitor_controller.workers.common record-systemd-result --transaction-root %t/monitor-system/transactions --action-id %I --unit %n --action-kind application --service-result ${SERVICE_RESULT} --exit-code ${EXIT_CODE} --exit-status ${EXIT_STATUS}
+ExecStart=%h/.local/share/monitor-controller/venv/bin/python -I -m monitor_controller.cli internal apply --transaction-root %t/monitor-controller/active/transactions --action-id %I --unit %n --sysfs-root /sys/class/drm
+ExecStopPost=%h/.local/share/monitor-controller/venv/bin/python -I -m monitor_controller.workers.common record-systemd-result --transaction-root %t/monitor-controller/active/transactions --action-id %I --unit %n --action-kind application --service-result ${SERVICE_RESULT} --exit-code ${EXIT_CODE} --exit-status ${EXIT_STATUS}
 TimeoutStartSec=120s
 TimeoutStartFailureMode=terminate
 TimeoutStopSec=5s

@@ -18,7 +18,9 @@ run speculatively will not be run at all.
 
 from __future__ import annotations
 
+import itertools
 import os
+import shlex
 import shutil
 import subprocess
 from dataclasses import dataclass, field
@@ -38,6 +40,7 @@ from monitor_controller.active import (
 from monitor_controller.active import (
     CUTOVER_AUTHORIZATION_VALUE as _AUTHORIZATION_VALUE,
 )
+from monitor_controller.runtime.systemd import DEFAULT_UNIT_TEMPLATES
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping, Sequence
@@ -321,6 +324,71 @@ def check_authority_lock_free(paths: ActivePaths) -> CheckResult:
     )
 
 
+WORKER_UNIT_TEMPLATES: tuple[str, ...] = (
+    *DEFAULT_UNIT_TEMPLATES.values(),
+    "monitor-tray-diagnostics@.service",
+)
+
+
+def check_worker_unit_paths(
+    paths: ActivePaths,
+    *,
+    unit_directory: Path | None = None,
+) -> CheckResult:
+    """Prove the stowed worker templates address the active namespace.
+
+    Workers derive every request and result path from their ``ExecStart``
+    arguments, so a template pointing at a stale root starts cleanly, finds
+    no request, and fails closed: the controller dispatches successfully yet
+    nothing ever acts. Shadow mode structurally cannot surface this, because
+    NullDispatcher never starts a worker, so it must be proven before cutover
+    (dc-cs4).
+    """
+    directory = (
+        paths.config_home / "systemd" / "user"
+        if unit_directory is None
+        else unit_directory
+    )
+    expected = {
+        "--transaction-root": paths.transaction_namespace,
+        "--plan-root": paths.plan_store,
+    }
+    problems: list[str] = []
+    for template in WORKER_UNIT_TEMPLATES:
+        try:
+            text = (directory / template).read_text(encoding="utf-8")
+        except OSError as error:
+            problems.append(f"{template}: unreadable ({error})")
+            continue
+        for line in text.splitlines():
+            stripped = line.strip()
+            if not stripped.startswith(("ExecStart=", "ExecStopPost=")):
+                continue
+            arguments = shlex.split(stripped.split("=", 1)[1])
+            for flag, value in itertools.pairwise(arguments):
+                if flag not in expected:
+                    continue
+                resolved = Path(value.replace("%t", str(paths.runtime_dir)))
+                if resolved != expected[flag]:
+                    problems.append(
+                        f"{template}: {flag} {value} != {expected[flag]}"
+                    )
+    if problems:
+        return CheckResult(
+            name="worker unit paths",
+            status=CheckStatus.FAIL,
+            detail="; ".join(problems),
+        )
+    return CheckResult(
+        name="worker unit paths",
+        status=CheckStatus.OK,
+        detail=(
+            f"{len(WORKER_UNIT_TEMPLATES)} templates address "
+            f"{paths.transaction_namespace}"
+        ),
+    )
+
+
 def check_entry_point_runs(
     paths: ActivePaths,
     *,
@@ -439,6 +507,7 @@ def build_preflight_report(  # noqa: PLR0913 - keyword-only report inputs
             # the environment: a controller that cannot start makes every
             # later verdict irrelevant.
             check_entry_point_runs(paths, runner=entry_point_runner),
+            check_worker_unit_paths(paths),
             check_no_conflicting_authority(active_units),
             check_authority_lock_free(paths),
             check_no_surviving_workers(ambiguities),

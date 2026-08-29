@@ -11,7 +11,7 @@ Environment=PATH=/usr/bin:/bin
 Environment=PYTHONUNBUFFERED=1
 PassEnvironment=DISPLAY XAUTHORITY HOST HOSTNAME
 UnsetEnvironment=BASH_ENV ENV LD_LIBRARY_PATH LD_PRELOAD PYTHONHOME PYTHONINSPECT PYTHONPATH PYTHONSTARTUP PYTHONUSERBASE
-ExecStart=%h/.local/share/monitor-controller/venv/bin/python -I -m monitor_controller.cli internal tray-diagnostics --transaction-root %t/monitor-system/transactions --action-id %I --tray-diag %h/bin/tray-diag --output-root %h/.log/tray-diag
+ExecStart=%h/.local/share/monitor-controller/venv/bin/python -I -m monitor_controller.cli internal tray-diagnostics --transaction-root %t/monitor-controller/active/transactions --action-id %I --tray-diag %h/bin/tray-diag --output-root %h/.log/tray-diag
 TimeoutStartSec=45s
 TimeoutStartFailureMode=terminate
 TimeoutStopSec=5s

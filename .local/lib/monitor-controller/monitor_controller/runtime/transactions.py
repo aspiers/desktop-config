@@ -387,14 +387,6 @@ class TransactionStore:
                 os.close(self._root_fd)
             self._root_fd = -1
 
-    @classmethod
-    def from_runtime_dir(cls, runtime_dir: Path) -> TransactionStore:
-        """Use the production active namespace below ``XDG_RUNTIME_DIR``."""
-        if not runtime_dir.is_absolute():
-            msg = "XDG runtime directory must be absolute"
-            raise ValueError(msg)
-        return cls(runtime_dir / "monitor-system" / "transactions")
-
     @property
     def root(self) -> Path:
         """Return the configured path for diagnostics and systemd arguments only."""

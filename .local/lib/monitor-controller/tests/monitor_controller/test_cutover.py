@@ -25,6 +25,7 @@ from monitor_controller.active import (
 from monitor_controller.cutover import (
     INSTALL_TARGET,
     SUPPRESSIBLE_UNITS,
+    WORKER_UNIT_TEMPLATES,
     CheckStatus,
     PreflightReport,
     build_preflight_report,
@@ -34,6 +35,7 @@ from monitor_controller.cutover import (
     check_no_conflicting_authority,
     check_no_surviving_workers,
     check_recovery_authority,
+    check_worker_unit_paths,
     cutover_commands,
     rollback_commands,
     suppress_at_login_command,
@@ -41,6 +43,10 @@ from monitor_controller.cutover import (
 )
 
 ACTIVE_UNIT = "monitor-controller.service"
+_REPO = next(
+    parent for parent in Path(__file__).parents if (parent / ".fluxbox").is_dir()
+)
+_STOWED_UNITS = _REPO / ".config" / "systemd" / "user"
 
 
 def _paths(root: Path) -> ActivePaths:
@@ -51,6 +57,26 @@ def _paths(root: Path) -> ActivePaths:
         config_home=root / "config",
         desktop_configuration_root=root / "desktop-config",
     )
+
+
+def _install_worker_units(
+    paths: ActivePaths,
+    *,
+    transaction_root: str = "%t/monitor-controller/active/transactions",
+) -> Path:
+    """Write worker templates whose paths match the active namespace."""
+    directory = paths.config_home / "systemd" / "user"
+    directory.mkdir(parents=True, exist_ok=True)
+    for template in WORKER_UNIT_TEMPLATES:
+        (directory / template).write_text(
+            "[Service]\n"
+            "ExecStart=/venv/python -I -m monitor_controller.cli internal x "
+            f"--transaction-root {transaction_root} "
+            "--plan-root %t/monitor-controller/active/plans "
+            "--action-id %I --unit %n\n",
+            encoding="utf-8",
+        )
+    return directory
 
 
 def _install_venv(paths: ActivePaths) -> Path:
@@ -229,6 +255,44 @@ class TestUnitStates:
         assert states == {"a.service": True, "b.service": False}
 
 
+class TestWorkerUnitPaths:
+    """The stowed templates must address the namespace the controller writes.
+
+    A template pointing at a stale transaction root dispatches cleanly and
+    fails closed with no display action at all, and shadow mode can never
+    reveal it, so drift here must fail preflight and this suite.
+    """
+
+    def test_the_actual_stowed_templates_pass(self, tmp_path: Path) -> None:
+        """The repository's own unit files are the real contract."""
+        result = check_worker_unit_paths(
+            _paths(tmp_path), unit_directory=_STOWED_UNITS
+        )
+        assert result.status is CheckStatus.OK, result.detail
+
+    def test_matching_templates_pass(self, tmp_path: Path) -> None:
+        """Templates resolving to the active namespace are accepted."""
+        paths = _paths(tmp_path)
+        _install_worker_units(paths)
+        assert check_worker_unit_paths(paths).status is CheckStatus.OK
+
+    def test_stale_transaction_root_fails(self, tmp_path: Path) -> None:
+        """The pre-namespace-split root must be named as the mismatch."""
+        paths = _paths(tmp_path)
+        _install_worker_units(
+            paths, transaction_root="%t/monitor-system/transactions"
+        )
+        result = check_worker_unit_paths(paths)
+        assert result.status is CheckStatus.FAIL
+        assert "monitor-system" in result.detail
+
+    def test_missing_templates_fail(self, tmp_path: Path) -> None:
+        """Absent unit files block cutover rather than passing silently."""
+        result = check_worker_unit_paths(_paths(tmp_path))
+        assert result.status is CheckStatus.FAIL
+        assert "unreadable" in result.detail
+
+
 class _ReadyKwargs(TypedDict):
     """Arguments to build_preflight_report describing a ready system."""
 
@@ -244,6 +308,7 @@ class TestPreflightReport:
     def _ready_kwargs(self, tmp_path: Path) -> _ReadyKwargs:
         paths = _paths(tmp_path)
         _install_venv(paths)
+        _install_worker_units(paths)
         return {
             "paths": paths,
             "active_units": dict.fromkeys(CONFLICTING_UNITS, False),
@@ -579,6 +644,7 @@ class TestCutoverCli:
         """A clean system reports ready and exits zero."""
         paths = _paths(tmp_path)
         _install_venv(paths)
+        _install_worker_units(paths)
         monkeypatch.setattr(
             cli.ActivePaths,
             "from_environment",
