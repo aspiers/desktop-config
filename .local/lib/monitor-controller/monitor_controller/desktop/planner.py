@@ -115,6 +115,7 @@ _ASCII_PRINTABLE_MIN: Final = 32
 _ASCII_PRINTABLE_MAX: Final = 126
 _EDID_IDENTITY_HASH_DOMAIN: Final = b"monitor-controller-edid-model-v1\x00"
 _SHA256_VALUE = re.compile(r"^sha256:[0-9a-f]{64}$")
+_EDID_MODEL_KEY = re.compile(r"^[A-Z]{3}:[0-9a-f]{4}$")
 _EDID_VENDOR_NAMES: Final = {
     "AOC": ("AOC", None),
     "BNQ": ("BenQ", None),
@@ -159,6 +160,10 @@ class MonitorModelIdentity:
     output: str
     model: str
     evidence_hash: str
+    # PNP vendor code plus little-endian product id, e.g. "AOC:2802". Unlike
+    # `model`, which imitates hwinfo's free-text rendering, this is read
+    # directly from EDID bytes and is the only key DPI overrides may use.
+    edid_model: str
 
     def __post_init__(self) -> None:
         if not _OUTPUT_NAME.fullmatch(self.output):
@@ -167,6 +172,8 @@ class MonitorModelIdentity:
             raise DesktopPlanningError("monitor identity model must not be empty")
         if _SHA256_VALUE.fullmatch(self.evidence_hash) is None:
             raise DesktopPlanningError("monitor identity hash is malformed")
+        if _EDID_MODEL_KEY.fullmatch(self.edid_model) is None:
+            raise DesktopPlanningError("monitor EDID model key is malformed")
 
 
 @dataclass(frozen=True, slots=True)
@@ -197,6 +204,7 @@ class DesktopContext:
     primary_monitor_output: str
     primary_monitor_model: str
     primary_monitor_identity_hash: str
+    primary_monitor_edid_model: str
     benq_connected: bool
     emacs_font_height: int = 130
 
@@ -213,6 +221,8 @@ class DesktopContext:
             raise DesktopPlanningError("primary monitor output is malformed")
         if _SHA256_VALUE.fullmatch(self.primary_monitor_identity_hash) is None:
             raise DesktopPlanningError("primary monitor identity hash is malformed")
+        if _EDID_MODEL_KEY.fullmatch(self.primary_monitor_edid_model) is None:
+            raise DesktopPlanningError("primary monitor EDID model key is malformed")
         if self.theme not in {"dark", "light"}:
             raise DesktopPlanningError("desktop theme must be dark or light")
         if self.reference_dpi <= 0 or self.emacs_font_height <= 0:
@@ -287,7 +297,10 @@ def _monitor_identity(output: str, pattern: str) -> MonitorModelIdentity:
     digest.update(_EDID_IDENTITY_HASH_DOMAIN)
     _hash_configuration_component(digest, b"output", output.encode("utf-8"))
     _hash_configuration_component(digest, b"base-edid", base)
-    return MonitorModelIdentity(output, model, f"sha256:{digest.hexdigest()}")
+    edid_model = f"{vendor_code}:{_edid_product_code(base):04x}"
+    return MonitorModelIdentity(
+        output, model, f"sha256:{digest.hexdigest()}", edid_model
+    )
 
 
 def _edid_vendor_code(base: bytes) -> str:
@@ -296,6 +309,10 @@ def _edid_vendor_code(base: bytes) -> str:
     if any(value < 1 or value > _EDID_VENDOR_LETTERS for value in values):
         raise DesktopPlanningError("saved fingerprint EDID vendor is malformed")
     return "".join(chr(ord("A") + value - 1) for value in values)
+
+
+def _edid_product_code(base: bytes) -> int:
+    return int.from_bytes(base[10:12], "little")
 
 
 def _edid_display_name(descriptor: bytes) -> str:
@@ -866,6 +883,7 @@ def encode_desktop_context(context: DesktopContext) -> bytes:
             "emacs_font_height": context.emacs_font_height,
             "host_name": context.host_name,
             "is_laptop": context.is_laptop,
+            "primary_monitor_edid_model": context.primary_monitor_edid_model,
             "primary_monitor_identity_hash": context.primary_monitor_identity_hash,
             "primary_monitor_model": context.primary_monitor_model,
             "primary_monitor_output": context.primary_monitor_output,
@@ -1325,6 +1343,19 @@ def _panel_intents(
     )
 
 
+# Keyed by EDID vendor and product bytes, never by free-text model names:
+# hwinfo and this planner render the same monitor differently ("SAMSUNG
+# Odyssey G75F" vs "Samsung Odyssey G75F"), and a silently unmatched name
+# falls through to physical-size DPI (dc-b2u). bin/set-layout-dpi keeps the
+# name-keyed shell table until cutover; the parity test compares both per
+# saved profile. BenQ BL3200 (84) is shell-only: no saved profile carries
+# its EDID, so it cannot be keyed here until one is captured again.
+EDID_DPI_OVERRIDES: Final = {
+    "GSM:7707": 128,  # LG (GoldStar) HDR 4K, saved as Level39
+    "AOC:2802": 128,  # AOC U28G2G6B
+}
+
+
 def _dpi_intent(inputs: DesktopPlanningInputs, resolved: ResolvedLayout) -> DpiIntent:
     policy_hashes = inputs.configuration.hashes_for(
         InputRole.CONTEXT,
@@ -1334,14 +1365,11 @@ def _dpi_intent(inputs: DesktopPlanningInputs, resolved: ResolvedLayout) -> DpiI
     )
     if resolved.dpi is not None:
         return DpiIntent(resolved.dpi, DpiSource.LAYOUT, policy_hashes)
-    model = inputs.context.primary_monitor_model
-    overrides = {
-        "LG (GoldStar) HDR 4K": 128,
-        "AOC U28G2G6B": 128,
-        "BenQ BL3200": 84,
-    }
-    if model in overrides:
-        return DpiIntent(overrides[model], DpiSource.MODEL_OVERRIDE, policy_hashes)
+    edid_model = inputs.context.primary_monitor_edid_model
+    if edid_model in EDID_DPI_OVERRIDES:
+        return DpiIntent(
+            EDID_DPI_OVERRIDES[edid_model], DpiSource.MODEL_OVERRIDE, policy_hashes
+        )
     primary = _primary_screen(inputs.display.screens)
     if primary.width_mm > 0:
         value = _decimal_floor(

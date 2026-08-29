@@ -430,6 +430,7 @@ class ShadowDesktopContextSource:
             primary_monitor_output=primary.output,
             primary_monitor_model=primary.model,
             primary_monitor_identity_hash=primary.evidence_hash,
+            primary_monitor_edid_model=primary.edid_model,
             benq_connected=any(
                 item.model == "BenQ BL3200" for item in monitor_identity.monitors
             ),

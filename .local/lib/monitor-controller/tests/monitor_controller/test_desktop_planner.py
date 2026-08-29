@@ -50,6 +50,7 @@ from monitor_controller.desktop.plan_codec import (
     hash_plan_bundle,
 )
 from monitor_controller.desktop.planner import (
+    EDID_DPI_OVERRIDES,
     AtomicDesktopPlanningAdapter,
     ConfigurationInput,
     DesktopConfigurationSnapshot,
@@ -1720,3 +1721,37 @@ def test_dynamic_overlay_constants_match_setup_monitor() -> None:
             "menu.itemHeight:                  10\n"
         ).encode()
         assert dynamic_overlay(scale) == expected
+
+
+def test_dpi_overrides_agree_with_set_layout_dpi_shell_table() -> None:
+    """Planner and shell must resolve the same DPI for every saved monitor.
+
+    The shell table in bin/set-layout-dpi is keyed on hwinfo's free-text
+    model names while the planner keys on EDID vendor and product bytes; a
+    silent mismatch falls through to physical-size DPI (dc-b2u). This pins
+    the two tables together through the saved profiles' own EDIDs.
+    """
+    shell = (_REPO / "bin" / "set-layout-dpi").read_text(encoding="utf-8")
+    case_body = shell.split("try_dpi_from_model_override", 1)[1].split("esac", 1)[0]
+    shell_table: dict[str, int] = {}
+    for arm in case_body.split(";;"):
+        dpi_match = re.search(r"set-xfce4-dpi (\d+)", arm)
+        if dpi_match is None:
+            continue
+        header = re.search(r'^\s*((?:"[^"]*"\|)*"[^"]*")\)\s*$', arm, re.MULTILINE)
+        assert header, f"cannot parse case pattern in: {arm!r}"
+        for name in re.findall(r'"([^"]+)"', header.group(1)):
+            shell_table[name] = int(dpi_match.group(1))
+    assert shell_table, "cannot parse try_dpi_from_model_override()"
+
+    seen_keys: set[str] = set()
+    for saved in load_saved_profiles(_REPO / ".config" / "autorandr"):
+        primary = derive_profile_monitor_identity(saved).primary
+        seen_keys.add(primary.edid_model)
+        assert EDID_DPI_OVERRIDES.get(primary.edid_model) == shell_table.get(
+            primary.model
+        ), f"{saved.name}: planner and shell disagree for {primary.model}"
+
+    # Every planner override must be reachable through a saved profile;
+    # an unreachable key is dead policy that can drift unnoticed.
+    assert set(EDID_DPI_OVERRIDES) <= seen_keys
