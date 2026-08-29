@@ -1236,7 +1236,7 @@ def _overlay_intent(
     else:
         selection = OverlaySelection.DYNAMIC
         source = None
-        content = _dynamic_overlay(_ui_scale(resolved, inputs))
+        content = dynamic_overlay(_ui_scale(resolved, inputs))
     artifact = PlanArtifact("artifacts/fluxbox/overlay", content)
     return (
         OverlayIntent(
@@ -1252,11 +1252,24 @@ def _overlay_intent(
     )
 
 
-def _dynamic_overlay(scale: Decimal) -> bytes:
-    title_font = _rounded(Decimal(10) * scale)
-    menu_font = _rounded(Decimal(11) * scale)
-    title_height = 24 + (title_font - 10) * 2
-    menu_height = 20 + (title_font - 10) * 2
+# Matches the hand-written external-monitor overlays, which all settled on
+# sans-12:bold; fluxbox sizes fonts in points against the monitor's real
+# Xft.dpi, so a fixed base keeps the same physical size as monitors change.
+_OVERLAY_BASE_FONT = Decimal(12)
+
+
+def dynamic_overlay(scale: Decimal) -> bytes:
+    """Generate the DPI-scaled fluxbox overlay for layouts with no file.
+
+    The constants mirror setup_overlay() in bin/setup-monitor, which stays
+    authoritative until cutover; the parity test
+    test_dynamic_overlay_constants_match_setup_monitor fails when either
+    side changes alone (dc-txr).
+    """
+    title_font = _rounded(_OVERLAY_BASE_FONT * scale)
+    menu_font = _rounded((_OVERLAY_BASE_FONT + 1) * scale)
+    title_height = 32 + (title_font - 12) * 2
+    menu_height = 26 + (title_font - 12) * 2
     return (
         "window.borderWidth:               1\n"
         "window.handleWidth:               8\n"

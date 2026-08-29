@@ -8,10 +8,12 @@ import contextlib
 import hashlib
 import json
 import os
+import re
 import stat
 import subprocess
 import threading
 from dataclasses import replace
+from decimal import Decimal
 from pathlib import Path
 from typing import TYPE_CHECKING
 from uuid import UUID
@@ -57,6 +59,7 @@ from monitor_controller.desktop.planner import (
     InputRole,
     build_desktop_plan,
     derive_profile_monitor_identity,
+    dynamic_overlay,
 )
 from monitor_controller.model import (
     ActionId,
@@ -1672,3 +1675,48 @@ def test_real_celtic_reducer_controller_capture_stage_completion_and_baseline(
         baseline_planner.close()
 
     asyncio.run(exercise())
+
+
+def test_dynamic_overlay_constants_match_setup_monitor() -> None:
+    """The Python overlay generator must track setup_overlay() byte-for-byte.
+
+    bin/setup-monitor remains authoritative until cutover, so the same layout
+    must not draw different fonts depending on which pipeline relaid it out.
+    Commit 6bc8fc9 changed only the shell and left the planner on the old
+    constants for two days (dc-txr); this pins the two together.
+    """
+    shell = (_REPO / "bin" / "setup-monitor").read_text(encoding="utf-8")
+
+    base_match = re.search(r"^\s*local base_font=(\d+)$", shell, re.MULTILINE)
+    assert base_match, "cannot find base_font in setup_overlay()"
+    base_font = int(base_match.group(1))
+
+    title_match = re.search(
+        r"window\.title\.height:\s*\$\(\( (\d+) \+ \(title_font - (\d+)\) \* 2 \)\)",
+        shell,
+    )
+    menu_match = re.search(
+        r"menu\.titleHeight:\s*\$\(\( (\d+) \+ \(title_font - (\d+)\) \* 2 \)\)",
+        shell,
+    )
+    assert title_match, "cannot find window.title.height arithmetic"
+    assert menu_match, "cannot find menu.titleHeight arithmetic"
+
+    for scale in (Decimal(1), Decimal("0.85"), Decimal("1.45")):
+        title_font = round(base_font * scale)
+        menu_font = round((base_font + 1) * scale)
+        title_base, title_ref = (int(g) for g in title_match.groups())
+        menu_base, menu_ref = (int(g) for g in menu_match.groups())
+        expected = (
+            "window.borderWidth:               1\n"
+            "window.handleWidth:               8\n"
+            f"window.font:                      sans-{title_font}:bold\n"
+            f"window.title.height:              "
+            f"{title_base + (title_font - title_ref) * 2}\n"
+            f"menu.title.font:                  sans-{title_font}:bold\n"
+            f"menu.frame.font:                  sans-{menu_font}\n"
+            f"menu.titleHeight:                 "
+            f"{menu_base + (title_font - menu_ref) * 2}\n"
+            "menu.itemHeight:                  10\n"
+        ).encode()
+        assert dynamic_overlay(scale) == expected
