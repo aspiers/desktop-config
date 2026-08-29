@@ -1,0 +1,16 @@
+[Unit]
+Description=Application-specific keyd mappings
+PartOf=fluxbox-session.target
+After=fluxbox-session.target
+
+[Service]
+Type=exec
+Environment=HOME=%h
+ExecStart=%h/bin/keyd-application-mapper
+Restart=on-failure
+RestartSec=2s
+StandardOutput=append:%h/.config/keyd/app.log
+StandardError=append:%h/.config/keyd/app.log
+
+[Install]
+WantedBy=fluxbox-session.target

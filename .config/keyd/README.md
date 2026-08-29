@@ -1,13 +1,14 @@
 # keyd Configuration - Adam's Custom Keyboard Layout
 
-This directory contains a keyd configuration that replicates Adam's
+This directory contains keyd configuration that replicates Adam's
 highly customized XKB keyboard mappings found in the `.xkb/`
-directory.
-
+directory. Device configuration lives in `daemon/`; `app.conf` contains
+application-specific bindings consumed by `keyd-application-mapper`.
 
 ## Installation and Usage
 
 1. **Install keyd**:
+
    ```bash
    # On most Linux distributions
    sudo zypper in keyd        # openSUSE
@@ -16,18 +17,33 @@ directory.
    sudo pacman -S keyd        # Arch
    ```
 
-2. **Copy configuration**:
+2. **Link the daemon configuration only** from the repository root:
+
    ```bash
-   sudo ln -s `pwd`/keyd /etc
+   sudo ln -sfnT "$PWD/.config/keyd/daemon" /etc/keyd
    ```
 
+   Keeping `/etc/keyd` separate from the parent directory prevents the
+   daemon from parsing `app.conf` as device configuration.
+
 3. **Enable and start keyd**:
+
    ```bash
    sudo systemctl enable keyd
    sudo systemctl start keyd
    ```
 
-4. **Reload configuration** (after changes):
+4. **Enable application-specific mappings**:
+
+   ```bash
+   systemctl --user enable keyd-application-mapper.service
+   ```
+
+   The service starts with `fluxbox-session.target`, after the X session has
+   published `DISPLAY` to the user service manager.
+
+5. **Reload device configuration** after changes:
+
    ```bash
    sudo keyd reload
    ```
