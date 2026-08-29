@@ -686,13 +686,9 @@ def test_closed_fluxbox_renderer_rejects_unsafe_helper_text_arguments(
 @pytest.mark.parametrize(
     "expression",
     [
-        "delay('Restart', 501)",
         "delay('Restart', 500; system('id'))",
-        "delay(notify('Restarted fluxbox'), 501)",
+        "delay('Restart', 6000000)",
         "delay(notify('Restarted fluxbox'), 500\n)",
-        'next_unhidden "(Class=Emacs)", focus: false',
-        'next_unhidden "(Class=Emacs)", prev: true',
-        'next_unhidden "(Class=Emacs)", native: true',
         'next_unhidden "(Class=Emacs)", evil: true',
         'next_unhidden "(Class=Emacs)", focus: true; system("id")',
     ],
@@ -703,6 +699,30 @@ def test_closed_fluxbox_renderer_rejects_unsafe_numeric_and_keyword_arguments(
     template = (_REPO / ".fluxbox" / "keys.erb").read_bytes()
     with pytest.raises(FluxboxRenderError):
         _render_fluxbox_expression(template, expression)
+
+
+@pytest.mark.parametrize(
+    "expression",
+    [
+        "delay('Restart', 501)",
+        "delay(notify('Restarted fluxbox'), 501)",
+        'next_unhidden "(Class=Emacs)", focus: false',
+        'next_unhidden "(Class=Emacs)", prev: true',
+        'next_unhidden "(Class=Emacs)", native: true',
+    ],
+)
+def test_closed_fluxbox_renderer_accepts_new_wellformed_helper_arguments(
+    expression: str,
+) -> None:
+    """Well-formed helper calls need no Python edit alongside a keys.erb edit.
+
+    Exact argument values used to be pinned in per-helper frozensets, so
+    adding one keybinding meant editing the template and the renderer's
+    allowlists together (dc-mmk). The character-level grammar plus the
+    live-erb parity test replace that double bookkeeping.
+    """
+    template = (_REPO / ".fluxbox" / "keys.erb").read_bytes()
+    assert _render_fluxbox_expression(template, expression)
 
 
 def test_identical_inputs_have_identical_canonical_bytes_and_hash() -> None:

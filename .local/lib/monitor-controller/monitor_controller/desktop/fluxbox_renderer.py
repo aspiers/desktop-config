@@ -16,39 +16,16 @@ _HOST_CONDITION: Final = "if false && %w(aegean).include?(ENV['localhost_nicknam
 _MONITOR_CONDITION: Final = "if monitors_connected.to_i > 1"
 _PREFIX_LOOP: Final = "['', 'reorg: '].each do |prefix|"
 _PREFIX_VALUES: Final = ("", "reorg: ")
-_NOTIFY_MESSAGES: Final = frozenset({"Restarted fluxbox"})
-_KEYMODE_ARGUMENTS: Final = frozenset(
-    {
-        ("fluxbox maximize", "maximize"),
-        ("passthru", ""),
-        ("reorg", ""),
-    }
+# Characters which would change how a rendered fluxbox command parses: shell
+# substitution and chaining metacharacters, quoting, braces, and control
+# bytes. The template is a tracked repository file, so this guards against a
+# malformed edit rather than an adversary; exact argument values are proven
+# against real erb by the renderer parity test, not pinned here.
+_UNSAFE_HELPER_CHARACTERS: Final = frozenset('$`"\';&{}\\') | frozenset(
+    chr(value) for value in range(0x20)
 )
-_KEYMODE_DONE_MODES: Final = frozenset({"maximize", "passthru", "reorg"})
-_TRANSIENT_NOTIFICATIONS: Final = frozenset(
-    {
-        ("set to normal layer", "layer"),
-        ("set to top layer", "layer"),
-    }
-)
-_DELAY_ARGUMENTS: Final = frozenset({("Restart", 500)})
-_DELAYED_NOTIFICATIONS: Final = frozenset({("Restarted fluxbox", 500)})
-_NEXT_UNHIDDEN_ARGUMENTS: Final = frozenset(
-    {
-        (
-            "(Class=(Xfce4|Gnome)-terminal|kitty) (Head=1) (workspace=0)",
-            True,
-            False,
-            False,
-        ),
-        ("(Class=Beeper)", True, False, False),
-        ("(Class=Cursor|Code)", True, False, False),
-        ("(Class=Emacs)", True, False, False),
-        ("(Title=Google Meet.*)", True, False, False),
-        ("(workspace=[current]) (Head=[mouse])", True, False, True),
-        ("(workspace=[current]) (Head=[mouse])", True, True, True),
-    }
-)
+_MODE_NAME: Final = re.compile(r"^[A-Za-z0-9_-]+$")
+_MAX_DELAY_MS: Final = 600_000
 
 
 class FluxboxRenderError(ValueError):
@@ -248,63 +225,60 @@ def _evaluate(expression: str, *, monitor_count: int, prefix: str | None) -> str
 
     match = re.fullmatch(r"notify '([^']*)'", expression)
     if match:
-        message = match.group(1)
-        _require_allowlisted(message in _NOTIFY_MESSAGES, "notify arguments")
-        return _notify(message)
+        return _notify(_validate_helper_text(match.group(1), "notify arguments"))
     match = re.fullmatch(r"keymode '([^']*)'(?:, '([^']*)')?", expression)
     if match:
-        arguments = (match.group(1), match.group(2) or "")
-        _require_allowlisted(arguments in _KEYMODE_ARGUMENTS, "keymode arguments")
-        return _keymode(*arguments)
+        mode = _validate_helper_text(match.group(1), "keymode arguments")
+        body = _validate_helper_text(match.group(2) or "", "keymode arguments")
+        return _keymode(mode, body)
     match = re.fullmatch(r"keymode_done '([^']*)'", expression)
     if match:
-        mode = match.group(1)
-        _require_allowlisted(mode in _KEYMODE_DONE_MODES, "keymode_done arguments")
+        mode = _validate_mode_name(match.group(1), "keymode_done argument")
+        if not mode:
+            raise FluxboxRenderError("Fluxbox keymode_done argument is empty")
         return _keymode_done(mode)
     match = re.fullmatch(r"notify_transient '([^']*)', '([^']*)'", expression)
     if match:
-        arguments = (match.group(1), match.group(2))
-        _require_allowlisted(
-            arguments in _TRANSIENT_NOTIFICATIONS,
-            "notify_transient arguments",
-        )
-        return _notify(arguments[0], timeout=3000, mode=arguments[1])
+        message = _validate_helper_text(match.group(1), "notify_transient arguments")
+        mode = _validate_mode_name(match.group(2), "notify_transient mode")
+        return _notify(message, timeout=3000, mode=mode)
     match = re.fullmatch(r"delay\('([^']*)', ([1-9][0-9]*)\)", expression)
     if match:
-        arguments = (match.group(1), int(match.group(2)))
-        _require_allowlisted(arguments in _DELAY_ARGUMENTS, "delay arguments")
-        return _delay(*arguments)
+        action = _validate_helper_text(match.group(1), "delay arguments")
+        return _delay(action, _validated_delay(match.group(2)))
     match = re.fullmatch(r"delay\(notify\('([^']*)'\), ([1-9][0-9]*)\)", expression)
     if match:
-        arguments = (match.group(1), int(match.group(2)))
-        _require_allowlisted(
-            arguments in _DELAYED_NOTIFICATIONS,
-            "delayed notify arguments",
-        )
-        return _delay(_notify(arguments[0]), arguments[1])
+        message = _validate_helper_text(match.group(1), "delayed notify arguments")
+        return _delay(_notify(message), _validated_delay(match.group(2)))
     match = re.fullmatch(r'next_unhidden "([^"]*)"(.*)', expression)
     if match:
-        selector = match.group(1)
+        selector = _validate_helper_text(
+            match.group(1), "next_unhidden arguments"
+        )
         options = _keyword_options(match.group(2))
-        arguments = (
-            selector,
-            options["focus"],
-            options["prev"],
-            options["native"],
-        )
-        _require_allowlisted(
-            arguments in _NEXT_UNHIDDEN_ARGUMENTS,
-            "next_unhidden arguments",
-        )
         return _next_unhidden(selector, **options)
     raise FluxboxRenderError(
         f"Fluxbox template contains unknown Ruby expression: {expression!r}"
     )
 
 
-def _require_allowlisted(condition: bool, context: str) -> None:
-    if not condition:
-        raise FluxboxRenderError(f"Fluxbox {context} are outside the allowlist")
+def _validated_delay(value: str) -> int:
+    delay_ms = int(value)
+    if delay_ms > _MAX_DELAY_MS:
+        raise FluxboxRenderError("Fluxbox delay exceeds its bound")
+    return delay_ms
+
+
+def _validate_helper_text(value: str, context: str) -> str:
+    if any(character in _UNSAFE_HELPER_CHARACTERS for character in value):
+        raise FluxboxRenderError(f"Fluxbox {context} contain unsafe characters")
+    return value
+
+
+def _validate_mode_name(value: str, context: str) -> str:
+    if value and _MODE_NAME.fullmatch(value) is None:
+        raise FluxboxRenderError(f"Fluxbox {context} is not a plain mode name")
+    return value
 
 
 def _keyword_options(value: str) -> dict[str, bool]:
