@@ -617,6 +617,16 @@ def _advance_verification(
                 observation_key=observation.observation_key,
             ),
         )
+    desktop_blocked = (
+        state.planning_state is PlanningState.PLAN_FAILED
+        or state.preparation_state is PreparationState.PREPARE_FAILED
+    )
+    if proof_complete and desktop_blocked:
+        # A terminally failed plan or preparation cannot progress without new
+        # evidence: admission requires the IDLE lifecycle, which only a
+        # candidate change restores.  Settle on the health tick rather than
+        # the 1 s proof tick, which otherwise re-observes forever (dc-czj).
+        return _schedule(state, now_ms + HEALTH_POLL_MS, *leading_effects)
     return _schedule(state, now_ms + 1_000, *leading_effects)
 
 

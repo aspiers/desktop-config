@@ -963,7 +963,7 @@ def test_strict_loader_rejects_unknown_event_and_effect_fields(
 
 def test_scenario_corpus_is_comprehensive_and_explicit() -> None:
     assert len(_SCENARIOS) == 57
-    assert sum(len(scenario.steps) for scenario in _SCENARIOS) == 322
+    assert sum(len(scenario.steps) for scenario in _SCENARIOS) == 324
     steps = (step for scenario in _SCENARIOS for step in scenario.steps)
     assert all(step.expected_effect_counts for step in steps)
     steps = (step for scenario in _SCENARIOS for step in scenario.steps)

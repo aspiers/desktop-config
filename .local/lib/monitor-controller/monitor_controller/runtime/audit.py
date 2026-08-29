@@ -22,7 +22,10 @@ if TYPE_CHECKING:
     from monitor_controller.runtime.dispatcher import WouldDispatch
 
 DEFAULT_MAX_AUDIT_BYTES = 4 * 1_048_576
-DEFAULT_AUDIT_FILES = 4
+# Decision records embed full state (~45KB), so retention is time-bounded:
+# eight 4MiB segments hold roughly six hours of 60s health ticks, enough for
+# the shadow-trace snapshotter to capture a scenario before rotation (dc-czj).
+DEFAULT_AUDIT_FILES = 8
 _AUDIT_FILE_MODE = 0o600
 _AUDIT_DIRECTORY_MODE = 0o700
 
