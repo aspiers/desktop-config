@@ -1,5 +1,20 @@
 #!/bin/bash
 
+here=$(dirname "$(realpath "$0")")
+
+# XFCE's GNOME compatibility runs bare `gnome-keyring-daemon --start`,
+# whose default components include SSH.  The dedicated XDG entries still
+# start the secrets and PKCS#11 components when this compatibility is off.
+if command -v xfconf-query >/dev/null 2>&1; then
+    if ! xfconf-query \
+        --channel xfce4-session \
+        --property /compat/LaunchGNOME \
+        --type bool \
+        --set false; then
+        exit 1
+    fi
+fi
+
 touch ~/.Xresources.d/local.rdb
 
 ~/bin/keymap-menu --install-symlinks
@@ -8,7 +23,6 @@ mkdir -p ~/.log
 
 touch ~/.synergy-{client,server,domain}-name
 
-here=$(dirname "$(realpath "$0")")
 if ! "$here/../bin/fluxbox-gen-config"; then
     exit 1
 fi

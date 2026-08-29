@@ -1,0 +1,31 @@
+#!/bin/sh
+
+set -eu
+
+repo=$(CDPATH='' cd -- "$(dirname "$0")/.." && pwd)
+post_install=$repo/.cfg-post.d/desktop-config
+
+if ! grep -q '/compat/LaunchGNOME' "$post_install" ||
+   ! grep -q -- '--set false' "$post_install"; then
+    echo >&2 "FAIL: $post_install does not persist LaunchGNOME=false"
+    exit 1
+fi
+
+launch_gnome=$(xfconf-query \
+    --channel xfce4-session \
+    --property /compat/LaunchGNOME)
+
+if [ "$launch_gnome" != false ]; then
+    echo >&2 "FAIL: XFCE GNOME compatibility is $launch_gnome; its bare gnome-keyring-daemon --start enables SSH"
+    exit 1
+fi
+
+autostart_dir=${XDG_CONFIG_HOME:-"$HOME/.config"}/autostart
+override=$autostart_dir/gnome-keyring-ssh.desktop
+
+if ! grep -qx 'Hidden=true' "$override"; then
+    echo >&2 "FAIL: $override does not disable the separate SSH autostart entry"
+    exit 1
+fi
+
+echo "PASS: both GNOME Keyring SSH startup routes are disabled"

@@ -1,30 +1,16 @@
-# Overrides /etc/xdg/autostart/gnome-keyring-ssh.desktop to stop the GNOME
-# keyring's ssh component from autostarting a second ssh-agent.
+# Overrides /etc/xdg/autostart/gnome-keyring-ssh.desktop to stop GNOME
+# Keyring from starting a second ssh-agent through XDG autostart.
 #
-# Two agents were starting on every X login:
+# XFCE has another independent route: /compat/LaunchGNOME makes
+# xfce4-session run bare `gnome-keyring-daemon --start`.  GNOME Keyring 50
+# interprets the missing --components argument as pkcs11,secrets,ssh, so
+# Hidden=true alone did not fix the duplicate.  .cfg-post.d/desktop-config
+# sets LaunchGNOME=false to block that route; this file blocks the XDG one.
 #
-#   1. /usr/bin/ssh-agent /usr/bin/gpg-agent --sh --daemon ... xinitrc
-#      from openSUSE's /usr/etc/X11/xdm/scripts/11-ssh-agent, wrapping the
-#      whole session, setting both SSH_AUTH_SOCK and SSH_AGENT_PID;
-#
-#   2. /usr/bin/ssh-agent -D -a /run/user/1000/keyring/.ssh
-#      started by this entry, ~2.4s later, which overwrites SSH_AUTH_SOCK
-#      but never sets SSH_AGENT_PID.
-#
-# 09-ssh-vars is meant to suppress (1) when the keyring will provide an
-# agent, but its guard tests $GNOME_KEYRING_PID / $GNOME_KEYRING_CONTROL,
-# which are absent from the session environment here, so it never fires.
-# Reordering cannot fix that: the keyring's ssh component does not exist
-# yet at the point the decision is made.
-#
-# The result was recalc_ssh_agent_cache aborting with "2 pids found", so
-# the shell got no agent at all.  Agent (1) is kept because it sets both
-# variables and matches the existing ~/.ssh setup; this one is disabled
-# here rather than via usessh=no because /usr/etc is vendor-owned and
-# overwritten on update, whereas ~/.config/autostart is ours.
-#
-# Only the ssh component is affected - gnome-keyring still provides
-# secrets and PKCS#11 via its own autostart entries.
+# The remaining agent comes from openSUSE's 11-ssh-agent Xsession hook.  It
+# sets both SSH_AUTH_SOCK and SSH_AGENT_PID and matches the existing ~/.ssh
+# setup.  GNOME Keyring still provides secrets and PKCS#11 through their
+# dedicated autostart entries.
 
 [Desktop Entry]
 Type=Application
