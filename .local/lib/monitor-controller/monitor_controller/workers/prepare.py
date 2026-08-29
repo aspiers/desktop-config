@@ -624,5 +624,3 @@ def _leaf_bindings(
         )
     except KeyError as error:
         _stale(f"desktop plan lacks captured leaf implementation: {error.args[0]}")
-
-

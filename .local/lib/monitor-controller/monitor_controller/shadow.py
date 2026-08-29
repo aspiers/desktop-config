@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import configparser
-import fcntl
 import os
 import shutil
 import socket
@@ -13,11 +12,19 @@ import sys
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, replace
 from pathlib import Path
-from types import TracebackType
 from typing import Protocol, Self
 from uuid import UUID, uuid4
 
 from monitor_controller.codec import StateCodecError
+from monitor_controller.composition import (
+    NamespaceAuthorityLock,
+    desktop_configuration_root,
+    desktop_theme,
+    require_namespace,
+    resolve_xdg_paths,
+    run_controller_with_producer,
+    validate_absolute_paths,
+)
 from monitor_controller.desktop.layout import DisplayScreenSnapshot
 from monitor_controller.desktop.plan_codec import AtomicPlanStore, PlannedTopology
 from monitor_controller.desktop.planner import (
@@ -116,16 +123,17 @@ class ShadowPaths:
     desktop_configuration_root: Path
 
     def __post_init__(self) -> None:
-        for name, path in (
-            ("data home", self.data_home),
-            ("state home", self.state_home),
-            ("runtime directory", self.runtime_dir),
-            ("config home", self.config_home),
-            ("desktop configuration root", self.desktop_configuration_root),
-        ):
-            if not path.is_absolute():
-                msg = f"shadow {name} must be absolute: {path}"
-                raise ShadowStartupError(msg)
+        validate_absolute_paths(
+            (
+                ("data home", self.data_home),
+                ("state home", self.state_home),
+                ("runtime directory", self.runtime_dir),
+                ("config home", self.config_home),
+                ("desktop configuration root", self.desktop_configuration_root),
+            ),
+            namespace="shadow",
+            error=ShadowStartupError,
+        )
 
     @property
     def fixed_venv(self) -> Path:
@@ -178,76 +186,24 @@ class ShadowPaths:
         environ: Mapping[str, str] | None = None,
     ) -> Self:
         """Resolve strict XDG paths without consulting service-manager helpers."""
-        values = os.environ if environ is None else environ
-        home_value = values.get("HOME")
-        if not home_value:
-            msg = "HOME is required for default XDG paths"
-            raise ShadowStartupError(msg)
-        home = Path(home_value)
-        if not home.is_absolute():
-            msg = f"HOME must be absolute: {home}"
-            raise ShadowStartupError(msg)
-        runtime_value = values.get("XDG_RUNTIME_DIR")
-        if not runtime_value:
-            msg = "XDG_RUNTIME_DIR is required for shadow authority isolation"
-            raise ShadowStartupError(msg)
+        resolved = resolve_xdg_paths(
+            environ, namespace="shadow", error=ShadowStartupError
+        )
         return cls(
-            data_home=Path(values.get("XDG_DATA_HOME", home / ".local" / "share")),
-            state_home=Path(values.get("XDG_STATE_HOME", home / ".local" / "state")),
-            runtime_dir=Path(runtime_value),
-            config_home=Path(values.get("XDG_CONFIG_HOME", home / ".config")),
-            desktop_configuration_root=Path(
-                values.get(
-                    "MONITOR_CONTROLLER_DESKTOP_CONFIG_ROOT",
-                    home / ".STOW" / "desktop-config",
-                )
-            ),
+            data_home=resolved.data_home,
+            state_home=resolved.state_home,
+            runtime_dir=resolved.runtime_dir,
+            config_home=resolved.config_home,
+            desktop_configuration_root=resolved.desktop_configuration_root,
         )
 
 
-class ShadowAuthorityLock:
+class ShadowAuthorityLock(NamespaceAuthorityLock):
     """Hold the shadow authority lock for the complete process lifetime."""
 
     def __init__(self, path: Path) -> None:
         """Bind one shadow lock path without touching the filesystem."""
-        self._path = path
-        self._descriptor: int | None = None
-
-    def __enter__(self) -> Self:
-        """Acquire exclusively and fail instead of starting a second shadow."""
-        self._path.parent.mkdir(
-            mode=_DIRECTORY_MODE,
-            parents=True,
-            exist_ok=True,
-        )
-        self._path.parent.chmod(_DIRECTORY_MODE)
-        descriptor = os.open(
-            self._path,
-            os.O_WRONLY | os.O_CREAT,
-            _LOCK_MODE,
-        )
-        os.fchmod(descriptor, _LOCK_MODE)
-        try:
-            fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError as error:
-            os.close(descriptor)
-            msg = f"shadow authority lock is already held: {self._path}"
-            raise ShadowStartupError(msg) from error
-        self._descriptor = descriptor
-        return self
-
-    def __exit__(
-        self,
-        exception_type: type[BaseException] | None,
-        exception: BaseException | None,
-        traceback: TracebackType | None,
-    ) -> None:
-        """Release by closing the descriptor, including exceptional exits."""
-        del exception_type, exception, traceback
-        descriptor = self._descriptor
-        self._descriptor = None
-        if descriptor is not None:
-            os.close(descriptor)
+        super().__init__(path, namespace="shadow", error=ShadowStartupError)
 
 
 @dataclass(frozen=True, slots=True)
@@ -765,26 +721,13 @@ def shadow_theme(paths: ShadowPaths) -> str:
     :func:`monitor_controller.active.active_theme`. The two are the same
     function written twice, and drifted apart once already (`dc-t53`).
     """
-    path = paths.config_home / "theme"
-    if not path.exists():
-        return "dark"
-    value = read_bounded_text(path, "desktop:theme", ShadowStartupError).strip()
-    if value not in {"dark", "light"}:
-        msg = "desktop theme must be exactly dark or light"
-        raise ShadowStartupError(msg)
-    return value
+    return desktop_theme(paths.config_home, ShadowStartupError)
 
 
 def _desktop_configuration_root(paths: ShadowPaths) -> Path:
-    try:
-        root = paths.desktop_configuration_root.resolve(strict=True)
-    except OSError as error:
-        msg = "desktop configuration root cannot be resolved"
-        raise ShadowStartupError(msg) from error
-    if not root.is_dir():
-        msg = "desktop configuration root is not a directory"
-        raise ShadowStartupError(msg)
-    return root
+    return desktop_configuration_root(
+        paths.desktop_configuration_root, ShadowStartupError
+    )
 
 
 def build_shadow_composition(
@@ -908,38 +851,17 @@ async def run_shadow(
 ) -> None:
     """Run one controller and one DRM producer, cancelling both on any exit."""
     producer = DrmUeventMonitor() if monitor is None else monitor
-    controller_task = asyncio.create_task(
-        composition.controller.run(),
-        name="monitor-controller-shadow-consumer",
+    await run_controller_with_producer(
+        composition.controller,
+        producer,
+        task_prefix="monitor-controller-shadow",
+        error=ShadowStartupError,
+        close=composition.planner.close,
     )
-    monitor_task = asyncio.create_task(
-        producer.run(composition.controller.notify_drm_hint),
-        name="monitor-controller-shadow-uevents",
-    )
-    tasks = (controller_task, monitor_task)
-    try:
-        done, _pending = await asyncio.wait(
-            tasks,
-            return_when=asyncio.FIRST_COMPLETED,
-        )
-        completed = next(iter(done))
-        error = completed.exception()
-        if error is not None:
-            raise error
-        msg = f"shadow runtime task exited unexpectedly: {completed.get_name()}"
-        raise ShadowStartupError(msg)
-    finally:
-        for task in tasks:
-            task.cancel()
-        await asyncio.gather(*tasks, return_exceptions=True)
-        await composition.controller.close()
-        composition.planner.close()
 
 
 def _require_shadow_namespace(environ: Mapping[str, str]) -> None:
-    if environ.get("MONITOR_CONTROLLER_NAMESPACE") != "shadow":
-        msg = "MONITOR_CONTROLLER_NAMESPACE must be exactly 'shadow'"
-        raise ShadowStartupError(msg)
+    require_namespace(environ, "shadow", ShadowStartupError)
 
 
 def main() -> int:

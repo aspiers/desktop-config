@@ -34,11 +34,19 @@ import sys
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, replace
 from pathlib import Path
-from types import TracebackType
 from typing import TYPE_CHECKING, Self, final
 from uuid import uuid4
 
 from monitor_controller.codec import StateCodecError
+from monitor_controller.composition import (
+    NamespaceAuthorityLock,
+    desktop_configuration_root,
+    desktop_theme,
+    require_namespace,
+    resolve_xdg_paths,
+    run_controller_with_producer,
+    validate_absolute_paths,
+)
 from monitor_controller.desktop.plan_codec import AtomicPlanStore
 from monitor_controller.desktop.planner import (
     AtomicDesktopPlanningAdapter,
@@ -75,7 +83,7 @@ from monitor_controller.runtime.systemd import (
     SystemdSupervisor,
 )
 from monitor_controller.runtime.transactions import TransactionStore
-from monitor_controller.safeio import read_bounded_text, read_reference_dpi
+from monitor_controller.safeio import read_reference_dpi
 from monitor_controller.shadow import (
     SHADOW_OBSERVATION_TIMEOUT_SECONDS,
     AsyncSnapshotObserver,
@@ -145,16 +153,17 @@ class ActivePaths:
     desktop_configuration_root: Path
 
     def __post_init__(self) -> None:
-        for name, path in (
-            ("data home", self.data_home),
-            ("state home", self.state_home),
-            ("runtime directory", self.runtime_dir),
-            ("config home", self.config_home),
-            ("desktop configuration root", self.desktop_configuration_root),
-        ):
-            if not path.is_absolute():
-                msg = f"active {name} must be absolute: {path}"
-                raise ActiveStartupError(msg)
+        validate_absolute_paths(
+            (
+                ("data home", self.data_home),
+                ("state home", self.state_home),
+                ("runtime directory", self.runtime_dir),
+                ("config home", self.config_home),
+                ("desktop configuration root", self.desktop_configuration_root),
+            ),
+            namespace="active",
+            error=ActiveStartupError,
+        )
 
     @property
     def fixed_venv(self) -> Path:
@@ -227,34 +236,19 @@ class ActivePaths:
         environ: Mapping[str, str] | None = None,
     ) -> Self:
         """Resolve strict XDG paths without consulting service-manager helpers."""
-        values = os.environ if environ is None else environ
-        home_value = values.get("HOME")
-        if not home_value:
-            msg = "HOME is required for default XDG paths"
-            raise ActiveStartupError(msg)
-        home = Path(home_value)
-        if not home.is_absolute():
-            msg = f"HOME must be absolute: {home}"
-            raise ActiveStartupError(msg)
-        runtime_value = values.get("XDG_RUNTIME_DIR")
-        if not runtime_value:
-            msg = "XDG_RUNTIME_DIR is required for active authority isolation"
-            raise ActiveStartupError(msg)
+        resolved = resolve_xdg_paths(
+            environ, namespace="active", error=ActiveStartupError
+        )
         return cls(
-            data_home=Path(values.get("XDG_DATA_HOME", home / ".local" / "share")),
-            state_home=Path(values.get("XDG_STATE_HOME", home / ".local" / "state")),
-            runtime_dir=Path(runtime_value),
-            config_home=Path(values.get("XDG_CONFIG_HOME", home / ".config")),
-            desktop_configuration_root=Path(
-                values.get(
-                    "MONITOR_CONTROLLER_DESKTOP_CONFIG_ROOT",
-                    home / ".STOW" / "desktop-config",
-                )
-            ),
+            data_home=resolved.data_home,
+            state_home=resolved.state_home,
+            runtime_dir=resolved.runtime_dir,
+            config_home=resolved.config_home,
+            desktop_configuration_root=resolved.desktop_configuration_root,
         )
 
 
-class ActiveAuthorityLock:
+class ActiveAuthorityLock(NamespaceAuthorityLock):
     """Hold the active authority lock for the complete process lifetime.
 
     Beyond the shadow lock's single-instance guarantee, this also refuses to
@@ -265,9 +259,8 @@ class ActiveAuthorityLock:
 
     def __init__(self, path: Path, shadow_path: Path | None = None) -> None:
         """Bind the lock paths without touching the filesystem."""
-        self._path = path
+        super().__init__(path, namespace="active", error=ActiveStartupError)
         self._shadow_path = shadow_path
-        self._descriptor: int | None = None
 
     def _refuse_if_shadow_is_running(self) -> None:
         """Fail closed when a shadow controller still holds its own lock.
@@ -301,39 +294,7 @@ class ActiveAuthorityLock:
     def __enter__(self) -> Self:
         """Acquire exclusively, refusing to coexist with any other authority."""
         self._refuse_if_shadow_is_running()
-        self._path.parent.mkdir(
-            mode=_DIRECTORY_MODE,
-            parents=True,
-            exist_ok=True,
-        )
-        self._path.parent.chmod(_DIRECTORY_MODE)
-        descriptor = os.open(
-            self._path,
-            os.O_WRONLY | os.O_CREAT,
-            _LOCK_MODE,
-        )
-        os.fchmod(descriptor, _LOCK_MODE)
-        try:
-            fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError as error:
-            os.close(descriptor)
-            msg = f"active authority lock is already held: {self._path}"
-            raise ActiveStartupError(msg) from error
-        self._descriptor = descriptor
-        return self
-
-    def __exit__(
-        self,
-        exception_type: type[BaseException] | None,
-        exception: BaseException | None,
-        traceback: TracebackType | None,
-    ) -> None:
-        """Release by closing the descriptor, including exceptional exits."""
-        del exception_type, exception, traceback
-        descriptor = self._descriptor
-        self._descriptor = None
-        if descriptor is not None:
-            os.close(descriptor)
+        return super().__enter__()
 
 
 @final
@@ -549,9 +510,7 @@ def _require_active_namespace(environ: Mapping[str, str]) -> None:
     launched the wrong composition root, which would otherwise present as a
     controller writing to a namespace nobody is reading.
     """
-    if environ.get("MONITOR_CONTROLLER_NAMESPACE") != "active":
-        msg = "MONITOR_CONTROLLER_NAMESPACE must be exactly 'active'"
-        raise ActiveStartupError(msg)
+    require_namespace(environ, "active", ActiveStartupError)
 
 
 def cutover_authorization_error(environ: Mapping[str, str]) -> str | None:
@@ -663,27 +622,14 @@ def active_theme(paths: ActivePaths) -> str:
     reading a startup file less carefully than the non-authoritative one
     (`dc-t53`).
     """
-    path = paths.config_home / "theme"
-    if not path.exists():
-        return "dark"
-    value = read_bounded_text(path, "desktop:theme", ActiveStartupError).strip()
-    if value not in {"dark", "light"}:
-        msg = "desktop theme must be exactly dark or light"
-        raise ActiveStartupError(msg)
-    return value
+    return desktop_theme(paths.config_home, ActiveStartupError)
 
 
 def _desktop_configuration_root(paths: ActivePaths) -> Path:
     """Resolve the desktop configuration tree, refusing anything unusable."""
-    try:
-        root = paths.desktop_configuration_root.resolve(strict=True)
-    except OSError as error:
-        msg = "desktop configuration root cannot be resolved"
-        raise ActiveStartupError(msg) from error
-    if not root.is_dir():
-        msg = "desktop configuration root is not a directory"
-        raise ActiveStartupError(msg)
-    return root
+    return desktop_configuration_root(
+        paths.desktop_configuration_root, ActiveStartupError
+    )
 
 
 def build_active_composition(
@@ -820,31 +766,8 @@ async def run_active(
     prepares the desktop.
     """
     producer = DrmUeventMonitor() if monitor is None else monitor
-    controller_task = asyncio.create_task(
-        composition.controller.run(),
-        name="monitor-controller-consumer",
-    )
-    monitor_task = asyncio.create_task(
-        producer.run(composition.controller.notify_drm_hint),
-        name="monitor-controller-uevents",
-    )
-    tasks = (controller_task, monitor_task)
-    try:
-        done, _pending = await asyncio.wait(
-            tasks,
-            return_when=asyncio.FIRST_COMPLETED,
-        )
-        completed = next(iter(done))
-        error = completed.exception()
-        if error is not None:
-            raise error
-        msg = f"active runtime task exited unexpectedly: {completed.get_name()}"
-        raise ActiveStartupError(msg)
-    finally:
-        for task in tasks:
-            task.cancel()
-        await asyncio.gather(*tasks, return_exceptions=True)
-        await composition.controller.close()
+
+    def close_retained_resources() -> None:
         composition.planner.close()
         if composition.transactions is not None:
             composition.transactions.close()
@@ -852,6 +775,14 @@ async def run_active(
             # No authority means no fresh fence: any surviving finalizer must
             # refuse its boundary rather than trust the last published value.
             composition.generation_fence.withdraw()
+
+    await run_controller_with_producer(
+        composition.controller,
+        producer,
+        task_prefix="monitor-controller",
+        error=ActiveStartupError,
+        close=close_retained_resources,
+    )
 
 
 # Argument which asks this module to prove it can start, then exit without

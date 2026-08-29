@@ -317,5 +317,3 @@ def _validate_probe_authorization(request: TransactionRequest) -> EdidIntegrity:
 
 def _validate_execution_claim(startup: WorkerStartup) -> None:
     _validate_execution_claim_for(startup, ActionKind.PROBE)
-
-
