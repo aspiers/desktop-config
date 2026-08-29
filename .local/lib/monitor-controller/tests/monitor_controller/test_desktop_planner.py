@@ -574,7 +574,10 @@ def test_closed_fluxbox_renderer_matches_legacy_erb_golden_bytes() -> None:
             template_label=".fluxbox/keys.erb",
             generator_label="bin/fluxbox-gen-config",
         )
-        assert rendered == golden
+        assert rendered == golden, (
+            f"{name} disagrees with the live template; if .fluxbox/keys.erb "
+            "changed, refresh the fixtures with fixtures/fluxbox/regenerate"
+        )
 
 
 def test_closed_fluxbox_renderer_rejects_unknown_execution() -> None:

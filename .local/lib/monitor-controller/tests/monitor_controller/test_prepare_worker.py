@@ -821,6 +821,9 @@ def _primitive_environment(
         + "fi\n",
     )
     _write_executable(fake_bin / "busctl", "#!/bin/sh\n" + common)
+    # set-xfce4-dpi pipes to `xrdb -merge` since df2b31e; the real xrdb would
+    # fail with no display, and its invocation must be observable like the rest.
+    _write_executable(fake_bin / "xrdb", "#!/bin/sh\n" + common + "cat >/dev/null\n")
     _write_executable(
         fake_bin / "cp",
         "#!/bin/sh\n" + common + '/usr/bin/cp "$@"\n',

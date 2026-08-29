@@ -333,6 +333,7 @@ Control Mod4 g :Exec fluxbox-focus-window 'NextWindow (Title=Google Meet.*) (Foc
 #Control Mod4 g :Exec chrome-session-tabs https://app.gather.town/
 
 Mod4 h :Exec chrome-session-rofi 'https://github.com/ '
+Control Shift h :Exec chrome-session-tabs 'octobox \| '
 
 Control Mod4 2 :Exec switch-emacs-eval '(as-find-personal-todo)'
 Control Mod4 5 :Exec switch-emacs-eval '(as-find-Toucan-todo)'
@@ -349,7 +350,8 @@ Shift Mod4 n :Exec chrome-session-rofi 'https://(www|app).notion.(so|com)/ '
 Mod4 s :Exec fluxbox-focus-or-launch -c Slack slack
 Control Mod4 y :Exec chrome-session-tabs 'syncthing.*127.0.0.1:8384|localhost:8384' || open http://localhost:8384
 #Shift Mod4 w :Exec fluxbox-focus-or-launch -c Windsurf windsurf
-Shift Mod4 w :Exec fluxbox-focus-or-launch --toggle 'Epicenter.*Whispering' whispering
+#Shift Mod4 w :Exec fluxbox-focus-or-launch --toggle 'Epicenter.*Whispering' whispering
+Shift Mod4 w :Exec sussurro-settings-or-launch
 Mod4 w :Exec rofi-wifi
 Mod1 Mod4 w :Exec chrome-session-tabs WhatsApp
 Mod4 y :Exec chrome-session-rofi youtube.com

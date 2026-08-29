@@ -1,0 +1,42 @@
+#!/bin/bash
+#
+# Regenerate keys-N.golden and SHA256SUMS from the live .fluxbox/keys.erb
+# using the real Ruby erb, which is the ground truth the closed Python
+# renderer (monitor_controller/desktop/fluxbox_renderer.py) must match
+# byte-for-byte. Run this after any edit to .fluxbox/keys.erb, then rerun
+# test_closed_fluxbox_renderer_matches_legacy_erb_golden_bytes.
+#
+# The header and the celtic/1-2-3-monitor parameters must stay in step with
+# that test's render_fluxbox_keys arguments.
+
+set -euo pipefail
+
+here=$(dirname "$(realpath "$0")")
+repo=$(cd "$here" && git rev-parse --show-toplevel)
+template=$repo/.fluxbox/keys.erb
+
+fake_bin=$(mktemp -d)
+trap 'rm -rf "$fake_bin"' EXIT
+
+warning() {
+    cat <<EOF
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# WARNING: This file is auto-generated. DO NOT EDIT IT MANUALLY.
+# Edit the template instead:
+#   .fluxbox/keys.erb
+# Then regenerate by running:
+#   bin/fluxbox-gen-config
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+EOF
+}
+
+for count in 1 2 3; do
+    printf '#!/bin/sh\necho %s\n' "$count" > "$fake_bin/monitors-connected"
+    chmod +x "$fake_bin/monitors-connected"
+    { warning; PATH=$fake_bin:$PATH localhost_nickname=celtic erb "$template"; } \
+        > "$here/keys-$count.golden"
+    echo "Regenerated keys-$count.golden"
+done
+
+(cd "$here" && sha256sum keys-1.golden keys-2.golden keys-3.golden > SHA256SUMS)
+echo "Regenerated SHA256SUMS"
