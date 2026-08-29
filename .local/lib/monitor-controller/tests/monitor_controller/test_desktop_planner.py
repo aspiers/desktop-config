@@ -31,6 +31,7 @@ from monitor_controller.desktop.layout import (
     MAX_LAYOUT_FILES,
     DisplayScreenSnapshot,
     LayoutPlanningError,
+    ResolvedLayout,
     parse_layout,
     resolve_layout,
 )
@@ -1517,6 +1518,72 @@ def test_real_geometry_matches_independent_legacy_truncation_golden(  # noqa: PL
     ) == expected
 
 
+_LEGACY_LIBLAYOUT_SCRIPT = """
+import json
+import sys
+from pathlib import Path
+
+repository = Path(sys.argv[1])
+sys.path.insert(0, str(repository / "lib"))
+import liblayout
+
+layout_root = repository / ".fluxbox" / "layouts"
+liblayout.get_layout_file = lambda name, dir=None: str(
+    layout_root / (name if str(name).endswith(".yaml") else f"{name}.yaml")
+)
+screens = json.loads(sys.stdin.read())
+liblayout.libdpy.get_xrandr_screen_geometries = (
+    lambda use_cache=False: [dict(item) for item in screens]
+)
+resolved, _layout = liblayout.get_layout_params(
+    str(layout_root / f"{sys.argv[2]}.yaml"), use_cache=False
+)
+print(json.dumps(resolved, sort_keys=True))
+"""
+
+
+def _assert_legacy_geometry_parity(
+    planned: ResolvedLayout,
+    layout: str,
+    screens: tuple[DisplayScreenSnapshot, ...],
+    tmp_path: Path,
+) -> None:
+    """Run lib/liblayout.py over the same screens and compare every field."""
+    screen_payload = [
+        {
+            "height": item.height,
+            "height_mm": item.height_mm,
+            "primary": item.primary,
+            "width": item.width,
+            "width_mm": item.width_mm,
+            "x_offset": item.x,
+            "y_offset": item.y,
+        }
+        for item in sorted(screens, key=lambda item: (item.x, item.y, item.output))
+    ]
+    completed = subprocess.run(  # noqa: S603
+        ("/usr/bin/python3", "-I", "-c", _LEGACY_LIBLAYOUT_SCRIPT, str(_REPO), layout),
+        check=False,
+        capture_output=True,
+        env={"HOME": str(tmp_path), "PATH": "/usr/bin:/bin"},
+        input=json.dumps(screen_payload),
+        text=True,
+        timeout=30,
+    )
+    assert completed.returncode == 0, completed.stderr
+    legacy = json.loads(completed.stdout)
+    assert len(legacy) == len(planned.screens)
+    for planned_screen, legacy_screen in zip(planned.screens, legacy, strict=True):
+        planned_fields = {item.name for item in planned_screen.geometry}
+        assert set(_LEGACY_GEOMETRY_FIELDS) <= planned_fields
+        assert set(_LEGACY_GEOMETRY_FIELDS) <= set(legacy_screen)
+        assert {
+            name: planned_screen.value(name) for name in _LEGACY_GEOMETRY_FIELDS
+        } == {
+            name: legacy_screen[name] for name in _LEGACY_GEOMETRY_FIELDS
+        }, f"{layout}: geometry drift against lib/liblayout.py"
+
+
 @pytest.mark.parametrize(
     ("profile", "layout", "external", "size", "model"),
     [
@@ -1555,62 +1622,9 @@ def test_offline_real_layouts_match_legacy_liblayout(  # noqa: PLR0913, PLR0917
     inputs = source.load(request)
     assert inputs.context.primary_monitor_model == model
     planned = build_desktop_plan(inputs).plan.resolved_layout
-    screen_payload = [
-        {
-            "height": item.height,
-            "height_mm": item.height_mm,
-            "primary": item.primary,
-            "width": item.width,
-            "width_mm": item.width_mm,
-            "x_offset": item.x,
-            "y_offset": item.y,
-        }
-        for item in sorted(
-            inputs.display.screens, key=lambda item: (item.x, item.y, item.output)
-        )
-    ]
-    script = """
-import json
-import sys
-from pathlib import Path
-
-repository = Path(sys.argv[1])
-sys.path.insert(0, str(repository / "lib"))
-import liblayout
-
-layout_root = repository / ".fluxbox" / "layouts"
-liblayout.get_layout_file = lambda name, dir=None: str(
-    layout_root / (name if str(name).endswith(".yaml") else f"{name}.yaml")
-)
-screens = json.loads(sys.stdin.read())
-liblayout.libdpy.get_xrandr_screen_geometries = (
-    lambda use_cache=False: [dict(item) for item in screens]
-)
-resolved, _layout = liblayout.get_layout_params(
-    str(layout_root / f"{sys.argv[2]}.yaml"), use_cache=False
-)
-print(json.dumps(resolved, sort_keys=True))
-"""
-    python = Path("/usr/bin/python3")
-    completed = subprocess.run(  # noqa: S603
-        (str(python), "-I", "-c", script, str(_REPO), layout),
-        check=False,
-        capture_output=True,
-        env={"HOME": str(tmp_path), "PATH": "/usr/bin:/bin"},
-        input=json.dumps(screen_payload),
-        text=True,
-        timeout=30,
+    _assert_legacy_geometry_parity(
+        planned, layout, inputs.display.screens, tmp_path
     )
-    assert completed.returncode == 0, completed.stderr
-    legacy = json.loads(completed.stdout)
-    assert len(legacy) == len(planned.screens)
-    for planned_screen, legacy_screen in zip(planned.screens, legacy, strict=True):
-        planned_fields = {item.name for item in planned_screen.geometry}
-        assert set(_LEGACY_GEOMETRY_FIELDS) <= planned_fields
-        assert set(_LEGACY_GEOMETRY_FIELDS) <= set(legacy_screen)
-        assert {
-            name: planned_screen.value(name) for name in _LEGACY_GEOMETRY_FIELDS
-        } == {name: legacy_screen[name] for name in _LEGACY_GEOMETRY_FIELDS}
 
 
 def test_real_celtic_reducer_controller_capture_stage_completion_and_baseline(
@@ -1810,3 +1824,60 @@ def test_dpi_overrides_agree_with_set_layout_dpi_shell_table() -> None:
     # Every planner override must be reachable through a saved profile;
     # an unreachable key is dead policy that can drift unnoticed.
     assert set(EDID_DPI_OVERRIDES) <= seen_keys
+
+
+def _synthetic_parity_screens(
+    count: int, primary_index: int
+) -> tuple[DisplayScreenSnapshot, ...]:
+    shapes = ((2880, 1920, 285, 190), (3840, 2160, 600, 340), (5120, 2160, 930, 400))
+    screens: list[DisplayScreenSnapshot] = []
+    x = 0
+    for index in range(count):
+        width, height, width_mm, height_mm = shapes[index % len(shapes)]
+        screens.append(
+            DisplayScreenSnapshot(
+                output=f"OUT-{index}",
+                width=width,
+                height=height,
+                x=x,
+                y=0,
+                width_mm=width_mm,
+                height_mm=height_mm,
+                primary=index == primary_index,
+            )
+        )
+        x += width
+    return tuple(screens)
+
+
+def test_every_tracked_layout_geometry_matches_legacy_liblayout(
+    tmp_path: Path,
+) -> None:
+    """Both layout implementations must agree over every tracked layout.
+
+    lib/liblayout.py stays authoritative for the live pipeline until cutover
+    while desktop/layout.py is a full reimplementation; nothing else detects
+    the two drifting apart (dc-kbu). The saved-profile parity cases above
+    cover only the layouts with profiles; this sweeps the rest with synthetic
+    screens of matching count.
+    """
+    root = _REPO / ".fluxbox" / "layouts"
+    files = tuple(
+        (path.relative_to(_REPO).as_posix(), path.read_bytes())
+        for path in sorted(root.rglob("*.yaml"))
+    )
+    layouts = tuple(sorted(root.glob("*.yaml")))
+    assert layouts
+    for path in layouts:
+        parsed = parse_layout(path.stem, files)
+        primary_index = next(
+            (
+                index
+                for index, screen in enumerate(parsed.screens)
+                if screen.assignment == "primary"
+            ),
+            0,
+        )
+        screens = _synthetic_parity_screens(len(parsed.screens), primary_index)
+        planned = resolve_layout(parsed, screens)
+        _assert_legacy_geometry_parity(planned, path.stem, screens, tmp_path)
