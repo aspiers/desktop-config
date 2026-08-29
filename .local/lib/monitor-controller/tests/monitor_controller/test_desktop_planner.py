@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import stat
 import subprocess
 import threading
@@ -554,7 +555,55 @@ def _render_fluxbox_expression(template: bytes, expression: str) -> bytes:
     )
 
 
-def test_closed_fluxbox_renderer_matches_legacy_erb_golden_bytes() -> None:
+_ERB_WARNING_HEADER = (
+    b"# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+    b"# WARNING: This file is auto-generated. DO NOT EDIT IT MANUALLY.\n"
+    b"# Edit the template instead:\n"
+    b"#   .fluxbox/keys.erb\n"
+    b"# Then regenerate by running:\n"
+    b"#   bin/fluxbox-gen-config\n"
+    b"# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+)
+
+
+def _live_erb_ground_truth(monitor_count: int, tmp_path: Path) -> bytes | None:
+    """Render the live template with real Ruby erb, or None without ruby.
+
+    Mirrors fixtures/fluxbox/regenerate: fake monitors-connected on PATH and
+    the celtic nickname, prefixed with the legacy warning header.
+    """
+    erb = shutil.which("erb")
+    if erb is None:
+        return None
+    fake_bin = tmp_path / f"erb-bin-{monitor_count}"
+    fake_bin.mkdir()
+    stub = fake_bin / "monitors-connected"
+    stub.write_text(f"#!/bin/sh\necho {monitor_count}\n", encoding="ascii")
+    stub.chmod(0o755)
+    completed = subprocess.run(  # noqa: S603 - fixed argv over tracked input
+        [erb, str(_REPO / ".fluxbox" / "keys.erb")],
+        capture_output=True,
+        check=True,
+        env={
+            **os.environ,
+            "PATH": f"{fake_bin}:{os.environ.get('PATH', '')}",
+            "localhost_nickname": "celtic",
+        },
+        timeout=30,
+    )
+    return _ERB_WARNING_HEADER + completed.stdout
+
+
+def test_closed_fluxbox_renderer_matches_legacy_erb_golden_bytes(
+    tmp_path: Path,
+) -> None:
+    """The Python renderer must match Ruby erb over the live template.
+
+    With ruby installed the ground truth is rendered fresh, so keys.erb edits
+    cannot leave this red on fixture staleness alone; without ruby the
+    checked-in goldens stand in and fixtures/fluxbox/regenerate refreshes
+    them.
+    """
     template = (_REPO / ".fluxbox" / "keys.erb").read_bytes()
     golden_root = _FIXTURES / "fluxbox"
     expected_hashes = {
@@ -569,8 +618,13 @@ def test_closed_fluxbox_renderer_matches_legacy_erb_golden_bytes() -> None:
 
     for monitor_count in (1, 2, 3):
         name = f"keys-{monitor_count}.golden"
-        golden = golden_root.joinpath(name).read_bytes()
-        assert hashlib.sha256(golden).hexdigest() == expected_hashes[name]
+        ground_truth = _live_erb_ground_truth(monitor_count, tmp_path)
+        source = "live erb output"
+        if ground_truth is None:
+            ground_truth = golden_root.joinpath(name).read_bytes()
+            source = name
+            digest = hashlib.sha256(ground_truth).hexdigest()
+            assert digest == expected_hashes[name]
         rendered = render_fluxbox_keys(
             template,
             monitor_count=monitor_count,
@@ -578,9 +632,10 @@ def test_closed_fluxbox_renderer_matches_legacy_erb_golden_bytes() -> None:
             template_label=".fluxbox/keys.erb",
             generator_label="bin/fluxbox-gen-config",
         )
-        assert rendered == golden, (
-            f"{name} disagrees with the live template; if .fluxbox/keys.erb "
-            "changed, refresh the fixtures with fixtures/fluxbox/regenerate"
+        assert rendered == ground_truth, (
+            f"renderer disagrees with {source} for {monitor_count} monitor(s); "
+            "if .fluxbox/keys.erb changed, refresh the fixtures with "
+            "fixtures/fluxbox/regenerate"
         )
 
 
