@@ -406,6 +406,19 @@ class TestCommandSequences:
             "systemctl --user disable monitor-controller-shadow.service" not in commands
         )
 
+    def test_cutover_suppresses_every_conflicting_login_link(self) -> None:
+        """Any conflicting unit left wanted races the controller at login.
+
+        The live 2026-08-30 cutover left shadow's link in place; with both
+        shadow and the active controller wanted by fluxbox-session.target and
+        Conflicts= between them, whichever started first would suppress the
+        other — and shadow winning means the authority lock refuses the
+        controller, leaving the display with no manager.
+        """
+        commands = " ".join(cutover_commands())
+        for unit in CONFLICTING_UNITS:
+            assert f".wants/{unit}" in commands
+
     def test_every_command_is_ssh_safe(self) -> None:
         """No command may need DISPLAY; rollback often happens over SSH.
 

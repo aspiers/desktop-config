@@ -534,10 +534,16 @@ def cutover_commands() -> tuple[str, ...]:
     stops = tuple(f"systemctl --user stop {unit}" for unit in CONFLICTING_UNITS)
     # Not `systemctl --user disable`: that deletes the stowed unit symlink and
     # leaves rollback unable to re-enable it. See suppress_at_login_command().
+    #
+    # Shadow's login link must go too: leaving it wanted by the same target as
+    # the enabled active controller hands systemd two conflicting wanted units
+    # at every login, and if shadow wins the race the active controller's
+    # authority lock refuses to start — no display manager at all. The 2026-08-30
+    # live cutover hit exactly this and removed the link by hand. Suppression
+    # is lossless (`systemctl --user enable` restores it), so shadow can still
+    # be resumed deliberately after a rollback.
     suppressions = tuple(
-        suppress_at_login_command(unit)
-        for unit in CONFLICTING_UNITS
-        if unit != "monitor-controller-shadow.service"
+        suppress_at_login_command(unit) for unit in CONFLICTING_UNITS
     )
     return (
         # Authorise before stopping anything: the controller will not start

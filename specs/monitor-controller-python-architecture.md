@@ -2,28 +2,35 @@
 
 ## Status
 
-**Accepted architecture. Substantially implemented; not yet authoritative.**
-The authoritative service remains `monitor-watcher-ng.service`, executing
-`bin/monitor-watcher-ng`.
+**Authoritative since 2026-08-30.** `monitor-controller.service` is enabled
+and running as the exclusive display authority; `monitor-watcher-ng.service`,
+`monitor-watcher.service`, and `monitor-controller-shadow.service` are
+stopped with their login links suppressed (units remain linked for lossless
+rollback via `rollback-commands`).
 
-What exists today:
+What exists and runs today:
 
 - The observer, reducer, planner, persistence, recovery, and all four action
   workers, under `.local/lib/monitor-controller/`.
-- `monitor-controller-shadow.service`, deployed and running. It observes and
-  records decisions but hard-wires `NullDispatcher`, so it cannot act on the
-  display.
 - `monitor-controller.service` and `monitor_controller.active`, the
-  exclusive-authority composition root. Stowed but **deliberately not
-  enabled**, so a deployed-but-unverified unit cannot take authority at the
-  next login.
+  exclusive-authority composition root, holding
+  `$XDG_RUNTIME_DIR/monitor-controller/active/authority.lock`.
+- The manual-change path: `.config/autorandr/postswitch` auto-detects
+  controller authority and delivers manual `autorandr` loads as bounded
+  notifications consumed by `PostswitchNotificationMonitor`, verified live at
+  cutover (same-profile reload produced a wake-up and no relayout).
 - Cutover preflight and rollback (`monitor_controller.cutover`), exposed as
   the `preflight`, `cutover-commands`, and `rollback-commands` subcommands.
+- `monitor-controller-shadow.service` remains stowed for diagnostic use but
+  is no longer wanted at login; it conflicts with the active controller.
 
-What gates the cutover: shadow traces for the seven scenarios in `dc-a5y.11`
-must be captured and reconciled, and the live switch needs explicit
-maintainer approval. Update this section to "authoritative" only once
-`monitor-controller.service` is actually enabled and running.
+Cutover evidence: preflight fully green after stopping the conflicting
+authorities; first start recovered from empty state, adopted the correct
+already-running desktop with zero probe/apply dispatches, and reached
+`quiescent`. Shadow-trace reconciliation accepted six of seven scenarios
+against ng (`dc-a5y.11`; `laptop_startup` deferred by operator decision).
+Physical acceptance across dock/undock/suspend cycles is tracked by
+`dc-a5y.18`.
 
 This document selects the production technology and process boundaries for the
 state model in `monitor-watcher-state-machine-v2.md`. The Bash reducer under

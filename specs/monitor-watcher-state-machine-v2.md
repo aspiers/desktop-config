@@ -7,9 +7,10 @@ watcher or its systemd unit. The executable reducer and synthetic trace tests
 live under `specs/spikes/` so GNU Stow will not install them.
 
 The accepted production technology and process architecture is documented in
-`monitor-controller-python-architecture.md`. Production will use a typed Python
-controller with systemd-supervised action workers; the Bash reducer remains an
-executable specification only.
+`monitor-controller-python-architecture.md`. Production uses a typed Python
+controller with systemd-supervised action workers — authoritative as
+`monitor-controller.service` since the 2026-08-30 cutover; the Bash reducer
+remains an executable specification only.
 
 Tracked by `dc-a5y` — **Replace monitor watcher loop with a persistent state
 machine**.
