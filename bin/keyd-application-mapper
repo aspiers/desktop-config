@@ -305,13 +305,28 @@ class XMonitor():
         _NET_WM_WINDOW_TYPE_NOTIFICATION = self.dpy.intern_atom('_NET_WM_WINDOW_TYPE_NOTIFICATION', False)
         _NET_WM_WINDOW_TYPE_NORMAL = self.dpy.intern_atom('_NET_WM_WINDOW_TYPE_NORMAL', False)
         _NET_WM_WINDOW_TYPE = self.dpy.intern_atom('_NET_WM_WINDOW_TYPE', False)
+        _NET_CLIENT_LIST_STACKING = self.dpy.intern_atom('_NET_CLIENT_LIST_STACKING', False)
 
-        def get_floating_window():
-            q = [self.dpy.screen().root]
+        def get_candidate_windows():
+            root = self.dpy.screen().root
+            clients = root.get_full_property(_NET_CLIENT_LIST_STACKING, Xlib.Xatom.WINDOW)
+            if clients:
+                return [
+                    self.dpy.create_resource_object('window', int(window_id))
+                    for window_id in reversed(clients.value)
+                ]
+
+            # Keep application mapping working with non-EWMH window managers.
+            windows = []
+            q = [root]
             while q:
                 w = q.pop()
+                windows.append(w)
                 q.extend(w.query_tree().children)
+            return windows
 
+        def get_floating_window():
+            for w in get_candidate_windows():
                 v = w.get_full_property(_NET_WM_STATE, Xlib.Xatom.ATOM)
 
                 if v and v.value and v.value[0] == _NET_WM_STATE_ABOVE:
