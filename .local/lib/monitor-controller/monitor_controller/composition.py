@@ -17,7 +17,7 @@ from __future__ import annotations
 import asyncio
 import fcntl
 import os
-from collections.abc import Callable, Coroutine, Mapping
+from collections.abc import Callable, Coroutine, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from types import TracebackType
@@ -177,18 +177,23 @@ class _HintProducer(Protocol):
     ) -> Coroutine[object, object, object]: ...
 
 
-async def run_controller_with_producer(
+async def run_controller_with_producer(  # noqa: PLR0913 - keyword-only wiring
     controller: _RunnableController,
     producer: _HintProducer,
     *,
     task_prefix: str,
     error: type[Exception],
     close: Callable[[], None] | None = None,
+    extra_producers: Sequence[tuple[str, _HintProducer]] = (),
 ) -> None:
-    """Run one controller and one DRM producer, cancelling both on any exit.
+    """Run one controller and its wake-up producers, cancelling all on any exit.
 
     *close* runs after the controller has shut down, for whatever synchronous
     resources the composition retains (planner, transaction store, fence).
+
+    *extra_producers* are additional ``(task_suffix, producer)`` hint sources
+    sharing the DRM producer's contract and lifecycle — the active root uses
+    one for manual-autorandr postswitch notifications.
     """
     controller_task = asyncio.create_task(
         controller.run(),
@@ -198,7 +203,17 @@ async def run_controller_with_producer(
         producer.run(controller.notify_drm_hint),
         name=f"{task_prefix}-uevents",
     )
-    tasks = (controller_task, monitor_task)
+    tasks = (
+        controller_task,
+        monitor_task,
+        *(
+            asyncio.create_task(
+                extra.run(controller.notify_drm_hint),
+                name=f"{task_prefix}-{suffix}",
+            )
+            for suffix, extra in extra_producers
+        ),
+    )
     try:
         done, _pending = await asyncio.wait(
             tasks,

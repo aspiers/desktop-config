@@ -23,11 +23,24 @@ if [ -n "${MONITOR_CONTROLLER_AUTORANDR_ACTION_ID:-}" ]; then
 fi
 
 # Merely running the non-authoritative shadow never changes manual autorandr
-# behaviour.  Only an explicit active postswitch policy removes this hook's
-# legacy finalization authority.  A manual load then leaves a bounded atomic
+# behaviour.  Only the active postswitch policy removes this hook's legacy
+# finalization authority.  A manual load then leaves a bounded atomic
 # notification for the active controller, or logs that notification was
 # deferred when the controller-owned runtime directory is unavailable.
-postswitch_policy=${MONITOR_CONTROLLER_POSTSWITCH_POLICY:-legacy}
+#
+# The default policy is auto-detected from whether the active controller is
+# running, because a manual `autorandr --load` comes from an interactive
+# shell whose environment nothing updates at cutover or rollback.  The
+# explicit variable remains as an override for tests and the units, which do
+# know their own authority.
+postswitch_policy=${MONITOR_CONTROLLER_POSTSWITCH_POLICY:-auto}
+if [ "$postswitch_policy" = auto ]; then
+    if systemctl --user is-active --quiet monitor-controller.service 2>/dev/null; then
+        postswitch_policy=active
+    else
+        postswitch_policy=legacy
+    fi
+fi
 if [ "$postswitch_policy" = active ]; then
     if [ -z "${XDG_RUNTIME_DIR:-}" ]; then
         echo "postswitch: active policy; controller notification deferred because XDG_RUNTIME_DIR is unset" >&2

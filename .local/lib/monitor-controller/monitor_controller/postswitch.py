@@ -20,8 +20,10 @@ controller or be mistaken for a real topology change.
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import os
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -124,3 +126,61 @@ def read_notification(path: Path) -> PostswitchNotification | None:
     with contextlib.suppress(FileNotFoundError):
         path.unlink()
     return notification
+
+
+# Manual changes are rare and a stat of a missing file is nearly free, so a
+# short fixed poll keeps the producer dependency-free (no inotify binding)
+# while still delivering a manual change well inside the reducer's own
+# stability windows.
+POLL_SECONDS = 2.0
+
+
+class PostswitchNotificationMonitor:
+    """Poll for manual-autorandr notifications and wake the controller.
+
+    Satisfies the same producer protocol as the DRM uevent monitor: ``run``
+    loops until cancelled and invokes *notify* once per delivered
+    notification. The controller treats the wake-up exactly like a DRM hint —
+    a fresh observation then reconciles whatever the manual change did — so
+    the notification's content is only reported, never trusted as topology.
+    """
+
+    def __init__(
+        self,
+        path: Path,
+        *,
+        on_notification: Callable[[PostswitchNotification], None],
+        on_failure: Callable[[str], None],
+        poll_seconds: float = POLL_SECONDS,
+    ) -> None:
+        """Watch *path*, reporting deliveries and quarantines to the callbacks."""
+        self._path = path
+        self._on_notification = on_notification
+        self._on_failure = on_failure
+        self._poll_seconds = poll_seconds
+
+    async def run(self, notify: Callable[[], object]) -> None:
+        """Run until cancelled, waking the controller once per notification."""
+        while True:
+            self.poll_once(notify)
+            await asyncio.sleep(self._poll_seconds)
+
+    def poll_once(self, notify: Callable[[], object]) -> None:
+        """Consume at most one notification; never raise into the run loop."""
+        try:
+            notification = read_notification(self._path)
+        except PostswitchNotificationError as error:
+            self._quarantine(str(error))
+            return
+        if notification is not None:
+            self._on_notification(notification)
+            notify()
+
+    def _quarantine(self, detail: str) -> None:
+        # A malformed file is left in place by read_notification for
+        # diagnosis, but the poller would then report it forever. Move it
+        # aside (bounded: later quarantines overwrite) and report once.
+        quarantine = self._path.with_name(self._path.name + ".malformed")
+        with contextlib.suppress(OSError):
+            self._path.replace(quarantine)
+        self._on_failure(f"{detail}; quarantined to {quarantine.name}")

@@ -17,6 +17,7 @@ from monitor_controller.postswitch import (
     MAX_NOTIFICATION_BYTES,
     PostswitchNotification,
     PostswitchNotificationError,
+    PostswitchNotificationMonitor,
     parse_notification,
     read_notification,
 )
@@ -177,3 +178,89 @@ class TestHookContract:
         """
         text = HOOK.read_text(encoding="utf-8")
         assert "evidence is malformed" in text
+
+
+class TestNotificationMonitor:
+    """The producer that delivers manual changes to the run loop."""
+
+    @staticmethod
+    def _monitor(
+        path: Path,
+        received: list[PostswitchNotification],
+        failures: list[str],
+    ) -> PostswitchNotificationMonitor:
+        return PostswitchNotificationMonitor(
+            path,
+            on_notification=received.append,
+            on_failure=failures.append,
+        )
+
+    def test_absent_file_neither_notifies_nor_fails(self, tmp_path: Path) -> None:
+        """Absence is the overwhelmingly common poll outcome."""
+        received: list[PostswitchNotification] = []
+        failures: list[str] = []
+        wakes: list[bool] = []
+        monitor = self._monitor(tmp_path / "missing", received, failures)
+        monitor.poll_once(lambda: wakes.append(True))
+        assert received == []
+        assert failures == []
+        assert wakes == []
+
+    def test_notification_wakes_once_and_is_consumed(self, tmp_path: Path) -> None:
+        """One manual change produces exactly one wake-up."""
+        path = tmp_path / "autorandr-postswitch"
+        path.write_text("profile=celtic\nmonitors=eDP\n")
+        received: list[PostswitchNotification] = []
+        failures: list[str] = []
+        wakes: list[bool] = []
+        monitor = self._monitor(path, received, failures)
+        monitor.poll_once(lambda: wakes.append(True))
+        monitor.poll_once(lambda: wakes.append(True))
+        assert [notification.profile for notification in received] == ["celtic"]
+        assert wakes == [True]
+        assert failures == []
+        assert not path.exists()
+
+    def test_malformed_file_is_quarantined_without_waking(
+        self, tmp_path: Path
+    ) -> None:
+        """A bad file must be reported once, not spin the poller forever."""
+        path = tmp_path / "autorandr-postswitch"
+        path.write_bytes(b"\xff\xfe not utf-8")
+        received: list[PostswitchNotification] = []
+        failures: list[str] = []
+        wakes: list[bool] = []
+        monitor = self._monitor(path, received, failures)
+        monitor.poll_once(lambda: wakes.append(True))
+        monitor.poll_once(lambda: wakes.append(True))
+        assert wakes == []
+        assert received == []
+        assert len(failures) == 1
+        assert "quarantined" in failures[0]
+        assert not path.exists()
+        assert (tmp_path / "autorandr-postswitch.malformed").exists()
+
+
+class TestHookPolicyDetection:
+    """The hook must decide its own policy; nothing updates shell environments.
+
+    A manual `autorandr --load` runs from an interactive shell whose
+    environment neither cutover nor rollback can update, so the hook
+    auto-detects authority from the active controller's unit state and falls
+    back to legacy when it cannot tell.
+    """
+
+    def test_hook_defaults_to_auto_detection(self) -> None:
+        """Auto-detection is the default and asks the user manager."""
+        text = HOOK.read_text(encoding="utf-8")
+        assert "MONITOR_CONTROLLER_POSTSWITCH_POLICY:-auto" in text
+        assert (
+            "systemctl --user is-active --quiet monitor-controller.service" in text
+        )
+
+    def test_auto_detection_resolves_before_policy_dispatch(self) -> None:
+        """Auto must resolve to a concrete policy or the hook would refuse."""
+        text = HOOK.read_text(encoding="utf-8")
+        detect = text.index("MONITOR_CONTROLLER_POSTSWITCH_POLICY:-auto")
+        dispatch = text.index('if [ "$postswitch_policy" = active ]')
+        assert detect < dispatch

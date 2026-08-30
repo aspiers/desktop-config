@@ -65,6 +65,10 @@ from monitor_controller.observer.snapshot import (
     CanonicalSnapshotCoordinator,
     StaticSavedProfiles,
 )
+from monitor_controller.postswitch import (
+    PostswitchNotification,
+    PostswitchNotificationMonitor,
+)
 from monitor_controller.runtime.audit import RotatingAuditLog
 from monitor_controller.runtime.commands import BoundedCommandRunner
 from monitor_controller.runtime.controller import (
@@ -390,6 +394,9 @@ class ActiveComposition:
     transactions: TransactionStore | None = None
     # Retained so run_active() can withdraw the finalizer's fence on exit.
     generation_fence: GenerationFencePublisher | None = None
+    # Wakes the controller when the postswitch hook reports a manual
+    # `autorandr` change made outside the controller's own dispatch.
+    postswitch_monitor: PostswitchNotificationMonitor | None = None
 
 
 class NonStartingDispatcher:
@@ -736,6 +743,28 @@ def build_active_composition(
             recorded_at_ms=clock.monotonic_ms(),
         )
 
+    def _postswitch_failure(detail: str) -> None:
+        audit.append_runtime_failure(
+            boundary="postswitch-notification",
+            detail=detail,
+            recorded_at_ms=clock.monotonic_ms(),
+        )
+
+    def _postswitch_received(notification: PostswitchNotification) -> None:
+        # The journal line is the diagnostic record; the wake-up's fresh
+        # observation carries everything the reducer acts on.
+        print(
+            "monitor-controller: manual autorandr change reported by "
+            f"postswitch: profile {notification.profile}",
+            file=sys.stderr,
+        )
+
+    postswitch_monitor = PostswitchNotificationMonitor(
+        paths.postswitch_notification,
+        on_notification=_postswitch_received,
+        on_failure=_postswitch_failure,
+    )
+
     composition = compose_active_controller(
         paths=paths,
         initial_state=initial,
@@ -753,7 +782,12 @@ def build_active_composition(
             ),
         ),
     )
-    return replace(composition, recovery=recovery, transactions=transactions)
+    return replace(
+        composition,
+        recovery=recovery,
+        transactions=transactions,
+        postswitch_monitor=postswitch_monitor,
+    )
 
 
 async def run_active(
@@ -777,12 +811,18 @@ async def run_active(
             # refuse its boundary rather than trust the last published value.
             composition.generation_fence.withdraw()
 
+    extra_producers = (
+        ()
+        if composition.postswitch_monitor is None
+        else (("postswitch", composition.postswitch_monitor),)
+    )
     await run_controller_with_producer(
         composition.controller,
         producer,
         task_prefix="monitor-controller",
         error=ActiveStartupError,
         close=close_retained_resources,
+        extra_producers=extra_producers,
     )
 
 

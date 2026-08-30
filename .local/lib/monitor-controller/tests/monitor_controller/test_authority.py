@@ -41,6 +41,7 @@ from monitor_controller.model import (
     EventGeneration,
     State,
 )
+from monitor_controller.postswitch import PostswitchNotificationMonitor
 from monitor_controller.runtime.dispatcher import (
     DispatchStartResult,
     PreparedDispatch,
@@ -837,6 +838,7 @@ class TestRunActive:
                 planner=SimpleNamespace(close=lambda: planner_closed.append(True)),
                 transactions=transactions,
                 generation_fence=None,
+                postswitch_monitor=None,
             )
 
             with pytest.raises(RuntimeError, match="injected monitor failure"):
@@ -880,9 +882,60 @@ class TestRunActive:
                 planner=SimpleNamespace(close=lambda: None),
                 transactions=None,
                 generation_fence=None,
+                postswitch_monitor=None,
             )
             with pytest.raises(ActiveStartupError, match="exited unexpectedly"):
                 await run_active(composition, IdleMonitor())  # type: ignore[arg-type]
+
+        asyncio.run(exercise())
+
+    def test_a_manual_postswitch_notification_wakes_the_controller(
+        self, tmp_path: Path
+    ) -> None:
+        """A manual `autorandr --load` must reach the run loop as a wake-up.
+
+        The postswitch hook only writes a file; if the run loop never polls
+        it, manual changes are silently ignored for the life of the session.
+        """
+
+        async def exercise() -> None:
+            controller = _RecordingController()
+            path = tmp_path / "autorandr-postswitch"
+            path.write_text("profile=celtic\n")
+            received: list[str] = []
+            postswitch = PostswitchNotificationMonitor(
+                path,
+                on_notification=lambda n: received.append(n.profile),
+                on_failure=pytest.fail,
+                poll_seconds=0.01,
+            )
+            composition = SimpleNamespace(
+                controller=controller,
+                planner=SimpleNamespace(close=lambda: None),
+                transactions=None,
+                generation_fence=None,
+                postswitch_monitor=postswitch,
+            )
+
+            class IdleMonitor:
+                async def run(self, notify: object) -> None:
+                    del notify
+                    await asyncio.Event().wait()
+
+            task = asyncio.create_task(
+                run_active(composition, IdleMonitor())  # type: ignore[arg-type]
+            )
+            for _ in range(500):
+                if controller.notifications:
+                    break
+                await asyncio.sleep(0.01)
+            task.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await task
+            assert controller.notifications == 1
+            assert received == ["celtic"]
+            assert not path.exists()
+            assert controller.closed
 
         asyncio.run(exercise())
 
