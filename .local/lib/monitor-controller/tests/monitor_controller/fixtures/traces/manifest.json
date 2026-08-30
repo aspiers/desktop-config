@@ -1,530 +1,596 @@
 {
-  "schema_version": 2,
-  "bead": "dc-a5y.11",
-  "classification": "mixed provenance: live steady capture, retained raw derivatives, and synthetic policy regressions",
-  "provenance_classes": {
-    "live": "Sanitized projection of bounded production audit/status evidence observed with the fixed parser running.",
-    "retained_raw_derived": "Sanitized excerpt or fixture derived deterministically from retained raw observer/journal evidence; useful as an input but not a live shadow transition.",
-    "synthetic_policy": "Deterministic scenario/reducer replay. It is regression coverage, not production audit and not live acceptance."
-  },
-  "acceptance": {
-    "live_satisfied_cases": [
-      "samsung_restart_steady"
+ "acceptance": {
+  "limit": "Six of the seven required physical transition cases are satisfied by sanitized live shadow captures reconciled against retained monitor-watcher-ng journal windows. laptop_startup accrues at the next login; nothing needs to be done deliberately (see bin/shadow-trace-status).",
+  "live_satisfied_cases": [
+   "aoc_connector_rename",
+   "controller_restart",
+   "genuine_unplug",
+   "same_profile_suspend_resume",
+   "samsung_broken_edid_beyond_30_seconds",
+   "samsung_plug",
+   "samsung_restart_steady"
+  ],
+  "live_unsatisfied_physical_transition_cases": [
+   "laptop_startup"
+  ],
+  "required_physical_transition_case_count": 7,
+  "required_physical_transition_cases": [
+   "laptop_startup",
+   "samsung_plug",
+   "samsung_broken_edid_beyond_30_seconds",
+   "genuine_unplug",
+   "same_profile_suspend_resume",
+   "controller_restart",
+   "aoc_connector_rename"
+  ],
+  "status": "AWAITING_LAPTOP_STARTUP_CAPTURE"
+ },
+ "artifacts": {
+  "live": [
+   {
+    "audit": "live_samsung_restart_steady.audit.jsonl",
+    "case": "samsung_restart_steady",
+    "claims": [
+     "five valid exact/current celtic+Samsung-Odyssey-G75F observations",
+     "RequestPlan followed by PrepareDesktop",
+     "one WOULD_PREPARE and no other WOULD_* record",
+     "no shadow transaction path, no monitor worker unit, and unchanged XRandR query hash"
     ],
-    "required_physical_transition_case_count": 7,
-    "required_physical_transition_cases": [
-      "laptop_startup",
-      "samsung_plug",
-      "samsung_broken_edid_beyond_30_seconds",
-      "genuine_unplug",
-      "same_profile_suspend_resume",
-      "controller_restart",
-      "aoc_connector_rename"
-    ],
-    "live_unsatisfied_physical_transition_cases": [
-      "laptop_startup",
-      "samsung_plug",
-      "samsung_broken_edid_beyond_30_seconds",
-      "genuine_unplug",
-      "same_profile_suspend_resume",
-      "controller_restart",
-      "aoc_connector_rename"
-    ],
-    "status": "BLOCKED_ON_PHYSICAL_EVENTS",
-    "limit": "The live capture covers only restart into an already-steady Samsung topology. It does not satisfy any of the seven required physical transition cases."
-  },
-  "artifacts": {
-    "live": [
-      {
-        "case": "samsung_restart_steady",
-        "audit": "live_samsung_restart_steady.audit.jsonl",
-        "evidence": "live_samsung_restart_steady.evidence.json",
-        "claims": [
-          "five valid exact/current celtic+Samsung-Odyssey-G75F observations",
-          "RequestPlan followed by PrepareDesktop",
-          "one WOULD_PREPARE and no other WOULD_* record",
-          "no shadow transaction path, no monitor worker unit, and unchanged XRandR query hash"
-        ]
-      }
-    ],
-    "retained_raw_derived": [
-      {
-        "artifact": "ng-retained-excerpts.json",
-        "description": "bounded exact ng journal excerpts and explicit unavailable-case mapping"
-      },
-      {
-        "artifact": "../xrandr/live-samsung-20260822.provenance.json",
-        "description": "pre-restart parser-reproduction capture with EDIDs retained only by hash and byte length"
-      },
-      {
-        "artifact": "specs/fixtures/monitor-watcher/samsung-invalid-extension-20260818.fingerprint",
-        "description": "historical broken Samsung EDID referenced by hashes only",
-        "raw_bytes_not_copied": 400,
-        "full_sha256": "93afdce47b0711c94cb12365ecbd8a811a771418383760b8e212e24fb9874dc1",
-        "base_128_sha256": "4a07edd8b9e8ca8d3b90675d11773cb07f7e30266185faab0e8a8aeccbec1382"
-      },
-      {
-        "artifact": "pre-restart shadow audit hashes",
-        "description": "invalid parse_failed collection retained only as source hashes; not accepted transition traces",
-        "observations": 303,
-        "validity": "303 invalid/parse_failed",
-        "sha256": {
-          "audit.jsonl": "2c8798910fd43703a2ede8befa9e0efdf789f8fe75c6da6a1785012cea07d4e5",
-          "audit.jsonl.1": "e3672b4efc1114c473f5187a5f10e7bdb9aa0c68a1cf38b07fc246ba2eada40f",
-          "audit.jsonl.2": "818cfcc8f1077b9e3374885935846ecd54bf1d80b1542e2d7cf15bb702b877ad",
-          "audit.jsonl.3": "1db2daa784865686cbcdc5108d4a8fd59e2ba91ee7beb185e364eaf94a953e44"
-        }
-      }
-    ],
-    "synthetic_policy": {
-      "scenario": "../../scenarios/shadow-trace-scenarios.json",
-      "trace_count": 8,
-      "physical_case_count": 7,
-      "format": "reducer replay JSONL without production audit metadata",
-      "acceptance_limit": "All eight traces are NOT live acceptance; restart has two policy variants for one physical case."
+    "evidence": "live_samsung_restart_steady.evidence.json"
+   }
+  ],
+  "retained_raw_derived": [
+   {
+    "artifact": "ng-retained-excerpts.json",
+    "description": "bounded exact ng journal excerpts and explicit unavailable-case mapping"
+   },
+   {
+    "artifact": "../xrandr/live-samsung-20260822.provenance.json",
+    "description": "pre-restart parser-reproduction capture with EDIDs retained only by hash and byte length"
+   },
+   {
+    "artifact": "specs/fixtures/monitor-watcher/samsung-invalid-extension-20260818.fingerprint",
+    "base_128_sha256": "4a07edd8b9e8ca8d3b90675d11773cb07f7e30266185faab0e8a8aeccbec1382",
+    "description": "historical broken Samsung EDID referenced by hashes only",
+    "full_sha256": "93afdce47b0711c94cb12365ecbd8a811a771418383760b8e212e24fb9874dc1",
+    "raw_bytes_not_copied": 400
+   },
+   {
+    "artifact": "pre-restart shadow audit hashes",
+    "description": "invalid parse_failed collection retained only as source hashes; not accepted transition traces",
+    "observations": 303,
+    "sha256": {
+     "audit.jsonl": "2c8798910fd43703a2ede8befa9e0efdf789f8fe75c6da6a1785012cea07d4e5",
+     "audit.jsonl.1": "e3672b4efc1114c473f5187a5f10e7bdb9aa0c68a1cf38b07fc246ba2eada40f",
+     "audit.jsonl.2": "818cfcc8f1077b9e3374885935846ecd54bf1d80b1542e2d7cf15bb702b877ad",
+     "audit.jsonl.3": "1db2daa784865686cbcdc5108d4a8fd59e2ba91ee7beb185e364eaf94a953e44"
+    },
+    "validity": "303 invalid/parse_failed"
+   }
+  ],
+  "synthetic_policy": {
+   "acceptance_limit": "All eight traces are NOT live acceptance; restart has two policy variants for one physical case.",
+   "format": "reducer replay JSONL without production audit metadata",
+   "physical_case_count": 7,
+   "scenario": "../../scenarios/shadow-trace-scenarios.json",
+   "trace_count": 8
+  }
+ },
+ "bead": "dc-a5y.11",
+ "cases": [
+  {
+   "case": "laptop_startup",
+   "comparison": "intentional_supersession_policy_only",
+   "effect_counts": {
+    "activate_probe": 0,
+    "apply_profile": 0,
+    "discard_plan": 0,
+    "finalize_desktop": 0,
+    "prepare_desktop": 0,
+    "request_observation": 0,
+    "request_plan": 0,
+    "schedule": 2,
+    "stop_action": 0
+   },
+   "live_acceptance": "NOT_SATISFIED",
+   "ng_behavior": "At startup ng invokes autorandr --change and skips relayout only after proving the detected profile was already current.",
+   "phases": [
+    "verifying",
+    "quiescent"
+   ],
+   "physical_acceptance_case": "laptop_startup",
+   "provenance": "synthetic_policy",
+   "retained_inputs": [
+    "reducer startup policy"
+   ],
+   "scenario": "shadow_laptop_startup",
+   "shadow_outcome": "Adopt exact current celtic as a startup baseline, schedule 1s verification then a 60s health tick, and emit no mutating intent.",
+   "source_evidence": {
+    "ng": {
+     "acceptance_limit": "comparison input only; not a live shadow trace",
+     "reference": "ng-retained-excerpts.json#cases.laptop_startup",
+     "status": "available_retained_ng"
+    },
+    "shadow_transition": {
+     "reason": "the physical transition was not performed with the fixed parser running",
+     "status": "unavailable"
     }
+   },
+   "superseded_by_invariants": [
+    "explicit_applications_only",
+    "profile_transition_finalization"
+   ],
+   "timer_deadlines_ms": [
+    1000,
+    70000
+   ],
+   "trace": "laptop_startup.jsonl",
+   "trace_semantics": "scenario_replay_not_production_audit"
   },
-  "cases": [
-    {
-      "case": "laptop_startup",
-      "scenario": "shadow_laptop_startup",
-      "trace": "laptop_startup.jsonl",
-      "ng_behavior": "At startup ng invokes autorandr --change and skips relayout only after proving the detected profile was already current.",
-      "shadow_outcome": "Adopt exact current celtic as a startup baseline, schedule 1s verification then a 60s health tick, and emit no mutating intent.",
-      "comparison": "intentional_supersession_policy_only",
-      "superseded_by_invariants": [
-        "explicit_applications_only",
-        "profile_transition_finalization"
-      ],
-      "effect_counts": {
-        "activate_probe": 0,
-        "apply_profile": 0,
-        "discard_plan": 0,
-        "finalize_desktop": 0,
-        "prepare_desktop": 0,
-        "request_observation": 0,
-        "request_plan": 0,
-        "schedule": 2,
-        "stop_action": 0
-      },
-      "timer_deadlines_ms": [
-        1000,
-        70000
-      ],
-      "phases": [
-        "verifying",
-        "quiescent"
-      ],
-      "provenance": "synthetic_policy",
-      "trace_semantics": "scenario_replay_not_production_audit",
-      "live_acceptance": "NOT_SATISFIED",
-      "physical_acceptance_case": "laptop_startup",
-      "retained_inputs": [
-        "reducer startup policy"
-      ],
-      "source_evidence": {
-        "ng": {
-          "status": "available_retained_ng",
-          "reference": "ng-retained-excerpts.json#cases.laptop_startup",
-          "acceptance_limit": "comparison input only; not a live shadow trace"
-        },
-        "shadow_transition": {
-          "status": "unavailable",
-          "reason": "the physical transition was not performed with the fixed parser running"
-        }
-      }
+  {
+   "case": "samsung_plug",
+   "comparison": "intentional_supersession_policy_only",
+   "effect_counts": {
+    "activate_probe": 0,
+    "apply_profile": 1,
+    "discard_plan": 1,
+    "finalize_desktop": 1,
+    "prepare_desktop": 1,
+    "request_observation": 4,
+    "request_plan": 1,
+    "schedule": 8,
+    "stop_action": 0
+   },
+   "live_acceptance": "NOT_SATISFIED",
+   "ng_behavior": "ng reaches celtic+Samsung-Odyssey-G75F after repeated --change/--load work, ten-second verification, then launches monolithic postswitch desktop work.",
+   "phases": [
+    "apply_pending",
+    "applying",
+    "discover_fast",
+    "verifying",
+    "verifying",
+    "verifying",
+    "verifying",
+    "verifying",
+    "verifying",
+    "verifying",
+    "finalize_pending",
+    "finalizing",
+    "finalizing",
+    "quiescent"
+   ],
+   "physical_acceptance_case": "samsung_plug",
+   "provenance": "synthetic_policy",
+   "retained_inputs": [
+    "reducer external-plug policy"
+   ],
+   "scenario": "shadow_samsung_plug",
+   "shadow_outcome": "One explicit application intent is deduplicated; planning and preparation remain keyed; finalization is admitted once only after continuous proof.",
+   "source_evidence": {
+    "ng": {
+     "acceptance_limit": "comparison input only; not a live shadow trace",
+     "reference": "ng-retained-excerpts.json#cases.samsung_plug",
+     "status": "available_retained_ng"
     },
-    {
-      "case": "samsung_plug",
-      "scenario": "shadow_samsung_plug",
-      "trace": "samsung_plug.jsonl",
-      "ng_behavior": "ng reaches celtic+Samsung-Odyssey-G75F after repeated --change/--load work, ten-second verification, then launches monolithic postswitch desktop work.",
-      "shadow_outcome": "One explicit application intent is deduplicated; planning and preparation remain keyed; finalization is admitted once only after continuous proof.",
-      "comparison": "intentional_supersession_policy_only",
-      "superseded_by_invariants": [
-        "explicit_applications_only",
-        "no_duplicate_probe_or_application",
-        "independent_desktop_state",
-        "preparation_is_subordinate_and_keyed",
-        "one_display_mutation_boundary"
-      ],
-      "effect_counts": {
-        "activate_probe": 0,
-        "apply_profile": 1,
-        "discard_plan": 1,
-        "finalize_desktop": 1,
-        "prepare_desktop": 1,
-        "request_observation": 4,
-        "request_plan": 1,
-        "schedule": 8,
-        "stop_action": 0
-      },
-      "timer_deadlines_ms": [
-        2,
-        2000,
-        1002,
-        4000,
-        3002,
-        5000,
-        12000,
-        72001
-      ],
-      "phases": [
-        "apply_pending",
-        "applying",
-        "discover_fast",
-        "verifying",
-        "verifying",
-        "verifying",
-        "verifying",
-        "verifying",
-        "verifying",
-        "verifying",
-        "finalize_pending",
-        "finalizing",
-        "finalizing",
-        "quiescent"
-      ],
-      "provenance": "synthetic_policy",
-      "trace_semantics": "scenario_replay_not_production_audit",
-      "live_acceptance": "NOT_SATISFIED",
-      "physical_acceptance_case": "samsung_plug",
-      "retained_inputs": [
-        "reducer external-plug policy"
-      ],
-      "source_evidence": {
-        "ng": {
-          "status": "available_retained_ng",
-          "reference": "ng-retained-excerpts.json#cases.samsung_plug",
-          "acceptance_limit": "comparison input only; not a live shadow trace"
-        },
-        "shadow_transition": {
-          "status": "unavailable",
-          "reason": "the physical transition was not performed with the fixed parser running"
-        }
-      }
-    },
-    {
-      "case": "samsung_broken_edid_beyond_30_seconds",
-      "scenario": "shadow_samsung_broken_edid_beyond_30_seconds",
-      "trace": "samsung_broken_edid_beyond_30_seconds.jsonl",
-      "ng_behavior": "ng performs one safe 3440x1440 activation probe but can exhaust its 12-attempt bounded loop; the 275022 sequence made no further progress until another DRM event about 204 seconds later.",
-      "shadow_outcome": "One probe intent cannot authorize a profile, broken evidence is not reprobed, WAIT_SLOW retains a 35s deadline, and readiness at 35s admits exactly one explicit application without a DRM event.",
-      "comparison": "intentional_supersession_policy_only",
-      "superseded_by_invariants": [
-        "probe_is_not_profile_authorization",
-        "no_duplicate_probe_or_application",
-        "edid_absence_is_uncertainty_not_unplug",
-        "no_implicit_abandonment"
-      ],
-      "effect_counts": {
-        "activate_probe": 1,
-        "apply_profile": 1,
-        "discard_plan": 0,
-        "finalize_desktop": 0,
-        "prepare_desktop": 0,
-        "request_observation": 2,
-        "request_plan": 0,
-        "schedule": 3,
-        "stop_action": 0
-      },
-      "timer_deadlines_ms": [
-        2,
-        35000,
-        35000
-      ],
-      "phases": [
-        "probe_pending",
-        "probing",
-        "discover_fast",
-        "wait_slow",
-        "wait_slow",
-        "apply_pending"
-      ],
-      "provenance": "synthetic_policy",
-      "trace_semantics": "scenario_replay_not_production_audit",
-      "live_acceptance": "NOT_SATISFIED",
-      "physical_acceptance_case": "samsung_broken_edid_beyond_30_seconds",
-      "retained_inputs": [
-        "hashed 2026-08-18 broken Samsung EDID capture",
-        "greater-than-30-second timer policy"
-      ],
-      "source_evidence": {
-        "ng": {
-          "status": "available_retained_ng",
-          "reference": "ng-retained-excerpts.json#cases.samsung_broken_edid_beyond_30_seconds",
-          "acceptance_limit": "comparison input only; not a live shadow trace"
-        },
-        "shadow_transition": {
-          "status": "unavailable",
-          "reason": "the physical transition was not performed with the fixed parser running"
-        }
-      }
-    },
-    {
-      "case": "genuine_unplug",
-      "scenario": "shadow_genuine_unplug",
-      "trace": "genuine_unplug.jsonl",
-      "ng_behavior": "ng converges to celtic and launches desktop work after external disappearance within its reconciliation cycle.",
-      "shadow_outcome": "The first and too-early second internal-only samples remain discovery; only dual sysfs/X absence spanning one second authorizes celtic verification and desktop transition work.",
-      "comparison": "intentional_supersession_policy_only",
-      "superseded_by_invariants": [
-        "edid_absence_is_uncertainty_not_unplug",
-        "explicit_unplug_proof"
-      ],
-      "effect_counts": {
-        "activate_probe": 0,
-        "apply_profile": 0,
-        "discard_plan": 0,
-        "finalize_desktop": 1,
-        "prepare_desktop": 1,
-        "request_observation": 2,
-        "request_plan": 1,
-        "schedule": 7,
-        "stop_action": 0
-      },
-      "timer_deadlines_ms": [
-        1000,
-        1000,
-        2000,
-        1002,
-        4000,
-        3002,
-        5000
-      ],
-      "phases": [
-        "discover_fast",
-        "discover_fast",
-        "verifying",
-        "verifying",
-        "verifying",
-        "verifying",
-        "verifying",
-        "verifying",
-        "verifying",
-        "finalize_pending"
-      ],
-      "provenance": "synthetic_policy",
-      "trace_semantics": "scenario_replay_not_production_audit",
-      "live_acceptance": "NOT_SATISFIED",
-      "physical_acceptance_case": "genuine_unplug",
-      "retained_inputs": [
-        "explicit-unplug reducer policy"
-      ],
-      "source_evidence": {
-        "ng": {
-          "status": "available_retained_ng",
-          "reference": "ng-retained-excerpts.json#cases.genuine_unplug",
-          "acceptance_limit": "comparison input only; not a live shadow trace"
-        },
-        "shadow_transition": {
-          "status": "unavailable",
-          "reason": "the physical transition was not performed with the fixed parser running"
-        }
-      }
-    },
-    {
-      "case": "same_profile_suspend_resume",
-      "scenario": "shadow_same_profile_suspend_resume",
-      "trace": "same_profile_suspend_resume.jsonl",
-      "ng_behavior": "ng still invokes autorandr reconciliation but logs that an already current profile needs no desktop relayout.",
-      "shadow_outcome": "Fresh exact Samsung evidence rebuilds proof, then returns quiescent with no apply, planning, preparation, or finalization intent.",
-      "comparison": "intentional_supersession_policy_only",
-      "superseded_by_invariants": [
-        "explicit_applications_only",
-        "continuous_final_proof",
-        "profile_transition_finalization"
-      ],
-      "effect_counts": {
-        "activate_probe": 0,
-        "apply_profile": 0,
-        "discard_plan": 0,
-        "finalize_desktop": 0,
-        "prepare_desktop": 0,
-        "request_observation": 1,
-        "request_plan": 0,
-        "schedule": 3,
-        "stop_action": 0
-      },
-      "timer_deadlines_ms": [
-        100,
-        1100,
-        70100
-      ],
-      "phases": [
-        "discover_fast",
-        "verifying",
-        "quiescent"
-      ],
-      "provenance": "synthetic_policy",
-      "trace_semantics": "scenario_replay_not_production_audit",
-      "live_acceptance": "NOT_SATISFIED",
-      "physical_acceptance_case": "same_profile_suspend_resume",
-      "retained_inputs": [
-        "dc-xty regression and celtic-only ng analogue"
-      ],
-      "source_evidence": {
-        "ng": {
-          "status": "unavailable",
-          "retained_analogue_not_case_evidence": "ng-retained-excerpts.json#cases.same_profile_suspend_resume",
-          "reason": "only a celtic internal same-profile cycle was identified, not Samsung suspend/resume"
-        },
-        "shadow_transition": {
-          "status": "unavailable",
-          "reason": "the physical transition was not performed with the fixed parser running"
-        }
-      }
-    },
-    {
-      "case": "restart_unresolved",
-      "scenario": "shadow_restart_unresolved",
-      "trace": "restart_unresolved.jsonl",
-      "ng_behavior": "No physical restart trace was collected; ng PID 2734905 was intentionally left unchanged.",
-      "shadow_outcome": "Restart preserves external intent and immediately requests another observation with a persisted timer; it emits no mutating intent.",
-      "comparison": "synthetic_policy_only",
-      "superseded_by_invariants": [
-        "edid_absence_is_uncertainty_not_unplug",
-        "no_implicit_abandonment"
-      ],
-      "effect_counts": {
-        "activate_probe": 0,
-        "apply_profile": 0,
-        "discard_plan": 0,
-        "finalize_desktop": 0,
-        "prepare_desktop": 0,
-        "request_observation": 1,
-        "request_plan": 0,
-        "schedule": 2,
-        "stop_action": 0
-      },
-      "timer_deadlines_ms": [
-        0,
-        1000
-      ],
-      "phases": [
-        "discover_fast",
-        "discover_fast"
-      ],
-      "provenance": "synthetic_policy",
-      "trace_semantics": "scenario_replay_not_production_audit",
-      "live_acceptance": "NOT_SATISFIED",
-      "physical_acceptance_case": "controller_restart",
-      "retained_inputs": [
-        "recovery matrix policy"
-      ],
-      "source_evidence": {
-        "ng": {
-          "status": "unavailable",
-          "reason": "ng PID was intentionally unchanged; no ng restart comparison exists"
-        },
-        "shadow_transition": {
-          "status": "unavailable",
-          "reason": "the physical transition was not performed with the fixed parser running"
-        }
-      }
-    },
-    {
-      "case": "restart_verification",
-      "scenario": "shadow_restart_verification",
-      "trace": "restart_verification.jsonl",
-      "ng_behavior": "No physical restart trace was collected; ng PID 2734905 and the shadow unit were intentionally not restarted.",
-      "shadow_outcome": "Candidate identity survives, proof resets, stale unacknowledged plan identity is discarded, and a new instance allocates a new plan/transition identity.",
-      "comparison": "synthetic_policy_only",
-      "superseded_by_invariants": [
-        "continuous_final_proof",
-        "durable_action_dispatch",
-        "preparation_is_subordinate_and_keyed"
-      ],
-      "effect_counts": {
-        "activate_probe": 0,
-        "apply_profile": 0,
-        "discard_plan": 1,
-        "finalize_desktop": 0,
-        "prepare_desktop": 0,
-        "request_observation": 1,
-        "request_plan": 2,
-        "schedule": 4,
-        "stop_action": 0
-      },
-      "timer_deadlines_ms": [
-        1000,
-        9000,
-        10000,
-        11000
-      ],
-      "phases": [
-        "verifying",
-        "verifying",
-        "verifying",
-        "verifying"
-      ],
-      "provenance": "synthetic_policy",
-      "trace_semantics": "scenario_replay_not_production_audit",
-      "live_acceptance": "NOT_SATISFIED",
-      "physical_acceptance_case": "controller_restart",
-      "retained_inputs": [
-        "verification-restart policy"
-      ],
-      "source_evidence": {
-        "ng": {
-          "status": "unavailable",
-          "reason": "ng PID was intentionally unchanged; no ng restart comparison exists"
-        },
-        "shadow_transition": {
-          "status": "unavailable",
-          "reason": "the physical transition was not performed with the fixed parser running"
-        }
-      }
-    },
-    {
-      "case": "aoc_connector_rename",
-      "scenario": "shadow_aoc_connector_rename",
-      "trace": "aoc_connector_rename.jsonl",
-      "ng_behavior": "ng resolves saved AOC output DisplayPort-2 as live DisplayPort-1, but repeated AOC convergence can relaunch postswitch desktop work.",
-      "shadow_outcome": "The AOC profile identity remains finalized across the connector rename; ten-second proof ends quiescent without application or finalization.",
-      "comparison": "intentional_supersession_policy_only",
-      "superseded_by_invariants": [
-        "explicit_applications_only",
-        "profile_transition_finalization"
-      ],
-      "effect_counts": {
-        "activate_probe": 0,
-        "apply_profile": 0,
-        "discard_plan": 0,
-        "finalize_desktop": 0,
-        "prepare_desktop": 0,
-        "request_observation": 0,
-        "request_plan": 0,
-        "schedule": 2,
-        "stop_action": 0
-      },
-      "timer_deadlines_ms": [
-        1000,
-        70000
-      ],
-      "phases": [
-        "verifying",
-        "quiescent"
-      ],
-      "provenance": "synthetic_policy",
-      "trace_semantics": "scenario_replay_not_production_audit",
-      "live_acceptance": "NOT_SATISFIED",
-      "physical_acceptance_case": "aoc_connector_rename",
-      "retained_inputs": [
-        "saved autorandr profile connector DisplayPort-2",
-        "retained ng DisplayPort-2 to DisplayPort-1 rename excerpts"
-      ],
-      "source_evidence": {
-        "ng": {
-          "status": "available_retained_ng",
-          "reference": "ng-retained-excerpts.json#cases.aoc_connector_rename",
-          "acceptance_limit": "comparison input only; not a live shadow trace"
-        },
-        "shadow_transition": {
-          "status": "unavailable",
-          "reason": "the physical transition was not performed with the fixed parser running"
-        }
-      }
+    "shadow_transition": {
+     "reason": "the physical transition was not performed with the fixed parser running",
+     "status": "unavailable"
     }
-  ]
+   },
+   "superseded_by_invariants": [
+    "explicit_applications_only",
+    "no_duplicate_probe_or_application",
+    "independent_desktop_state",
+    "preparation_is_subordinate_and_keyed",
+    "one_display_mutation_boundary"
+   ],
+   "timer_deadlines_ms": [
+    2,
+    2000,
+    1002,
+    4000,
+    3002,
+    5000,
+    12000,
+    72001
+   ],
+   "trace": "samsung_plug.jsonl",
+   "trace_semantics": "scenario_replay_not_production_audit"
+  },
+  {
+   "case": "samsung_broken_edid_beyond_30_seconds",
+   "comparison": "intentional_supersession_policy_only",
+   "effect_counts": {
+    "activate_probe": 1,
+    "apply_profile": 1,
+    "discard_plan": 0,
+    "finalize_desktop": 0,
+    "prepare_desktop": 0,
+    "request_observation": 2,
+    "request_plan": 0,
+    "schedule": 3,
+    "stop_action": 0
+   },
+   "live_acceptance": "NOT_SATISFIED",
+   "ng_behavior": "ng performs one safe 3440x1440 activation probe but can exhaust its 12-attempt bounded loop; the 275022 sequence made no further progress until another DRM event about 204 seconds later.",
+   "phases": [
+    "probe_pending",
+    "probing",
+    "discover_fast",
+    "wait_slow",
+    "wait_slow",
+    "apply_pending"
+   ],
+   "physical_acceptance_case": "samsung_broken_edid_beyond_30_seconds",
+   "provenance": "synthetic_policy",
+   "retained_inputs": [
+    "hashed 2026-08-18 broken Samsung EDID capture",
+    "greater-than-30-second timer policy"
+   ],
+   "scenario": "shadow_samsung_broken_edid_beyond_30_seconds",
+   "shadow_outcome": "One probe intent cannot authorize a profile, broken evidence is not reprobed, WAIT_SLOW retains a 35s deadline, and readiness at 35s admits exactly one explicit application without a DRM event.",
+   "source_evidence": {
+    "ng": {
+     "acceptance_limit": "comparison input only; not a live shadow trace",
+     "reference": "ng-retained-excerpts.json#cases.samsung_broken_edid_beyond_30_seconds",
+     "status": "available_retained_ng"
+    },
+    "shadow_transition": {
+     "reason": "the physical transition was not performed with the fixed parser running",
+     "status": "unavailable"
+    }
+   },
+   "superseded_by_invariants": [
+    "probe_is_not_profile_authorization",
+    "no_duplicate_probe_or_application",
+    "edid_absence_is_uncertainty_not_unplug",
+    "no_implicit_abandonment"
+   ],
+   "timer_deadlines_ms": [
+    2,
+    35000,
+    35000
+   ],
+   "trace": "samsung_broken_edid_beyond_30_seconds.jsonl",
+   "trace_semantics": "scenario_replay_not_production_audit"
+  },
+  {
+   "case": "genuine_unplug",
+   "comparison": "intentional_supersession_policy_only",
+   "effect_counts": {
+    "activate_probe": 0,
+    "apply_profile": 0,
+    "discard_plan": 0,
+    "finalize_desktop": 1,
+    "prepare_desktop": 1,
+    "request_observation": 2,
+    "request_plan": 1,
+    "schedule": 7,
+    "stop_action": 0
+   },
+   "live_acceptance": "NOT_SATISFIED",
+   "ng_behavior": "ng converges to celtic and launches desktop work after external disappearance within its reconciliation cycle.",
+   "phases": [
+    "discover_fast",
+    "discover_fast",
+    "verifying",
+    "verifying",
+    "verifying",
+    "verifying",
+    "verifying",
+    "verifying",
+    "verifying",
+    "finalize_pending"
+   ],
+   "physical_acceptance_case": "genuine_unplug",
+   "provenance": "synthetic_policy",
+   "retained_inputs": [
+    "explicit-unplug reducer policy"
+   ],
+   "scenario": "shadow_genuine_unplug",
+   "shadow_outcome": "The first and too-early second internal-only samples remain discovery; only dual sysfs/X absence spanning one second authorizes celtic verification and desktop transition work.",
+   "source_evidence": {
+    "ng": {
+     "acceptance_limit": "comparison input only; not a live shadow trace",
+     "reference": "ng-retained-excerpts.json#cases.genuine_unplug",
+     "status": "available_retained_ng"
+    },
+    "shadow_transition": {
+     "reason": "the physical transition was not performed with the fixed parser running",
+     "status": "unavailable"
+    }
+   },
+   "superseded_by_invariants": [
+    "edid_absence_is_uncertainty_not_unplug",
+    "explicit_unplug_proof"
+   ],
+   "timer_deadlines_ms": [
+    1000,
+    1000,
+    2000,
+    1002,
+    4000,
+    3002,
+    5000
+   ],
+   "trace": "genuine_unplug.jsonl",
+   "trace_semantics": "scenario_replay_not_production_audit"
+  },
+  {
+   "case": "same_profile_suspend_resume",
+   "comparison": "intentional_supersession_policy_only",
+   "effect_counts": {
+    "activate_probe": 0,
+    "apply_profile": 0,
+    "discard_plan": 0,
+    "finalize_desktop": 0,
+    "prepare_desktop": 0,
+    "request_observation": 1,
+    "request_plan": 0,
+    "schedule": 3,
+    "stop_action": 0
+   },
+   "live_acceptance": "NOT_SATISFIED",
+   "ng_behavior": "ng still invokes autorandr reconciliation but logs that an already current profile needs no desktop relayout.",
+   "phases": [
+    "discover_fast",
+    "verifying",
+    "quiescent"
+   ],
+   "physical_acceptance_case": "same_profile_suspend_resume",
+   "provenance": "synthetic_policy",
+   "retained_inputs": [
+    "dc-xty regression and celtic-only ng analogue"
+   ],
+   "scenario": "shadow_same_profile_suspend_resume",
+   "shadow_outcome": "Fresh exact Samsung evidence rebuilds proof, then returns quiescent with no apply, planning, preparation, or finalization intent.",
+   "source_evidence": {
+    "ng": {
+     "reason": "only a celtic internal same-profile cycle was identified, not Samsung suspend/resume",
+     "retained_analogue_not_case_evidence": "ng-retained-excerpts.json#cases.same_profile_suspend_resume",
+     "status": "unavailable"
+    },
+    "shadow_transition": {
+     "reason": "the physical transition was not performed with the fixed parser running",
+     "status": "unavailable"
+    }
+   },
+   "superseded_by_invariants": [
+    "explicit_applications_only",
+    "continuous_final_proof",
+    "profile_transition_finalization"
+   ],
+   "timer_deadlines_ms": [
+    100,
+    1100,
+    70100
+   ],
+   "trace": "same_profile_suspend_resume.jsonl",
+   "trace_semantics": "scenario_replay_not_production_audit"
+  },
+  {
+   "case": "restart_unresolved",
+   "comparison": "synthetic_policy_only",
+   "effect_counts": {
+    "activate_probe": 0,
+    "apply_profile": 0,
+    "discard_plan": 0,
+    "finalize_desktop": 0,
+    "prepare_desktop": 0,
+    "request_observation": 1,
+    "request_plan": 0,
+    "schedule": 2,
+    "stop_action": 0
+   },
+   "live_acceptance": "NOT_SATISFIED",
+   "ng_behavior": "No physical restart trace was collected; ng PID 2734905 was intentionally left unchanged.",
+   "phases": [
+    "discover_fast",
+    "discover_fast"
+   ],
+   "physical_acceptance_case": "controller_restart",
+   "provenance": "synthetic_policy",
+   "retained_inputs": [
+    "recovery matrix policy"
+   ],
+   "scenario": "shadow_restart_unresolved",
+   "shadow_outcome": "Restart preserves external intent and immediately requests another observation with a persisted timer; it emits no mutating intent.",
+   "source_evidence": {
+    "ng": {
+     "reason": "ng PID was intentionally unchanged; no ng restart comparison exists",
+     "status": "unavailable"
+    },
+    "shadow_transition": {
+     "reason": "the physical transition was not performed with the fixed parser running",
+     "status": "unavailable"
+    }
+   },
+   "superseded_by_invariants": [
+    "edid_absence_is_uncertainty_not_unplug",
+    "no_implicit_abandonment"
+   ],
+   "timer_deadlines_ms": [
+    0,
+    1000
+   ],
+   "trace": "restart_unresolved.jsonl",
+   "trace_semantics": "scenario_replay_not_production_audit"
+  },
+  {
+   "case": "restart_verification",
+   "comparison": "synthetic_policy_only",
+   "effect_counts": {
+    "activate_probe": 0,
+    "apply_profile": 0,
+    "discard_plan": 1,
+    "finalize_desktop": 0,
+    "prepare_desktop": 0,
+    "request_observation": 1,
+    "request_plan": 2,
+    "schedule": 4,
+    "stop_action": 0
+   },
+   "live_acceptance": "NOT_SATISFIED",
+   "ng_behavior": "No physical restart trace was collected; ng PID 2734905 and the shadow unit were intentionally not restarted.",
+   "phases": [
+    "verifying",
+    "verifying",
+    "verifying",
+    "verifying"
+   ],
+   "physical_acceptance_case": "controller_restart",
+   "provenance": "synthetic_policy",
+   "retained_inputs": [
+    "verification-restart policy"
+   ],
+   "scenario": "shadow_restart_verification",
+   "shadow_outcome": "Candidate identity survives, proof resets, stale unacknowledged plan identity is discarded, and a new instance allocates a new plan/transition identity.",
+   "source_evidence": {
+    "ng": {
+     "reason": "ng PID was intentionally unchanged; no ng restart comparison exists",
+     "status": "unavailable"
+    },
+    "shadow_transition": {
+     "reason": "the physical transition was not performed with the fixed parser running",
+     "status": "unavailable"
+    }
+   },
+   "superseded_by_invariants": [
+    "continuous_final_proof",
+    "durable_action_dispatch",
+    "preparation_is_subordinate_and_keyed"
+   ],
+   "timer_deadlines_ms": [
+    1000,
+    9000,
+    10000,
+    11000
+   ],
+   "trace": "restart_verification.jsonl",
+   "trace_semantics": "scenario_replay_not_production_audit"
+  },
+  {
+   "case": "aoc_connector_rename",
+   "comparison": "intentional_supersession_policy_only",
+   "effect_counts": {
+    "activate_probe": 0,
+    "apply_profile": 0,
+    "discard_plan": 0,
+    "finalize_desktop": 0,
+    "prepare_desktop": 0,
+    "request_observation": 0,
+    "request_plan": 0,
+    "schedule": 2,
+    "stop_action": 0
+   },
+   "live_acceptance": "NOT_SATISFIED",
+   "ng_behavior": "ng resolves saved AOC output DisplayPort-2 as live DisplayPort-1, but repeated AOC convergence can relaunch postswitch desktop work.",
+   "phases": [
+    "verifying",
+    "quiescent"
+   ],
+   "physical_acceptance_case": "aoc_connector_rename",
+   "provenance": "synthetic_policy",
+   "retained_inputs": [
+    "saved autorandr profile connector DisplayPort-2",
+    "retained ng DisplayPort-2 to DisplayPort-1 rename excerpts"
+   ],
+   "scenario": "shadow_aoc_connector_rename",
+   "shadow_outcome": "The AOC profile identity remains finalized across the connector rename; ten-second proof ends quiescent without application or finalization.",
+   "source_evidence": {
+    "ng": {
+     "acceptance_limit": "comparison input only; not a live shadow trace",
+     "reference": "ng-retained-excerpts.json#cases.aoc_connector_rename",
+     "status": "available_retained_ng"
+    },
+    "shadow_transition": {
+     "reason": "the physical transition was not performed with the fixed parser running",
+     "status": "unavailable"
+    }
+   },
+   "superseded_by_invariants": [
+    "explicit_applications_only",
+    "profile_transition_finalization"
+   ],
+   "timer_deadlines_ms": [
+    1000,
+    70000
+   ],
+   "trace": "aoc_connector_rename.jsonl",
+   "trace_semantics": "scenario_replay_not_production_audit"
+  }
+ ],
+ "classification": "mixed provenance: live steady capture, retained raw derivatives, and synthetic policy regressions",
+ "live_physical_captures": {
+  "aoc_connector_rename": {
+   "audit": "live_aoc_connector_rename.audit.jsonl",
+   "audit_sha256": "c129970604f91fe7c47b249a3f905f8e9a93ae94dc22cadb560188a88e3bfa1c",
+   "capture_source": "/home/adam/.log/shadow-traces/20260825-171510.celtic+external.json",
+   "capture_source_sha256": "f60becf055c827f115ab57de0a5555e0fd90a8e08b72b028abfc71a275403f61",
+   "captured_at": "2026-08-25T17:15:18+01:00",
+   "evidence": "live_aoc_connector_rename.evidence.json",
+   "justified_differences": [],
+   "reconciliation": "both selected celtic+AOC-U28G2G6B on the renamed connector; shadow replanned once and emitted one WOULD_PREPARE."
+  },
+  "controller_restart": {
+   "audit": "live_controller_restart.audit.jsonl",
+   "audit_sha256": "88ea18559fdc94461c5374b65edd3b98b33f752b048b3c49cc3a2fe807ae4603",
+   "capture_source": "/home/adam/.log/shadow-traces/20260828-164457.celtic+ultrawide.json",
+   "capture_source_sha256": "e53510439a4c569a10c4b6101fb3811dcf4e709a93ff49aec3ab788620e3e252",
+   "captured_at": "2026-08-28T16:45:05+01:00",
+   "evidence": "live_controller_restart.evidence.json",
+   "justified_differences": [],
+   "reconciliation": "ControllerStarted, fresh observation, replan, WOULD_PREPARE for celtic+Samsung-Odyssey-G75F; ng's service-startup reconciliation reloaded the same profile."
+  },
+  "genuine_unplug": {
+   "audit": "live_genuine_unplug.audit.jsonl",
+   "audit_sha256": "aa945a8ba48bcb58d0f14a4dffdb038ca2b7807348b97c093a77d4b42aa3dbe3",
+   "capture_source": "/home/adam/.log/shadow-traces/20260829-133332.celtic.json",
+   "capture_source_sha256": "7c625a71e9a2089f56a21fb5abc3ada5c01b4ddd7693493f2bb45b78fb9e89ed",
+   "captured_at": "2026-08-29T13:33:40+01:00",
+   "evidence": "live_genuine_unplug.evidence.json",
+   "justified_differences": [
+    "apply_failed terminal phase is the shadow-mode artifact of NullDispatcher rejection; a real dispatcher applies celtic (explicit_applications_only)."
+   ],
+   "reconciliation": "both selected celtic after the external disappeared; shadow admitted ApplyProfile (WOULD_APPLY) which NullDispatcher rejected into apply_failed, ng reloaded celtic."
+  },
+  "same_profile_suspend_resume": {
+   "audit": "live_same_profile_suspend_resume.audit.jsonl",
+   "audit_sha256": "0cdfa732410220711ae87c9206172e0f1ba7e77fc2e00b285a5d58e3d9aa4e11",
+   "capture_source": "/home/adam/.log/shadow-traces/20260827-104707.celtic+ultrawide.json",
+   "capture_source_sha256": "47d9aace038d10243d35cfdeaf3510d0c4b5d00f0b6d74e1998f06bf8d7ecd87",
+   "captured_at": "2026-08-27T10:47:15+01:00",
+   "evidence": "live_same_profile_suspend_resume.evidence.json",
+   "justified_differences": [
+    "intentional supersession: same-profile resume runs no desktop work under the controller (epic acceptance 5, dc-xty), while ng always reloads."
+   ],
+   "reconciliation": "shadow emitted zero plan/prepare/apply intent for the unchanged profile; ng unconditionally reloaded celtic+Samsung-Odyssey-G75F."
+  },
+  "samsung_broken_edid_beyond_30_seconds": {
+   "audit": "live_samsung_broken_edid_beyond_30_seconds.audit.jsonl",
+   "audit_sha256": "d937aba46dc02c3981b7e76ce1a499e1bdb99997102a377ab553cb8edd76eac5",
+   "capture_source": "/home/adam/.log/shadow-traces/20260830-093422.celtic+ultrawide.json",
+   "capture_source_sha256": "eff58f5d4ef31a9dde24d04696afcdc8029a69459bbe3a3aa976e827f08ea469",
+   "captured_at": "2026-08-30T09:34:30+01:00",
+   "evidence": "live_samsung_broken_edid_beyond_30_seconds.evidence.json",
+   "justified_differences": [],
+   "reconciliation": "407s observation span with exactly one WOULD_PREPARE and no duplicate application while readiness settled; ng reloaded celtic+Samsung-Odyssey-G75F once. Policies agree. Captured on the post-dc-czj reducer, demonstrating health-tick settling live."
+  },
+  "samsung_plug": {
+   "audit": "live_samsung_plug.audit.jsonl",
+   "audit_sha256": "733e3fd51346923f30dfdef86f3d1a422901566807919b0e8255340339efa39c",
+   "capture_source": "/home/adam/.log/shadow-traces/20260829-144227.celtic+ultrawide.json",
+   "capture_source_sha256": "758e898a486a2f0edd6e220de40632fee1cba3c41efb7dfe491b281351d72792",
+   "captured_at": "2026-08-29T14:42:35+01:00",
+   "evidence": "live_samsung_plug.evidence.json",
+   "justified_differences": [],
+   "reconciliation": "shadow admitted RequestPlan then PrepareDesktop (WOULD_PREPARE x2 after a mid-window DRM hint superseded the first plan) for celtic+Samsung-Odyssey-G75F; ng reloaded the same profile with postswitch deferred. Policies agree."
+  }
+ },
+ "provenance_classes": {
+  "live": "Sanitized projection of bounded production audit/status evidence observed with the fixed parser running.",
+  "retained_raw_derived": "Sanitized excerpt or fixture derived deterministically from retained raw observer/journal evidence; useful as an input but not a live shadow transition.",
+  "synthetic_policy": "Deterministic scenario/reducer replay. It is regression coverage, not production audit and not live acceptance."
+ },
+ "schema_version": 2
 }

@@ -10,8 +10,26 @@ is live shadow acceptance evidence.
 | `synthetic_policy` | Reducer scenario replay used only for deterministic regression coverage | the other eight `*.jsonl` files and `../../scenarios/shadow-trace-scenarios.json` |
 
 The eight synthetic traces model seven required physical cases because
-controller restart has unresolved and verification policy variants. **None of
-those seven physical cases currently satisfies live shadow acceptance.**
+controller restart has unresolved and verification policy variants. **Six of
+the seven physical cases are now satisfied by sanitized live captures**
+(`live_<case>.audit.jsonl` + `live_<case>.evidence.json`), reconciled against
+the retained monitor-watcher-ng journal window recorded in each evidence
+sidecar; only `laptop_startup` remains outstanding, and it accrues at the
+next login (`bin/shadow-trace-status` tracks it).
+
+## Live physical captures (2026-08-30 reconciliation)
+
+Each `live_<case>` pair was produced by `bin/shadow-trace-reconcile` from a
+raw `~/.log/shadow-traces/` capture (snapshotted by `setup-monitor` after a
+relayout) using the same sanitization procedure as the restart/steady capture
+below: whitelist-projected states and hash+length EDID redaction. The
+evidence sidecar records the raw capture's path and SHA-256, per-record
+source hashes, the absence of the shadow transaction namespace (zero worker
+starts), and the SHA-256-hashed monitor-watcher-ng journal lines for the same
+wall-clock window. Reconciliation verdicts and the two justified intentional
+differences (NullDispatcher's rejected-admission phases, and same-profile
+resume performing no desktop work where ng reloads unconditionally) are
+recorded per case in `manifest.json` under `live_physical_captures`.
 
 ## Bounded live Samsung restart/steady capture
 

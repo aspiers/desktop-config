@@ -245,6 +245,9 @@ def main() -> int:
                 {
                     "captures": len(captures),
                     "scenarios": {k: len(v) for k, v in found.items()},
+                    "scenario_captures": {
+                        k: [str(c.path) for c in v] for k, v in found.items()
+                    },
                     "outstanding": [k for k, v in found.items() if not v],
                 },
                 indent=2,

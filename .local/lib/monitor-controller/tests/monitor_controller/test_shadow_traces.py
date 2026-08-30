@@ -40,6 +40,20 @@ _LIVE_EVIDENCE_PATH = _TRACE_ROOT / "live_samsung_restart_steady.evidence.json"
 _NG_EVIDENCE_PATH = _TRACE_ROOT / "ng-retained-excerpts.json"
 _XRANDR_ROOT = _TEST_ROOT / "fixtures" / "xrandr"
 _SCENARIOS = load_scenarios(_SCENARIO_PATH)
+_LIVE_PHYSICAL_CASES = (
+    "aoc_connector_rename",
+    "controller_restart",
+    "genuine_unplug",
+    "same_profile_suspend_resume",
+    "samsung_broken_edid_beyond_30_seconds",
+    "samsung_plug",
+)
+_DISPATCH_EVENT_TYPES = {
+    "ProbeDispatched",
+    "ApplicationDispatched",
+    "PreparationDispatched",
+    "FinalizationDispatched",
+}
 _SCENARIO_BY_NAME = {scenario.name: scenario for scenario in _SCENARIOS}
 _EXPECTED_CASES = {
     "aoc_connector_rename",
@@ -156,14 +170,14 @@ def test_manifest_separates_provenance_and_keeps_live_acceptance_honest() -> Non
     assert {cast("str", case["case"]) for case in cases} == _EXPECTED_CASES
     assert set(_SCENARIO_BY_NAME) == {cast("str", case["scenario"]) for case in cases}
     assert set(cast("list[str]", acceptance["live_satisfied_cases"])) == {
-        "samsung_restart_steady"
+        "samsung_restart_steady",
+        *_LIVE_PHYSICAL_CASES,
     }
-    assert (
-        set(cast("list[str]", acceptance["live_unsatisfied_physical_transition_cases"]))
-        == _EXPECTED_PHYSICAL_CASES
-    )
+    assert set(
+        cast("list[str]", acceptance["live_unsatisfied_physical_transition_cases"])
+    ) == {"laptop_startup"}
     assert acceptance["required_physical_transition_case_count"] == 7
-    assert acceptance["status"] == "BLOCKED_ON_PHYSICAL_EVENTS"
+    assert acceptance["status"] == "AWAITING_LAPTOP_STARTUP_CAPTURE"
 
 
 def test_every_policy_trace_replays_with_exact_effect_counts_and_timers() -> None:
@@ -488,3 +502,134 @@ def test_retained_ng_excerpts_have_exact_hashes_and_explicit_gaps() -> None:
     )
     assert "renaming display DisplayPort-2 to DisplayPort-1" in aoc_lines
     assert '"mapped": "DisplayPort-1"' in aoc_lines
+
+
+def _live_records(case: str) -> list[dict[str, object]]:
+    path = _TRACE_ROOT / f"live_{case}.audit.jsonl"
+    return [
+        cast("dict[str, object]", json.loads(line))
+        for line in path.read_text(encoding="ascii").splitlines()
+    ]
+
+
+def _live_evidence(case: str) -> dict[str, object]:
+    return cast(
+        "dict[str, object]",
+        json.loads((_TRACE_ROOT / f"live_{case}.evidence.json").read_text()),
+    )
+
+
+@pytest.mark.parametrize("case", _LIVE_PHYSICAL_CASES)
+def test_live_physical_capture_is_redacted_and_dispatch_free(case: str) -> None:
+    """Every accepted live capture keeps EDIDs hashed and proves null dispatch.
+
+    Shadow mode must never have started a worker, so a live trace may admit
+    effects but every admission must have been rejected by NullDispatcher and
+    no worker-dispatch acknowledgement may appear.
+    """
+    records = _live_records(case)
+    assert records, case
+    event_types: set[str] = set()
+    for record in records:
+        for holder in (
+            cast("dict[str, object]", record.get("state") or {}),
+            cast("dict[str, object]", record.get("initial_state") or {}),
+            cast("dict[str, object]", record.get("event") or {}),
+        ):
+            observation = cast(
+                "dict[str, object]", holder.get("observation") or holder
+            )
+            for item in cast(
+                "list[dict[str, object]]",
+                observation.get("live_fingerprints") or [],
+            ):
+                assert "value" not in item, case
+                redaction = cast("dict[str, object]", item["value_redaction"])
+                assert re.fullmatch(
+                    r"[0-9a-f]{64}", cast("str", redaction["sha256"])
+                )
+                assert cast("int", redaction["bytes"]) > 0
+        if record.get("record") == "decision":
+            event_types.add(cast("str", record["event_type"]))
+    assert not event_types & _DISPATCH_EVENT_TYPES, case
+
+    evidence = _live_evidence(case)
+    assert evidence["shadow_transactions_directory_absent"] is True
+    provenance = cast("list[dict[str, object]]", evidence["record_provenance"])
+    assert len(provenance) == len(records)
+
+
+@pytest.mark.parametrize(
+    ("case", "would_kinds", "profile"),
+    [
+        ("samsung_plug", {"WOULD_PREPARE"}, "celtic+Samsung-Odyssey-G75F"),
+        (
+            "samsung_broken_edid_beyond_30_seconds",
+            {"WOULD_PREPARE"},
+            "celtic+Samsung-Odyssey-G75F",
+        ),
+        ("genuine_unplug", {"WOULD_APPLY"}, "celtic"),
+        (
+            "same_profile_suspend_resume",
+            cast("set[str]", set()),
+            "celtic+Samsung-Odyssey-G75F",
+        ),
+        ("controller_restart", {"WOULD_PREPARE"}, "celtic+Samsung-Odyssey-G75F"),
+        ("aoc_connector_rename", {"WOULD_PREPARE"}, "celtic+AOC-U28G2G6B"),
+    ],
+)
+def test_live_physical_capture_policy_agrees_with_ng(
+    case: str, would_kinds: set[str], profile: str
+) -> None:
+    """Each accepted capture's policy outcome matches the retained ng window.
+
+    Agreement means the ng journal shows the same profile being applied (or
+    already current); the one intentional supersession is same-profile
+    resume, where the controller emits no desktop intent while ng reloads
+    unconditionally.
+    """
+    records = _live_records(case)
+    seen_kinds = {
+        cast("str", record["kind"])
+        for record in records
+        if record.get("record") == "would_dispatch"
+    }
+    assert seen_kinds == would_kinds, case
+
+    evidence = _live_evidence(case)
+    journal = cast("dict[str, object]", evidence["ng_journal"])
+    lines = [
+        cast("str", cast("dict[str, object]", item)["line"])
+        for item in cast("list[object]", journal["lines"])
+    ]
+    if case == "genuine_unplug":
+        needle = "Reloading previously matched autorandr profile celtic "
+    else:
+        needle = f"autorandr profile {profile}"
+    assert any(needle in line for line in lines), case
+
+    if case == "same_profile_suspend_resume":
+        mutating = {"RequestPlan", "PrepareDesktop", "ApplyProfile", "ActivateProbe"}
+        admitted = {
+            cast("str", cast("dict[str, object]", effect)["effect_type"])
+            for record in records
+            if record.get("record") == "decision"
+            for effect in cast("list[object]", record.get("effects") or [])
+        }
+        assert not admitted & mutating, admitted
+
+
+def test_live_capture_manifest_hashes_are_current() -> None:
+    """The manifest's live capture hashes must match the checked-in fixtures."""
+    manifest = _manifest()
+    captures = cast(
+        "dict[str, dict[str, object]]", manifest["live_physical_captures"]
+    )
+    assert set(captures) == set(_LIVE_PHYSICAL_CASES)
+    for case, entry in captures.items():
+        audit = _TRACE_ROOT / cast("str", entry["audit"])
+        assert (
+            hashlib.sha256(audit.read_bytes()).hexdigest() == entry["audit_sha256"]
+        ), case
+        assert (_TRACE_ROOT / cast("str", entry["evidence"])).is_file()
+        assert cast("str", entry["reconciliation"]), case

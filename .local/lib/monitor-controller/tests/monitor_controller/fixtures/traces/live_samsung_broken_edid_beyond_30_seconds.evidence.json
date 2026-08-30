@@ -1,0 +1,1964 @@
+{
+ "capture_source": "/home/adam/.log/shadow-traces/20260830-093422.celtic+ultrawide.json",
+ "capture_source_sha256": "eff58f5d4ef31a9dde24d04696afcdc8029a69459bbe3a3aa976e827f08ea469",
+ "captured_at": "2026-08-30T09:34:30+01:00",
+ "case": "samsung_broken_edid_beyond_30_seconds",
+ "expected_layout": "celtic+ultrawide",
+ "layout": "celtic+ultrawide",
+ "ng_journal": {
+  "lines": [
+   {
+    "line": "2026-08-30T09:33:41+01:00 celtic.linksys.moosehall monitor-watcher-ng[6385]: DRM change: UDEV  [146998.938534] change   /devices/pci0000:00/0000:00:08.1/0000:c1:00.0/drm/card1 (drm)",
+    "sha256": "6f17f7b1210bf56ff24493751ada447c63b9dfd6e5562499e49ef1974ac11d89"
+   },
+   {
+    "line": "2026-08-30T09:33:41+01:00 celtic.linksys.moosehall monitor-watcher-ng[6385]: Starting display reconciliation (DRM event)",
+    "sha256": "b441731541dbac97bed6513aa7e9a1f69f4d75c4943466d3307cd007827ea7a8"
+   },
+   {
+    "line": "2026-08-30T09:33:41+01:00 celtic.linksys.moosehall monitor-watcher-ng[6385]: Reconciliation attempt 1/12",
+    "sha256": "994c746c69a8623deb1c42b6a78ad5c1cfb7f4a5bda3d8f03fe0f61236e2abab"
+   },
+   {
+    "line": "2026-08-30T09:33:41+01:00 celtic.linksys.moosehall monitor-watcher-ng[1060439]: Display cache cleared.",
+    "sha256": "407353b968cd93716ddd2bd875cad98ca1110ce934a600ea175800c411d13b78"
+   },
+   {
+    "line": "2026-08-30T09:33:41+01:00 celtic.linksys.moosehall monitor-watcher-ng[6385]: Running autorandr --change (desktop postswitch deferred)",
+    "sha256": "8ce838bcde9b043e48d99d98b777efcc1225fc81b41a2393ae8f0763ff37663c"
+   },
+   {
+    "line": "2026-08-30T09:33:42+01:00 celtic.linksys.moosehall monitor-watcher-ng[1060443]: celtic+Samsung-Odyssey-G75F",
+    "sha256": "9a25790e68bf1f1bdf9ff0027b825136c4464df3ec3dd3ae5d45400d1131f9cf"
+   },
+   {
+    "line": "2026-08-30T09:33:42+01:00 celtic.linksys.moosehall monitor-watcher-ng[1060443]: celtic (detected)",
+    "sha256": "84a259eda223b1af5b134a7470c13c8e8c8b4cf71df7357879d0adb9cb7e1fbe"
+   },
+   {
+    "line": "2026-08-30T09:33:42+01:00 celtic.linksys.moosehall monitor-watcher-ng[1060443]: celtic+AOC-U28G2G6B",
+    "sha256": "f67ad99976eecb8839b5aa973bc71a3214724686aec5997244878d2f9c09af9a"
+   },
+   {
+    "line": "2026-08-30T09:33:42+01:00 celtic.linksys.moosehall monitor-watcher-ng[1060443]: Level39",
+    "sha256": "8e09ab63d73d73fbc406e59e43d43263c9c009bba89efa1abfae607d6209e37e"
+   },
+   {
+    "line": "2026-08-30T09:33:42+01:00 celtic.linksys.moosehall monitor-watcher-ng[6385]: DRM event received before quiescence; retrying",
+    "sha256": "1ea3303988c3775d4aecea1723961366b802348a712e200ac00e078b00f46f68"
+   },
+   {
+    "line": "2026-08-30T09:33:42+01:00 celtic.linksys.moosehall monitor-watcher-ng[6385]: Reconciliation attempt 2/12",
+    "sha256": "855ddeec1fef81e6cc1f02f1c49ff309df72660f44d6880dd1941d3613582b72"
+   },
+   {
+    "line": "2026-08-30T09:33:43+01:00 celtic.linksys.moosehall monitor-watcher-ng[1060750]: Display cache cleared.",
+    "sha256": "596725c7cec14d00db78eef9acb65ea731c379681d29ef44391ed6f3545947a8"
+   },
+   {
+    "line": "2026-08-30T09:33:43+01:00 celtic.linksys.moosehall monitor-watcher-ng[6385]: Reloading previously matched autorandr profile celtic+Samsung-Odyssey-G75F (desktop postswitch deferred)",
+    "sha256": "566fcdff90ebf7cdd3b700ef9e98a5b615f3be069483dfff399ba52cb5d68cd5"
+   },
+   {
+    "line": "2026-08-30T09:33:49+01:00 celtic.linksys.moosehall monitor-watcher-ng[6385]: Verifying autorandr profile celtic+Samsung-Odyssey-G75F remains active for 10s",
+    "sha256": "b4805692543d74b2e4d7ce464d154e988317fe9e98531447bdb1edb171ef7b1f"
+   },
+   {
+    "line": "2026-08-30T09:34:01+01:00 celtic.linksys.moosehall monitor-watcher-ng[6385]: Converged on autorandr profile celtic+Samsung-Odyssey-G75F; running desktop postswitch",
+    "sha256": "900299bf79ee96051f63176201d130fbb30721d72d5138b2d4905ce44ced4f81"
+   },
+   {
+    "line": "2026-08-30T09:34:01+01:00 celtic.linksys.moosehall monitor-watcher-ng[1062861]: Display cache cleared.",
+    "sha256": "af4b3c6dc93b931251414c72ab7e43993dfe69960deb9acc142b9f9d12de1fc1"
+   },
+   {
+    "line": "2026-08-30T09:34:04+01:00 celtic.linksys.moosehall monitor-watcher-ng[1062859]: postswitch: launching setup-monitor for layout celtic+ultrawide (token DisplayPort-1=SAMSUNG Odyssey G75F,eDP=BOE NJ NE135A1M-NY1)",
+    "sha256": "71c74297d1153ae1d17295671b4deed984c4a89499f7ef95c3b8ac9683cc3635"
+   },
+   {
+    "line": "2026-08-30T09:34:04+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063257]: TIMING setup-monitor +0.000s: started",
+    "sha256": "0971244787b82f492eacb09860ec0092db9c84890b567e845efbc9d88662d5a2"
+   },
+   {
+    "line": "2026-08-30T09:34:04+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063257]: celtic+ultrawide",
+    "sha256": "ddfee00e03c838ad91970f5b03327533837958de5b8a0f494d1ff6597d1a2be2"
+   },
+   {
+    "line": "2026-08-30T09:34:04+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063257]: Skipping xrandr setup (already applied, e.g. by autorandr)",
+    "sha256": "67e931fecdacff8107de9cadef754fff718ee2cadb0b75b5edfdf01b724bfa86"
+   },
+   {
+    "line": "2026-08-30T09:34:04+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063303]: [",
+    "sha256": "fcd4bcc15037d6220389bc01d194b01cfe86d17fd10113a9c45c313f319142bc"
+   },
+   {
+    "line": "2026-08-30T09:34:04+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063303]:   {",
+    "sha256": "b960654142693e966404cb8f1cd66854b53b97d861d6cd71bb5e1018026dbcdd"
+   },
+   {
+    "line": "2026-08-30T09:34:04+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063303]:     \"model\": \"SAMSUNG Odyssey G75F\",",
+    "sha256": "ecfaf1519a3a772c55895e39af2806f5e7fe5b6dc659a210000b02647f97313a"
+   },
+   {
+    "line": "2026-08-30T09:34:04+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063303]:     \"Monitor\": \"DisplayPort-1\",",
+    "sha256": "c55591b225877f5e482ea9ccb13844e6aa9c9ebed7543a478c37725a8f695bfd"
+   },
+   {
+    "line": "2026-08-30T09:34:04+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063303]:     \"res\": \"5120x2160\",",
+    "sha256": "5a0c266cde7084c78243bd8f4df02b0b2b7fe7847e7456dd2b981b922b3610be"
+   },
+   {
+    "line": "2026-08-30T09:34:04+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063303]:     \"mapped\": \"DisplayPort-1\",",
+    "sha256": "12d23ad159e4ba94b0de5de0aa45054b5210dc2f637b74853a6fa00c562f7fb9"
+   },
+   {
+    "line": "2026-08-30T09:34:04+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063303]:     \"serial\": \"HNTYC00080\",",
+    "sha256": "5141129e1fd89087e6beb37822e2857ddb860669f7ab0c2b13c0f500990e9ceb"
+   },
+   {
+    "line": "2026-08-30T09:34:04+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063303]:     \"vendor\": \"SAMSUNG\"",
+    "sha256": "20f2c377512de1db79cba1662df1721d49a7bdc7a91935e8cc0b17a27e1ccc4f"
+   },
+   {
+    "line": "2026-08-30T09:34:04+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063303]:   },",
+    "sha256": "f4374a4054970ba0aac5f7fb0be92b6c9f5344bfd25ecadd0cffce37d7ce44a0"
+   },
+   {
+    "line": "2026-08-30T09:34:04+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063303]:   {",
+    "sha256": "b960654142693e966404cb8f1cd66854b53b97d861d6cd71bb5e1018026dbcdd"
+   },
+   {
+    "line": "2026-08-30T09:34:04+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063303]:     \"model\": \"BOE NJ NE135A1M-NY1\",",
+    "sha256": "fbbb3e46c8e8719cd80d8ab342a5519608a50c1f9631a495decfa7be15df032e"
+   },
+   {
+    "line": "2026-08-30T09:34:04+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063303]:     \"Monitor\": \"eDP\",",
+    "sha256": "a1332e9abaa686f033bfc1394309f7b7b8433dd2bf8b615846dc57c5c141832f"
+   },
+   {
+    "line": "2026-08-30T09:34:04+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063303]:     \"res\": \"2880x1920\",",
+    "sha256": "52b3150a3a4c081a564d5358166179fd42fc9ee949d2ef04d5130a8467c50392"
+   },
+   {
+    "line": "2026-08-30T09:34:04+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063303]:     \"mapped\": \"eDP\",",
+    "sha256": "25b0622c730552f14d57c21b0fa694e140646dc2d2537711ef3589192af29a01"
+   },
+   {
+    "line": "2026-08-30T09:34:04+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063303]:     \"serial\": \"0\"",
+    "sha256": "b1877e986a1161bd94ef7cf9a5d577e0df6972fcc4dc8cb919c83da35e726176"
+   },
+   {
+    "line": "2026-08-30T09:34:04+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063303]:   }",
+    "sha256": "2a5c2e47193a7ddfde856fc71520c4f7fb8367060fe0a2ba2fc80543c0f83d04"
+   },
+   {
+    "line": "2026-08-30T09:34:04+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063303]: ]",
+    "sha256": "0d2d63f4d3230023e3aeb6b2baa98030d7c3430b1f95c8826619c33d0248813a"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063257]: TIMING setup-monitor +0.909s: display state validated and caches refreshed",
+    "sha256": "d89278e40bd67de851ab4658120b0bda1e31db3ae0a5afe02ae7174ee9df3951"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063257]: Generating dynamic overlay",
+    "sha256": "53d9a4693f513cc22ec3eaf959f0400da24f3fe83e8c97a819189c3b7f9821ce"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063361]: Setting XFCE4 panel 1 to output Primary",
+    "sha256": "e5280ecd19c62c63b44f307a4a3861fe367038c92579d0463904aa91b1b53225"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063361]: Secondary outputs: eDP",
+    "sha256": "a800bbd9c8d6f4453c6a138b1440d2c08c8f0eda817aec2fe09893bf5aa5c663"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063361]: Setting XFCE4 panel 2 to output eDP",
+    "sha256": "72a834057d70e9986278912fc99585be0e7c9af92b50bd83d2ee795ebd8514dd"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063361]: Setting XFCE4 panel 3 to output none",
+    "sha256": "ea48b6673f0449b503927dc43d07b6ab53aa1888cdf817fe4de748f5f600ec03"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063361]: scale_factor: 1.0000",
+    "sha256": "201d4b6d29176819ba2abe138bb59f3fedddd202e265fca94247c9e2b3b10aec"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063361]: original panel_size: 36",
+    "sha256": "23bc16325959495a437217a5689ceca4b62faf05fc76828f81c68cb48bdd2fe3"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063361]: clamped  panel_size: 36",
+    "sha256": "c104bc1fde2a3c303bf2c8a0ccacd568a8187f467bb659d28a2012a480e4d8e2"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063361]: Setting xfce4-panel 1 to 36",
+    "sha256": "15d6263c3ae9028b9bb7352b05a571f1baf3c17a15f8c0c7bdd30b8d6b0cec85"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063361]: Setting xfce4-panel 2 to 36",
+    "sha256": "6ee6ddd8dc1c9f219725d0055e43bdfc2564a9c1a0f9cf268f6582abc737d067"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063464]: No DPI setting found in layout file, detecting from primary screen",
+    "sha256": "fa0d9620b4666337eeffcd3a23ba5bb7e6ba1cd4c36b7eae281eba09dacd232a"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063469]: Device DC:28:CC:C6:1E:C5 not available",
+    "sha256": "bc3f5829cbf662de13af7fcb9a667caa8485d119aa19ce33ed14b3abf42d6797"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063464]: Auto-detected DPI 139 from monitor physical size",
+    "sha256": "613a5584902efd0b50e3b09a9ff73b428d6dcdcade2f76904363ca221af7a2bd"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063257]: Loading as-fonts via emacsclient ...",
+    "sha256": "6655c1281f7b8e0d834e486e45ed67315859247183861929da6aace929fb59ad"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063490]: Running gnome-terminal-config ...",
+    "sha256": "46780144d90b2a5a8a83e533a059259f54900f0fe93fc063c01a59e4390f5033"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063493]: Using medium font: SauceCodePro Nerd Font 12",
+    "sha256": "2fad2fde6646d97881cd8a6fe66c1e5f2aec76181002debed207a20de2fc198f"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063490]: gnome-terminal-profile Dark",
+    "sha256": "aaa91416b903396a14093402a35daad19a4c741fe63c1fe990eb61e739517c2b"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063490]: Running xfce4-terminal-config dark ...",
+    "sha256": "9a9a3198d47126070c171019d857e2f1240c6bc3ec2d09e64e3bedc0d1b13e45"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063531]: Setting string /color-background to #000000",
+    "sha256": "801d65a396203db705785641a1ea87fce04a5de3da42a7f8693c8ea366121bfb"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063531]: Setting string /color-foreground to #ffffff",
+    "sha256": "faaea8fd45d3bfb0675930afa2107b8c6373906bb85cac113323d78455bd3a0e"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063531]: Setting string /color-cursor-foreground to #91914141acac",
+    "sha256": "5c9d86d5acaa12760613b38588e0220fa0c130a9aa0de0ccdf5684fa69efd69e"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063531]: Setting string /color-cursor-use-default to false",
+    "sha256": "210a8786f3d20f1ae845082edaa4e6d0ff4dabce264c66ff3507fbb7b5778811"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063531]: Setting string /color-palette to rgb(7,54,66);rgb(220,50,47);rgb(171,191,33);rgb(181,137,0);rgb(38,139,210);rgb(211,54,130);rgb(42,161,152);rgb(238,232,213);rgb(162,162,162);rgb(203,75,22);rgb(1,202,130);rgb(213,217,9);rgb(148,180,255);rgb(240,7,206);rgb(86,196,196);rgb(253,246,227)",
+    "sha256": "6f573e56cc7e70cf77eff3930024efe09b54d030d63439fc801cb87edec00acd"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063531]: Using font: SauceCodePro Nerd Font 12",
+    "sha256": "fd1496c859bfd5d7d3206d405235b143b7fe9056eb33db096cd33b33b6689860"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063531]: Setting string /font-name to SauceCodePro Nerd Font 12",
+    "sha256": "b4ce8625aec1e324dd7711d22fb896963f0685d2381b993fbd46aa716867f5f5"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063531]: Setting string /color-bold-is-bright to true",
+    "sha256": "88de1419e13ff7a161e5514d7e4760f2b849110f694f6cf856d70ad7929de83e"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063531]: Setting string /color-bold-use-default to true",
+    "sha256": "3777ceb8d478406c1c6f761f360a1a39de209813c5021ce17df60cc5f627a762"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063531]: Setting string /misc-bell-urgent to true",
+    "sha256": "3ca6134447de37bde6ed00cbcc2fb1afacc1d19ecd8e4ab0526432e22325e8f6"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063531]: Setting string /misc-cursor-blinks to true",
+    "sha256": "1a18a6636f21e4ccf94c69750cbddf36c97f9228350f804e31540e66ad65448f"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063531]: Setting string /misc-cursor-shape to TERMINAL_CURSOR_SHAPE_BLOCK",
+    "sha256": "f2c43a705617cab1b661cfddde6561e2619f8e9206f8e889511561b4a02bdb62"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063531]: Setting string /scrolling-bar to TERMINAL_SCROLLBAR_NONE",
+    "sha256": "b17674ea626aa7074c787c629464f3be817166173c4cb4c1396eacb96b91a8a5"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063629]: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",
+    "sha256": "c679d198f51f2c1168e99e19aa531977eea3871c9081af91eca17c67012d317a"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063490]: Running kitty-theme-config dark ...",
+    "sha256": "cfa80b84b6941fcc493d953f8837c30f94dc5a0ad1abae58d33cc542eb22dea8"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063630]: Kitty theme set to dark (from /home/adam/.GIT/adamspiers.org/desktop-config/.config/kitty/dark-theme.conf)",
+    "sha256": "2f75c4d1cdd3e0d25a8d5daf1284daf0485f93dc87dc15ef2936f92a25c76d6f"
+   },
+   {
+    "line": "2026-08-30T09:34:05+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063630]: Live-updated running kitty instances",
+    "sha256": "f051fe97e2b450d97b99502ed9e58e2e64b3f991543104c17774b1ee2ab3dbcd"
+   },
+   {
+    "line": "2026-08-30T09:34:06+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063630]: Setting kitty font size to 12",
+    "sha256": "d5ca68dcc658fdec96f676c6677856db135c73ebd63d22aa660fc966b293d155"
+   },
+   {
+    "line": "2026-08-30T09:34:06+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063813]: Generated /home/adam/.fluxbox/keys",
+    "sha256": "ba7cbeb2f18178e04513c7cd0ba95cf14fe49aff937d125c2a1f863e67969063"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063257]: TIMING setup-monitor +3.519s: desktop properties, terminal config, Fluxbox config, and fonts ready",
+    "sha256": "e8a5e57f8f37ac7b9f0539d48b157376cfafddb5eebffcc98a29d8d3328ffb13"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063257]: Fluxbox layout ...",
+    "sha256": "2ff25bda9ba6330200ad3fefe41714ab6ef0e43dc45f3e66e3ba747f21de05b7"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]: Screen 0:",
+    "sha256": "a0b2d7bec517c717d546172a654935b27c011e50818094361a4dab3a94110ce9"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_height: 1920",
+    "sha256": "0c05243aba8cb26c2c8e4c807d0c66b2bed352c10de5c2c298fab65872c607fa"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_name: celtic",
+    "sha256": "054190cc2bf0bf52300493b13efa5d3f5a052e001fcea220ad46d59906cd5266"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_num: 0",
+    "sha256": "7841c9fd3b7428cd9c3998384b1980470638075597f28aaf8a700a29272b77fb"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_primary:",
+    "sha256": "b4d63637640151cbeefb6f5a4e2a7f9c6cc4e460c449aa72c4d2003d73548f4f"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_right: external",
+    "sha256": "c7efe71504d53f9a7e17e223b3e3f46e9d52e23aa6c9f7e6333761d00d7b92a7"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_width: 2880",
+    "sha256": "918ed64c63ef43afe61fc3302ec882f4c09ff866a3bb0486ae7e0c33175a63d3"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_x_mm: 285",
+    "sha256": "895646e9432c934ac098506629db7e68e8c0bd629552eed0e0edb6e0d55cba6b"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_x_offset: 0",
+    "sha256": "4259b25e09a16c819c6d053be4ae6ae78dc61daaccd5b5b1fa809f71c489fd27"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_y_mm: 190",
+    "sha256": "337a451334de261e1eec13c47503cf825cc3b3c7ad285827007baa9621e7b37e"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_y_offset: 0",
+    "sha256": "12ea4d7571f95f0e905622f3cdfa6eb6a285fbaa4368b3e1d0c098fffc56e847"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_head: 2",
+    "sha256": "959bb8f29123c5732cdfd44c2444568df49dc275a6410a324e3fb71efca32765"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_right_margin: 0",
+    "sha256": "a0a8409d0b611cd4af6f096093ccc2ae4a95d1bfb719a7affe28943ec54ba290"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_panel_height: 35",
+    "sha256": "956aeae3260c22a6ce27a8b7b6ad4d57c2b31a25dbbd1d59eb3f1f02854db1e5"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_logs_height_pc: 0%",
+    "sha256": "a5fd2da928489d9de1723fbc6dbc46611bef44a566516134646ff16475d07864"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_col1_width_pc_of_active: 55",
+    "sha256": "94ffdcc4b64cbae53b8417e76b06908b653bbc28659a820bf8538705735ca268"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_col2_width_pc_of_active: 45",
+    "sha256": "7ca8f05e290755f5e946e969046ed83104838463e0add387ecd31695e21e8471"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_assignment: secondary",
+    "sha256": "fb8cb11ea69b1c30ec95ef2a96802ed48fe641d4a572962be583b65373e4fd7e"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_gkrellm_width: 0",
+    "sha256": "c05d3acffd775474810cab31af0abe64cd1d3a4bdce16423caed6d48a1c31e5d"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_left_margin: 0",
+    "sha256": "66ddd114a7faa47d7234ac77672e8bc17110fed69ae79ce6308e1dbe76e85469"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_top_margin: 0",
+    "sha256": "16ecaa5c2aa8032fd6ce53aadc404fd263f952fd311a8802245fe9c71f428af4"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_bottom_margin: 0",
+    "sha256": "51888ab114f2388c24f5baf4752fcb3840a243c89bff3688bd3f84de7808ac94"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_cols_1_2_margin: 0",
+    "sha256": "4b669ea547fd5a6ee689ff7f2c071668f1d53297798b016aa37a19687460541d"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_cols_2_3_margin: 0",
+    "sha256": "d9de9cc8716d2c382f6c9ac644ca591378ca4b4af7ab6ee8e3289a4bad9c0d06"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_rows_1_2_margin: 0",
+    "sha256": "e48aec797d07b5533b570a9d2e80c40965d8a0c445d2f0d4b5be75284f7f2fee"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_logs_height: 0",
+    "sha256": "873b320e7a43f0afa27d398e4c44635606cf8f024874a14ff2ed60ab1c9d73b3"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_active_left: 0",
+    "sha256": "6ab8a8c5b69627f84ecd2d1ec574c1bd8973f94a4c6a210ab4d44dfa8200f2c9"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_active_top: 0",
+    "sha256": "7619df1f6da7a7a30bdc902f0e78fb859da1df19c605eb08b2f33d9052274ffe"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_active_width: 2880",
+    "sha256": "c05721e7e02712c6d73a1fcd9acf17b0cba1b4380e8ed6982f2096888cd2f9a5"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_active_height: 1885",
+    "sha256": "73f396c0f78e0f8e1e624911da37794985e8ae9655b4f8ccf8f84acaa1ce3cb5"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_active_width_pc: 100%",
+    "sha256": "6a304989d36542b0d29aeaa3892ae0841f16c5f5801b6358bdee29dfa48b5d30"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_active_height_pc: 98%",
+    "sha256": "3b5eba44fef5ebf921a34ba2853618c6ab4f71ae339b046a45e3e7c13d35a4b6"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_active_middle_x: 1440",
+    "sha256": "30a1b49ae1e5b247daff98f7765b4d4737d8d65c57f8e2ba13f1cab32627ee67"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_active_middle_y: 942",
+    "sha256": "aa4d900b3f029f68cb71e7bd3f9a43d7920bbf9c6ce1ee09f1ab33f0e50cb831"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_full_width: 2880",
+    "sha256": "944465269d59fa03b83835156e17843bac17c10b5ca8ef7a455c1c58548b2ca7"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_full_height: 1885",
+    "sha256": "47284d76345763d06da336e3716007f7d7a0be13fb689c677061609611385f6c"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_single_width_pc_of_active: 100",
+    "sha256": "277655621a8227e2987a45199627e5b2b2f8c2056a4a2992eb027e6f1cc31e8b"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_single_height_pc_of_active: 100",
+    "sha256": "0c25677fa812dce159805f68cae1a8895e99cd02fdf1f89bfdac00684b630827"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_single_width: 2880",
+    "sha256": "c08ec58e445752b07fc4a0e2d56baa43ce8c9790e9c91ef4893a768aabec27ea"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_single_height: 1885",
+    "sha256": "50a538907c2216ef4cba6e2a92d8d96578a71cba036b96f9cca752ff68936d04"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_single_left: 0",
+    "sha256": "d0089be89b532aa6535217d5430a06053c47a41139569057e0e26d7bfdcb498e"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_single_top: 0",
+    "sha256": "fc5d28962396bf42f19d910ccf399b9a4a06631f942d3ccb21369683648edc72"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_single_middle_x: 1440",
+    "sha256": "f72e567387b05352f3f14516139974c5a18e0bfce3ae85aebaf8218fdf1b0b2d"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_single_middle_y: 942",
+    "sha256": "54e9b6ba0f4b496d4283b4e61d16481f939e0aef36160ea68b4138e28f853c82"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_cols_1_2_margin_pc_of_active: 0",
+    "sha256": "b85d0c2fdd84b1d655c279eed44e668c5d2c6a10a310b8496b12120084fcb802"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_cols_2_3_margin_pc_of_active: 0",
+    "sha256": "5cfbf175317c2364ab7decc0c2ba6011c4cb0366a2a39dab2db61434ecc3dde9"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_rows_1_2_margin_pc_of_active: 0",
+    "sha256": "b1f2c6c50432ffd247d842858211e55832dadf233d9d677e082f09c36b92deb2"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_row1_height_pc_of_active: 50",
+    "sha256": "8e7cdd69b0a81d2e22bb73c3663b6cbfd870a6ae32f475c8480bb83f6a31d666"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_col3_width_pc_of_active: 0",
+    "sha256": "51d35db00e38fa4589026947510f9457a1f1a37f017e0aa112f0feaca13c6530"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_row2_height_pc_of_active: 50",
+    "sha256": "e1da433b7293aed818709e26021d7dec0a8e03ba1d37fd7fe21098edc430c60f"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_col1_width: 1584",
+    "sha256": "e786c2725a00357833032e9ae4024a8342684d3b2412f877287cebdd5a64fe4d"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_col2_width: 1296",
+    "sha256": "7b493bec2b06aab0eb9eaaa552316555498f28fc7eee944a81f27ff994df9fab"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_col3_width: 0",
+    "sha256": "f2a33a5df4e1f47028466e359eeecbec975caa578f7c443ec4a000ba84ef508b"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_col1_left: 0",
+    "sha256": "007cf92f45d1ab9856b35bfaa12eba5b6d4c94218de2231d1ab5219e3ceddeed"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_col1_right: 1584",
+    "sha256": "48710bf311ae76d033e4db9b64700fe53840fc3c0259513ed8c961c6cb7422b7"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_col2_left: 1584",
+    "sha256": "549d611e10751ef04964c1020774c08235f41d0e2600ab2be494fb84f47e6287"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_col2_right: 2880",
+    "sha256": "7a38656f2a559e948706cefadaaa88eca0264f6903bd866c9634b09f197b21cd"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_col3_left: 2880",
+    "sha256": "121a26fd27301de8a4305ef7e903b94125432975c307d4aaf798d80a8739584c"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_col3_right: 2880",
+    "sha256": "086175e5cd91c292e257b174ce795e8fbcc16b4bb1c129b1d031c5d61c8d8907"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_col1_middle: 792",
+    "sha256": "c0f6ae6c46be91cadf3bdab5008a4bd31f7620beab40d32484d23a79cc9109a0"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_col2_middle: 2232",
+    "sha256": "a2bd4448435c6e27d23e0d4375b3d5cfc3829a43c03d8a3e7142933408f4c541"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_col3_middle: 2880",
+    "sha256": "84ba21fa7f8246f4723aa5b3b883587049bed461e86ec7d383ecb4e72214219a"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_cols_1_2_width: 2880",
+    "sha256": "702d85a6694b00d58d6760f85ee7c12f74f4b97b5ed04a6b213d48e093f02feb"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_cols_1_2_middle: 1440",
+    "sha256": "992184ee041bb7510493cd59c5c39f6819a63a2e29a282606e62440773af50c9"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_row1_height: 942",
+    "sha256": "590dba5d8f93c0d57b0b4991c5f5ed737f1cced226b70cbebb583f0b9ce87075"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_row2_height: 942",
+    "sha256": "4244bc40547a7bfc2dc616c86908e7f4f5324379561781e609994cf3b7688c9d"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_row1_top: 0",
+    "sha256": "5f5dbd05755094534d7993d6f7acd8ec82d5d5b24c6598aafe91a411895cfe23"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_row1_bottom: 942",
+    "sha256": "34abe8e5508cd4e37dfd0ca190e9b6c42a698ede46479e148a572d561b7eb9a5"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_row2_top: 942",
+    "sha256": "79be25dfb55039de0d07d8bd0721af3e83a8714f439afe6c3e27edddb3b48698"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_row2_bottom: 1884",
+    "sha256": "f0100ba1016985983ddcb68faf1fc218fe886528984d7cc4de351db0796c9fda"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_row1_middle: 471",
+    "sha256": "66dd44fb8d593d2fc2500a5ca274bcfdfc350f4f1bfce539367ecefa1051f70e"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_row2_middle: 1413",
+    "sha256": "c08eca93c02b82a877eb0ae279ed412dd6ecacdb1c910e8337f05aa2eea408b1"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s0_SetHead: SetHead 2",
+    "sha256": "d26deb90ed818b8a4763d218ddeb842cad59f4003278a226ef1864438eecca94"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_height: 1920",
+    "sha256": "c4974b631efe822ccc5eeb10e3f48610d9d57b93214a5ea168b2c755c613b7a2"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_name: celtic",
+    "sha256": "ea2097ff6e99837ff01e152b57a6dee7344bf8236c7752eb4aaa4ba97678b329"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_num: 0",
+    "sha256": "7266fa97035c58bcbe74fa7f64a61a7811e061bf270b34f3d36bc48b9b2a2c41"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_primary:",
+    "sha256": "94f560aa778b72c720c5e5c75cfcd1e85cb329b1294695de1e704d1a58dbdc45"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_right: external",
+    "sha256": "0ae75068ef36fc179c7938653ef8cb93ef4c9dc3039a345130578e55148875ee"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_width: 2880",
+    "sha256": "47fa6371d6565aef55158b28665705004968627ce0e25dba76dcef150664bcf3"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_x_mm: 285",
+    "sha256": "3e51d3b3c89cc351ac81bfba3fca0bed71959c45ec418673d284e3f3bc2df312"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_x_offset: 0",
+    "sha256": "45f4798c17621022d6763f114bf7e031d238ea6013f7c427b704ca54776fd8b4"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_y_mm: 190",
+    "sha256": "d2f9924f3495c05f2ef187df84b17a666a8e31a0293e26f884e1d4d70b20e224"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_y_offset: 0",
+    "sha256": "ad4863b6d50831c1f3593eb5749a4a946608857d70670a0340dd7dde45e05d4f"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_head: 2",
+    "sha256": "4ca1d4b8caa7144ff159bae23d7c818a8353d343588c315305423f6220f40075"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_right_margin: 0",
+    "sha256": "8c9e8b93fa82c2fa0b1efafa77f98bc9f3fe80262689e38deb11a2f4f66a5adb"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_panel_height: 35",
+    "sha256": "146673757eb90f50d50bf410de6b48bfaa588aeb87867e92b35ad08f8fdf1a12"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_logs_height_pc: 0%",
+    "sha256": "82ce52df95811868361a595ea84b7b8f1afc4a7e897342cf3a28722b3b6b1bc1"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_col1_width_pc_of_active: 55",
+    "sha256": "d0f2445b93f51982e46505bab782afe10f0463ccbdb261081da3cdd0e478ffb0"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_col2_width_pc_of_active: 45",
+    "sha256": "83311e6f6171e2013c2bbd08134634689ec8bb837ecee0a39438d24c1a3e2d8b"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_assignment: secondary",
+    "sha256": "3e5beaf60bb052c3d0c29cb1cb6ac5ad2e084597f9eee3b45bc702a06f157158"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_gkrellm_width: 0",
+    "sha256": "36673734b34b43a09e7c5e7e04a9f106a1bff9d8500bd896b62d2c36216bb819"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_left_margin: 0",
+    "sha256": "cdacd9ee57d123565d777c0b71628d0dd79a97a4d2b1481ab2bf6c002fc6c836"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_top_margin: 0",
+    "sha256": "d40d724cd03fdf9a15c02de7e7905a7fb27608f7742bebf601770ca4bd4b02d9"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_bottom_margin: 0",
+    "sha256": "2edf4c3fa0bbb40de8981e1c7c81673bd7b5cb18021a23098611caa9a374aeb8"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_cols_1_2_margin: 0",
+    "sha256": "de517cdef9bfea2527c229d47a4712f8a77979a65549cc5e03f54fe49ca2c3ae"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_cols_2_3_margin: 0",
+    "sha256": "9dc5781e38ba17623af1066a651986c927c2ac9cf8db44c768dde373c7ef9bac"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_rows_1_2_margin: 0",
+    "sha256": "3a39bd385534ae3b5c64f64de4c08c4338cf3d385f837521662ce3f42f764ea9"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_logs_height: 0",
+    "sha256": "da4379af249d9d7f7b9321db31cf080d472db00cb788df1b8470c05583e2fdb0"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_active_left: 0",
+    "sha256": "b00a28a987787981699b27db97e630e66c8f5436b09a6521bbd15074a7dc26e4"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_active_top: 0",
+    "sha256": "d49b986374ceee76e27c1699604ad9bbe61b57007ca5846c87efe93336579af0"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_active_width: 2880",
+    "sha256": "fef7f3a4b3a1c22ede9d1c77c665335720427e68777004be70de4c6fd6fb0b93"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_active_height: 1885",
+    "sha256": "8ab214ab9977ea252afe8fabae3a2b053d7ae8689b3970f4c1206a7bbaf0b8a1"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_active_width_pc: 100%",
+    "sha256": "32fd9479a98950e0e38ed5c2cd26f690a7d86385b6d17c245f6335cff61678f2"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_active_height_pc: 98%",
+    "sha256": "2d1ce10bb1386cb58c65831eb5933adb0a20c621d884a3cc9042b4540e5ae4d1"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_active_middle_x: 1440",
+    "sha256": "5180db328cb8c8a4cba021bfffb463b4de569dfcf1c90a0f8dc51ce022426aad"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_active_middle_y: 942",
+    "sha256": "12d288b0b9f86e5adcc606aa5ee90b4cf13109500a132caee43b557a03b2c5f2"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_full_width: 2880",
+    "sha256": "4963acfa191d7799855527e7292ae07fcf075fd30fba8665e4c41516a51f14b6"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_full_height: 1885",
+    "sha256": "605376bc956c971a24ea8e7abcc9dd360ea67e4e0cb4a73d80f74a66c98c70a3"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_single_width_pc_of_active: 100",
+    "sha256": "8cc700b58aa0f13b3ce83607a25bf2246a34dc50ed925671ae7bd1e42640b192"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_single_height_pc_of_active: 100",
+    "sha256": "ca7debeb0e1159eaad5b5a75b8d381d1469780ac83ecf61f9b97f9bd8051d105"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_single_width: 2880",
+    "sha256": "1c5fda539f62cbbd681f2f2b5bbcec171fead33d839ee9b5fb90b416fe3bd17d"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_single_height: 1885",
+    "sha256": "7255bc281bb6d6fa7d730f5bc74a2d11385b4ec32562d31f626789196bd98be9"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_single_left: 0",
+    "sha256": "10026b7a4dc4613ded30c119b0cd3b81ce069677497fc39866cc1b88b61c6158"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_single_top: 0",
+    "sha256": "531037e6bf5f1cd48f2fd475e404293944e620d62bd5179bce17b12e3a491ed1"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_single_middle_x: 1440",
+    "sha256": "c5c4227e8bd11f3eefc34c0791032239036eb01538c10387e16f3d05a72507b3"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_single_middle_y: 942",
+    "sha256": "8516ff0468121ca390fce967f388916745c09ce3940f634ae0b8fa4b3bfea3b2"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_cols_1_2_margin_pc_of_active: 0",
+    "sha256": "99b5502f8ed84a91baddd1f64a1aa13a42174b6035456634cb73704292745473"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_cols_2_3_margin_pc_of_active: 0",
+    "sha256": "2c824148dd842906d492c6cff4aaf2d33927b78a0271a3f49f9a236b7f9b7e2a"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_rows_1_2_margin_pc_of_active: 0",
+    "sha256": "07126bb4765c0147284dae2fdc78046da485fcf028bb2b22dd07479f5d124f40"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_row1_height_pc_of_active: 50",
+    "sha256": "e39ac264b24f290156480fa1b005bee782d5c3e660a5bef68898c87652b903c8"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_col3_width_pc_of_active: 0",
+    "sha256": "6520192cc4aedfe3034e25bb55976a751170b41fa43075412271d0a052c2c1df"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_row2_height_pc_of_active: 50",
+    "sha256": "21b20fb36510ec305f0bace07322a0314fd8981f04cc738fd58fd7cda5cdd49f"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_col1_width: 1584",
+    "sha256": "ff444a188c3d3990488a825cd6f98169b742f0b177ac3b3b526cfaf9d76a51a5"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_col2_width: 1296",
+    "sha256": "995fd9a196bb421ec36353b08e54601d78bb2be74881018e49b00f9cb2325eb0"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_col3_width: 0",
+    "sha256": "406be5e73c0d7fd8a0391078cd75e3df74bb22f3e08c68e44991d6173999ad42"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_col1_left: 0",
+    "sha256": "5e76c88a61a0f2237ddeef9f23f191c79983594626314fca8be0bf1d64d66085"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_col1_right: 1584",
+    "sha256": "24554b7ee91d9f85ee602978b39b969c4aa22be1f38e131c0d1e77c7ac68be57"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_col2_left: 1584",
+    "sha256": "cbc5e2cd6b7bac73d7a3f4acfc40ca21d9697de418c7a67ebede927679de0972"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_col2_right: 2880",
+    "sha256": "2e4118349f80b23b501b2bbd4a223ba19360febf4a3ac470d514aebf7c144136"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_col3_left: 2880",
+    "sha256": "4951ff0b204463f08b45084d4acea4ac97f79db7f846aace2ec7b73e88fad6b1"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_col3_right: 2880",
+    "sha256": "8ec8c41034bde231d07df5fdf1d68581e86ee2e626576ff172adbef55d18a10e"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_col1_middle: 792",
+    "sha256": "ed5fa7ef9ba21ec74b4cb92b9b21e26747d19423194ce9cdba6e352787d8e22c"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_col2_middle: 2232",
+    "sha256": "ed82e5e2c2d79e8cedff8f58f9f70c09d2c50a94b2fc5cf03754624499db4303"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_col3_middle: 2880",
+    "sha256": "58866dea61c1e3873ee790838f7750832441612c9d8712053b21d357736c9b45"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_cols_1_2_width: 2880",
+    "sha256": "96e3489ba4cb2fd709a0c7325bda8f62ffadcb43f3fc2d25fcd32f7b17e0d3f9"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_cols_1_2_middle: 1440",
+    "sha256": "349a4d286e2b1fcc9d4f69dd6cd0f7e7d1fae7891cb405beb9cfb5dc12acb127"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_row1_height: 942",
+    "sha256": "eff1875fbaea70ed73550234715360c603bb14a43d779239f91530dece786020"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_row2_height: 942",
+    "sha256": "605f8635073df0ecfd97c2acaea74538f807327c704ebb2a9cb72967fbfbfbb6"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_row1_top: 0",
+    "sha256": "a52f8da93334d57c51f6965a2d3892ab7f20e16ed3e167e8a9059e3cf3e2cdbd"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_row1_bottom: 942",
+    "sha256": "e2f1a5f70c4b56c63a934a960ece9eb9a629fdaea4d642a9479c245175546a4d"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_row2_top: 942",
+    "sha256": "7571c87701a1661d1065eb2b471a14968d84950459df50cb197638a566ea0295"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_row2_bottom: 1884",
+    "sha256": "4dae46b8bc4eb6b46c795aa560b03ecb48a76655bfabfcb2a264ee5bba0d82c3"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_row1_middle: 471",
+    "sha256": "fe7a238ce3eeabb40a862ceed9fc67d24183b88219bc30a3e4afd4ca83fd9a4b"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_row2_middle: 1413",
+    "sha256": "bc84eb16f0448d031d1028fd9dd03f650b69d1022be46b90a9027899cbab6492"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_secondary_SetHead: SetHead 2",
+    "sha256": "4db1624b9b1a4ea09e3821db9e23a82bc9a6d0e6f6c328e2912f81e711bcc90a"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]: Screen 1:",
+    "sha256": "ae242b44bc5e8cd9de05d99427e1c104772dcbb80a371f8249073a2093d2b7e4"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_height: 2160",
+    "sha256": "5b5005f94a14c9ffe6ab0855964502d65ac12c5ddceb9fbafe1c41d3e9ff3c06"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_name: external",
+    "sha256": "39026b2cbf61a45b54f6c8f5f85eda05f966822f78fea62eedcf6e1ab7c68090"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_num: 1",
+    "sha256": "6eec7adabc4841fb1ffe25ca08e06e9f778264f399de47f471c29fecf511654b"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_primary: primary",
+    "sha256": "ee14a532b30df6620b88663678b997f3dc7b385181d7736eb78c8ab6942646ac"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_right: 8000",
+    "sha256": "be82b6b6b402fa57cb2246060d7accab8699b52662aa75e187aab91e59ec14a5"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_width: 5120",
+    "sha256": "311e8d173a70850925a81396c8f0e78e42165f81df1c971668e6cf418414b0f6"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_x_mm: 930",
+    "sha256": "da15639fb6d95dac5f7e49cc33bcf16a57aaa6bdf27fb65a4d1aed2aadc844d7"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_x_offset: 2880",
+    "sha256": "f34f0a47f8877cb3689de73df249a89ac8575a8b01d8c621b6c4cac113bfed14"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_y_mm: 400",
+    "sha256": "fc5c4f041f66c32fa708449f42d87bb2a375224cc60ccfc89467791cb5303436"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_y_offset: 0",
+    "sha256": "f5eb93b9ba67358ca1f4adf41bc81eb932a493c9427a0543eec056dc38e55238"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_head: 1",
+    "sha256": "af7c56fc5baf6734305a1aa01d32d1bbe33ad23e2420eababaa28dfeeb0fbdf8"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_assignment: primary",
+    "sha256": "7d45b5ce2cc03154a7a0b580e8625e8479493888c3607d12ac1722c8aa7723bd"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_left: celtic",
+    "sha256": "a040bd7060eb352509c760468303a1b780d0ac1f8026679970140ab2952c1a76"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_left_margin: 0",
+    "sha256": "0f965f07b6390ec39060de5aa9e8bed4d52b09deb4bb5ae8a7df73d9f2f082a3"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_right_margin: 0",
+    "sha256": "e7c6d037f5b0a6ca1301142ff966899fdf407c240812d69f6576f63261bdaa46"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_panel_height: 35",
+    "sha256": "4faeb5c4397a9ec4da5a8a7b478fdf611f4e7b2996fd00a488a2bd523208e5c3"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_logs_height_pc: 5%",
+    "sha256": "eec7495e596eb5f30d2d9b3f552d87e1eb7599650cbd871f9057a9bfe22159ff"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_cols_1_2_margin: 10",
+    "sha256": "b71f7094233c5606e4532dc1f8b65be551781d21c71bb267fa59c9eb2e0d1a02"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_cols_2_3_margin: 10",
+    "sha256": "462d9293ee02b9be7b2eb94176833f5dac6eaa0ba5f7055284a5897f2c0b4e0f"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_col1_width_pc_of_active: 31",
+    "sha256": "7868b4d4969f75c99bfd24e99a05b5851433c5040c5100e19658ff20027ae4a4"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_col2_width_pc_of_active: 30",
+    "sha256": "7d12821f69e470f4ff76d8590f8b9c4b1288876f7cf47b605692a2732d44b675"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_col3_width_pc_of_active: 38.6",
+    "sha256": "95138f04805f948bbf9311a9860d45b4e51889ff19f6483da89df31be89da22c"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_single_width_pc_of_active: 60",
+    "sha256": "3e4cb9ce2156576fcb419e15a14181b94b3498dda7dddb53ba77940adb3b0bf3"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_top_margin: 0",
+    "sha256": "4df30f205c21852ca2bbe767e7b1b82cb4542dcf14033240d1ce0e4c533c6d33"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_bottom_margin: 0",
+    "sha256": "6a6d5d10b7e92d54c70215aa60bc05f068014b119d3603757bf5795b811d89fd"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_rows_1_2_margin: 0",
+    "sha256": "fd9c44cc68add6683bb6257ee680c8f978993ef4c938c563bbaf9140d5f924be"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_logs_height: 108",
+    "sha256": "df669d9ba692e612cdc39fe7be78a039574de7a141899818f056efbc4729447b"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_active_left: 0",
+    "sha256": "fcc48b7d6eb13570e628dc0252e7f348b6d8e91cff1f21018a9196b632f05f8b"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_active_top: 0",
+    "sha256": "a6a03a926dbd4ebdc78907eacb7cd6cfe157737807df75ce6d7156e44e27e8ff"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_active_width: 5120",
+    "sha256": "1da2c24a6553bf145113d1885321a72b105c5284ae7e866514d7ac5c2e67e934"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_active_height: 2017",
+    "sha256": "98c1d2d5501b84bced42de04b24bce63ad8321a20cb270c9119875c1c3c6f535"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_active_width_pc: 100%",
+    "sha256": "a3ea3bccec6ccd90221a72eb4a46a07108d9cb5e6dc5c74d22021036f6c1a450"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_active_height_pc: 93%",
+    "sha256": "7e6772b33cd73c5641a1309ae54de77dc821d9beae76884492f9c9a3401228d7"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_active_middle_x: 2560",
+    "sha256": "cba62519eb8f074704eef008338b15ac140f02e31300028490bbfc0708807657"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_active_middle_y: 1008",
+    "sha256": "3741e4b07be392aa9f4475e6f1533424496133fab368685e1a87f55d2c38c370"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_full_width: 5120",
+    "sha256": "cf700f7499a263b06d71e8f3546148b4a452e6bf4ffffa256eb501859873eeb4"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_full_height: 2125",
+    "sha256": "f4db4051308c7de7c04c47ce601673ea40332fe2dcd1e27e7cfbc5a17561afca"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_single_height_pc_of_active: 100",
+    "sha256": "41fe9f517fc4e2a262a7c13c1a977dbede628804c3aba54a99f0e7b715b79ab5"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_single_width: 3072",
+    "sha256": "b2474ade1c851741fe04f76df5ff08b511728dcb27f1452c779113eacf6afc32"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_single_height: 2017",
+    "sha256": "3f8c647ae7c6b73a9b87fb74a809e2ff813320f1421c7bb4794768fd143fef45"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_single_left: 1024",
+    "sha256": "e5e5b42a0eb2b012f3b59412b8211561e98c659a8fddadd5bd122eef7961bd88"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_single_top: 0",
+    "sha256": "79adcd83ca479523ad763c1eecb6aa5326660a550e7f22e5ad093cd148054f5a"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_single_middle_x: 2560",
+    "sha256": "eef8a81d2f2f21cc4d615264ac9fc33be265b80bf872262309717cc3667ed5aa"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_single_middle_y: 1008",
+    "sha256": "f4f17e2325c8e833f2d4fb557f29f4110b1e6f7c485cdc11be06638b2575a8f0"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_cols_1_2_margin_pc_of_active: 0",
+    "sha256": "eeffb6250f522f2925b3dfcb5531899ebdcaffed7bb1f680360f8a9ea89b5947"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_cols_2_3_margin_pc_of_active: 0",
+    "sha256": "bfe33bc09074eab6f77bfa83c5accc78076835ed80bd9bf861b8b5dfc3f3937b"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_rows_1_2_margin_pc_of_active: 0",
+    "sha256": "a3505cf355421b13ddab5764c8fe26149ab75cd1164158a997a2c62eb37bf4e0"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_row1_height_pc_of_active: 50",
+    "sha256": "e77ca026e04a1417832b3ac915cc796d37b824dcd4e650fa4147650c1b464aeb"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_row2_height_pc_of_active: 50",
+    "sha256": "8061b5d5db8a9fda4e38ecb925bafd0c5462775e15239a8980b3d8827ed856c7"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_col1_width: 1587",
+    "sha256": "40bf40dbc3f04a879c64e7da690717dd7781e1e39dc1bea8f48fb13aec65531f"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_col2_width: 1536",
+    "sha256": "f2c0d2a09b3ed91482d1c49df4b55f5ec5eec8f2914f8fc1e5a7bbc6a75fda37"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_col3_width: 1976",
+    "sha256": "29388ac1f494a117635a7ebf804c87c53db3d1a6906325ebc4825e00225ab097"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_col1_left: 0",
+    "sha256": "336f74f1c11495763614a84880179336c4e57ebc66b09ea6a4cb412b9f54dac0"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_col1_right: 1587",
+    "sha256": "9c31bafe2c63692c90d4fb9292b3cd1156d093aa0fc27476870ff1610c0ee0c9"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_col2_left: 1597",
+    "sha256": "46cd104d1fa6056aa02d54239203f5e2c346794efe66def77b4fb577328a18fa"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_col2_right: 3133",
+    "sha256": "a2eb734ecfe917e61dd418ddf3a51ac7fbe73dc4b967149574be30acd13976e4"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_col3_left: 3143",
+    "sha256": "c880f6633f54e6d11699be54bc5a66af5501f30ee2551cc11abf335d0dee3b25"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_col3_right: 5119",
+    "sha256": "23eae9e2e8e6a65a7cc4e45f1bd31c23c8892a0ab7f59859c6c1ba0f9c02b604"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_col1_middle: 793",
+    "sha256": "cef28f1b41d8809fa5e1676646c76fcb4fbb85872b33f125674756b60cd567c3"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_col2_middle: 2365",
+    "sha256": "ef8888ddb4452452dc8abb29b29865b49a171d016002f71e377c3a39baf7122a"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_col3_middle: 4131",
+    "sha256": "2a9ce15c5ba1a85c9b9069c735eeb217ae81d71ce34e5d6d44b58a30a72a6e51"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_cols_1_2_width: 3133",
+    "sha256": "a7cb1db56768b8fb68be20b114d96ba12a1437a264b9b31172b474f5b140d310"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_cols_1_2_middle: 1566",
+    "sha256": "5d3ed165af3830154cf06a3fe4dbc7c2cb2c868ed1e5df527429abdd48bb9bc9"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_row1_height: 1008",
+    "sha256": "b053b6d8401f4afb2d18ee17ad22e58ff619fbf099eb118a9b85cd7edd1e14f5"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_row2_height: 1008",
+    "sha256": "264bcdf9ece9d81f9f75a415240406d563d8af15ec75b438a22eb02568527f14"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_row1_top: 0",
+    "sha256": "1786ed70462ed3868e8fad5c5d9bd0118d4e4deb2d307ec384187ff4ba45232a"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_row1_bottom: 1008",
+    "sha256": "00c1c4d9f9bb01f814fdabfcb15525200719268d9ea23148c4ee3b4713fb9885"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_row2_top: 1008",
+    "sha256": "89227d17c9e2d51090a1e905a20ee16460c1fda90792f0b9ce966431151aa51e"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_row2_bottom: 2016",
+    "sha256": "eeebfa0c0d4b248b05463d826be4bffd6ed05c702f9f41ebb894ca150e4ae26b"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_row1_middle: 504",
+    "sha256": "d09a4bec09c4ac39267950f9f49c8b33e1636fb51d5fcc00eabffb624b7cf33b"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_row2_middle: 1512",
+    "sha256": "d1a064616ad92614de23a0ca8e0142bce6eb7f0fc0e4b660a3a7d5880272adbc"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s1_SetHead: SetHead 1",
+    "sha256": "92abd423b9115637693fabe265dd9a7b25f9de95c22abcc014616dc67661314e"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_height: 2160",
+    "sha256": "bd5a97fde6d327b08eaac94d1062fb1b6d677461653b8b2e5ab41caeed2fd45f"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_name: external",
+    "sha256": "c6879e482cc9ed5e88b97b918684a43497fbede2cffb9c4fc4aadec59ba349ad"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_num: 1",
+    "sha256": "6d24f03b8a10c59b0dd19de76005373fcf1981793ce7f20a3a632624ca44513a"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_primary: primary",
+    "sha256": "4faddc6975101cd577e6a95cb09c862c73438dcb3941d63e908d86fd1f323d31"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_right: 8000",
+    "sha256": "e6987cfd900a14307bdafc522dbf084d338a820ce80c8cb26c6c6c346c30911e"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_width: 5120",
+    "sha256": "ebbc242a3c641dfc38b2e026ff6761fee6fad7d4d921fdcb78d92b73030bcc0c"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_x_mm: 930",
+    "sha256": "6b881f6ab1c46da5be1f954f84468406050b5103e559fbe9cbf2bd484e322801"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_x_offset: 2880",
+    "sha256": "7d479828f1c5971e615f09f359d4167cd20b3feb8b7c64247c051f53ecddb028"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_y_mm: 400",
+    "sha256": "4346a4b00a5fc483b07aa9ccb48124a66eb77b97f643a65b8e9779bbd3a08dbe"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_y_offset: 0",
+    "sha256": "4ad02c00e093e4f5d7832e73c942ca6d1a2447e589018138ac92fecfaa3b0773"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_head: 1",
+    "sha256": "cbc452cda7d91f6dd0f37fd758af505c14fafcf246339d24a843eecfe9a2bd67"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_assignment: primary",
+    "sha256": "5ec7a620e62ec46ac278de61cbf7c1f53f8d783d9b4ca61f963655ea4f80bcf8"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_left: celtic",
+    "sha256": "8f93c2e26c7fed837775e602f1cfe88d5142318d46db6386fe7fb6aceccf5c4d"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_left_margin: 0",
+    "sha256": "599ab01a459b2add5312479a92e96b740d93bc9a770e66d03b250aaf45d4bd1b"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_right_margin: 0",
+    "sha256": "80db7185b221d1fa5255ba71542f3afade2514af4880277866393351392cb602"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_panel_height: 35",
+    "sha256": "89b8daf4515e6f874cad469d4c464078c8c4a889a0d00aa1be607aea2da7973d"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_logs_height_pc: 5%",
+    "sha256": "1b79d50e02edc2e4080f5153427cc44860b916a03cef4ebdcb61d9e774900567"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_cols_1_2_margin: 10",
+    "sha256": "38d19aa93b91c01b348298328f19ec2aad797ee77f241ec416f46150bd75749f"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_cols_2_3_margin: 10",
+    "sha256": "20751d17bb2e536132cefcaf1b76c2e9ac6864b12b369d791a0b00fbc7ebc255"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_col1_width_pc_of_active: 31",
+    "sha256": "f043f867a6c8da0e1b5eeb4fd1bae767c7294ce1bc31cf65852a95550102097c"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_col2_width_pc_of_active: 30",
+    "sha256": "cc3e45c1c6f842fbb303f953ad734aedff8999df8d7f1826a670ac1993d1e581"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_col3_width_pc_of_active: 38.6",
+    "sha256": "9ccb54eafb9735957618967788f548f07eddb582c731c51ad1da69e255433f1d"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_single_width_pc_of_active: 60",
+    "sha256": "f7d97696d54189abb64de1de2d6b3a869bc7714d4e6439540f129aa4fd1a89e3"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_top_margin: 0",
+    "sha256": "33d5359d827fcdde222f916b8a9189abef8a4d9e734ab73b2c05d97767046d61"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_bottom_margin: 0",
+    "sha256": "8033c1ccaf4408ee7c080c278094855b1791fc9f7a5be4d97fdb724ad5fff83a"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_rows_1_2_margin: 0",
+    "sha256": "c0dfb695b9e2bc29d88c75e688564ff512daa1bccb2ea9ba722633b5a5607883"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_logs_height: 108",
+    "sha256": "ae4fc79096954b4c6c33f76a244f72d4ef1b938ec4c143bda2967fba3417576e"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_active_left: 0",
+    "sha256": "fc73bdfffa388d388ffcd175134a15feb0896c37c8e81a36f9b2d8763a8c7262"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_active_top: 0",
+    "sha256": "5ec6a6e70f0055c229903fbab5ba16ac04541ab0e8a0e74424f7a2a43736cf47"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_active_width: 5120",
+    "sha256": "edaee43f76c17992916422fd4775e34b27f56461d45672b03e511996dbe011b3"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_active_height: 2017",
+    "sha256": "735bf39ad3d67b632733131bff249efd31c86599bd90f7c8c991b4ad2c4707b8"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_active_width_pc: 100%",
+    "sha256": "ba1c3d25b429abd74be2d9413fe511c80b0d10b68f71e78a81a481d985082a6b"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_active_height_pc: 93%",
+    "sha256": "374857dbdf5ed7b63cb386904c281516851dffa2eb35f00235377917a2890213"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_active_middle_x: 2560",
+    "sha256": "bd04d12cc5fe70b4d06a1122092ea81ae60c4ae61af59fbdfd6ee4fa0cf266ab"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_active_middle_y: 1008",
+    "sha256": "2aaf4a0cc014a518a4a1c1a96c0013109acbddc610ddc3194b581fecd04c750c"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_full_width: 5120",
+    "sha256": "36c19988db5464c3d8e4127692559636e6e90ddc729d922df73add436414e571"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_full_height: 2125",
+    "sha256": "68741cf496b046a9621b28da069bf5b7f1a235faa6a8e2673aa7fdaad035928f"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_single_height_pc_of_active: 100",
+    "sha256": "b45c6f818f99fdb32d3ef9b0fd80922881c201c464c3428b03ffeed1e6e6691c"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_single_width: 3072",
+    "sha256": "0eacdc1c06cace4b7c6bfd329d79201dab37248aaf4670917ad9c4d945bcee51"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_single_height: 2017",
+    "sha256": "6c89ae0ead26397cc20b731fc459a0f1a183e65bad74bfdda8554eb577f5b9c8"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_single_left: 1024",
+    "sha256": "f4140246ee81893b5574c0641fa845a0aad9fd14d8d4fdbb804349b08e18da59"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_single_top: 0",
+    "sha256": "02e0a352224605e97ac9048b60874482c5c1913298ba32937372afc0c226622f"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_single_middle_x: 2560",
+    "sha256": "9bede09b217f76be9e5c49d595af8f7f3a7802c279764ff82d3de281ecaf085f"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_single_middle_y: 1008",
+    "sha256": "42748ebd951d0ad6ae5db629d59af184c7c8606d7578d1b1306f2fbf48c63842"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_cols_1_2_margin_pc_of_active: 0",
+    "sha256": "5168c4c103a477a8b1b4bc7514b6cd9c60941e5d6af8c5f0a2aec267d9961f0d"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_cols_2_3_margin_pc_of_active: 0",
+    "sha256": "249472f60474643803be46aa8ed67dbf70947ba8668c53d51e8a8b008fb8e979"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_rows_1_2_margin_pc_of_active: 0",
+    "sha256": "419fbe1cafc3342e5c8353ac7ffd5232fdde116295b64183fdb88c6287e9af7b"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_row1_height_pc_of_active: 50",
+    "sha256": "8b2a6c1631aa1ed5722f24d311251bacbd67d9ad70326ced6b5134f845e03973"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_row2_height_pc_of_active: 50",
+    "sha256": "d6d7288be5c49afcc3ec8f8d027c69a6d7b48a4e996f7313d1ec83cc84de73cb"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_col1_width: 1587",
+    "sha256": "31334cbe45c514a9016fcab55068f41953b8d62dee6b6d37da8839b0bd425ba9"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_col2_width: 1536",
+    "sha256": "b7eb0ee97e3fe7e5d58e9fa767e6c3a80b02a000837bb3519cb49eb26be71507"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_col3_width: 1976",
+    "sha256": "07313f3ec60f3ef574d6acfeea3774676787dbb5ce4b7b4b68efb30329b6120c"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_col1_left: 0",
+    "sha256": "9a1e2c174c780a0a52d15f15cf1ed05e48f0b315faf3711353ca563fc7378d87"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_col1_right: 1587",
+    "sha256": "29a69d59f98b0a1b0eafd6708e551f5e5e0dfe73add646ab5d8e65528e4ee8e5"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_col2_left: 1597",
+    "sha256": "56ed02a19b0a00ce03c92356576655e1c6103437121ff36e3e40655bed255436"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_col2_right: 3133",
+    "sha256": "fd11b312d7debcd409b4dfc79ab5f138400bfd2af8c29235bcdaf7309060f9ea"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_col3_left: 3143",
+    "sha256": "00b48a4fe6859eda65e2407ddbfc76b335c19b32bb5986c0b50aec7d6a0caece"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_col3_right: 5119",
+    "sha256": "23e86f6e3a64e2d7ff26a29f120c95639d8a92555470302ff5cf7389d43c8179"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_col1_middle: 793",
+    "sha256": "6977244e5ecd3411eabb1deb9ada8f9655fa4d53b26c2bbc11bdba3dfe2db808"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_col2_middle: 2365",
+    "sha256": "dadff2f0296db02ceeff5ca6e35aded2711127740e0872bf04070a26e717ee4e"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_col3_middle: 4131",
+    "sha256": "3625c7721ef10558e9ab95c97ff8b4abb6285fd915e30e468ff785564e92beda"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_cols_1_2_width: 3133",
+    "sha256": "732fc01b1dad9fbb20d736d3f4752fa6174f7d78e25dfea65086c51f70f843af"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_cols_1_2_middle: 1566",
+    "sha256": "def3bcd64a351f24f96e4eb410612528bb84fc121adc403dac5a9f98559d48d7"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_row1_height: 1008",
+    "sha256": "2157ada48c5181934d962dbb8a68dff8408f763b4ae2326f083c8cbcbed4a147"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_row2_height: 1008",
+    "sha256": "879942631b1eb39da1fee8fcb2e2a91e098d9be18d026eb63c6152e2bbed3334"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_row1_top: 0",
+    "sha256": "021aafe3b3ebfbb290cc96c28657df06ccd5b157b05d1bed31f61bb2913c6f4d"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_row1_bottom: 1008",
+    "sha256": "fc0147a44da40a604cdc27ac7bbe114d6315c5cbf8e0d63e10db1b4f6ee89951"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_row2_top: 1008",
+    "sha256": "1db4ebf1570224f60ffb884556d6248c8e5126ab8e1e810c578015834b9f0412"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_row2_bottom: 2016",
+    "sha256": "fbecd4f4ab4d43f99fe31cc5d392d18ba5efd9d15955f34ac65b70ea283adf26"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_row1_middle: 504",
+    "sha256": "a127b9b7dec29cf401a5bfc86b2e3b4944390afb887d6ee21f629c394a4b01a4"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_row2_middle: 1512",
+    "sha256": "51e5342567ea8012ba996fe3b5bd838724d4069c2bb53ecf88b2a0ed61d27341"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:   s_primary_SetHead: SetHead 1",
+    "sha256": "d081032b916eff9ecbf06339e0b8a1db9c771af335720b86598bb7cbb8caf404"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]: (Name=gkrellm)",
+    "sha256": "9ecb62a9e444cd87c3bd9bf3e4908c62ad8b870b635cda1fae8148e317088745"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:    Map {MacroCmd {SetHead 2} {MoveTo 0 0 TopRight} {Activate} {If {Matches (Stuck=no)} {Stick}}} {Matches (Name=gkrellm)}",
+    "sha256": "045d42ee8aa09be3eedd5c91a6498b2546829eba972e64f3b2f56158d5f533a5"
+   },
+   {
+    "line": "2026-08-30T09:34:07+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]: (Name=(gnome|xfce4)-terminal-.*|kitty)",
+    "sha256": "2f2395219c8dad9235f9166d4b98ca1566857b69b5ea21f1d78b13b31c5241cc"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:    Map {MacroCmd {SetHead 1} {MoveTo 0 0} {ResizeTo 1587 2017}} {Matches (Name=(gnome|xfce4)-terminal-.*|kitty)}",
+    "sha256": "c054b414c53aac58e7a98498e7b830e120be249d3eebb4d558d7d00547c4da6a"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]: (Name=kitty) (Title=mutt:\\ .*)",
+    "sha256": "6f4cd1f9fd40bf0c1fe7a01ff5f0304f0143b459859072714a8281f034e06a46"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:    Map {MacroCmd {SetHead 1} {MoveTo 0 0 Center}} {Matches (Name=kitty) (Title=mutt:\\ .*)}",
+    "sha256": "288064063188b620841ca98296232c36083b7cc4cd64e7f19781597f3582db9f"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]: (Name=kitty) (Title=btop|htop|sudo (powertop|nethogs|iotop|iftop)|nvtop|amdgpu_top|lnav-system)",
+    "sha256": "700dd5790540c11664a1013623299079aefec393d2d1b8c0ecef74cd8b972f89"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:    Map {MacroCmd {SetHead 2} {MoveTo 0 0 Center} {ResizeTo 90% 90%} {Sticky {yes}} {Iconhidden {no}}} {Matches (Name=kitty) (Title=btop|htop|sudo (powertop|nethogs|iotop|iftop)|nvtop|amdgpu_top|lnav-system)}",
+    "sha256": "aeed7d8e7b43d55f72da6298e26386be9ab5d82bb4f0304f3fdb0f91179703ee"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]: (name=emacs) (title!=Ediff)",
+    "sha256": "0e34ec01672f9613e1d81ad2cd394715a50b1124ebaf52bfb8cf41d4cfa06592"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:    Map {MacroCmd {SetHead 1} {MoveTo 1597 0} {ResizeTo 1536 2017}} {Matches (name=emacs) (title!=Ediff)}",
+    "sha256": "fcc754fb1ce3818cc00ad220556fc5eb26b445b1522af75a057c30ae36b84c51"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]: (class=Cursor|Code)",
+    "sha256": "426369a9bb5d3fb01edb5dab48871fa0a4628f42c27c1849fad6440c31af9013"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:    Map {MacroCmd {SetHead 1} {MoveTo <s_primary_full_left> <s_primary_full_top>} {ResizeTo 5120 2125} {If {Matches (Stuck=yes)} {Stick}}} {Matches (class=Cursor|Code)}",
+    "sha256": "50e857c54a306ff3009742ef26f6f06544c1ef17d2df36ec81a874f11ecdc646"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]: (Name=brave-browser|google-chrome|chromium) (Title=.*Toucan)",
+    "sha256": "4aefa15969a1b7ffd95c89dc688c7360ec1ad49a74fae196193a41b41138d607"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:    Map {MacroCmd {SetHead 1} {SendToWorkspace 2}} {Matches (Name=brave-browser|google-chrome|chromium) (Title=.*Toucan)}",
+    "sha256": "d98019ceac2d1dd3910901824eec74f463556ba107832dd1ee3519a5cf9c439a"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]: (Name=brave-browser|google-chrome|chromium) (Title=.*studies|Kernel|ZKML|rolod0x|SMV|FD|Astral|IE|HC|AI)",
+    "sha256": "8bdfa93d5694198807b9c9b3c64c14214915513addf815872467314cb1c4aa6c"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:    Map {MacroCmd {SetHead 1} {SendToWorkspace 2}} {Matches (Name=brave-browser|google-chrome|chromium) (Title=.*studies|Kernel|ZKML|rolod0x|SMV|FD|Astral|IE|HC|AI)}",
+    "sha256": "390952cb586afc9f016245053d19025f429476bbc042291a726163749bd555c8"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]: (Name=brave-browser|google-chrome|chromium) (Title=.*(personal$|Panther))",
+    "sha256": "7506eee5a4a893b7f1737badd66b7fffeed455132c548f3acd34c7edcde4a68b"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:    Map {MacroCmd {SetHead 1} {SendToWorkspace 5}} {Matches (Name=brave-browser|google-chrome|chromium) (Title=.*(personal$|Panther))}",
+    "sha256": "dbfa5a4c99a238ffbce22f082bd51c47b6dcec82f6cad0210f6efb663f019900"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]: (Name=brave-browser|google-chrome|chromium) (Title=.*(secondary|gather\\.town|.* \\| Gather.*))",
+    "sha256": "4e7218695c76b84c83a6fa0ce0b1d66859cad010db4f4fa301da9a376f27efe7"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:    Map {MacroCmd {SetHead 1} {MoveTo 3143 0} {ResizeTo 1976 2017} {If {Matches (Stuck=no)} {Stick}}} {Matches (Name=brave-browser|google-chrome|chromium) (Title=.*(secondary|gather\\.town|.* \\| Gather.*))}",
+    "sha256": "213ee5fba7557e469de8ff294b5c033660f73b852bcbf7f9c768942f1d65ae93"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]: (Name=brave-browser|google-chrome|chromium) (Head=1) (Title!=.*(secondary|gather\\.town|.* \\| Gather.*))",
+    "sha256": "5ca14529f1f67d4891ad88eb99ceca129c8d7489db2bf1a1cfa8a3ae473df7f4"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:    Map {MacroCmd {MoveTo 1024 0} {ResizeTo 3072 2017}} {Matches (Name=brave-browser|google-chrome|chromium) (Head=1) (Title!=.*(secondary|gather\\.town|.* \\| Gather.*))}",
+    "sha256": "a24b98df56989228efcbe89555d225e323aa6b9004dfb5fedfe8428d0a3238ff"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]: (Name=brave-browser|google-chrome|chromium) (Head=2)",
+    "sha256": "98a48cbbbf1129a004adeab478fe9e1e152f99429d8aeb744b88e4ba37f67d82"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:    Map {MacroCmd {MoveTo 0 0} {ResizeTo 2880 1885}} {Matches (Name=brave-browser|google-chrome|chromium) (Head=2)}",
+    "sha256": "35c4e5e4d965c2ba5047e613b60b9efc1fbc226d0cb49e4d4f2fa3575f66e469"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]: (Name=brave-browser|google-chrome|chromium) (Head=1) (Title!=.*(secondary|gather\\.town|.* \\| Gather.*))",
+    "sha256": "5ca14529f1f67d4891ad88eb99ceca129c8d7489db2bf1a1cfa8a3ae473df7f4"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:    Map {If {Matches (Stuck=yes)} {Stick}} {Matches (Name=brave-browser|google-chrome|chromium) (Head=1) (Title!=.*(secondary|gather\\.town|.* \\| Gather.*))}",
+    "sha256": "9411c1ef74fc6a25dfe92bef3e4586c937037ecf8221abc89d67ea5509dd0026"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]: (Class=firefox)",
+    "sha256": "4d8c08fde4304aac76068fa91c67fd6333d20f51d1a65eadb06d208ba9a51074"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:    Map {MacroCmd {SetHead 1} {SendToWorkspace 3} {MoveTo 0 0} {ResizeTo 5120 2017}} {Matches (Class=firefox)}",
+    "sha256": "9b9bab410faee1d6e8260e75da9508220de277b6f7c0a26b8d3355ac722bc93b"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]: (Name=notion-app-enhanced)",
+    "sha256": "fbf1f7e1ab4a3ae42696248027c0c165669d7db76713a7527a500ffb56730b7e"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:    Map {MacroCmd {SetHead 1} {SendToWorkspace 3} {MoveTo 0 0} {ResizeTo 5120 2017} {If {Matches (Stuck=yes)} {Stick}}} {Matches (Name=notion-app-enhanced)}",
+    "sha256": "87bf764555209576f66be86bc70ef699d5b66e6ed6c1238ca94da477649728ff"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]: (Class=Gitk)",
+    "sha256": "664b298a4dab15c79ee3cbe7ccf08361def1e3c48d8816f9675fb06db7b799c7"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:    Map {MacroCmd {If {Matches (Stuck=yes)} {Stick}} {SetHead 1} {SendToWorkspace 3} {MoveTo 0 0} {ResizeTo 5120 2017}} {Matches (Class=Gitk)}",
+    "sha256": "4e66365f827e79b57528850e8a4995e618d83a80908aa25e87c0f48220b101d1"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]: (Name=beeper|slack|Telegram|discord|Discord*|zulip)",
+    "sha256": "3b6e70cad6c8455e4b2bcc45553607651bcebbc5ec646051929eecb084896c04"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:    Map {MacroCmd {SetHead 1} {SendToWorkspace 4} {MoveTo 0 0} {ResizeTo 5120 2017} {If {Matches (Stuck=yes)} {Stick}}} {Matches (Name=beeper|slack|Telegram|discord|Discord*|zulip)}",
+    "sha256": "ed42e681dcb3b334744eae012b101787046f5e47d87782bd6e57b8e584983e86"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]: (Class=^$) (Title=Kraken)",
+    "sha256": "7b09741affe31e7108bee34908b32fec18a043c8161e6f6a01a9b5fb1b56ffc7"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:    Map {MacroCmd {If {Matches (Stuck=yes)} {Stick}} {SetHead 1} {SendToWorkspace 6} {MoveTo 0 0} {ResizeTo 5120 2017}} {Matches (Class=^$) (Title=Kraken)}",
+    "sha256": "d4fc7bd8e981254524e241b28100df5984c4022720944abc35988f04f003f386"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]: (Class=LM Studio)",
+    "sha256": "b6cb1bad627ed86fef912a6ecec3ee6327fa506c4ac661413a10a49cf75c27e1"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:    Map {MacroCmd {SetHead 1} {SendToWorkspace 3} {MoveTo 0 0} {ResizeTo 5120 2017} {If {Matches (Stuck=yes)} {Stick}}} {Matches (Class=LM Studio)}",
+    "sha256": "3076218a2c2ef8b08e7e34734cf8ab8ff86f982f9f3275715d356a97eab25bd9"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]: (Class=Pavucontrol)",
+    "sha256": "7f34bf16626dbdb4b656883599b9d3f5fc495c7ade9fa46e71e2010e89df7042"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:    Map {MacroCmd {If {Matches (Stuck=no)} {Stick}} {SetHead 2} {MoveTo 55% 5%} {ResizeTo 40% 90%}} {Matches (Class=Pavucontrol)}",
+    "sha256": "aa98ad31d5e8ac311f15f312993b304461dfbbffbe9b3dd42e766ffe0775d813"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]: (Class=Blueman-manager)",
+    "sha256": "ceac6b1be50fff0a45ce20a58265b2ce45081eb1cb9ea7ae35ec04ad60bab25a"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:    Map {MacroCmd {If {Matches (Stuck=no)} {Stick}} {SetHead 2} {ResizeTo 35% 40%} {MoveTo 2% 22% BottomLeft}} {Matches (Class=Blueman-manager)}",
+    "sha256": "135a7d24abd3caa779940b9d11e2ad62d96634baa71f38f717a7d15966889d78"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]: (Class=Chrysalis)",
+    "sha256": "98d805307b866c81caf5d8914bf51001a76821350b41fb4a3f3bc8644cb489d8"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063918]:    Map {MacroCmd {If {Matches (Stuck=no)} {Stick}} {SetHead 2} {ResizeTo 90% 90%} {MoveTo 5% 5%}} {Matches (Class=Chrysalis)}",
+    "sha256": "f9dcb4b5c8e7796e2d36d1427a3b4acaa238ccdb33d45f20452e7edf28b9ecaa"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063257]: TIMING setup-monitor +6.032s: window layout applied",
+    "sha256": "444e66f413a97854857490a27398a09413a0b923fe6e80f769ddf3b45cb50d1c"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063257]: Fluxbox restart ...",
+    "sha256": "c10fe2f1234d104555d6130e6a1bc467e95b22d9ce1bc75ad5c1a9bad777008b"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1064162]: Attempting to stop fluxbox-304603.service via systemd-scoped SIGTERM",
+    "sha256": "7dc3655d978b1e5222e2e48ee2c00ad7bba694b68bfff37ae51def860d8a234f"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1064162]: Waiting 0.2s for fluxbox-304603.service (pid 305242) to stop running (waited 0s, timeout 3s)",
+    "sha256": "eab7ae87447daaab28cc9bced398f72206867fa0a946f5d782a50230a5dedec2"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1064162]: Replacing fluxbox with xfwm4",
+    "sha256": "62bb31d48a68f6679f3ae38e5ce0d39839e0da561fc417bb5b1493bd67457284"
+   },
+   {
+    "line": "2026-08-30T09:34:10+01:00 celtic.linksys.moosehall monitor-watcher-ng[1064162]: xfwm4 started (pid 1064162)",
+    "sha256": "8aa0761c87ba22506eb529bdf1545246e82c422fa648f69c949e9669a003f1ee"
+   },
+   {
+    "line": "2026-08-30T09:34:11+01:00 celtic.linksys.moosehall monitor-watcher-ng[1064429]: Setting restart style for 'xfwm4' to 'never' (3)...",
+    "sha256": "53a6feb4ec72af02b39ae41758f8d1409c09d6ce521d351a759af02a21499436"
+   },
+   {
+    "line": "2026-08-30T09:34:11+01:00 celtic.linksys.moosehall monitor-watcher-ng[1064429]: Could not find client matching 'xfwm4'!",
+    "sha256": "d7c0440724d4b45e2c66f8e0aeeac71924fc4ccff3c59b5e6bc3bc49fe65df4c"
+   },
+   {
+    "line": "2026-08-30T09:34:11+01:00 celtic.linksys.moosehall monitor-watcher-ng[1064162]: Command failed: set-session-restart-style xfwm4 never, retrying in 0.2s (waited 0s)",
+    "sha256": "6110d76a66ecc6cd12b12b0d7c385b50c503ede38f0c1bcbd0fa2f3e879a6a52"
+   },
+   {
+    "line": "2026-08-30T09:34:11+01:00 celtic.linksys.moosehall monitor-watcher-ng[1064831]: Setting restart style for 'xfwm4' to 'never' (3)...",
+    "sha256": "6d08eedc229a5d04dc4ef2356b0239b107116710064561f5151c65247d69acc9"
+   },
+   {
+    "line": "2026-08-30T09:34:11+01:00 celtic.linksys.moosehall monitor-watcher-ng[1064831]: Found client: xfwm4",
+    "sha256": "fdf609c2c1e1ba0fec403f7450069f401a7b00ff7865a7cf43c3581d8054792d"
+   },
+   {
+    "line": "2026-08-30T09:34:11+01:00 celtic.linksys.moosehall monitor-watcher-ng[1064831]: [24B blob data]",
+    "sha256": "af102a68dd6cc24074e2464f5598cdbb2752c1c5d1ac58718652a9c243357ed9"
+   },
+   {
+    "line": "2026-08-30T09:34:11+01:00 celtic.linksys.moosehall monitor-watcher-ng[1064831]: Successfully set restart style to 3",
+    "sha256": "453d9fc87b65fa47f26d51c8b0334788354332f98387f2bc14dd4fc7465b6cf4"
+   },
+   {
+    "line": "2026-08-30T09:34:11+01:00 celtic.linksys.moosehall monitor-watcher-ng[1064162]: Stopping xfwm4",
+    "sha256": "9eb1a604d61d7c2b64ac6f078a4531121db4b9ea362a2ed825c5634d3551931c"
+   },
+   {
+    "line": "2026-08-30T09:34:11+01:00 celtic.linksys.moosehall monitor-watcher-ng[1064162]: Waiting 0.2s for xfwm4 (pid 1064378) to stop running (waited 0s, timeout 5s)",
+    "sha256": "6d6d20d064ef9bb50c629a25ff0637e3ab86aea4355f129f34683c986d384df1"
+   },
+   {
+    "line": "2026-08-30T09:34:11+01:00 celtic.linksys.moosehall monitor-watcher-ng[1064162]: Starting fluxbox",
+    "sha256": "61cdb8c1452b280985e8668ad6e1a0ef97fa0d31d35ce96046128a4f27853816"
+   },
+   {
+    "line": "2026-08-30T09:34:11+01:00 celtic.linksys.moosehall systemd-run[1064867]: Running as unit: fluxbox-1064162.service; invocation ID: 742c9f09da1f42d2b9f9fb26d42bad95",
+    "sha256": "2afd7424e0fd079f82f274be15ed744730034d38e86467ce58aee8da3519dbf7"
+   },
+   {
+    "line": "2026-08-30T09:34:11+01:00 celtic.linksys.moosehall monitor-watcher-ng[1064162]: fluxbox-1064162.service started (pid 1064868)",
+    "sha256": "563b50dbeac63863cc18c72e77d309c8672971f96da485ccf683aa222caf1628"
+   },
+   {
+    "line": "2026-08-30T09:34:12+01:00 celtic.linksys.moosehall monitor-watcher-ng[1064162]: Dismissing panel plugin dialog 41946280 ()",
+    "sha256": "a32eca7ab949f354fe7566bff7e28e0dec19ae79d80979a4b5db9d5affda11d6"
+   },
+   {
+    "line": "2026-08-30T09:34:12+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063257]: TIMING setup-monitor +8.778s: Fluxbox restarted",
+    "sha256": "ca3a7e60f393978b40ea73a3ce595972a93873812faaea5e36418d1775bd1fe2"
+   },
+   {
+    "line": "2026-08-30T09:34:12+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063257]: Restarting xfce4-panel ...",
+    "sha256": "00b41dbec5d932029e9ef4a0a688383d930f6a635944ad136bd738d7eee76375"
+   },
+   {
+    "line": "2026-08-30T09:34:22+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063257]: System tray settled: 0x4100007:1065608,",
+    "sha256": "9c6444e5a8c53d9f24aa2a9d61c0875757e64c00cee9fee1783ac237b3b428c1"
+   },
+   {
+    "line": "2026-08-30T09:34:22+01:00 celtic.linksys.moosehall monitor-watcher-ng[1063257]: TIMING setup-monitor +17.958s: panel and system tray settled; nm-applet launched",
+    "sha256": "bd94928ed56aa9c6b75e117156f0da5c8474dfdd26570f759e7f0e2ef4d552d7"
+   }
+  ],
+  "unit": "monitor-watcher-ng.service"
+ },
+ "outputs": [
+  {
+   "geometry": "2880x1920+0+0",
+   "name": "eDP"
+  },
+  {
+   "geometry": "5120x2160+2880+0",
+   "name": "DisplayPort-1"
+  }
+ ],
+ "record_provenance": [
+  {
+   "index": 0,
+   "record": "header",
+   "source_sha256": "f70c7f3010e4d5c350e0b74c0a792e4dfddc49ec35c6d0704e2b3ba6effb7135"
+  },
+  {
+   "index": 1,
+   "record": "decision",
+   "source_sha256": "79e06617413ec4fed386c1ea06be9330c3251c4d2d7b688642c2d8bd51b32220"
+  },
+  {
+   "index": 2,
+   "record": "decision",
+   "source_sha256": "2a27624b4ed4bcedcea6e1a9aa6681ce51d62f74b2fde2d9624618e2babaf56a"
+  },
+  {
+   "index": 3,
+   "record": "decision",
+   "source_sha256": "d73cdb8f892b3a062074c67d1b7e0c29f63f8e93a4d411bf4f42d4f5b7f82ef2"
+  },
+  {
+   "index": 4,
+   "record": "decision",
+   "source_sha256": "84e43d49b8d5889e3668cc2fecc7042b05b2d6568cf6312d42a937f809246a9c"
+  },
+  {
+   "index": 5,
+   "record": "decision",
+   "source_sha256": "3cd05d7cb347b631676bb78d0326fe758d6027999c4c021708c3fbe83ae220cc"
+  },
+  {
+   "index": 6,
+   "record": "decision",
+   "source_sha256": "71f624a5af0c0fab33ceac731b1adf1253a04ecefa475d78167a654579ee3071"
+  },
+  {
+   "index": 7,
+   "record": "decision",
+   "source_sha256": "5ce487efe82463a497b2d3acd38c190033c0f1aca93a8550a917275dd2310e5a"
+  },
+  {
+   "index": 8,
+   "record": "decision",
+   "source_sha256": "16575ed2182a563fde7ba41ebaa735abda1490e792016ed40c830245a90d962c"
+  },
+  {
+   "index": 9,
+   "record": "decision",
+   "source_sha256": "898bafc6ee47995889ac07f7ce5668ffe5afac53691a7cd3b523e47f0d5a4d06"
+  },
+  {
+   "index": 10,
+   "record": "decision",
+   "source_sha256": "7c55c018caad2745e0e30bfdabdaa9c77109dff6310e90c1d3bc8b0d6550b948"
+  },
+  {
+   "index": 11,
+   "record": "decision",
+   "source_sha256": "301b38940a19de27acaa105109b6d9b4c73e6201f350317927b5cb67e8705a24"
+  },
+  {
+   "index": 12,
+   "record": "decision",
+   "source_sha256": "a25a38c67d98285746d5df2cf2a798b39e8473e96247dabbec027e3444d2a367"
+  },
+  {
+   "index": 13,
+   "record": "decision",
+   "source_sha256": "6fe8eaf48e638313938974a475d0c65b4527117a3ad41ecd78a209829ec74905"
+  },
+  {
+   "index": 14,
+   "record": "decision",
+   "source_sha256": "740014bc2faff90fc6cbf63853150dec760ae4d050899957f4ba67db094af302"
+  },
+  {
+   "index": 15,
+   "record": "decision",
+   "source_sha256": "fdfb0ba85e61bb418be297e6a9e2c9e9fc1f379890f3134f2f098c8ebe16a9f9"
+  },
+  {
+   "index": 16,
+   "record": "decision",
+   "source_sha256": "c4e58963b3e1b649c3323d979dedb2b6c0eb6ed3df7a5513ff74e53f24d563ad"
+  },
+  {
+   "index": 17,
+   "record": "decision",
+   "source_sha256": "7df4eff09cffa24c133d18ee4fe8b3c765ba3c2ed25c8afcbed2f714e11892c3"
+  },
+  {
+   "index": 18,
+   "record": "decision",
+   "source_sha256": "f57de670408133d74fd2e407c70785db57c793d74c5ff06a189aba6c8383b21b"
+  },
+  {
+   "index": 19,
+   "record": "decision",
+   "source_sha256": "f222d4ebfb05fcf14d05ec17d3a00a451b777163e1e4ca27dd5ee2006e240c94"
+  },
+  {
+   "index": 20,
+   "record": "decision",
+   "source_sha256": "c08eda674ce9a3198258e79679bf7e3a20bafc0ed1fb9518ba5b261fc5248df7"
+  },
+  {
+   "index": 21,
+   "record": "decision",
+   "source_sha256": "d789ff53228036cbe3f8b57c74ce8bc0ac19c665571178c0b038c5c6caa83958"
+  },
+  {
+   "index": 22,
+   "record": "decision",
+   "source_sha256": "0970487a545cf1dfeb74d4932fc5229e3cc565228e9b747b3c8b09175d360e2f"
+  },
+  {
+   "index": 23,
+   "record": "decision",
+   "source_sha256": "b20ed6eced370b7ddef2c1b2f3df59f5ea6ac6794c67ec0677d8b07eae84d95d"
+  },
+  {
+   "index": 24,
+   "record": "decision",
+   "source_sha256": "37d84d4bf248a4d84e9f5fdd857c0f5fbf7d2ff916392a5dac368067741270d6"
+  },
+  {
+   "index": 25,
+   "record": "decision",
+   "source_sha256": "3b501ec0ffc7d85cce9f1ca28f6f74e2e57a45f646eec21820af98dd7c943d2b"
+  },
+  {
+   "index": 26,
+   "record": "decision",
+   "source_sha256": "4527498beb545bafd93b0f514f182567098d50212df630eedb7fef358465fe60"
+  },
+  {
+   "index": 27,
+   "record": "decision",
+   "source_sha256": "dacbc75387ae0b102b5ca24e2b24bf500d673d261260977653330576c6895f61"
+  },
+  {
+   "index": 28,
+   "record": "decision",
+   "source_sha256": "6978d4b86f988ccbfe88ccfdd4c03443978f49ae09bc883b617ce4886ec717a9"
+  },
+  {
+   "index": 29,
+   "record": "decision",
+   "source_sha256": "071040f704080c1dabfe0b8a2681352e94c5fcf7d38ac140bb47845edc9937da"
+  },
+  {
+   "index": 30,
+   "record": "decision",
+   "source_sha256": "d492cedc78257a5ab1849f9b970d23aa753940477ce864398dbca252f1b0186c"
+  },
+  {
+   "index": 31,
+   "record": "decision",
+   "source_sha256": "80fb0ebc8e4d47f7910ff2885ce3119e9a3ce3afd9d144f03e3c964c128f881c"
+  },
+  {
+   "index": 32,
+   "record": "decision",
+   "source_sha256": "313f362673097041bf178ea264c72b427efb78b73961722cc8cdccef5357239f"
+  },
+  {
+   "index": 33,
+   "record": "decision",
+   "source_sha256": "66d1a6550ae7dfa2cdb267a43b1a4005743535080b66658c5376fea033bc51ed"
+  },
+  {
+   "index": 34,
+   "record": "decision",
+   "source_sha256": "f1d7a99f4a5eb3b98d0a07691b0c163a1f014321dfb8e2eca355ad1842d3a1a0"
+  },
+  {
+   "index": 35,
+   "record": "decision",
+   "source_sha256": "a44cf4932267781fd6c1fc3ff622a9feeda564110a77876c1408f4563181630e"
+  },
+  {
+   "index": 36,
+   "record": "decision",
+   "source_sha256": "aead9be33a854d9939534f970ddbb1c7b0551e0d1d76be3ff5d8d1d13318beb9"
+  },
+  {
+   "index": 37,
+   "record": "decision",
+   "source_sha256": "b651a5abbe40ad371e9d66120e42f8e95c69bf8f895df8511ddbe5bc4f276299"
+  },
+  {
+   "index": 38,
+   "record": "would_dispatch",
+   "source_sha256": "808edda6edb63a532eddf5a3e1e59d52dd584f77af534e3ad1c9d9e43238dc70"
+  },
+  {
+   "index": 39,
+   "record": "decision",
+   "source_sha256": "96af2a7d4359366b1c395353dc9e5dc4cab96ee9d1775b4b4ee22947d60fc88f"
+  }
+ ],
+ "sanitization": "state whitelist projection plus live_fingerprints value hash+length redaction per fixtures/traces/README.md",
+ "shadow_transactions_directory_absent": true,
+ "suspended_seconds": 0
+}
