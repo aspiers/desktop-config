@@ -13,6 +13,7 @@ from typing import Final
 from uuid import UUID
 
 import pytest
+from worker_evidence import edid_fixture, saved_edid, write_sysfs_connectors
 
 import monitor_controller.workers.apply as apply_module
 from monitor_controller.model import (
@@ -125,35 +126,21 @@ def _profile(name: str = _PROFILE) -> SavedAutorandrProfile:
 
 
 def _edid_bytes(name: str) -> bytes:
-    return bytes.fromhex((EDID / name).read_text(encoding="ascii"))
+    return edid_fixture(EDID, name)
 
 
 def _saved_edid(output: str) -> bytes:
-    value = next(
-        line.split()[1]
-        for line in (PROFILES / _PROFILE / "setup").read_text().splitlines()
-        if line.startswith(f"{output} ")
-    )
-    # The installed Samsung setup intentionally wildcards one unstable extension
-    # region.  Fill that region deterministically for fresh identity guard tests.
-    return bytes.fromhex(value.replace("*", "00" * 32))
+    return saved_edid(PROFILES / _PROFILE / "setup", output, wildcard_fill="00" * 32)
 
 
 def _sysfs_tree(root: Path) -> Path:
-    values = (
-        ("card0-eDP-1", 73, _saved_edid("eDP")),
-        ("card0-DP-3", 91, _edid_bytes("samsung-broken-captured.hex")),
+    return write_sysfs_connectors(
+        root,
+        (
+            ("card0-eDP-1", 73, _saved_edid("eDP")),
+            ("card0-DP-3", 91, _edid_bytes("samsung-broken-captured.hex")),
+        ),
     )
-    for name, connector_id, edid in values:
-        connector = root / name
-        connector.mkdir(parents=True)
-        connector.joinpath("status").write_text("connected\n", encoding="ascii")
-        connector.joinpath("connector_id").write_text(
-            f"{connector_id}\n",
-            encoding="ascii",
-        )
-        connector.joinpath("edid").write_bytes(edid)
-    return root
 
 
 def _single_output_sysfs_tree(root: Path, edid: bytes) -> Path:

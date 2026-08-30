@@ -17,6 +17,7 @@ from typing import Final
 from uuid import UUID
 
 import pytest
+from worker_evidence import edid_fixture, saved_edid, write_sysfs_connectors
 
 import monitor_controller.workers.prepare as prepare_module
 from monitor_controller.desktop.layout import DisplayScreenSnapshot
@@ -113,33 +114,25 @@ _EXPECTED_KINDS: Final = (
 
 
 def _edid_bytes(name: str) -> bytes:
-    return bytes.fromhex((_EDID / name).read_text(encoding="ascii"))
+    return edid_fixture(_EDID, name)
 
 
 def _saved_edid(output: str) -> bytes:
-    value = next(
-        line.split()[1]
-        for line in (_REPO / ".config" / "autorandr" / _PROFILE / "setup")
-        .read_text(encoding="ascii")
-        .splitlines()
-        if line.startswith(f"{output} ")
+    return saved_edid(
+        _REPO / ".config" / "autorandr" / _PROFILE / "setup",
+        output,
+        wildcard_fill="00" * 32,
     )
-    return bytes.fromhex(value.replace("*", "00" * 32))
 
 
 def _sysfs_tree(root: Path) -> Path:
-    for name, connector_id, edid in (
-        ("card0-eDP-1", 73, _saved_edid("eDP")),
-        ("card0-DP-3", 91, _saved_edid("DisplayPort-1")),
-    ):
-        connector = root / name
-        connector.mkdir(parents=True)
-        connector.joinpath("status").write_text("connected\n", encoding="ascii")
-        connector.joinpath("connector_id").write_text(
-            f"{connector_id}\n", encoding="ascii"
-        )
-        connector.joinpath("edid").write_bytes(edid)
-    return root
+    return write_sysfs_connectors(
+        root,
+        (
+            ("card0-eDP-1", 73, _saved_edid("eDP")),
+            ("card0-DP-3", 91, _saved_edid("DisplayPort-1")),
+        ),
+    )
 
 
 class _FakeCommands:

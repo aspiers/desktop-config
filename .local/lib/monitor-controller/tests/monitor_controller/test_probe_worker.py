@@ -11,6 +11,7 @@ from typing import Final
 from uuid import UUID
 
 import pytest
+from worker_evidence import edid_fixture, saved_edid, write_sysfs_connectors
 
 from monitor_controller.model import (
     ActionId,
@@ -205,32 +206,21 @@ class _SwitchingTree:
 
 
 def _edid_bytes(name: str) -> bytes:
-    return bytes.fromhex((EDID / name).read_text(encoding="ascii"))
+    return edid_fixture(EDID, name)
 
 
 def _internal_edid() -> bytes:
-    value = next(
-        line.split()[1]
-        for line in PROFILE_SETUP.read_text(encoding="ascii").splitlines()
-        if line.startswith("eDP ")
-    )
-    return bytes.fromhex(value.replace("*", "0"))
+    return saved_edid(PROFILE_SETUP, "eDP", wildcard_fill="0")
 
 
 def _sysfs_tree(root: Path) -> Path:
-    values = (
-        ("card0-eDP-1", 73, _internal_edid()),
-        ("card0-DP-3", 91, _edid_bytes("samsung-broken-captured.hex")),
+    return write_sysfs_connectors(
+        root,
+        (
+            ("card0-eDP-1", 73, _internal_edid()),
+            ("card0-DP-3", 91, _edid_bytes("samsung-broken-captured.hex")),
+        ),
     )
-    for name, connector_id, edid in values:
-        connector = root / name
-        connector.mkdir(parents=True)
-        connector.joinpath("status").write_text("connected\n", encoding="ascii")
-        connector.joinpath("connector_id").write_text(
-            f"{connector_id}\n", encoding="ascii"
-        )
-        connector.joinpath("edid").write_bytes(edid)
-    return root
 
 
 def _request(tree: ReadOnlyTree, commands: _FakeCommands) -> TransactionRequest:
