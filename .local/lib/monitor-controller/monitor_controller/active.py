@@ -672,6 +672,7 @@ def build_active_composition(
     display = DisplayIdentity(display_value)
 
     store = AtomicStateStore(paths.state_home, StateNamespace.ACTIVE)
+    store.sweep_stale_temporaries()
     if store.path != paths.state_file:
         msg = "active state store escaped its declared namespace"
         raise ActiveStartupError(msg)

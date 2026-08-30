@@ -745,6 +745,7 @@ def build_shadow_composition(
     instance = ControllerInstanceId(uuid4())
     display = DisplayIdentity(display_value)
     store = AtomicStateStore(paths.state_home, StateNamespace.SHADOW)
+    store.sweep_stale_temporaries()
     if store.path != paths.state_file:
         msg = "shadow state store escaped its declared namespace"
         raise ShadowStartupError(msg)

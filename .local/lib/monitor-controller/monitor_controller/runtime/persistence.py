@@ -70,6 +70,22 @@ class AtomicStateStore:
         """Read and strictly decode the complete current record."""
         return decode_state(self._path.read_bytes())
 
+    def sweep_stale_temporaries(self) -> tuple[Path, ...]:
+        """Remove orphaned save temporaries left by a hard kill mid-replace.
+
+        A process dying between ``mkstemp`` and ``replace`` leaks its
+        temporary; the rename never happened, so removal cannot lose state.
+        Any concurrent writer is excluded by the namespace authority lock.
+        """
+        if not self._directory.is_dir():
+            return ()
+        removed: list[Path] = []
+        for candidate in self._directory.glob(".state.json.*.tmp"):
+            if candidate.is_file() and not candidate.is_symlink():
+                candidate.unlink(missing_ok=True)
+                removed.append(candidate)
+        return tuple(removed)
+
     def save(self, state: State) -> None:
         """Durably replace state and return only after directory persistence."""
         payload = encode_state(state)

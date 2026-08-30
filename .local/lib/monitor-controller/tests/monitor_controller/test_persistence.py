@@ -180,3 +180,30 @@ def test_invalid_state_is_rejected_before_touching_existing_record(
         store.save(invalid)
 
     assert store.path.read_bytes() == encode_state(old_state)
+
+
+def test_sweep_removes_only_orphaned_save_temporaries(tmp_path: Path) -> None:
+    """A hard kill between mkstemp and rename must not litter the namespace.
+
+    The rename never happened for an orphan, so removal cannot lose state;
+    the authoritative file and unrelated names must survive the sweep.
+    """
+    store = AtomicStateStore(tmp_path, StateNamespace.SHADOW)
+    store.save(_state())
+    orphan = store.path.parent / ".state.json.u8ftxo1x.tmp"
+    orphan.write_bytes(b"partial")
+    unrelated = store.path.parent / "state.json.pre-v3-backup"
+    unrelated.write_bytes(b"keep")
+
+    removed = store.sweep_stale_temporaries()
+
+    assert removed == (orphan,)
+    assert not orphan.exists()
+    assert unrelated.exists()
+    assert store.load() == _state()
+
+
+def test_sweep_of_a_missing_namespace_is_a_no_op(tmp_path: Path) -> None:
+    """Startup may sweep before the first save ever created the directory."""
+    store = AtomicStateStore(tmp_path, StateNamespace.ACTIVE)
+    assert store.sweep_stale_temporaries() == ()
