@@ -1,6 +1,6 @@
 {
  "acceptance": {
-  "limit": "Six of the seven required physical transition cases are satisfied by sanitized live shadow captures reconciled against retained monitor-watcher-ng journal windows. laptop_startup accrues at the next login; nothing needs to be done deliberately (see bin/shadow-trace-status).",
+  "limit": "Six of the seven required physical transition cases are satisfied by sanitized live shadow captures reconciled against retained monitor-watcher-ng journal windows. laptop_startup is deliberately deferred: on 2026-08-30 the operator decided cutover should not block on it; if laptop startup misbehaves post-cutover it will be debugged live. The synthetic laptop_startup policy trace and bin/shadow-trace-status coverage remain in force, and a capture can still be reconciled with bin/shadow-trace-reconcile whenever one accrues.",
   "live_satisfied_cases": [
    "aoc_connector_rename",
    "controller_restart",
@@ -23,7 +23,7 @@
    "controller_restart",
    "aoc_connector_rename"
   ],
-  "status": "AWAITING_LAPTOP_STARTUP_CAPTURE"
+  "status": "ACCEPTED_LAPTOP_STARTUP_DEFERRED"
  },
  "artifacts": {
   "live": [

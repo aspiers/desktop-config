@@ -177,7 +177,7 @@ def test_manifest_separates_provenance_and_keeps_live_acceptance_honest() -> Non
         cast("list[str]", acceptance["live_unsatisfied_physical_transition_cases"])
     ) == {"laptop_startup"}
     assert acceptance["required_physical_transition_case_count"] == 7
-    assert acceptance["status"] == "AWAITING_LAPTOP_STARTUP_CAPTURE"
+    assert acceptance["status"] == "ACCEPTED_LAPTOP_STARTUP_DEFERRED"
 
 
 def test_every_policy_trace_replays_with_exact_effect_counts_and_timers() -> None:

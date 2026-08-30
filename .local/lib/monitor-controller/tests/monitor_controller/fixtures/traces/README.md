@@ -14,8 +14,11 @@ controller restart has unresolved and verification policy variants. **Six of
 the seven physical cases are now satisfied by sanitized live captures**
 (`live_<case>.audit.jsonl` + `live_<case>.evidence.json`), reconciled against
 the retained monitor-watcher-ng journal window recorded in each evidence
-sidecar; only `laptop_startup` remains outstanding, and it accrues at the
-next login (`bin/shadow-trace-status` tracks it).
+sidecar. `laptop_startup` is deliberately deferred by operator decision
+(2026-08-30): cutover does not block on it, and if laptop startup misbehaves
+post-cutover it will be debugged live. Its synthetic policy trace stays in
+force, and a capture can still be reconciled with `bin/shadow-trace-reconcile`
+whenever one accrues (`bin/shadow-trace-status` tracks it).
 
 ## Live physical captures (2026-08-30 reconciliation)
 
