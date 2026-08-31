@@ -48,6 +48,7 @@ from monitor_controller.workers.common import (
     CurrentTopology,
     WorkerExecution,
     WorkerStartup,
+    display_authority_environment,
     execute_worker,
     install_cooperative_sigterm_handler,
     run_leaf_command,
@@ -223,8 +224,12 @@ class SubprocessPrepareCommands:
         self._leaf_runner = (
             SubprocessPrepareLeafRunner() if leaf_runner is None else leaf_runner
         )
-        # Accepted only so tests can prove inherited variables have no authority.
-        del base_environment
+        # Only validated X authority crosses from the inherited environment
+        # into leaves; everything else is rebuilt from explicit inputs, and
+        # tests prove the other inherited variables have no authority.
+        self._base_environment: Mapping[str, str] = (
+            dict(os.environ) if base_environment is None else dict(base_environment)
+        )
 
     def query(self) -> TextCommandEvidence:
         """Fresh-sample exact X connected/active topology."""
@@ -325,6 +330,10 @@ class SubprocessPrepareCommands:
             "PYTHONNOUSERSITE": "1",
             "XDG_CONFIG_HOME": str(self._home_root / ".config"),
             "XDG_RUNTIME_DIR": runtime,
+            # Preparation leaves reach the X server: set-xfce4-dpi keeps
+            # Xft.dpi current via `xrdb -merge`, which failed the first live
+            # unplug when this environment omitted DISPLAY (dc-2in).
+            **display_authority_environment(self._base_environment, "preparation"),
         }
 
     @contextmanager

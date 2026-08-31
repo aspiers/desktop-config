@@ -628,6 +628,11 @@ def test_production_adapter_captures_only_allowed_exact_leaves_in_temp_home(
     assert _execute(startup_value, plan_store, tree, fake) == 0
     capture = _CaptureLeafRunner()
     home = tmp_path / "harmless-home"
+    # X authority is the one validated pass-through: leaves reach the X
+    # server (xrdb via set-xfce4-dpi), so DISPLAY/XAUTHORITY must arrive —
+    # but only after validation, and nothing else may leak alongside them.
+    xauthority = tmp_path / "Xauthority"
+    xauthority.write_bytes(b"x")
     commands = SubprocessPrepareCommands(
         home_root=home,
         leaf_root=_REPO / "bin",
@@ -636,14 +641,14 @@ def test_production_adapter_captures_only_allowed_exact_leaves_in_temp_home(
         base_environment={
             "BASH_FUNC_xfconf-query%%": "() { touch /tmp/escaped; }",
             "DBUS_SESSION_BUS_ADDRESS": "unix:path=/run/user/test/bus",
-            "DISPLAY": ":attacker",
+            "DISPLAY": ":7",
             "LD_PRELOAD": "forbidden",
             "PATH": "/attacker/bin",
             "PYTHONPATH": "/attacker/python",
             "PYTHONUSERBASE": "/attacker/user-site",
             "RUBY_FUTURE_OPTION": "forbidden",
             "RUBYOPT": "forbidden",
-            "XAUTHORITY": "/attacker/Xauthority",
+            "XAUTHORITY": str(xauthority),
             "XDG_CONFIG_HOME": "/attacker/config",
             "XDG_RUNTIME_DIR": "/run/user/test",
         },
@@ -696,25 +701,52 @@ def test_production_adapter_captures_only_allowed_exact_leaves_in_temp_home(
     for _arguments, _input, environment in capture.calls:
         assert set(environment) == {
             "DBUS_SESSION_BUS_ADDRESS",
+            "DISPLAY",
             "HOME",
             "MONITOR_CONTROLLER_LEAF_BIN",
             "PATH",
             "PYTHONDONTWRITEBYTECODE",
             "PYTHONNOUSERSITE",
+            "XAUTHORITY",
             "XDG_CONFIG_HOME",
             "XDG_RUNTIME_DIR",
         }
         runtime = f"/run/user/{os.getuid()}"
         assert environment["DBUS_SESSION_BUS_ADDRESS"] == f"unix:path={runtime}/bus"
+        assert environment["DISPLAY"] == ":7"
         assert environment["HOME"] == str(home)
         assert environment["PATH"] == "/usr/bin:/bin"
         assert environment["PYTHONDONTWRITEBYTECODE"] == "1"
         assert environment["PYTHONNOUSERSITE"] == "1"
+        assert environment["XAUTHORITY"] == str(xauthority)
         assert environment["XDG_CONFIG_HOME"] == str(home / ".config")
         assert environment["XDG_RUNTIME_DIR"] == runtime
         assert Path(environment["MONITOR_CONTROLLER_LEAF_BIN"]).parent == (
             tmp_path / "work"
         )
+
+
+def test_unsafe_display_refuses_before_any_leaf_runs(tmp_path: Path) -> None:
+    """A hostile DISPLAY must refuse the boundary, not run X-less leaves.
+
+    Running without X access is exactly the silent failure that broke the
+    first live unplug (dc-2in): xrdb dies, preparation fails late, and the
+    desktop is left unprepared. Refusing early names the real problem.
+    """
+    operations = _planned_operations(tmp_path / "plan")
+    capture = _CaptureLeafRunner()
+    commands = SubprocessPrepareCommands(
+        home_root=tmp_path / "home",
+        leaf_root=_REPO / "bin",
+        work_root=tmp_path / "work",
+        leaf_runner=capture,
+        base_environment={"DISPLAY": ":attacker", "PATH": "/usr/bin:/bin"},
+    )
+    dpi_operation = operations[2]
+    assert isinstance(dpi_operation, SetXfceDpi)
+    with pytest.raises(WorkerStartupError, match="one safe DISPLAY"):
+        commands.apply(dpi_operation)
+    assert capture.calls == []
 
 
 def test_dispatcher_binds_preparation_request_to_planning_identity(
@@ -788,6 +820,8 @@ def _primitive_environment(
     home = tmp_path / "home"
     (home / ".config" / "kitty").mkdir(parents=True)
     log = tmp_path / "primitive.log"
+    xauthority = tmp_path / "Xauthority"
+    xauthority.write_bytes(b"x")
     child_pid = tmp_path / "child.pid"
     common = 'printf \'%s %s\\n\' "${0##*/}" "$*" >> ' + shlex.quote(str(log)) + "\n"
     blocking = (
@@ -825,10 +859,12 @@ def _primitive_environment(
     _write_executable(fake_bin / "emacsclient", "#!/bin/sh\n" + common)
     environment = {
         "CHILD_PID": str(child_pid),
+        "DISPLAY": ":9",
         "HOME": str(home),
         "PATH": f"{fake_bin}:/usr/bin:/bin",
         "RUBYLIB": "forbidden",
         "RUBYOPT": "forbidden",
+        "XAUTHORITY": str(xauthority),
         "ZDOTDIR": str(home),
     }
     return environment, log

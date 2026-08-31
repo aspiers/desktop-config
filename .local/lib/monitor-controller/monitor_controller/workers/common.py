@@ -5,7 +5,9 @@ from __future__ import annotations
 import argparse
 import contextlib
 import os
+import re
 import signal
+import stat
 import subprocess
 import tempfile
 import time
@@ -67,6 +69,64 @@ class WorkerCancelled(BaseException):
 def stale(detail: str) -> Never:
     """Refuse a worker boundary whose identity or evidence cannot be proven."""
     raise WorkerStartupError(detail)
+
+
+_DISPLAY_PATTERN = re.compile(r"(?:[A-Za-z0-9_.-]+)?:[0-9]+(?:\.[0-9]+)?")
+
+
+def safe_absolute_path(value: str) -> bool:
+    """Return whether a value is one clean absolute path."""
+    return (
+        bool(value)
+        and not any(character in value for character in "\x00\r\n")
+        and Path(value).is_absolute()
+    )
+
+
+def display_authority_environment(
+    base_environment: Mapping[str, str],
+    role: str,
+) -> dict[str, str]:
+    """Return validated DISPLAY and XAUTHORITY for leaves that reach the X server.
+
+    Extracted from the application worker so preparation leaves get the same
+    guarantees: `xrdb -merge` inside `set-xfce4-dpi` needs X access just as
+    autorandr does, and omitting DISPLAY from the closed preparation
+    environment failed the first live unplug's desktop preparation (dc-2in).
+    """
+    display = base_environment.get("DISPLAY")
+    if not display or _DISPLAY_PATTERN.fullmatch(display) is None:
+        stale(f"{role} requires one safe DISPLAY value")
+    inherited = base_environment.get("XAUTHORITY")
+    if inherited:
+        authority = Path(inherited)
+        value = inherited
+        source = "inherited XAUTHORITY"
+    else:
+        original_home = base_environment.get("HOME")
+        if not original_home or not safe_absolute_path(original_home):
+            stale(f"{role} requires safe HOME for the .Xauthority fallback")
+        try:
+            authority = (Path(original_home) / ".Xauthority").resolve()
+        except OSError as error:
+            stale(f"cannot resolve {role} HOME .Xauthority: {error}")
+        value = str(authority)
+        source = "HOME .Xauthority fallback"
+    if not safe_absolute_path(value):
+        stale(f"{role} {source} must be one absolute path")
+    detail = (
+        f"{role} DISPLAY {display!r} requires a readable regular X11 "
+        f"authority file; {source} is unusable: {authority}"
+    )
+    try:
+        authority_stat = authority.stat()
+        if not stat.S_ISREG(authority_stat.st_mode):
+            stale(detail)
+        with authority.open("rb") as stream:
+            stream.read(1)
+    except OSError as error:
+        stale(f"{detail}: {error}")
+    return {"DISPLAY": display, "XAUTHORITY": value}
 
 
 @dataclass(frozen=True, slots=True)

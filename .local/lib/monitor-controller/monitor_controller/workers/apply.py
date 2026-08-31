@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import contextlib
 import os
-import re
-import stat
 import subprocess
 from collections.abc import Mapping
 from pathlib import Path
@@ -55,6 +53,9 @@ from monitor_controller.workers.common import (
     validate_worker_startup,
 )
 from monitor_controller.workers.common import (
+    display_authority_environment as _display_authority_environment,
+)
+from monitor_controller.workers.common import (
     payload_text as _payload_text,
 )
 from monitor_controller.workers.common import (
@@ -82,7 +83,6 @@ _AUTORANDR_ARGUMENTS_PREFIX = (
     "--load",
 )
 _TRUSTED_PATH: Final = "/usr/bin:/bin"
-_DISPLAY = re.compile(r"(?:[A-Za-z0-9_.-]+)?:[0-9]+(?:\.[0-9]+)?")
 
 
 # Shared bounded result shape; retained under the worker's historical name.
@@ -287,13 +287,10 @@ def isolated_application_environment(
 ) -> dict[str, str]:
     """Build the exact autorandr environment and preserve only X authority."""
     artifact_root = startup.store.artifact_directory(startup.request.action_id)
-    display = base_environment.get("DISPLAY")
-    if not display or _DISPLAY.fullmatch(display) is None:
-        _stale("application requires one safe DISPLAY value")
-    authority = _validated_xauthority(base_environment, display)
+    authority = _display_authority_environment(base_environment, "application")
     profile_directory = artifact_root / "xdg-config" / "autorandr" / action_profile
     values = {
-        "DISPLAY": display,
+        "DISPLAY": authority["DISPLAY"],
         "HOME": str(artifact_root / "home"),
         "LANG": "C.UTF-8",
         "MONITOR_CONTROLLER_AUTORANDR_ACTION_ID": startup.request.action_id.value,
@@ -306,53 +303,8 @@ def isolated_application_environment(
         "XDG_CONFIG_DIRS": str(artifact_root / "xdg-config-dirs"),
         "XDG_CONFIG_HOME": str(artifact_root / "xdg-config"),
     }
-    values["XAUTHORITY"] = authority
+    values["XAUTHORITY"] = authority["XAUTHORITY"]
     return values
-
-
-def _validated_xauthority(
-    base_environment: Mapping[str, str],
-    display: str,
-) -> str:
-    """Resolve and read-check X authority before isolating the child HOME."""
-    inherited = base_environment.get("XAUTHORITY")
-    if inherited:
-        authority = Path(inherited)
-        value = inherited
-        source = "inherited XAUTHORITY"
-    else:
-        original_home = base_environment.get("HOME")
-        if not original_home or not _safe_absolute_path(original_home):
-            _stale("application requires safe HOME for the .Xauthority fallback")
-        try:
-            authority = (Path(original_home) / ".Xauthority").resolve()
-        except OSError as error:
-            _stale(f"cannot resolve application HOME .Xauthority: {error}")
-        value = str(authority)
-        source = "HOME .Xauthority fallback"
-    if not _safe_absolute_path(value):
-        _stale(f"application {source} must be one absolute path")
-    detail = (
-        f"application DISPLAY {display!r} requires a readable regular X11 "
-        f"authority file; {source} is unusable: {authority}"
-    )
-    try:
-        authority_stat = authority.stat()
-        if not stat.S_ISREG(authority_stat.st_mode):
-            _stale(detail)
-        with authority.open("rb") as stream:
-            stream.read(1)
-    except OSError as error:
-        _stale(f"{detail}: {error}")
-    return value
-
-
-def _safe_absolute_path(value: str) -> bool:
-    return (
-        bool(value)
-        and not any(character in value for character in "\x00\r\n")
-        and Path(value).is_absolute()
-    )
 
 
 def _validate_materialized_profile(  # noqa: C901, PLR0912
