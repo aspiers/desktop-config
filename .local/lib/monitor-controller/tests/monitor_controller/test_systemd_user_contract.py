@@ -1309,6 +1309,12 @@ def _contract_unit(*, python: Path, transaction_root: Path) -> str:
         rendered = source_line
         if source_line.startswith("Description="):
             rendered = "Description=Harmless keyed production contract (%I)"
+        elif source_line.startswith("SyslogIdentifier="):
+            # The clone must not masquerade as the production worker in the
+            # journal: a deliberate contract failure tagged monitor-apply
+            # reads as a live crash. journalctl -t monitor-contract-test
+            # isolates these runs; -t monitor-apply now shows only production.
+            rendered = "SyslogIdentifier=monitor-contract-test"
         elif source_line.startswith("ExecStart="):
             lines.extend(
                 (
@@ -1338,6 +1344,7 @@ def _rejected_start_unit() -> str:
         "\n"
         "[Service]\n"
         "Type=oneshot\n"
+        "SyslogIdentifier=monitor-contract-test\n"
         "ExecStart=/usr/bin/true\n"
         "RemainAfterExit=no\n"
     )
@@ -1351,6 +1358,7 @@ def _no_result_unit() -> str:
         "\n"
         "[Service]\n"
         "Type=oneshot\n"
+        "SyslogIdentifier=monitor-contract-test\n"
         "Environment=DISPLAY=\n"
         "Environment=XAUTHORITY=\n"
         "Environment=WAYLAND_DISPLAY=\n"
