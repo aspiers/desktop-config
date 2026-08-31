@@ -4,26 +4,27 @@
 # Pipes `chrome-session-tabs --rofi` lines into rofi-themed -dmenu, then
 # focuses the chosen tab via `chrome-session-tabs --focus-rofi-line`.
 #
-# Optional argument: initial query (substring) pre-filled in rofi.
-# Whitespace-separated tokens act as AND filters (each is a regex);
-# `|` within a token acts as OR alternation.
+# Optional argument: initial regex pre-filled in rofi. A leading `^` anchors
+# the match to the start of the tab title, after rofi's window metadata.
 
 set -euo pipefail
 
 initial_query="${1:-}"
+rofi_filter="$initial_query"
+rofi_matching_args=()
 
 tabs=$(chrome-session-tabs --rofi)
 
 # If the initial query already narrows to a single match, skip rofi and
 # focus directly. Otherwise show rofi for interactive selection.
 if [ -n "$initial_query" ]; then
-    # Match rofi's tokenized regex semantics: split query on whitespace, each
-    # token is a regex, every token must match (AND). `|` works as alternation
-    # within a token (OR).
-    matches="$tabs"
-    for token in $initial_query; do
-        matches=$(printf '%s\n' "$matches" | grep -iE "$token" || true)
-    done
+    # Rofi prefixes each title with window metadata ending in ` -~- `.
+    # Translate a title anchor to that delimiter, and keep regex spaces intact.
+    if [[ $rofi_filter == ^* ]]; then
+        rofi_filter=" -~- ${rofi_filter#^}"
+    fi
+    rofi_matching_args=(-no-tokenize)
+    matches=$(printf '%s\n' "$tabs" | grep -iE -- "$rofi_filter" || true)
     match_count=$(printf '%s\n' "$matches" | grep -c . || true)
     if [ "$match_count" = "1" ]; then
         exec chrome-session-tabs --focus-rofi-line "$matches"
@@ -36,10 +37,11 @@ choice=$(
             -i \
             -p 'Tab' \
             -matching regex \
+            "${rofi_matching_args[@]}" \
             -theme-str 'window {width: 90%;} listview {lines: 30; fixed-height: false;}' \
             -kb-secondary-copy '' \
             -kb-cancel 'Escape,Control+c,Control+g' \
-            -filter "$initial_query"
+            -filter "$rofi_filter"
 )
 
 [ -n "$choice" ] || exit 1

@@ -1,0 +1,117 @@
+#!/bin/bash
+
+set -euo pipefail
+
+repo=$(cd "$(dirname "$0")/.." && pwd)
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+mkdir -p "$tmp/bin" "$tmp/state"
+
+cat > "$tmp/bin/chrome-session-tabs" <<'EOF'
+#!/bin/bash
+case "$1" in
+    --rofi)
+        cat "$CHROME_SESSION_ROFI_TEST_TABS"
+        ;;
+    --focus-rofi-line)
+        printf '%s\n' "$2" > "$CHROME_SESSION_ROFI_TEST_FOCUS"
+        ;;
+    *)
+        echo "unexpected chrome-session-tabs argument: $1" >&2
+        exit 2
+        ;;
+esac
+EOF
+
+cat > "$tmp/bin/rofi-themed" <<'EOF'
+#!/bin/bash
+printf '%s\0' "$@" > "$CHROME_SESSION_ROFI_TEST_ROFI_ARGS"
+cat > "$CHROME_SESSION_ROFI_TEST_ROFI_INPUT"
+printf '%s\n' "$CHROME_SESSION_ROFI_TEST_ROFI_CHOICE"
+EOF
+chmod +x "$tmp/bin/chrome-session-tabs" "$tmp/bin/rofi-themed"
+
+export PATH="$tmp/bin:$PATH"
+export CHROME_SESSION_ROFI_TEST_TABS="$tmp/tabs"
+export CHROME_SESSION_ROFI_TEST_FOCUS="$tmp/state/focus"
+export CHROME_SESSION_ROFI_TEST_ROFI_ARGS="$tmp/state/rofi-args"
+export CHROME_SESSION_ROFI_TEST_ROFI_INPUT="$tmp/state/rofi-input"
+export CHROME_SESSION_ROFI_TEST_ROFI_CHOICE='fallback choice'
+
+query='^octobox( \([0-9]+\))? \| '
+expected_rofi_filter=' -~- octobox( \([0-9]+\))? \| '
+printf '%s\n' \
+    'personal /       /  6 -~- Octobox (42) | Inbox' \
+    'work     / repos /  3 -~- GitHub | Pull requests' \
+    > "$CHROME_SESSION_ROFI_TEST_TABS"
+
+"$repo/bin/chrome-session-rofi" "$query" > "$tmp/stdout" 2> "$tmp/stderr"
+
+if [[ -s $tmp/stderr ]]; then
+    echo 'not ok - valid regex produced an error:' >&2
+    cat "$tmp/stderr" >&2
+    exit 1
+fi
+if [[ -e $CHROME_SESSION_ROFI_TEST_ROFI_ARGS ]]; then
+    echo 'not ok - rofi opened instead of focusing the sole matching tab' >&2
+    exit 1
+fi
+if ! grep -Fxq 'personal /       /  6 -~- Octobox (42) | Inbox' \
+    "$CHROME_SESSION_ROFI_TEST_FOCUS"; then
+    echo 'not ok - sole regex match was not focused' >&2
+    exit 1
+fi
+
+echo 'ok - regex containing spaces focuses its sole match'
+
+printf '%s\n' \
+    'personal /       /  6 -~- Octobox (42) | Inbox' \
+    'work     / repos /  3 -~- Octobox (7) | Notifications' \
+    > "$CHROME_SESSION_ROFI_TEST_TABS"
+export CHROME_SESSION_ROFI_TEST_ROFI_CHOICE='work     / repos /  3 -~- Octobox (7) | Notifications'
+rm -f "$CHROME_SESSION_ROFI_TEST_ROFI_ARGS"
+
+"$repo/bin/chrome-session-rofi" "$query"
+
+mapfile -d '' -t rofi_args < "$CHROME_SESSION_ROFI_TEST_ROFI_ARGS"
+for ((i = 0; i < ${#rofi_args[@]}; i++)); do
+    if [[ ${rofi_args[i]} == -filter &&
+          ${rofi_args[i + 1]:-} == "$expected_rofi_filter" ]]; then
+        translated_filter_supplied=1
+    elif [[ ${rofi_args[i]} == -no-tokenize ]]; then
+        tokenization_disabled=1
+    fi
+done
+if [[ ${translated_filter_supplied:-0} != 1 ]]; then
+    echo 'not ok - rofi did not receive a title-anchored regex filter' >&2
+    exit 1
+fi
+if [[ ${tokenization_disabled:-0} != 1 ]]; then
+    echo 'not ok - rofi tokenization would split the regex at its spaces' >&2
+    exit 1
+fi
+if ! grep -Fxq "$CHROME_SESSION_ROFI_TEST_ROFI_CHOICE" \
+    "$CHROME_SESSION_ROFI_TEST_FOCUS"; then
+    echo 'not ok - selected rofi entry was not focused' >&2
+    exit 1
+fi
+
+echo 'ok - multiple matches open rofi with a title-anchored regex'
+
+printf '%s\n' 'GitHub | Pull requests' > "$CHROME_SESSION_ROFI_TEST_TABS"
+export CHROME_SESSION_ROFI_TEST_ROFI_CHOICE='GitHub | Pull requests'
+rm -f "$CHROME_SESSION_ROFI_TEST_ROFI_ARGS"
+
+"$repo/bin/chrome-session-rofi" "$query"
+
+if [[ ! -e $CHROME_SESSION_ROFI_TEST_ROFI_ARGS ]]; then
+    echo 'not ok - rofi did not open when the regex had no matches' >&2
+    exit 1
+fi
+if ! grep -Fxq "$CHROME_SESSION_ROFI_TEST_ROFI_CHOICE" \
+    "$CHROME_SESSION_ROFI_TEST_FOCUS"; then
+    echo 'not ok - fallback rofi selection was not focused' >&2
+    exit 1
+fi
+
+echo 'ok - no matches open rofi for interactive fallback'
