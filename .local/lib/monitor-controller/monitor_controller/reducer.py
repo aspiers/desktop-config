@@ -409,6 +409,24 @@ def _admit_probe(state: State, observation: CanonicalObservation) -> Decision:
     )
 
 
+def _slow_retry_due(state: State) -> bool:
+    """Return whether a capped WAIT_SLOW tick may repeat an attempted key.
+
+    Attempt keys guarantee at most one application per unchanged evidence,
+    but some hardware regresses to byte-identical evidence: the Samsung G75F
+    drops its DisplayPort link after a successful load, so the fresh
+    observation hashes to an already-attempted key and strict at-most-once
+    starved the display forever (dc-v0r). monitor-watcher-ng resolved this
+    monitor by repeated applications. Once the fast budget is spent and slow
+    backoff is capped, each 30s tick may therefore re-admit one application:
+    still bounded, no longer permanent starvation.
+    """
+    return (
+        state.phase is ControllerPhase.WAIT_SLOW
+        and state.backoff_index >= len(SLOW_DELAYS_MS) - 1
+    )
+
+
 def _admit_application(
     state: State, observation: CanonicalObservation, target: ProfileMatch
 ) -> Decision:
@@ -417,7 +435,7 @@ def _admit_application(
     )
     candidate = _candidate(state, observation, target)
     state = replace(state, candidate=candidate, baseline_adoption=False)
-    if key in state.attempted_application_keys:
+    if key in state.attempted_application_keys and not _slow_retry_due(state):
         return _enter_wait(state, observation.observed_at_ms)
     state, action_id = _allocate_action(state, ActionKind.APPLICATION)
     action = ApplicationAction(

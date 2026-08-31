@@ -25,6 +25,7 @@ from monitor_controller.model import (
     BootChanged,
     BootId,
     ControllerInstanceId,
+    ControllerPhase,
     ControllerStarted,
     Decision,
     DispatchRejected,
@@ -58,7 +59,11 @@ from monitor_controller.model import (
     WorkerTimedOut,
     WorkerUnit,
 )
-from monitor_controller.reducer import PROFILE_STABILITY_MS, reduce
+from monitor_controller.reducer import (
+    PROFILE_STABILITY_MS,
+    SLOW_DELAYS_MS,
+    reduce,
+)
 from monitor_controller.simulation.replay import (
     ReplayStep,
     ReplayTrace,
@@ -542,3 +547,55 @@ TestReducerStateMachine = cast(
     "type[unittest.TestCase]",
     ReducerStateMachine.TestCase,  # pyright: ignore[reportUnknownMemberType]
 )
+
+
+def test_capped_wait_slow_tick_repeats_an_attempted_application() -> None:
+    """Evidence that regresses to an attempted key must not starve forever.
+
+    The Samsung G75F drops its DisplayPort link after a successful load, so
+    the next observation hashes to an already-attempted ApplicationAttemptKey.
+    Strict at-most-once then blocked every retry within the epoch and the
+    monitor stayed dark until manual autorandr kicks (dc-v0r). Once slow
+    backoff is capped, each tick may re-admit one application.
+    """
+    state = _initial_state()
+    now = 1
+
+    def observe(advance: int) -> Decision:
+        nonlocal now, state
+        now += advance
+        data = _observation_data(
+            state,
+            now_ms=now,
+            shape="external_eligible",
+            changed_token=False,
+        )
+        data["key"] = "regressed-evidence"
+        decision = reduce(state, event_from_data(data, state))
+        assert_controller_invariants(decision.state)
+        state = decision.state
+        return decision
+
+    first = observe(0)
+    assert any(isinstance(effect, ApplyProfile) for effect in first.effects)
+    action = state.application
+    assert action is not None
+    for event in (
+        _dispatch_event(state, action, now + 1),
+        _finish_event(state, action, now + 2, WorkerOutcome.SUCCEEDED),
+    ):
+        state = reduce(state, event).state
+    now += 2
+
+    backoffs: list[tuple[ControllerPhase, int]] = []
+    while state.backoff_index < len(SLOW_DELAYS_MS) - 1 or state.phase is not (
+        ControllerPhase.WAIT_SLOW
+    ):
+        decision = observe(100_000)
+        assert not any(isinstance(e, ApplyProfile) for e in decision.effects)
+        backoffs.append((state.phase, state.backoff_index))
+        assert len(backoffs) < 10, backoffs
+
+    retried = observe(100_000)
+    assert any(isinstance(effect, ApplyProfile) for effect in retried.effects)
+    assert state.phase is ControllerPhase.APPLY_PENDING

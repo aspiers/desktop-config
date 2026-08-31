@@ -270,7 +270,13 @@ transition:
    erase an action before it executes or mark an unexecuted action complete.
 4. **No duplicate probe or application for unchanged evidence.** Probe each
    `(physical_epoch, base_identity_profile, observation_key)` and apply each
-   `(physical_epoch, target, observation_key)` at most once.
+   `(physical_epoch, target, observation_key)` at most once — except that once
+   slow backoff is capped, each `WAIT_SLOW` tick may re-admit one already-
+   attempted application. Some hardware (the Samsung G75F) drops its
+   DisplayPort link after a successful load, regressing to byte-identical
+   evidence; strict at-most-once then starves the display for the whole
+   epoch, which deadlocked the first live replug (`dc-v0r`). The retry stays
+   bounded at one application per capped slow tick.
 5. **EDID absence means uncertainty, not unplug.** It cannot select or finalize
    the laptop-only profile.
 6. **Continuous final proof.** Exact connected and active topology, current
@@ -338,6 +344,7 @@ prevents action until re-probed.
 | `DISCOVER_FAST` | Application key already attempted | Wait for changed evidence | `DISCOVER_FAST` or `WAIT_SLOW` |
 | `DISCOVER_FAST` | Aggressive deadline reached unresolved | Preserve intent; begin slow backoff | `WAIT_SLOW` |
 | `WAIT_SLOW` | Same unresolved observation | Increase capped backoff | `WAIT_SLOW` |
+| `WAIT_SLOW` | Capped tick; eligible target's attempt key already attempted | Re-admit one bounded application (`dc-v0r`) | `APPLY_PENDING` |
 | `WAIT_SLOW` | Evidence changes | Reset fast backoff, retain epoch/candidate as valid | `DISCOVER_FAST` |
 | `WAIT_SLOW` | A unique probe candidate appears | Admit safe activation | `PROBE_PENDING` |
 | `WAIT_SLOW` | Candidate becomes eligible but is not exact/current | Persist durable application admission | `APPLY_PENDING` |
