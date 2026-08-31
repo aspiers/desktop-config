@@ -265,6 +265,30 @@ def test_probe_is_derived_only_from_full_safe_composite_evidence(
     assert observation.probe_candidate.preferred_mode == "5120x2160"
 
 
+def test_plug_transition_with_stale_current_profile_is_valid(
+    tmp_path: Path,
+) -> None:
+    """A current-but-no-longer-detected profile is a transition, not corruption.
+
+    On every plug the old profile stays current until the new one is applied,
+    and under active authority the applier is this controller. Treating that
+    state as inconsistent evidence deadlocked the first live replug: every
+    observation was invalid, so the reducer could never dispatch the apply
+    that would have made observations valid again (dc-733).
+    """
+    root, commands, profiles = load_manifest(tmp_path, "plug-transition")
+
+    observation = coordinator(
+        RootedSysfsReader(root), _FixtureRunner(commands), profiles
+    ).observe()
+
+    assert observation.valid
+    assert observation.current_profiles == ("celtic",)
+    assert observation.exact_profile is None
+    assert observation.probe_candidate is not None
+    assert observation.probe_candidate.profile == "celtic+Samsung-Odyssey-G75F"
+
+
 def test_generation_change_fences_all_authorizing_derivations(tmp_path: Path) -> None:
     root, commands, profiles = load_manifest(tmp_path, "exact-aoc")
     generation = _FakeGeneration()

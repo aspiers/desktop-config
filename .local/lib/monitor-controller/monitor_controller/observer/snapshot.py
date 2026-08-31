@@ -462,10 +462,17 @@ def _derive_facts(
     )
     raw = _raw_evidence(begin_drm, drm, autorandr, xrandr, profiles)
     known_profiles = {item.name for item in profiles}
+    # Only an *unknown* profile name is corruption. A current profile that is
+    # no longer detected is the defining state of every plug/unplug
+    # transition — the old config stays current until the new profile is
+    # applied, and under active authority the applier is this controller, so
+    # treating that as invalid evidence deadlocked the first live replug
+    # (dc-733). Torn reads are already excluded by event-generation fencing
+    # and begin/end DRM equality.
     profile_inconsistent = bool(
         (set(autorandr.detected_profiles) | set(autorandr.current_profiles))
         - known_profiles
-    ) or not set(autorandr.current_profiles) <= set(autorandr.detected_profiles)
+    )
     topology_inconsistent = set(kernel_connected) != set(x_connected)
     fingerprint_inconsistent = {item.output for item in autorandr.fingerprints} != set(
         x_connected
