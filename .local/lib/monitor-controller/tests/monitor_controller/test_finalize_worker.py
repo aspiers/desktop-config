@@ -17,6 +17,7 @@ from monitor_controller.desktop.layout import DisplayScreenSnapshot
 from monitor_controller.desktop.plan_codec import (
     AtomicPlanStore,
     DesktopPlanBundle,
+    KeyboardDisposition,
     PlannedTopology,
     hash_plan_bundle,
 )
@@ -68,9 +69,11 @@ from monitor_controller.workers.common import (
     write_worker_result,
 )
 from monitor_controller.workers.finalize import (
+    ADVANTAGE_360_ADDRESS,
     ApplyFluxboxConfiguration,
     ApplyKeyboardIntent,
     ApplyWindowLayout,
+    BluetoothctlConnectionProbe,
     CaptureTrayDiagnostics,
     DeferredCancellation,
     FinalizationFence,
@@ -616,6 +619,7 @@ def test_production_adapter_uses_only_exact_leaves_and_separate_units(
         work_root=tmp_path / "work",
         leaf_runner=capture,
         tray_probe=None,
+        keyboard_probe=_FakeKeyboardProbe(verdict=True),
         base_environment={
             "DISPLAY": ":harmless",
             "HOME": "/attacker",
@@ -667,3 +671,105 @@ def test_production_adapter_uses_only_exact_leaves_and_separate_units(
         assert "LD_PRELOAD" not in environment
         assert "PYTHONPATH" not in environment
     assert startup.request.action_kind is ActionKind.FINALIZATION
+
+
+class _FakeKeyboardProbe:
+    """Injectable connection verdict, recording probed addresses."""
+
+    def __init__(self, *, verdict: bool | None) -> None:
+        self.verdict = verdict
+        self.addresses: list[str] = []
+
+    def connected(self, address: str) -> bool | None:
+        self.addresses.append(address)
+        return self.verdict
+
+
+def _keyboard_commands(
+    tmp_path: Path,
+    *,
+    verdict: bool | None,
+) -> tuple[SubprocessFinalizeCommands, _CaptureRunner, _FakeKeyboardProbe]:
+    capture = _CaptureRunner()
+    probe = _FakeKeyboardProbe(verdict=verdict)
+    commands = SubprocessFinalizeCommands(
+        home_root=tmp_path / "home",
+        leaf_root=_REPO / "bin",
+        work_root=tmp_path / "work",
+        leaf_runner=capture,
+        tray_probe=None,
+        keyboard_probe=probe,
+        base_environment={
+            "DISPLAY": ":harmless",
+            "XDG_RUNTIME_DIR": str(tmp_path / "runtime"),
+        },
+    )
+    return commands, capture, probe
+
+
+@pytest.mark.parametrize(
+    ("disposition", "verdict", "expected_command"),
+    [
+        (KeyboardDisposition.DISCONNECT_ADVANTAGE_360, True, "disconnect"),
+        (KeyboardDisposition.DISCONNECT_ADVANTAGE_360, False, None),
+        (KeyboardDisposition.DISCONNECT_ADVANTAGE_360, None, None),
+        (KeyboardDisposition.CONNECT_ADVANTAGE_360, True, None),
+        (KeyboardDisposition.CONNECT_ADVANTAGE_360, False, "connect"),
+        (KeyboardDisposition.CONNECT_ADVANTAGE_360, None, None),
+    ],
+)
+def test_keyboard_intent_converges_instead_of_replaying_commands(
+    tmp_path: Path,
+    disposition: KeyboardDisposition,
+    verdict: bool | None,
+    expected_command: str | None,
+) -> None:
+    """An end state that already holds is success, not a bluetoothctl failure.
+
+    `bluetoothctl disconnect` exits 1 for a device that is not connected,
+    which failed the first live unplug's finalization (dc-2in); a device
+    bluez does not know is a no-op in both directions, matching the legacy
+    best-effort semantics.
+    """
+    commands, capture, probe = _keyboard_commands(tmp_path, verdict=verdict)
+    result = commands.apply(ApplyKeyboardIntent(disposition))
+    assert result.exit_status == 0
+    assert probe.addresses == [ADVANTAGE_360_ADDRESS]
+    if expected_command is None:
+        assert capture.calls == []
+    else:
+        assert [call for call, _environment in capture.calls] == [
+            ("bluetoothctl", expected_command, ADVANTAGE_360_ADDRESS)
+        ]
+
+
+def test_unchanged_keyboard_intent_never_probes(tmp_path: Path) -> None:
+    """No planned change means no bluez traffic at all."""
+    commands, capture, probe = _keyboard_commands(tmp_path, verdict=True)
+    result = commands.apply(ApplyKeyboardIntent(KeyboardDisposition.UNCHANGED))
+    assert result.exit_status == 0
+    assert probe.addresses == []
+    assert capture.calls == []
+
+
+def test_bluetoothctl_probe_parses_connection_state(tmp_path: Path) -> None:
+    """The production probe reads real bluetoothctl output shapes."""
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    executable = fake_bin / "bluetoothctl"
+    environment = {"PATH": f"{fake_bin}:/usr/bin:/bin"}
+    probe = BluetoothctlConnectionProbe(environment=environment)
+
+    executable.write_text(
+        "#!/bin/sh\nprintf 'Device X\\n\\tConnected: yes\\n'\n"
+    )
+    executable.chmod(0o700)
+    assert probe.connected("AA:BB") is True
+
+    executable.write_text(
+        "#!/bin/sh\nprintf 'Device X\\n\\tConnected: no\\n'\n"
+    )
+    assert probe.connected("AA:BB") is False
+
+    executable.write_text("#!/bin/sh\necho 'Device AA:BB not available' >&2\nexit 1\n")
+    assert probe.connected("AA:BB") is None

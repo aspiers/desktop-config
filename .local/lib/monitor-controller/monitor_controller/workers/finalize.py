@@ -9,6 +9,7 @@ import re
 import signal
 import stat
 import subprocess
+import sys
 import tempfile
 import time
 from collections.abc import Mapping
@@ -89,7 +90,7 @@ _PREPARATION_PAYLOAD_FIELDS: Final = frozenset(
     {"allow_temporary_edid_absence", "planning_action_id"}
 )
 _TRUSTED_PATH: Final = "/usr/bin:/bin"
-_ADVANTAGE_360_ADDRESS: Final = "DC:28:CC:C6:1E:C5"
+ADVANTAGE_360_ADDRESS: Final = "DC:28:CC:C6:1E:C5"
 _ACTIVE_UNIT_STATES: Final = frozenset(
     {"active", "activating", "deactivating", "reloading"}
 )
@@ -217,6 +218,53 @@ class SubprocessFinalizeLeafRunner:
         )
 
 
+class KeyboardConnectionProbe(Protocol):
+    """Read-only query for whether the planned keyboard is connected."""
+
+    def connected(self, address: str) -> bool | None:
+        """Return the connection state, or None when bluez does not know it."""
+        ...
+
+
+@final
+class BluetoothctlConnectionProbe:
+    """Probe device connection via bounded read-only ``bluetoothctl info``."""
+
+    def __init__(
+        self,
+        *,
+        environment: Mapping[str, str],
+        timeout_seconds: float = 10.0,
+    ) -> None:
+        """Bind the closed leaf environment and a bounded timeout."""
+        self._environment = dict(environment)
+        self._timeout_seconds = timeout_seconds
+
+    def connected(self, address: str) -> bool | None:
+        """Parse ``Connected: yes/no``; None for unknown devices or probe failure."""
+        try:
+            completed = subprocess.run(  # noqa: S603 - fixed argv, no shell
+                ("bluetoothctl", "info", address),  # noqa: S607 - PATH-resolved
+                capture_output=True,
+                text=True,
+                timeout=self._timeout_seconds,
+                check=False,
+                env=self._environment,
+                start_new_session=True,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            return None
+        if completed.returncode != 0:
+            return None
+        for line in completed.stdout.splitlines():
+            stripped = line.strip()
+            if stripped == "Connected: yes":
+                return True
+            if stripped == "Connected: no":
+                return False
+        return None
+
+
 @final
 class SubprocessFinalizeCommands:
     """Production adapter for the seven closed disruptive plan operations."""
@@ -231,6 +279,7 @@ class SubprocessFinalizeCommands:
         leaf_runner: FinalizeLeafRunner | None = None,
         tray_probe: TrayProbe | None = None,
         base_environment: Mapping[str, str] | None = None,
+        keyboard_probe: KeyboardConnectionProbe | None = None,
     ) -> None:
         """Bind explicit home, leaf, work, evidence, command, and tray inputs."""
         for name, path in (
@@ -254,6 +303,11 @@ class SubprocessFinalizeCommands:
             TrayProbe(display=self._environment.get("DISPLAY"))
             if tray_probe is None
             else tray_probe
+        )
+        self._keyboard_probe = (
+            BluetoothctlConnectionProbe(environment=self._environment)
+            if keyboard_probe is None
+            else keyboard_probe
         )
 
     def query(self) -> TextCommandEvidence:
@@ -287,14 +341,7 @@ class SubprocessFinalizeCommands:
             )
             return self._run(("fluxbox-remote", "Reconfigure"))
         if isinstance(operation, ApplyKeyboardIntent):
-            if operation.disposition is KeyboardDisposition.UNCHANGED:
-                return FinalizeCommandResult(0)
-            command = (
-                "connect"
-                if operation.disposition is KeyboardDisposition.CONNECT_ADVANTAGE_360
-                else "disconnect"
-            )
-            return self._run(("bluetoothctl", command, _ADVANTAGE_360_ADDRESS))
+            return self._apply_keyboard_intent(operation)
         if isinstance(operation, ApplyWindowLayout):
             payload = self._private_temporary_file("window-actions-", operation.content)
             try:
@@ -329,6 +376,37 @@ class SubprocessFinalizeCommands:
 
     def _run(self, arguments: tuple[str, ...]) -> FinalizeCommandResult:
         return self._leaf_runner.run(arguments, environment=self._environment)
+
+    def _apply_keyboard_intent(
+        self,
+        operation: ApplyKeyboardIntent,
+    ) -> FinalizeCommandResult:
+        """Converge on the planned keyboard state instead of replaying commands.
+
+        The intent describes an end state, so a state that already holds is
+        success: ``bluetoothctl disconnect`` exits 1 for a device that is not
+        connected, which failed the first live unplug's finalization (dc-2in).
+        A device bluez does not know at all is also a no-op in both
+        directions — the legacy pipeline ran this best-effort, and failing
+        forever over a missing pairing would wedge every finalization.
+        """
+        if operation.disposition is KeyboardDisposition.UNCHANGED:
+            return FinalizeCommandResult(0)
+        want_connected = (
+            operation.disposition is KeyboardDisposition.CONNECT_ADVANTAGE_360
+        )
+        connected = self._keyboard_probe.connected(ADVANTAGE_360_ADDRESS)
+        if connected is None:
+            print(
+                "finalize: keyboard intent skipped: bluez does not know "
+                f"device {ADVANTAGE_360_ADDRESS}",
+                file=sys.stderr,
+            )
+            return FinalizeCommandResult(0)
+        if connected == want_connected:
+            return FinalizeCommandResult(0)
+        command = "connect" if want_connected else "disconnect"
+        return self._run(("bluetoothctl", command, ADVANTAGE_360_ADDRESS))
 
     def _private_temporary_file(self, prefix: str, content: bytes) -> Path:
         self._work_root.mkdir(mode=0o700, parents=True, exist_ok=True)
