@@ -6,7 +6,6 @@ import re
 from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
-from monitor_controller.observer.autorandr import fingerprint_matches
 from monitor_controller.observer.drm import (
     ConnectorKind,
     DrmConnector,
@@ -21,7 +20,7 @@ EDID_BASE_BYTES = 128
 EDID_BASE_HEX_CHARS = EDID_BASE_BYTES * 2
 
 
-def validate_noncontradictory_edids(  # noqa: C901 - one closed evidence policy
+def validate_noncontradictory_edids(
     patterns: Mapping[str, str],
     connectors: tuple[DrmConnector, ...],
     topology: CanonicalTopologyEvidence,
@@ -58,17 +57,17 @@ def validate_noncontradictory_edids(  # noqa: C901 - one closed evidence policy
             _stale("fresh connector base identity cannot be proved")
         value = raw.hex()
         pattern = patterns[live_output]
+        # The checksum-valid base block (manufacturer, product, serial, base
+        # checksum) is the complete identity proof. Extension blocks carry
+        # audio/HDR metadata, not identity, and are unstable on real
+        # hardware: the Samsung G75F serves truncated/garbage extensions at
+        # link train, X snapshots that into its EDID property, and saved
+        # fingerprints inherit the dirt — so requiring the full fingerprint
+        # to match a healthy fresh read vetoed every admitted preparation
+        # while autorandr itself kept matching (dc-bla).
         prove_fixed_saved_base(pattern, value)
         proved_outputs.add(live_output)
         live_bases.append(raw[:EDID_BASE_BYTES])
-        if not parsed.fully_ready:
-            continue
-        try:
-            matches = fingerprint_matches(pattern, value)
-        except ValueError as error:
-            _stale(f"staged setup fingerprint is invalid: {error}")
-        if not matches:
-            _stale("fresh complete connector identity contradicts admitted mapping")
     if proved_outputs | temporarily_absent != set(patterns):
         _stale("fresh identity evidence does not cover admitted output mapping")
     if len(live_bases) != len(set(live_bases)):
