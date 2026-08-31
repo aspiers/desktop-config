@@ -5,6 +5,7 @@ PartOf=fluxbox-session.target
 After=fluxbox-session.target
 
 [Service]
+SyslogIdentifier=monitor-tray-diagnostics
 Type=oneshot
 Environment=HOME=%h
 Environment=PATH=/usr/bin:/bin

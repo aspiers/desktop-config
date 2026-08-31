@@ -3,6 +3,7 @@ Description=Keyed bounded monitor activation probe (%I)
 CollectMode=inactive-or-failed
 
 [Service]
+SyslogIdentifier=monitor-probe
 Type=oneshot
 Environment=PATH=/usr/bin:/bin
 Environment=PYTHONUNBUFFERED=1

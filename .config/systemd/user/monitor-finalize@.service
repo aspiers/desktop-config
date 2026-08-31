@@ -3,6 +3,7 @@ Description=Keyed disruptive monitor desktop finalization (%I)
 CollectMode=inactive-or-failed
 
 [Service]
+SyslogIdentifier=monitor-finalize
 Type=oneshot
 Environment=HOME=%h
 Environment=PATH=/usr/bin:/bin

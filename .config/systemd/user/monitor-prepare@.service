@@ -3,6 +3,7 @@ Description=Keyed cancellable monitor desktop preparation (%I)
 CollectMode=inactive-or-failed
 
 [Service]
+SyslogIdentifier=monitor-prepare
 Type=oneshot
 Environment=PATH=/usr/bin:/bin
 Environment=PYTHONUNBUFFERED=1

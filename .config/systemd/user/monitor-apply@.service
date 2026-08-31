@@ -3,6 +3,7 @@ Description=Keyed explicit monitor profile application (%I)
 CollectMode=inactive-or-failed
 
 [Service]
+SyslogIdentifier=monitor-apply
 Type=oneshot
 Environment=HOME=%h
 Environment=PATH=/usr/bin:/bin
