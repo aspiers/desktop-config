@@ -9,7 +9,6 @@ import re
 import signal
 import stat
 import subprocess
-import sys
 import tempfile
 import time
 from collections.abc import Mapping
@@ -45,6 +44,7 @@ from monitor_controller.runtime.commands import (
     CommandRequest,
     CommandRunner,
 )
+from monitor_controller.runtime.journal import service_logger
 from monitor_controller.runtime.systemd import escape_unit_instance
 from monitor_controller.runtime.transactions import (
     BoundRecordKind,
@@ -76,6 +76,8 @@ from monitor_controller.workers.desktop_guard import (
 )
 
 FINALIZATION_PROOF_MS: Final = 10_000
+_JOURNAL = service_logger("monitor_controller.journal")
+
 FINALIZE_COMMAND_TIMEOUT_SECONDS: Final = 120.0
 TRAY_TIMEOUT_EXIT_STATUS: Final = 69
 _XRANDR_QUERY = ("xrandr", "--query")
@@ -403,10 +405,9 @@ class SubprocessFinalizeCommands:
         )
         connected = self._keyboard_probe.connected(ADVANTAGE_360_ADDRESS)
         if connected is None:
-            print(
+            _JOURNAL.warning(
                 "keyboard intent skipped: bluez does not know "
-                f"device {ADVANTAGE_360_ADDRESS}",
-                file=sys.stderr,
+                f"device {ADVANTAGE_360_ADDRESS}"
             )
             return FinalizeCommandResult(0)
         if connected == want_connected:

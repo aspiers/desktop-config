@@ -75,6 +75,7 @@ from monitor_controller.runtime.controller import (
     ObservationAdapter,
     SerializedController,
 )
+from monitor_controller.runtime.journal import service_logger
 from monitor_controller.runtime.persistence import AtomicStateStore, StateNamespace
 from monitor_controller.runtime.recovery import (
     WorkerNamespaceScanner,
@@ -133,6 +134,8 @@ ACTIVE_OBSERVATION_TIMEOUT_SECONDS = SHADOW_OBSERVATION_TIMEOUT_SECONDS
 # authority. Deliberately absent from the stowed unit file: stowing, enabling,
 # and starting the service must all be insufficient on their own, so that
 # authority is only ever taken by someone who meant to take it.
+_JOURNAL = service_logger("monitor_controller.journal")
+
 CUTOVER_AUTHORIZATION_VARIABLE = "MONITOR_CONTROLLER_CUTOVER_AUTHORIZED"
 CUTOVER_AUTHORIZATION_VALUE = "i-have-run-preflight"
 
@@ -753,10 +756,9 @@ def build_active_composition(
     def _postswitch_received(notification: PostswitchNotification) -> None:
         # The journal line is the diagnostic record; the wake-up's fresh
         # observation carries everything the reducer acts on.
-        print(
+        _JOURNAL.info(
             "manual autorandr change reported by "
-            f"postswitch: profile {notification.profile}",
-            file=sys.stderr,
+            f"postswitch: profile {notification.profile}"
         )
 
     postswitch_monitor = PostswitchNotificationMonitor(
@@ -879,11 +881,11 @@ def main() -> int:
     try:
         _require_active_namespace(os.environ)
     except ActiveStartupError as error:
-        print(str(error), file=sys.stderr)
+        _JOURNAL.error(str(error))
         return 1
     unauthorized = cutover_authorization_error(os.environ)
     if unauthorized is not None:
-        print(unauthorized, file=sys.stderr)
+        _JOURNAL.error(unauthorized)
         return 1
     if DRY_RUN_ARGUMENT in sys.argv[1:]:
         return dry_run(os.environ)
@@ -898,16 +900,15 @@ def main() -> int:
                 # starts into RECOVERING and dispatches nothing until a fresh
                 # observation resolves it. Exiting instead would leave the
                 # desktop with no manager at all, which is strictly worse.
-                print(
+                _JOURNAL.warning(
                     "starting without dispatch authority: "
-                    + ("; ".join(recovery.reasons) or "recovery denied authority"),
-                    file=sys.stderr,
+                    + ("; ".join(recovery.reasons) or "recovery denied authority")
                 )
             asyncio.run(run_active(composition))
     except KeyboardInterrupt:
         return 0
     except Exception as error:  # noqa: BLE001 - service composition boundary
-        print(str(error), file=sys.stderr)
+        _JOURNAL.error(str(error))
         return 1
     return 0
 

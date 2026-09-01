@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import sys
 from collections.abc import Callable
 from typing import Protocol, cast
 
@@ -72,6 +71,7 @@ from monitor_controller.runtime.dispatcher import (
     WorkerCompletion,
     WorkerRequestContext,
 )
+from monitor_controller.runtime.journal import service_logger
 from monitor_controller.runtime.scheduler import DeadlineScheduler, SchedulerClock
 from monitor_controller.runtime.transactions import ExpectedTopology
 
@@ -79,6 +79,8 @@ DEFAULT_PLANNING_TIMEOUT_SECONDS = 30.0
 DEFAULT_ADAPTER_TIMEOUT_SECONDS = 10.0
 WORKER_STATUS_POLL_MS = 1_000
 
+
+_JOURNAL = service_logger("monitor_controller.journal")
 
 class RuntimeAuthorityError(RuntimeError):
     """Raised when more than one asyncio task tries to consume controller events."""
@@ -390,10 +392,7 @@ class SerializedController:
 
     @staticmethod
     def _journal(message: str) -> None:
-        # journald already attributes lines via SyslogIdentifier; a
-        # repeated in-message prefix made every line stutter
-        # ("monitor-controller[pid]: monitor-controller: ...").
-        print(message, file=sys.stderr)
+        _JOURNAL.info(message)
 
     @staticmethod
     def _external_topology(state: State) -> tuple[object, ...] | None:
@@ -451,12 +450,11 @@ class SerializedController:
                 f" (base identities: {', '.join(bases) if bases else 'none'})"
             )
         candidate = state.candidate.profile if state.candidate is not None else None
-        print(
+        _JOURNAL.info(
             f"phase {prior_state.phase.value} -> "
             f"{state.phase.value}"
             f" (candidate {candidate})"
-            f"{detail}",
-            file=sys.stderr,
+            f"{detail}"
         )
 
     async def _process_event(
