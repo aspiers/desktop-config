@@ -997,6 +997,18 @@ def _observe(state: State, event: ObservationCompleted) -> Decision:
         ),
         event_generation=max(state.event_generation, observation.event_generation),
     )
+    # Enforce the no-laptop-fallback invariant at the one place observations
+    # are recorded, rather than in every downstream branch: external hardware
+    # evidence — valid or not — revokes an internal-only candidate. The
+    # property machine found two distinct branches (preparation stop, epoch
+    # transition with an in-flight mutator) which each kept a laptop
+    # candidate standing against a connected external.
+    if (
+        observation.has_external_hardware
+        and state.candidate is not None
+        and state.candidate.scope is ProfileScope.INTERNAL_ONLY
+    ):
+        state = replace(state, candidate=None)
     if not observation.valid:
         invalid_external = observation.has_external_hardware
         internal_candidate = (

@@ -45,6 +45,7 @@ from monitor_controller.runtime.commands import (
     CommandRequest,
     CommandRunner,
 )
+from monitor_controller.runtime.systemd import escape_unit_instance
 from monitor_controller.runtime.transactions import (
     BoundRecordKind,
     TransactionProtocolError,
@@ -363,11 +364,16 @@ class SubprocessFinalizeCommands:
                 )
             )
         if isinstance(operation, RestartXfcePanel):
-            unit = f"monitor-panel-restart@{operation.action_id.value}.service"
+            # Escape like the dispatcher does: an unescaped dash in the
+            # instance unescapes to '/' in %I, which mangled the action ID
+            # every diagnostics run received (dc-ocx).
+            instance = escape_unit_instance(operation.action_id.value)
+            unit = f"monitor-panel-restart@{instance}.service"
             return self._run(("systemctl", "--user", "start", unit))
         if isinstance(operation, RestartNmApplet):
             return self._run(("systemctl", "--user", "restart", "nm-applet.service"))
-        unit = f"monitor-tray-diagnostics@{operation.action_id.value}.service"
+        instance = escape_unit_instance(operation.action_id.value)
+        unit = f"monitor-tray-diagnostics@{instance}.service"
         return self._run(("systemctl", "--user", "start", "--no-block", unit))
 
     def wait_for_stable_tray(self) -> StableTray:

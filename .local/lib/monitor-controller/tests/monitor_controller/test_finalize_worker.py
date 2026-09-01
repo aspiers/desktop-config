@@ -51,7 +51,11 @@ from monitor_controller.observer.evidence import TextCommandEvidence
 from monitor_controller.observer.topology import derive_canonical_topology
 from monitor_controller.observer.xrandr import sample_xrandr
 from monitor_controller.runtime.dispatcher import WorkerRequestContext
-from monitor_controller.runtime.systemd import SystemdDispatcher, SystemdSupervisor
+from monitor_controller.runtime.systemd import (
+    SystemdDispatcher,
+    SystemdSupervisor,
+    escape_unit_instance,
+)
 from monitor_controller.runtime.transactions import (
     ExpectedTopology,
     ImmutableTransactionError,
@@ -660,9 +664,13 @@ def test_production_adapter_uses_only_exact_leaves_and_separate_units(
     assert "--resolved-actions" in joined
     assert "get-layout" not in joined
     assert "fluxbox-restart" in joined
-    assert f"monitor-panel-restart@{_FINALIZE_ACTION.value}.service" in joined
+    escaped_instance = escape_unit_instance(_FINALIZE_ACTION.value)
+    # Unescaped dashes unescape to '/' in %I, mangling the action ID the
+    # worker receives (dc-ocx); the escaped form must round-trip.
+    assert "\\x2d" in escaped_instance
+    assert f"monitor-panel-restart@{escaped_instance}.service" in joined
     assert "nm-applet.service" in joined
-    assert f"monitor-tray-diagnostics@{_FINALIZE_ACTION.value}.service" in joined
+    assert f"monitor-tray-diagnostics@{escaped_instance}.service" in joined
     assert capture.window_payload is not None
     assert (tmp_path / "home" / ".fluxbox" / "keys").is_file()
     for _arguments, environment in capture.calls:

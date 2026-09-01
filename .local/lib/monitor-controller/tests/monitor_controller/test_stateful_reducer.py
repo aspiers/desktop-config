@@ -603,3 +603,41 @@ def test_capped_wait_slow_tick_repeats_an_attempted_application() -> None:
     retried = observe(100_000)
     assert any(isinstance(effect, ApplyProfile) for effect in retried.effects)
     assert state.phase is ControllerPhase.APPLY_PENDING
+
+
+def test_external_evidence_revokes_internal_candidate_during_preparation() -> None:
+    """External hardware must clear a laptop candidate mid-preparation.
+
+    Found twice by the property machine: an internal-only candidate with an
+    in-flight preparation survived a valid external observation (via the
+    preparation-stop branch, then via the epoch transition), violating the
+    no-laptop-fallback invariant. reduce() asserts invariants on every
+    decision, so completing this sequence without raising is the regression.
+    """
+    state = _initial_state()
+    now = 1
+
+    def observe(shape: str) -> None:
+        nonlocal now, state
+        now += 1
+        data = _observation_data(
+            state, now_ms=now, shape=shape, changed_token=False
+        )
+        state = reduce(state, event_from_data(data, state)).state
+
+    observe("internal_exact")
+    for _ in range(5):
+        action = next(iter(_actions(state)), None)
+        if action is None:
+            break
+        now += 1
+        if action.lifecycle is ActionLifecycle.ADMITTED:
+            event = _dispatch_event(state, action, now)
+        else:
+            event = _finish_event(state, action, now, WorkerOutcome.SUCCEEDED)
+        state = reduce(state, event).state
+    observe("external_unresolved")
+
+    assert state.candidate is None or (
+        state.candidate.scope is not ProfileScope.INTERNAL_ONLY
+    )
