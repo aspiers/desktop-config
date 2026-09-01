@@ -1,4 +1,23 @@
-- - (Name=kitty) (Title=btop|htop|sudo (powertop|nethogs|iotop|iftop)|nvtop|amdgpu_top|lnav-system)
-  - MacroCmd {<s_primary_SetHead>} {MoveTo 0 0 Center} {ResizeTo 90% 90%} {SendToWorkspace 6}
+# ResizeTo must precede an anchored MoveTo (Center et al): the anchor is
+# resolved against the window's size at the time MoveTo runs, and the generic
+# kitty rule in terminal-windows.yaml has already matched these windows and
+# resized them.  desktop-layout applies *every* matching rule, not just the
+# first as .fluxbox/apps does, so centring before resizing centres the old
+# geometry and leaves the window off-centre.
+#
+# lnav-system is deliberately split out of the shared monitoring-tools rule
+# below, and omits SendToWorkspace.  Workspace 6 is also what
+# fluxbox-focus-or-launch's hide_window() uses as its hiding pen (it does
+# {SendToWorkspace 6} {Minimize}), so a rule that parks the window there makes
+# "hidden" and "at home" indistinguishable: every relayout re-banished the
+# window, and the --toggle state machine desynced.  Here the layout sets only
+# head/size/position, leaving workspace placement to the toggle.
+- - (Name=kitty) (Title=lnav-system)
+  - MacroCmd {<s_primary_SetHead>} {ResizeTo 90% 90%} {MoveTo 0 0 Center}
+  - Sticky {no}
+  - Iconhidden {no}
+
+- - (Name=kitty) (Title=btop|htop|sudo (powertop|nethogs|iotop|iftop)|nvtop|amdgpu_top)
+  - MacroCmd {<s_primary_SetHead>} {ResizeTo 90% 90%} {MoveTo 0 0 Center} {SendToWorkspace 6}
   - Sticky {no}
   - Iconhidden {no}

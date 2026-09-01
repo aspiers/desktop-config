@@ -1,4 +1,4 @@
-- - (Class=Pavucontrol)
+- - (Class=pavucontrol)
   - <stick>
   - MacroCmd {<s_secondary_SetHead>} {MoveTo 55% 5%} {ResizeTo 40% 90%}
 

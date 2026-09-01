@@ -39,9 +39,9 @@ windows:
 
   <INCLUDE common/lm-studio>
 
-  - - (Class=Pavucontrol)
+  - - (Class=pavucontrol)
     - <unstick>
-    - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 6} {MoveTo 5% 30% TopRight} {ResizeTo 45% 45%}
+    - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 6} {ResizeTo 45% 45%} {MoveTo 5% 30% TopRight}
 
   - - (Class=Blueman-manager)
     - <unstick>
