@@ -257,12 +257,15 @@ def test_probe_is_derived_only_from_full_safe_composite_evidence(
 
     assert observation.valid
     assert observation.exact_profile is None
-    assert observation.eligible_profiles == ()
-    assert observation.probe_candidate is not None
-    assert observation.probe_candidate.profile == "celtic+Samsung-Odyssey-G75F"
-    assert observation.probe_candidate.output == "DisplayPort-9"
-    assert observation.probe_candidate.internal_output == "eDP"
-    assert observation.probe_candidate.preferred_mode == "5120x2160"
+    # Base identity now grants eligibility directly (dc-nd0), so the
+    # explicit apply path supersedes the activation probe here — matching
+    # what monitor-watcher-ng always did for this monitor. The probe path
+    # remains for ambiguous or partially covered topologies.
+    assert [match.profile for match in observation.eligible_profiles] == [
+        "celtic+Samsung-Odyssey-G75F"
+    ]
+    assert observation.probe_candidate is None
+    assert observation.current_profiles == ()
 
 
 def test_plug_transition_with_stale_current_profile_is_valid(
@@ -285,8 +288,40 @@ def test_plug_transition_with_stale_current_profile_is_valid(
     assert observation.valid
     assert observation.current_profiles == ("celtic",)
     assert observation.exact_profile is None
-    assert observation.probe_candidate is not None
-    assert observation.probe_candidate.profile == "celtic+Samsung-Odyssey-G75F"
+    # Eligibility now resolves from base identity (dc-nd0): the transition
+    # proceeds by explicit application rather than an activation probe.
+    assert [match.profile for match in observation.eligible_profiles] == [
+        "celtic+Samsung-Odyssey-G75F"
+    ]
+    assert observation.probe_candidate is None
+
+
+def test_base_identity_grants_eligibility_and_geometry_proves_current(
+    tmp_path: Path,
+) -> None:
+    """A garbage X EDID cache must not strand a base-identified monitor.
+
+    The Samsung G75F leaves X's EDID property as truncated garbage after
+    roughly every link train, so autorandr --match-edid finds nothing: no
+    eligibility, no detected, no current — and with the output already
+    active no probe is legal either, which stranded a live replug in
+    UNSUPPORTED at probe mode (dc-nd0). The sysfs base identity resolves
+    the profile every time, and the live geometry equals the saved config,
+    so eligibility and currentness must both be derivable without
+    autorandr's matching.
+    """
+    root, commands, profiles = load_manifest(tmp_path, "base-identity-active")
+
+    observation = coordinator(
+        RootedSysfsReader(root), _FixtureRunner(commands), profiles
+    ).observe()
+
+    assert observation.valid
+    assert [match.profile for match in observation.eligible_profiles] == [
+        "celtic+Samsung-Odyssey-G75F"
+    ]
+    assert observation.current_profiles == ("celtic+Samsung-Odyssey-G75F",)
+    assert observation.exact_profile == "celtic+Samsung-Odyssey-G75F"
 
 
 def test_generation_change_fences_all_authorizing_derivations(tmp_path: Path) -> None:

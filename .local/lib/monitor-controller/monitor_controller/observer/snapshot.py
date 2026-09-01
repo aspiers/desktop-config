@@ -431,7 +431,32 @@ def _derive_facts(
     eligible, mapping_inconsistent = _eligible_profiles(
         profiles, autorandr, x_connected
     )
+    # autorandr's fingerprint matching reads X's EDID property, which the
+    # Samsung G75F leaves as truncated garbage after roughly every link
+    # train — sometimes even after a fresh activation. The sysfs base
+    # identity resolves the profile correctly every time, so when
+    # fingerprints match nothing, fall back to it for eligibility, and prove
+    # currentness from actual X geometry against the saved config. Without
+    # these fallbacks a replug strands in UNSUPPORTED with the output lit at
+    # probe mode and the desktop unfinalized (dc-nd0).
+    if not eligible:
+        eligible = _base_identity_eligibility(
+            profiles,
+            autorandr,
+            drm.connectors,
+            translations,
+            kernel_connected,
+            x_connected,
+        )
     current = autorandr.current_profiles
+    if not current and len(eligible) == 1:
+        target_match = eligible[0]
+        if _geometry_matches_saved_config(
+            _profile_by_name(profiles, target_match.profile),
+            target_match,
+            connected_x,
+        ):
+            current = (target_match.profile,)
     exact = _exact_profile(
         eligible,
         current,
@@ -696,6 +721,101 @@ def _probe_candidate(  # noqa: PLR0911, PLR0913, PLR0917
         internal_output=internal[0],
         preferred_mode=x_output.preferred_modes[0],
     )
+
+
+def _profile_by_name(
+    profiles: tuple[SavedAutorandrProfile, ...], name: str
+) -> SavedAutorandrProfile:
+    return next(item for item in profiles if item.name == name)
+
+
+def _base_identity_eligibility(  # noqa: PLR0913, PLR0917 - explicit evidence inputs
+    profiles: tuple[SavedAutorandrProfile, ...],
+    autorandr: AutorandrObservation,
+    connectors: tuple[DrmConnector, ...],
+    translations: dict[str, str],
+    kernel_connected: tuple[str, ...],
+    x_connected: tuple[str, ...],
+) -> tuple[ProfileMatch, ...]:
+    """Resolve one eligible profile from EDID base identity alone.
+
+    Requires the same certainty as fingerprint eligibility: kernel and X
+    agree on the connected set, exactly one saved profile covers that whole
+    topology, and its outputs resolve bijectively. Anything ambiguous stays
+    ineligible and the reducer keeps discovering.
+    """
+    if set(kernel_connected) != set(x_connected):
+        return ()
+    matches: list[ProfileMatch] = []
+    for profile in profiles:
+        if len(profile.setup) != len(kernel_connected):
+            continue
+        mapping = _resolve_probe_mapping(
+            profile,
+            autorandr.fingerprints,
+            connectors,
+            translations,
+            kernel_connected,
+        )
+        if mapping is None:
+            continue
+        mapping_by_saved = {item.saved_output: item.live_output for item in mapping}
+        active = tuple(
+            sorted(mapping_by_saved[item] for item in profile.active_outputs)
+        )
+        matches.append(
+            ProfileMatch(
+                profile=profile.name,
+                scope=profile.scope,
+                layout=profile.layout,
+                mapping=mapping,
+                active_outputs=active,
+                configuration_hashes=profile.configuration_hashes,
+            )
+        )
+    if len(matches) != 1:
+        return ()
+    return (matches[0],)
+
+
+def _geometry_matches_saved_config(  # noqa: PLR0911 - one closed comparison
+    profile: SavedAutorandrProfile,
+    match: ProfileMatch,
+    connected_x: tuple[XrandrOutput, ...],
+) -> bool:
+    """Prove currentness from live X geometry instead of autorandr matching.
+
+    True only when every saved-active output is live-active with exactly the
+    saved mode and position, and every saved-inactive output is live-inactive.
+    """
+    live_by_name = {item.name: item for item in connected_x}
+    mapping_by_saved = {item.saved_output: item.live_output for item in match.mapping}
+    for config in profile.config:
+        live_name = mapping_by_saved.get(config.output)
+        options = dict(config.options)
+        if not config.active:
+            # Saved profiles carry `off` blocks for every connector the
+            # machine has ever had; only mapped ones can contradict us.
+            if live_name is None:
+                continue
+            live = live_by_name.get(live_name)
+            if live is not None and live.geometry is not None:
+                return False
+            continue
+        if live_name is None:
+            return False
+        live = live_by_name.get(live_name)
+        if live is None or live.geometry is None:
+            return False
+        mode = options.get("mode")
+        position = options.get("pos")
+        if mode is None or position is None:
+            return False
+        if mode != f"{live.geometry.width}x{live.geometry.height}":
+            return False
+        if position != f"{live.geometry.x}x{live.geometry.y}":
+            return False
+    return True
 
 
 def _resolve_probe_mapping(  # noqa: C901
