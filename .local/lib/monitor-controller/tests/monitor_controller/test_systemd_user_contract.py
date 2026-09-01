@@ -315,7 +315,11 @@ def real_contract() -> Iterator[_RealContract]:
 
     runtime_dir = Path(runtime_value)
     suffix = uuid4().hex
-    template_base = f"monitor-contract-{suffix}"
+    # Unit names, descriptions and syslog identifiers must all be
+    # unmistakably test-only: systemd prints the Description in
+    # Starting/Finished lines and the unit NAME in failure lines, and a
+    # description containing the word "production" was read as a live crash.
+    template_base = f"monitor-test-contract-{suffix}"
     templates = {
         ActionKind.PROBE: f"{template_base}-probe@.service",
         ActionKind.APPLICATION: f"{template_base}-apply@.service",
@@ -1264,7 +1268,9 @@ def _production_probe_unit(
     for source_line in production.splitlines():
         rendered = source_line
         if source_line.startswith("Description="):
-            rendered = "Description=Harmless production probe entry point (%I)"
+            rendered = "Description=TEST ONLY: harmless probe contract (%I)"
+        elif source_line.startswith("SyslogIdentifier="):
+            rendered = "SyslogIdentifier=monitor-contract-test"
         elif source_line.startswith("Environment=PATH="):
             rendered = f"Environment=PATH={fake_bin}:/usr/bin:/bin"
         elif source_line.startswith("ExecStart="):
@@ -1308,7 +1314,7 @@ def _contract_unit(*, python: Path, transaction_root: Path) -> str:
     for source_line in production.splitlines():
         rendered = source_line
         if source_line.startswith("Description="):
-            rendered = "Description=Harmless keyed production contract (%I)"
+            rendered = "Description=TEST ONLY: harmless apply contract (%I)"
         elif source_line.startswith("SyslogIdentifier="):
             # The clone must not masquerade as the production worker in the
             # journal: a deliberate contract failure tagged monitor-apply
@@ -1338,7 +1344,7 @@ def _rejected_start_unit() -> str:
     """Return a loaded harmless template which rejects manual starts."""
     return (
         "[Unit]\n"
-        "Description=Harmless manager start rejection (%I)\n"
+        "Description=TEST ONLY: harmless manager start rejection (%I)\n"
         "RefuseManualStart=yes\n"
         "CollectMode=inactive-or-failed\n"
         "\n"
@@ -1354,7 +1360,7 @@ def _no_result_unit() -> str:
     """Return a harmless real unit which intentionally leaves no transaction."""
     return (
         "[Unit]\n"
-        "Description=Harmless previously-invoked no-result contract (%I)\n"
+        "Description=TEST ONLY: harmless no-result contract (%I)\n"
         "\n"
         "[Service]\n"
         "Type=oneshot\n"
