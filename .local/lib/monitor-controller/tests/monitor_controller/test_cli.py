@@ -264,6 +264,22 @@ def test_status_reads_selected_namespace_without_writing(
         ]
     )
     output = capsys.readouterr().out
+
+    assert result == 0
+    assert "Namespace:        shadow" in output
+    assert "Phase:" in output
+
+    result = main(
+        [
+            "status",
+            "--namespace",
+            "shadow",
+            "--state-home",
+            str(tmp_path),
+            "--json",
+        ]
+    )
+    output = capsys.readouterr().out
     after_stat = store.path.stat()
 
     assert result == 0

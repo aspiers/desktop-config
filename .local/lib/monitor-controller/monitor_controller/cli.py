@@ -9,6 +9,7 @@ import subprocess
 import sys
 from collections.abc import Callable, Sequence
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from monitor_controller.active import CONFLICTING_UNITS, ActivePaths
 from monitor_controller.codec import StateCodecError, decode_state
@@ -19,6 +20,9 @@ from monitor_controller.cutover import (
     unit_states,
 )
 from monitor_controller.runtime.persistence import StateNamespace
+
+if TYPE_CHECKING:
+    from monitor_controller.model import State
 from monitor_controller.simulation.replay import (
     ReplayFormatError,
     ReplayMismatchError,
@@ -65,6 +69,11 @@ def _parser() -> argparse.ArgumentParser:
         default=StateNamespace.ACTIVE.value,
     )
     status.add_argument("--state-home", type=Path)
+    status.add_argument(
+        "--json",
+        action="store_true",
+        help="emit the full machine-readable state record",
+    )
 
     subparsers.add_parser(
         "preflight",
@@ -180,19 +189,22 @@ def _replay(path: Path) -> int:
     return 0
 
 
-def _status(state_home: Path, namespace: StateNamespace) -> int:
+def _status(state_home: Path, namespace: StateNamespace, *, as_json: bool) -> int:
     path = state_home / "monitor-controller" / namespace.value / "state.json"
     if not path.is_file():
-        print(
-            json.dumps(
-                {
-                    "namespace": namespace.value,
-                    "path": str(path),
-                    "status": "missing",
-                },
-                sort_keys=True,
+        if as_json:
+            print(
+                json.dumps(
+                    {
+                        "namespace": namespace.value,
+                        "path": str(path),
+                        "status": "missing",
+                    },
+                    sort_keys=True,
+                )
             )
-        )
+        else:
+            print(f"No persisted {namespace.value} controller state at {path}")
         return 1
     state = decode_state(path.read_bytes())
     status = normalize_state(state)
@@ -207,8 +219,52 @@ def _status(state_home: Path, namespace: StateNamespace) -> int:
             "status": "ok",
         }
     )
-    print(json.dumps(status, sort_keys=True))
+    if as_json:
+        print(json.dumps(status, sort_keys=True))
+        return 0
+    print(_human_status(state, namespace, path))
     return 0
+
+
+def _human_status(state: State, namespace: StateNamespace, path: Path) -> str:
+    """Render the state a person actually asks about, one fact per line."""
+
+    def profile(value: str | None) -> str:
+        return value if value is not None else "(none)"
+
+    candidate = state.candidate.profile if state.candidate is not None else None
+    in_flight = [
+        f"{action.action_id.kind.value} {action.action_id.value}"
+        f" [{action.lifecycle.value}]"
+        for action in (
+            state.probe,
+            state.application,
+            state.planning,
+            state.preparation,
+            state.finalization,
+        )
+        if action is not None
+    ]
+    lines = [
+        f"Namespace:        {namespace.value}",
+        f"Phase:            {state.phase.value}",
+        f"Candidate:        {profile(candidate)}",
+        f"Stable X profile: {profile(state.stable_x_profile)}",
+        f"Desktop:          finalized for {profile(state.desktop_finalized_profile)}",
+        (
+            f"Planning:         {state.planning_state.value}"
+            f" | Preparation: {state.preparation_state.value}"
+        ),
+        (
+            "In-flight:        " + "; ".join(in_flight)
+            if in_flight
+            else "In-flight:        none"
+        ),
+        f"External intent:  {'yes' if state.external_intent else 'no'}",
+        f"Physical epoch:   {state.physical_epoch}",
+        f"State file:       {path}",
+    ]
+    return "\n".join(lines)
 
 
 def _systemctl_is_active(unit: str) -> bool:
@@ -305,7 +361,11 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0911
                 event_generation_file=args.event_generation_file,
             )
         state_home = args.state_home or _default_state_home()
-        return _status(state_home, StateNamespace(args.namespace))
+        return _status(
+            state_home,
+            StateNamespace(args.namespace),
+            as_json=bool(args.json),
+        )
     except (
         OSError,
         ReplayFormatError,

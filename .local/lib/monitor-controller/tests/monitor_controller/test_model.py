@@ -901,6 +901,11 @@ def test_status_is_read_only_when_authoritative_state_is_missing(
     assert main(["status", "--state-home", str(tmp_path)]) == 1
     output = capsys.readouterr().out
 
+    assert "No persisted active controller state" in output
+
+    assert main(["status", "--state-home", str(tmp_path), "--json"]) == 1
+    output = capsys.readouterr().out
+
     assert '"status": "missing"' in output
     assert not (tmp_path / "monitor-controller").exists()
 
