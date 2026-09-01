@@ -1,0 +1,114 @@
+#!/bin/bash
+#
+# Audit (Class=...) and (Name=...) patterns in .fluxbox/layouts/ against the
+# WM_CLASS of windows that are actually mapped right now.
+#
+# fluxbox client patterns are documented in fluxbox-keys(5) as
+# "propertyname is not case sensitive, whereas the regexp is", so
+# (Class=Pavucontrol) silently never matches a window whose real class is
+# "pavucontrol" -- the rule is simply dead, with no error anywhere.  That bug
+# went unnoticed for a long time precisely because a non-matching rule looks
+# identical to a rule that ran.
+#
+# Only windows currently mapped can be checked, so this is designed to be run
+# repeatedly and accumulate: each run merges what it sees into the cache, and
+# reports which patterns are confirmed, which are broken, and which are still
+# unseen.  Run it whenever the apps in question happen to be open rather than
+# opening them specially.
+
+set -uo pipefail
+
+LAYOUT_DIR="${LAYOUT_DIR:-$(dirname "$0")/../.fluxbox/layouts}"
+CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/layout-class-audit.tsv"
+
+usage () {
+    cat <<EOF >&2
+Usage: $(basename "$0") [--reset]
+
+Compares (Class=)/(Name=) patterns in the layout YAML files against the
+WM_CLASS of currently mapped windows, accumulating observations across runs
+in $CACHE.
+
+  --reset   Discard accumulated observations and start fresh.
+EOF
+    exit "${1:-1}"
+}
+
+case "${1:-}" in
+    -h|--help) usage 0 ;;
+    --reset)   rm -f "$CACHE"; echo "Cleared $CACHE" ;;
+    "")        ;;
+    *)         usage 1 ;;
+esac
+
+mkdir -p "$(dirname "$CACHE")"
+touch "$CACHE"
+
+# Record every currently mapped window's (classname, classclass) pair.  xprop
+# prints WM_CLASS as: WM_CLASS(STRING) = "classname", "classclass"
+#
+# Deliberately not --onlyvisible: minimized windows still have a WM_CLASS, and
+# the layout rules apply to them too.  Restricting to visible windows would
+# silently skip exactly the ones parked out of sight, which is how the dead
+# (Class=Pavucontrol) rule stayed hidden.
+observe_windows () {
+    local w line name class
+    for w in $(xdotool search --name '.*' 2>/dev/null); do
+        line=$(xprop -id "$w" WM_CLASS 2>/dev/null) || continue
+        [[ "$line" == *'= "'* ]] || continue
+        name=${line#*\"}; name=${name%%\"*}
+        class=${line##*, \"}; class=${class%\"*}
+        [ -n "$class" ] && printf '%s\t%s\n' "$name" "$class"
+    done
+}
+
+# Merge this run's sightings into the cache, keeping it sorted and unique so
+# it stays small and stable across runs.
+{ cat "$CACHE"; observe_windows; } | grep -v '^\s*$' | sort -u > "$CACHE.tmp"
+mv "$CACHE.tmp" "$CACHE"
+
+seen_count=$(wc -l < "$CACHE")
+echo "Observed $seen_count distinct WM_CLASS pair(s) so far (cache: $CACHE)"
+echo
+
+# Extract the distinct patterns used in the layouts.  Only literal patterns can
+# be checked; anything with regex metacharacters is reported as unverifiable
+# rather than guessed at.
+patterns=$(grep -rhoE '\((Class|Name)=[^)]*\)' "$LAYOUT_DIR" | sort -u)
+
+broken=0
+unseen=0
+ok=0
+
+while IFS= read -r pat; do
+    [ -n "$pat" ] || continue
+    prop=${pat%%=*}; prop=${prop#(}
+    regexp=${pat#*=}; regexp=${regexp%)}
+
+    # Field 1 of the cache is CLASSNAME (fluxbox "Name"), field 2 is CLASSCLASS
+    # (fluxbox "Class").
+    if [ "${prop,,}" = name ]; then field=1; else field=2; fi
+
+    if [[ "$regexp" =~ [][^$*+?{}\\|()] ]]; then
+        printf '  ?  %-34s regex - check by hand\n' "$pat"
+        continue
+    fi
+
+    if cut -f"$field" "$CACHE" | grep -qxF "$regexp"; then
+        printf '  OK %-34s matches a live window\n' "$pat"
+        ok=$((ok + 1))
+    elif ci=$(cut -f"$field" "$CACHE" | grep -ixF "$regexp" | head -1) && [ -n "$ci" ]; then
+        printf '  !! %-34s CASE MISMATCH: real value is "%s"\n' "$pat" "$ci"
+        broken=$((broken + 1))
+    else
+        printf '  -  %-34s not seen yet\n' "$pat"
+        unseen=$((unseen + 1))
+    fi
+done <<< "$patterns"
+
+echo
+echo "$ok confirmed, $broken broken, $unseen still unseen."
+if [ "$unseen" -gt 0 ]; then
+    echo "Re-run this when those apps happen to be open; results accumulate."
+fi
+exit $(( broken > 0 ? 1 : 0 ))
