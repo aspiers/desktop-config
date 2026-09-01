@@ -24,7 +24,6 @@ from ..model import (  # noqa: TID252
     CanonicalObservation,
     ConnectorIdentityEvidence,
     EdidEvidence,
-    EdidIntegrity,
     EventGeneration,
     Fingerprint,
     ObservationGeneration,
@@ -610,16 +609,21 @@ def _exact_profile(  # noqa: PLR0913, PLR0917
     target = eligible[0]
     mapped = {item.live_output for item in target.mapping}
     external = set(kernel_external)
-    complete = {
-        item.output for item in edid if item.integrity is EdidIntegrity.COMPLETE
-    }
+    # The checksum-valid base block is the identity proof (dc-bla); demanding
+    # COMPLETE integrity here meant a monitor whose extension blocks stay
+    # broken (the Samsung G75F flaps between healthy and broken) could never
+    # be proven exact, so verification and desktop finalization were
+    # unreachable even with X fully converged and autorandr agreeing
+    # (dc-2eh). The spec: broken extension checksums do not invalidate an
+    # otherwise coherent base-identity sample.
+    base_proven = {item.output for item in edid if item.base_hash is not None}
     identified = {item.output for item in identities if item.x_connector_id is not None}
     base = {item.output for item in base_matches if item.profile == target.profile}
     if (
         set(kernel_connected) == set(x_connected) == mapped
         and set(x_active) == set(target.active_outputs)
         and current == (target.profile,)
-        and external <= complete & identified & base
+        and external <= base_proven & identified & base
     ):
         return target.profile
     return None

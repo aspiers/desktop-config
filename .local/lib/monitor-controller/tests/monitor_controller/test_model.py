@@ -469,19 +469,27 @@ def test_exact_profile_requires_complete_topology_identity_proof() -> None:
             ),
         )
 
-    with pytest.raises(ValueError, match="complete EDID, base identity"):
+    # Broken extensions with a proven base hash no longer break exactness:
+    # identity is the checksum-valid base block, and the COMPLETE demand froze
+    # every observation of the Samsung G75F mid-convergence (dc-2eh).
+    replace(
+        observation,
+        edid_integrity=(
+            EdidEvidence(
+                "DP-3",
+                EdidIntegrity.BASE_VALID_EXTENSIONS_INCOMPLETE,
+                "base-hash",
+            ),
+        ),
+    )
+
+    with pytest.raises(ValueError, match="proven EDID base identity"):
         replace(
             observation,
-            edid_integrity=(
-                EdidEvidence(
-                    "DP-3",
-                    EdidIntegrity.BASE_VALID_EXTENSIONS_INCOMPLETE,
-                    "base-hash",
-                ),
-            ),
+            edid_integrity=(EdidEvidence("DP-3", EdidIntegrity.ABSENT),),
         )
 
-    with pytest.raises(ValueError, match="complete EDID, base identity"):
+    with pytest.raises(ValueError, match="proven EDID base identity"):
         replace(observation, base_identity_profiles=())
 
 

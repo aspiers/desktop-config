@@ -854,10 +854,14 @@ class CanonicalObservation:
                 msg = "exact profile must be reported current"
                 raise ValueError(msg)
             external = set(self.kernel_external_outputs) | set(self.x_external_outputs)
-            complete_edid = {
+            # The checksum-valid base block is the identity proof; demanding
+            # COMPLETE here while the observer keys exactness on the base hash
+            # made every observation of a broken-extension monitor throw
+            # during construction, freezing observations entirely (dc-2eh).
+            base_proven = {
                 item.output
                 for item in self.edid_integrity
-                if item.integrity is EdidIntegrity.COMPLETE
+                if item.base_hash is not None
             }
             base_matches = {
                 item.output
@@ -869,10 +873,10 @@ class CanonicalObservation:
                 for item in self.connector_identities
                 if item.x_connector_id is not None
             }
-            if not external <= complete_edid & base_matches & identified:
+            if not external <= base_proven & base_matches & identified:
                 msg = (
-                    "exact external outputs require complete EDID, base identity, "
-                    "and connector correspondence"
+                    "exact external outputs require a proven EDID base "
+                    "identity and connector correspondence"
                 )
                 raise ValueError(msg)
         if self.probe_candidate is not None:

@@ -435,8 +435,18 @@ def _admit_application(
     )
     candidate = _candidate(state, observation, target)
     state = replace(state, candidate=candidate, baseline_adoption=False)
-    if key in state.attempted_application_keys and not _slow_retry_due(state):
-        return _enter_wait(state, observation.observed_at_ms)
+    if key in state.attempted_application_keys:
+        if not _slow_retry_due(state):
+            return _enter_wait(state, observation.observed_at_ms)
+        # Withdraw the spent key before re-admitting: persisted state must
+        # never carry an ADMITTED action whose key is already in the
+        # attempted set (the codec validator refuses it, dc-2eh). Dispatch
+        # re-records the key, restoring at-most-once until the next capped
+        # tick.
+        state = replace(
+            state,
+            attempted_application_keys=state.attempted_application_keys - {key},
+        )
     state, action_id = _allocate_action(state, ActionKind.APPLICATION)
     action = ApplicationAction(
         action_id=action_id,

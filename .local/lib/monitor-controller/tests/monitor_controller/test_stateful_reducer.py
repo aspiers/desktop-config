@@ -573,6 +573,10 @@ def test_capped_wait_slow_tick_repeats_an_attempted_application() -> None:
         data["key"] = "regressed-evidence"
         decision = reduce(state, event_from_data(data, state))
         assert_controller_invariants(decision.state)
+        # The codec validator is stricter than the runtime invariants and
+        # refused the first live slow-retry re-admission (dc-2eh); every
+        # decision must survive the same round trip persistence performs.
+        decode_state(encode_state(decision.state))
         state = decision.state
         return decision
 
