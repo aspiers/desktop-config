@@ -8,7 +8,6 @@ import os
 import shutil
 import socket
 import stat
-import sys
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -72,6 +71,7 @@ from monitor_controller.runtime.controller import (
     SerializedController,
 )
 from monitor_controller.runtime.dispatcher import NullDispatcher
+from monitor_controller.runtime.journal import service_logger
 from monitor_controller.runtime.persistence import AtomicStateStore, StateNamespace
 from monitor_controller.runtime.scheduler import AsyncioMonotonicClock, SchedulerClock
 from monitor_controller.safeio import (
@@ -876,7 +876,7 @@ def main() -> int:
     except KeyboardInterrupt:
         return 0
     except Exception as error:  # noqa: BLE001 - service composition boundary
-        print(f"monitor-controller-shadow: {error}", file=sys.stderr)
+        service_logger("monitor_controller.journal").error(str(error))
         return 1
     return 0
 

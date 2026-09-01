@@ -19,6 +19,7 @@ from monitor_controller.cutover import (
     rollback_commands,
     unit_states,
 )
+from monitor_controller.runtime.journal import service_logger
 from monitor_controller.runtime.persistence import StateNamespace
 
 if TYPE_CHECKING:
@@ -320,7 +321,7 @@ _CUTOVER_COMMANDS: dict[str, Callable[[argparse.Namespace], int]] = {
 }
 
 
-def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0911
+def main(argv: Sequence[str] | None = None) -> int:  # noqa: C901, PLR0911
     """Run only deterministic simulation/replay or read persisted state."""
     args = _parser().parse_args(argv)
     try:
@@ -375,7 +376,14 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: PLR0911
         StateCodecError,
         WorkerStartupError,
     ) as error:
-        print(f"monitor-controller {args.command}: {error}", file=sys.stderr)
+        if args.command == "internal":
+            # Worker units capture stderr into journald under their own
+            # SyslogIdentifier; the logger adds a real error priority and no
+            # misattributed prefix (the old one claimed monitor-controller
+            # regardless of which worker failed).
+            service_logger("monitor_controller.journal").error(str(error))
+        else:
+            print(f"monitor-controller {args.command}: {error}", file=sys.stderr)
         return 1
 
 
