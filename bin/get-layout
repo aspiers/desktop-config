@@ -30,6 +30,38 @@ def fatal(msg):
     sys.stderr.write(f"ERROR: {msg}\n")
     sys.exit(1)
 
+def active_controller_layout():
+    """Return the finalized layout path from the active monitor-controller.
+
+    Returns None whenever the controller state is absent, unreadable, or not
+    finalized, so every legacy environment falls through unchanged.
+    """
+    state_home = os.environ.get(
+        "XDG_STATE_HOME", os.path.expanduser("~/.local/state")
+    )
+    state_path = os.path.join(
+        state_home, "monitor-controller", "active", "state.json"
+    )
+    try:
+        with open(state_path) as f:
+            state = json.load(f)
+        profile = state.get("desktop_finalized_profile")
+        if not isinstance(profile, str) or not profile:
+            return None
+        profile_dir = os.path.expanduser(f"~/.config/autorandr/{profile}")
+        layout = profile
+        layout_path = os.path.join(profile_dir, "layout")
+        if os.path.exists(layout_path):
+            with open(layout_path) as f:
+                layout = f.read().strip() or profile
+        candidate = os.path.expanduser(f"~/.fluxbox/layouts/{layout}.yaml")
+        if os.path.exists(candidate):
+            return candidate
+    except (OSError, ValueError):
+        return None
+    return None
+
+
 def get_localhost_nickname():
     zdotdir = os.environ.get('ZDOTDIR', os.path.expanduser('~')) # Default to ~ if ZDOTDIR not set
     host_name_file = os.path.join(zdotdir, '.localhost-nickname')
@@ -165,6 +197,17 @@ def main():
     args = parser.parse_args()
     debug = args.debug
     state_mode = args.state
+
+    # Authority path: when the active monitor-controller has finalized the
+    # desktop, its persisted state names the applied profile, and the
+    # profile's autorandr `layout` file maps it to the layout.  The legacy
+    # libdpy cache below is only written by the old pipeline, so after a
+    # controller-driven relayout it is stale (dc-d8p).
+    controller_layout = active_controller_layout()
+    if controller_layout is not None and not state_mode:
+        debug_print(f"layout from active monitor-controller: {controller_layout}")
+        print(controller_layout)
+        sys.exit(0)
 
     # Fast path: cached layout written by a previous successful run via
     # layout_file().  Plain `get-layout` (no --state) just needs the path,
