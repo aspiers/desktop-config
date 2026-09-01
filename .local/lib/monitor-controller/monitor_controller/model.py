@@ -146,6 +146,18 @@ BROKEN_EXTENSION_EDID_INTEGRITIES: frozenset[EdidIntegrity] = frozenset(
     }
 )
 
+# Integrities which prove the base-block identity and therefore admit a safe
+# activation probe. Probes were originally restricted to broken-extension
+# EDIDs, but a healthy sysfs EDID with failed autorandr matching is the same
+# situation from the probe's perspective: X's EDID property is a stale
+# link-train snapshot, no full profile matches, and only activating the
+# output lets matching stabilize. Restricting to broken extensions parked a
+# fully identified monitor in UNSUPPORTED (dc-20e). The spec's probe
+# definition requires one exact base identity, not broken extensions.
+PROBE_ADMISSIBLE_EDID_INTEGRITIES: frozenset[EdidIntegrity] = (
+    BROKEN_EXTENSION_EDID_INTEGRITIES | {EdidIntegrity.COMPLETE}
+)
+
 
 class ObservationValidity(StrEnum):
     """Whether a canonical sample may be used for classification."""
@@ -890,7 +902,7 @@ class CanonicalObservation:
                 and set(self.x_active_outputs) == internal
                 and len(matching_base) == 1
                 and probe_edid is not None
-                and probe_edid.integrity in BROKEN_EXTENSION_EDID_INTEGRITIES
+                and probe_edid.integrity in PROBE_ADMISSIBLE_EDID_INTEGRITIES
                 and identified
             ):
                 msg = (

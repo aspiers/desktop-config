@@ -25,6 +25,7 @@ from monitor_controller.model import (
     ControllerPhase,
     DiscardPlan,
     DisplayIdentity,
+    DrmHintReceived,
     EdidEvidence,
     EdidIntegrity,
     EventGeneration,
@@ -1392,3 +1393,34 @@ def test_generation_increments_are_published_to_the_fence_sink(
 
     assert published == [first, second]
     assert published[-1] == controller.event_generation
+
+
+def test_external_display_events_always_narrate_to_the_journal(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """A plug or unplug involving external displays must never be silent.
+
+    The worst prior silence: the controller classified a connected monitor
+    as unsupported, started no worker, and journald showed nothing at all
+    (dc-20e). Every DRM hint and every observed external-topology change
+    must produce a journal line even when the decision is to do nothing.
+    """
+
+    async def exercise() -> None:
+        controller, _store, _observer, _planner, _dispatcher, _clock = _controller(
+            tmp_path
+        )
+        await controller.consume(_event(_observation()))
+        observed = capsys.readouterr().err
+        assert "external topology now" in observed
+        assert "kernel=['DP-1']" in observed
+        assert "phase " in observed
+
+        await controller.consume(
+            DrmHintReceived(EventMetadata(1, _BOOT), EventGeneration(1))
+        )
+        hinted = capsys.readouterr().err
+        assert "DRM change hint" in hinted
+
+    asyncio.run(exercise())

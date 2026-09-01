@@ -9,7 +9,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Protocol
 
 from monitor_controller.model import (
-    BROKEN_EXTENSION_EDID_INTEGRITIES,
+    PROBE_ADMISSIBLE_EDID_INTEGRITIES,
     TERMINAL_ACTION_LIFECYCLES,
     ActionId,
     ActionKind,
@@ -129,7 +129,7 @@ class WorkerRequestContext:
             raise ValueError(msg)
         if (
             self.probe_edid_integrity is not None
-            and self.probe_edid_integrity not in BROKEN_EXTENSION_EDID_INTEGRITIES
+            and self.probe_edid_integrity not in PROBE_ADMISSIBLE_EDID_INTEGRITIES
         ):
             msg = "worker probe proof requires broken extensions"
             raise ValueError(msg)

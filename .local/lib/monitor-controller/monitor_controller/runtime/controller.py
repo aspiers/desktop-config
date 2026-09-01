@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import asyncio
+import sys
 from collections.abc import Callable
 from typing import Protocol, cast
 
 from monitor_controller.model import (
-    BROKEN_EXTENSION_EDID_INTEGRITIES,
+    PROBE_ADMISSIBLE_EDID_INTEGRITIES,
     ActionId,
     ActionKind,
     ActionLifecycle,
@@ -20,6 +21,7 @@ from monitor_controller.model import (
     BootId,
     CanonicalObservation,
     CompletedPlan,
+    ControllerPhase,
     ControllerStarted,
     Decision,
     DiscardPlan,
@@ -377,6 +379,83 @@ class SerializedController:
             msg = "controller already has a different queue consumer"
             raise RuntimeAuthorityError(msg)
 
+    # Journal narration: a plug or unplug involving external displays must
+    # NEVER be silent, even when the decision is to do nothing. The audit
+    # file records everything but is not where people look; the worst prior
+    # silence was UNSUPPORTED, where the controller refused to act, started
+    # no worker, and journald showed nothing while the monitor stayed dark
+    # (dc-20e). Three bounded guarantees: every DRM hint logs, every change
+    # in observed external topology logs with the verdict, and every phase
+    # change logs.
+
+    @staticmethod
+    def _journal(message: str) -> None:
+        print(f"monitor-controller: {message}", file=sys.stderr)
+
+    @staticmethod
+    def _external_topology(state: State) -> tuple[object, ...] | None:
+        observation = state.latest_observation
+        if observation is None:
+            return None
+        return (
+            observation.kernel_external_outputs,
+            observation.x_external_outputs,
+            observation.x_active_outputs,
+            observation.exact_profile,
+        )
+
+    def _log_decision_journal(
+        self, prior_state: State, event: Event, decision: Decision
+    ) -> None:
+        state = decision.state
+        if isinstance(event, DrmHintReceived):
+            self._journal(
+                f"DRM change hint (event generation {event.event_generation.value})"
+            )
+        topology_changed = self._external_topology(
+            prior_state
+        ) != self._external_topology(state)
+        if topology_changed and state.latest_observation is not None:
+            observation = state.latest_observation
+            eligible = [match.profile for match in observation.eligible_profiles]
+            probe = (
+                observation.probe_candidate.profile
+                if observation.probe_candidate is not None
+                else None
+            )
+            effects = [type(effect).__name__ for effect in decision.effects]
+            self._journal(
+                "external topology now "
+                f"kernel={list(observation.kernel_external_outputs)} "
+                f"x_active={list(observation.x_active_outputs)} "
+                f"valid={observation.valid} "
+                f"exact={observation.exact_profile} eligible={eligible} "
+                f"probe={probe}; phase {state.phase.value}, effects {effects}"
+            )
+        if state.phase is not prior_state.phase:
+            self._log_phase_transition(prior_state, state)
+
+    @staticmethod
+    def _log_phase_transition(prior_state: State, state: State) -> None:
+        detail = ""
+        observation = state.latest_observation
+        if state.phase is ControllerPhase.UNSUPPORTED and observation is not None:
+            bases = sorted(
+                {match.profile for match in observation.base_identity_profiles}
+            )
+            detail = (
+                "; no eligible profile or probe candidate"
+                f" (base identities: {', '.join(bases) if bases else 'none'})"
+            )
+        candidate = state.candidate.profile if state.candidate is not None else None
+        print(
+            f"monitor-controller: phase {prior_state.phase.value} -> "
+            f"{state.phase.value}"
+            f" (candidate {candidate})"
+            f"{detail}",
+            file=sys.stderr,
+        )
+
     async def _process_event(
         self,
         event: Event,
@@ -400,6 +479,7 @@ class SerializedController:
             )
         )
         self._publish_generation()
+        self._log_decision_journal(prior_state, event, decision)
         self._audit.append_decision(
             prior_state,
             event,
@@ -658,7 +738,7 @@ class SerializedController:
                 or len(identity_matches) != 1
                 or edid is None
                 or edid.base_hash is None
-                or edid.integrity not in BROKEN_EXTENSION_EDID_INTEGRITIES
+                or edid.integrity not in PROBE_ADMISSIBLE_EDID_INTEGRITIES
             ):
                 msg = "probe effect lacks exact broken-extension identity proof"
                 raise ValueError(msg)

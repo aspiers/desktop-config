@@ -8,7 +8,7 @@ from subprocess import TimeoutExpired
 from typing import TYPE_CHECKING, Final, Protocol, final
 
 from monitor_controller.model import (
-    BROKEN_EXTENSION_EDID_INTEGRITIES,
+    PROBE_ADMISSIBLE_EDID_INTEGRITIES,
     ActionKind,
     ActionLifecycle,
     EdidIntegrity,
@@ -310,8 +310,8 @@ def _validate_probe_authorization(request: TransactionRequest) -> EdidIntegrity:
         integrity = EdidIntegrity(_payload_text(request, "edid_integrity"))
     except ValueError:
         _stale("probe request extension integrity is invalid")
-    if integrity not in BROKEN_EXTENSION_EDID_INTEGRITIES:
-        _stale("probe request did not admit broken extensions")
+    if integrity not in PROBE_ADMISSIBLE_EDID_INTEGRITIES:
+        _stale("probe request EDID integrity does not prove a base identity")
     return integrity
 
 

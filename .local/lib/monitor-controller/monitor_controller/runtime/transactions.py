@@ -17,7 +17,7 @@ from typing import Final, cast
 from uuid import UUID, uuid4
 
 from monitor_controller.model import (
-    BROKEN_EXTENSION_EDID_INTEGRITIES,
+    PROBE_ADMISSIBLE_EDID_INTEGRITIES,
     TERMINAL_ACTION_LIFECYCLES,
     ActionId,
     ActionKind,
@@ -1434,8 +1434,8 @@ def _validate_probe_payload(request: TransactionRequest) -> None:
     except (TypeError, ValueError) as error:
         msg = "probe request extension integrity is invalid"
         raise TransactionProtocolError(msg) from error
-    if integrity not in BROKEN_EXTENSION_EDID_INTEGRITIES:
-        msg = "probe request requires broken extension evidence"
+    if integrity not in PROBE_ADMISSIBLE_EDID_INTEGRITIES:
+        msg = "probe request requires base-identity-proving EDID evidence"
         raise TransactionProtocolError(msg)
     for name in ("internal_output", "preferred_mode", "probe_output"):
         value = values[name]

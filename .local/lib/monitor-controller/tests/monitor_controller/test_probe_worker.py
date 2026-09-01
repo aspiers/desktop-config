@@ -755,11 +755,22 @@ def test_probe_request_protocol_rejects_missing_or_nonbroken_proof() -> None:
 
     with pytest.raises(TransactionProtocolError, match="five proof fields"):
         protocol_request(())
-    with pytest.raises(TransactionProtocolError, match="broken extension"):
+    # COMPLETE is now admissible: a healthy sysfs EDID whose profile
+    # autorandr still cannot match needs the same activation (dc-20e).
+    protocol_request(
+        (
+            ("base_identity_hash", "0" * 64),
+            ("edid_integrity", EdidIntegrity.COMPLETE.value),
+            ("internal_output", "eDP"),
+            ("preferred_mode", "5120x2160"),
+            ("probe_output", "DisplayPort-9"),
+        )
+    )
+    with pytest.raises(TransactionProtocolError, match="base-identity-proving"):
         protocol_request(
             (
                 ("base_identity_hash", "0" * 64),
-                ("edid_integrity", EdidIntegrity.COMPLETE.value),
+                ("edid_integrity", EdidIntegrity.BASE_INVALID.value),
                 ("internal_output", "eDP"),
                 ("preferred_mode", "5120x2160"),
                 ("probe_output", "DisplayPort-9"),

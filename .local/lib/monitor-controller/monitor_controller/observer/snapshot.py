@@ -18,7 +18,7 @@ from monitor_controller.observer.xrandr import (
 )
 
 from ..model import (  # noqa: TID252
-    BROKEN_EXTENSION_EDID_INTEGRITIES,
+    PROBE_ADMISSIBLE_EDID_INTEGRITIES,
     BaseIdentityMatch,
     BootId,
     CanonicalObservation,
@@ -661,7 +661,7 @@ def _probe_candidate(  # noqa: PLR0911, PLR0913, PLR0917
     external_edid = next((item for item in edid if item.output == external), None)
     if (
         external_edid is None
-        or external_edid.integrity not in BROKEN_EXTENSION_EDID_INTEGRITIES
+        or external_edid.integrity not in PROBE_ADMISSIBLE_EDID_INTEGRITIES
     ):
         return None
     if not any(
