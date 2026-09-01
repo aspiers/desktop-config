@@ -404,7 +404,7 @@ class SubprocessFinalizeCommands:
         connected = self._keyboard_probe.connected(ADVANTAGE_360_ADDRESS)
         if connected is None:
             print(
-                "finalize: keyboard intent skipped: bluez does not know "
+                "keyboard intent skipped: bluez does not know "
                 f"device {ADVANTAGE_360_ADDRESS}",
                 file=sys.stderr,
             )

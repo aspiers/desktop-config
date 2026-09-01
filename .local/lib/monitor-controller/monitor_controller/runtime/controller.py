@@ -390,7 +390,10 @@ class SerializedController:
 
     @staticmethod
     def _journal(message: str) -> None:
-        print(f"monitor-controller: {message}", file=sys.stderr)
+        # journald already attributes lines via SyslogIdentifier; a
+        # repeated in-message prefix made every line stutter
+        # ("monitor-controller[pid]: monitor-controller: ...").
+        print(message, file=sys.stderr)
 
     @staticmethod
     def _external_topology(state: State) -> tuple[object, ...] | None:
@@ -449,7 +452,7 @@ class SerializedController:
             )
         candidate = state.candidate.profile if state.candidate is not None else None
         print(
-            f"monitor-controller: phase {prior_state.phase.value} -> "
+            f"phase {prior_state.phase.value} -> "
             f"{state.phase.value}"
             f" (candidate {candidate})"
             f"{detail}",

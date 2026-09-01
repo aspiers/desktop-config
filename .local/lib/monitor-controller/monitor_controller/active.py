@@ -754,7 +754,7 @@ def build_active_composition(
         # The journal line is the diagnostic record; the wake-up's fresh
         # observation carries everything the reducer acts on.
         print(
-            "monitor-controller: manual autorandr change reported by "
+            "manual autorandr change reported by "
             f"postswitch: profile {notification.profile}",
             file=sys.stderr,
         )
@@ -879,11 +879,11 @@ def main() -> int:
     try:
         _require_active_namespace(os.environ)
     except ActiveStartupError as error:
-        print(f"monitor-controller: {error}", file=sys.stderr)
+        print(str(error), file=sys.stderr)
         return 1
     unauthorized = cutover_authorization_error(os.environ)
     if unauthorized is not None:
-        print(f"monitor-controller: {unauthorized}", file=sys.stderr)
+        print(unauthorized, file=sys.stderr)
         return 1
     if DRY_RUN_ARGUMENT in sys.argv[1:]:
         return dry_run(os.environ)
@@ -899,7 +899,7 @@ def main() -> int:
                 # observation resolves it. Exiting instead would leave the
                 # desktop with no manager at all, which is strictly worse.
                 print(
-                    "monitor-controller: starting without dispatch authority: "
+                    "starting without dispatch authority: "
                     + ("; ".join(recovery.reasons) or "recovery denied authority"),
                     file=sys.stderr,
                 )
@@ -907,7 +907,7 @@ def main() -> int:
     except KeyboardInterrupt:
         return 0
     except Exception as error:  # noqa: BLE001 - service composition boundary
-        print(f"monitor-controller: {error}", file=sys.stderr)
+        print(str(error), file=sys.stderr)
         return 1
     return 0
 
