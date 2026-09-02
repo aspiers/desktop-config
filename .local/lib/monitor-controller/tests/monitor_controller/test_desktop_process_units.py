@@ -166,6 +166,66 @@ def test_persistent_process_units_and_finalizer_have_separate_ownership() -> Non
     assert "NO NM-APPLET STATUSNOTIFIER ITEM REGISTERED" in tray_diag
 
 
+def test_tray_capture_is_bounded_nonblocking_and_skips_on_prune_failure(
+    tmp_path: Path,
+) -> None:
+    home = tmp_path / "home"
+    log_dir = home / ".log" / "tray-diag"
+    log_dir.mkdir(parents=True)
+    library = home / "lib" / "libhost.sh"
+    library.parent.mkdir()
+    library.write_text("read_localhost_nickname() { :; }\n", encoding="utf-8")
+    for index in range(1, 206):
+        capture = log_dir / f"{index:03}.txt"
+        capture.write_text("old\n", encoding="utf-8")
+        os.utime(capture, (index, index))
+
+    environment = os.environ.copy()
+    environment.update({"HOME": str(home)})
+    completed = subprocess.run(  # noqa: S603
+        (
+            "/bin/bash",
+            "-c",
+            r"""
+source "$1"
+sleep() { :; }
+tray-diag() {
+    touch "$HOME/started"
+    while [ ! -e "$HOME/release" ]; do /bin/sleep 0.01; done
+    printf 'partial\n' > "$1"
+    return 1
+}
+layout=capture-fails
+capture_tray_diag
+touch "$HOME/returned"
+touch "$HOME/release"
+wait || exit 20
+find "$HOME/.log/tray-diag" -maxdepth 1 -name '*.txt' | wc -l > "$HOME/count"
+rm -f "$HOME/started"
+find() { return 1; }
+layout=prune-fails
+capture_tray_diag
+wait || exit 21
+[ ! -e "$HOME/started" ] || exit 22
+""",
+            "setup-monitor-retention-test",
+            str(_REPOSITORY / "bin" / "setup-monitor"),
+        ),
+        check=False,
+        capture_output=True,
+        env=environment,
+        text=True,
+        timeout=5,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert (home / "returned").is_file()
+    assert home.joinpath("count").read_text(encoding="utf-8").strip() == "200"
+    assert not any(log_dir.glob("00[1-6].txt"))
+    assert (log_dir / "007.txt").is_file()
+    assert not any(log_dir.glob("*.prune-fails.txt"))
+
+
 @pytest.fixture
 def harmless_process_units() -> Iterator[tuple[str, str]]:
     systemctl = shutil.which("systemctl")

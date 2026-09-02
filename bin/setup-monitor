@@ -526,8 +526,22 @@ capture_tray_diag() {
 
     (
         sleep 5
-        tray-diag "$out" >/dev/null 2>&1
-    ) &
+        set -o pipefail
+
+        # Prune to 199 before writing. If retention cannot be enforced, skip
+        # this capture rather than allowing repeated failures to grow forever.
+        stale_captures=$(
+            find "$dir" -maxdepth 1 -name '*.txt' -printf '%T@ %p\n' 2>/dev/null |
+                sort -rn | tail -n +200 | cut -d' ' -f2-
+        ) || exit 0
+        while IFS= read -r stale; do
+            [ -z "$stale" ] || rm -f -- "$stale" || exit 0
+        done <<< "$stale_captures"
+
+        # A failed diagnostic may leave partial output, but pre-pruning keeps
+        # that file inside the same 200-capture bound.
+        tray-diag "$out" >/dev/null 2>&1 || true
+    ) >/dev/null 2>&1 &
 }
 
 # Snapshot the shadow controller's audit log around a display transition, so
@@ -634,4 +648,6 @@ print(json.dumps(recs))' 2>/dev/null || printf '[]'
     ) >/dev/null 2>&1 &
 }
 
-main "$@"
+if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
+    main "$@"
+fi
