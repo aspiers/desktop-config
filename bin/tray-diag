@@ -237,8 +237,9 @@ fi
 
 echo "--- panel plugin wrappers (start times reveal which respawned) ---"
 for p in $(pgrep -f 'xfce4/panel/wrapper-2.0'); do
-    printf '%s %s %s\n' \
+    printf '%s ppid=%s %s %s\n' \
         "$p" \
+        "$(ps -o ppid= -p "$p" 2>/dev/null | tr -d ' ')" \
         "$(ps -o lstart= -p "$p" 2>/dev/null)" \
         "$(tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null |
             grep -oE 'lib[a-z]+\.so')"

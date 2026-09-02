@@ -169,6 +169,7 @@ def test_persistent_process_units_and_finalizer_have_separate_ownership() -> Non
     assert "RegisteredStatusNotifierItems" in tray_diag
     assert "org.kde.StatusNotifierItem" in tray_diag
     assert "NO NM-APPLET STATUSNOTIFIER ITEM REGISTERED" in tray_diag
+    assert "ppid=%s" in tray_diag
 
 
 def test_panel_debug_service_owns_panel_but_not_its_log_pipeline() -> None:
