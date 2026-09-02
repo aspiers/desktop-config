@@ -14,6 +14,11 @@ screen_0_name=""
 screen_1_name=""
 screen_2_name=""
 timing_started_us=0
+fluxbox_test_mode=${SETUP_MONITOR_FLUXBOX_TEST_MODE:-1}
+fluxbox_expected_geometry=""
+fluxbox_actual_geometry=""
+fluxbox_verified_outputs=""
+fluxbox_failure_reason=""
 
 start_timing() {
     timing_started_us=${EPOCHREALTIME/./}
@@ -135,6 +140,322 @@ assert_expected_state() {
             stale_exit "layout changed from $expected_layout to $current_layout"
         fi
     fi
+}
+
+# The patched Fluxbox should handle RandR changes without a restart. Prove that
+# during normal relayouts, but retain the old restart as an automatic fallback.
+xrandr_state() {
+    local query
+
+    query=$(xrandr --current 2>/dev/null) || return 1
+    awk '
+        /^Screen 0:/ {
+            for (i = 1; i <= NF; i++) {
+                if ($i == "current") {
+                    height = $(i + 3)
+                    sub(/,$/, "", height)
+                    geometry = $(i + 1) "x" height
+                    break
+                }
+            }
+        }
+        $2 == "connected" {
+            for (i = 3; i <= NF; i++) {
+                if ($i ~ /^[0-9]+x[0-9]+[+-][0-9]+[+-][0-9]+/) {
+                    outputs++
+                    break
+                }
+            }
+        }
+        END {
+            if (geometry != "" && outputs > 0)
+                print geometry, outputs
+            else
+                exit 1
+        }
+    ' <<< "$query"
+}
+
+fluxbox_desktop_geometry() {
+    local property
+    local geometry
+
+    property=$(xprop -root _NET_DESKTOP_GEOMETRY 2>/dev/null) || return 1
+    geometry=$(sed -n 's/.*= *\([0-9][0-9]*\), *\([0-9][0-9]*\).*/\1x\2/p' \
+        <<< "$property")
+    [ -n "$geometry" ] || return 1
+    printf '%s\n' "$geometry"
+}
+
+active_output_count() {
+    local state
+
+    state=$(xrandr_state) || return 1
+    printf '%s\n' "${state##* }"
+}
+
+# Use Fluxbox's query/result command as an active round trip. Merely finding a
+# process or its EWMH window would not detect a hung event loop.
+fluxbox_responds() (
+    local probe="__setup_monitor_probe_${BASHPID}__"
+    local result
+    local attempt
+    local state_home=${XDG_STATE_HOME:-$HOME/.local/state}
+    local state_dir="$state_home/setup-monitor"
+    local lock_fd
+
+    mkdir -p "$state_dir" || return 1
+    exec {lock_fd}> "$state_dir/fluxbox-test.lock" || return 1
+    flock -w 2 "$lock_fd" || return 1
+
+    xprop -root -remove _FLUXBOX_ACTION_RESULT >/dev/null 2>&1 || return 1
+    fluxbox-remote "ClientPatternTest (name=$probe)" >/dev/null 2>&1 || return 1
+
+    for ((attempt = 0; attempt < 20; attempt++)); do
+        result=$(fluxbox-remote result 2>/dev/null)
+        [ "$result" = 0 ] && return 0
+        [ -n "$result" ] && return 1
+        sleep 0.05
+    done
+
+    return 1
+)
+
+check_fluxbox_after_layout() {
+    local attempt
+    local initial_state
+    local final_state
+
+    initial_state=$(xrandr_state)
+    fluxbox_expected_geometry=${initial_state%% *}
+    fluxbox_verified_outputs=${initial_state##* }
+    fluxbox_actual_geometry=""
+    fluxbox_failure_reason=""
+
+    if [ -z "$initial_state" ]; then
+        fluxbox_failure_reason="xrandr_geometry_unavailable"
+        return 1
+    fi
+
+    if ! fluxbox_responds; then
+        fluxbox_failure_reason="fluxbox_unresponsive"
+        return 1
+    fi
+
+    # The active round trip normally drains the earlier RandR event first, but
+    # leave one second for a busy desktop before falling back to a restart.
+    for ((attempt = 0; attempt < 20; attempt++)); do
+        fluxbox_actual_geometry=$(fluxbox_desktop_geometry)
+        if [ "$fluxbox_actual_geometry" = "$fluxbox_expected_geometry" ]; then
+            final_state=$(xrandr_state) || final_state=""
+            if [ "$final_state" != "$initial_state" ]; then
+                fluxbox_failure_reason="xrandr_changed_during_check"
+                return 1
+            fi
+            return 0
+        fi
+        sleep 0.05
+    done
+
+    if [ -z "$fluxbox_actual_geometry" ]; then
+        fluxbox_failure_reason="desktop_geometry_unavailable"
+    else
+        fluxbox_failure_reason="geometry_mismatch"
+    fi
+    return 1
+}
+
+report_fluxbox_test_progress() {
+    local dir="$1"
+    local captures=("$dir"/*.txt)
+    local counts
+    local dock=0
+    local undock=0
+    local dock_remaining
+    local undock_remaining
+
+    if [ -e "${captures[0]}" ]; then
+        counts=$(awk '
+            function finish_file() {
+                if (success && transition == "dock")
+                    dock++
+                else if (success && transition == "undock")
+                    undock++
+                success = 0
+                transition = ""
+            }
+            FNR == 1 {
+                if (seen)
+                    finish_file()
+                seen = 1
+            }
+            $0 == "result=success" { success = 1 }
+            $0 == "transition=dock" { transition = "dock" }
+            $0 == "transition=undock" { transition = "undock" }
+            END {
+                if (seen)
+                    finish_file()
+                print dock + 0, undock + 0
+            }
+        ' "${captures[@]}") || return 0
+        read -r dock undock <<< "$counts"
+    fi
+
+    [ "$dock" -lt 2 ] && dock_remaining=$((2 - dock)) || dock_remaining=0
+    [ "$undock" -lt 2 ] && undock_remaining=$((2 - undock)) || undock_remaining=0
+    printf 'Fluxbox test progress: dock %d/2, undock %d/2; outstanding dock=%d undock=%d\n' \
+        "$dock" "$undock" "$dock_remaining" "$undock_remaining"
+}
+
+# Serialize classification and retention so overlapping relayout processes
+# cannot double-count one transition or exceed the capture cap.
+record_fluxbox_test_result() (
+    local result="$1"
+    local reason="$2"
+    local pid_before="$3"
+    local pid_after="$4"
+    local elapsed_ms="$5"
+    local state_home=${XDG_STATE_HOME:-$HOME/.local/state}
+    local state_dir="$state_home/setup-monitor"
+    local state_file="$state_dir/fluxbox-test-last-layout"
+    local dir="$HOME/.log/setup-monitor-fluxbox-test"
+    local current_outputs="unknown"
+    local current_geometry="unknown"
+    local observed_state
+    local outputs_known=0
+    local previous_layout=""
+    local previous_outputs=""
+    local transition="unknown"
+    local out
+    local stale_captures
+    local stale
+    local state_tmp
+    local lock_fd
+
+    mkdir -p "$dir" "$state_dir" || return 0
+    exec {lock_fd}> "$state_dir/fluxbox-test.lock" || return 0
+    flock -w 2 "$lock_fd" || return 0
+
+    if observed_state=$(xrandr_state); then
+        current_geometry=${observed_state%% *}
+        current_outputs=${observed_state##* }
+        outputs_known=1
+        transition="baseline"
+        if [ "$result" = success ] &&
+           [ "$observed_state" != "$fluxbox_expected_geometry $fluxbox_verified_outputs" ]; then
+            result="stale"
+            reason="xrandr_changed_before_record"
+            current_outputs="unknown"
+            current_geometry="unknown"
+            outputs_known=0
+            transition="unknown"
+        fi
+    fi
+
+    if [ -r "$state_file" ]; then
+        previous_layout=$(sed -n 's/^layout=//p' "$state_file")
+        previous_outputs=$(sed -n 's/^active_outputs=//p' "$state_file")
+        if [ "$outputs_known" -eq 1 ] && [[ $previous_outputs =~ ^[0-9]+$ ]]; then
+            if [ "$current_outputs" -gt "$previous_outputs" ]; then
+                transition="dock"
+            elif [ "$current_outputs" -lt "$previous_outputs" ]; then
+                transition="undock"
+            else
+                transition="other"
+            fi
+        fi
+    fi
+
+    # Prune before writing so even a partial new capture stays within the cap.
+    stale_captures=$(
+        set -o pipefail
+        find "$dir" -maxdepth 1 -name '*.txt' -printf '%T@ %p\n' 2>/dev/null |
+            sort -rn | tail -n +200 | cut -d' ' -f2-
+    ) || return 0
+    while IFS= read -r stale; do
+        [ -z "$stale" ] || rm -f -- "$stale" || return 0
+    done <<< "$stale_captures"
+
+    out="$dir/$(date +%Y%m%d-%H%M%S.%N).$BASHPID.${layout:-unknown}.txt"
+    {
+        printf 'captured_at=%s\n' "$(date --iso-8601=seconds)"
+        printf 'layout=%s\n' "${layout:-unknown}"
+        printf 'previous_layout=%s\n' "$previous_layout"
+        printf 'transition=%s\n' "$transition"
+        printf 'active_outputs=%s\n' "$current_outputs"
+        printf 'current_xrandr_geometry=%s\n' "$current_geometry"
+        printf 'result=%s\n' "$result"
+        printf 'fallback_reason=%s\n' "$reason"
+        printf 'xrandr_geometry=%s\n' "$fluxbox_expected_geometry"
+        printf 'desktop_geometry=%s\n' "$fluxbox_actual_geometry"
+        printf 'fluxbox_pid_before=%s\n' "$pid_before"
+        printf 'fluxbox_pid_after=%s\n' "$pid_after"
+        printf 'elapsed_ms=%s\n' "$elapsed_ms"
+    } > "$out" 2>/dev/null || return 0
+
+    if [ "$outputs_known" -eq 1 ]; then
+        state_tmp="$state_file.$BASHPID"
+        if {
+            printf 'layout=%s\n' "${layout:-unknown}"
+            printf 'active_outputs=%s\n' "$current_outputs"
+        } > "$state_tmp" 2>/dev/null; then
+            mv -f "$state_tmp" "$state_file" 2>/dev/null || true
+        fi
+    fi
+
+    report_fluxbox_test_progress "$dir" || true
+    return 0
+)
+
+run_fluxbox_restart_test() {
+    local started_us=${EPOCHREALTIME/./}
+    local finished_us
+    local elapsed_ms
+    local pid_before
+    local pid_after
+    local result
+    local reason=""
+    local current_state
+
+    pid_before=$(pgrep -xo fluxbox 2>/dev/null)
+
+    if [ "$fluxbox_test_mode" = 0 ]; then
+        reason="test_mode_disabled"
+        echo "Fluxbox safe test disabled; restarting ..."
+        if fr; then
+            result="forced_restart"
+        else
+            result="restart_failed"
+        fi
+    elif check_fluxbox_after_layout; then
+        current_state=$(xrandr_state) || current_state=""
+        if [ "$current_state" = "$fluxbox_expected_geometry $fluxbox_verified_outputs" ]; then
+            result="success"
+            echo "Fluxbox is healthy at $fluxbox_actual_geometry; restart skipped"
+        else
+            reason="xrandr_changed_after_check"
+            echo "Fluxbox check became stale; restarting ..." >&2
+            if fr; then
+                result="fallback"
+            else
+                result="fallback_failed"
+            fi
+        fi
+    else
+        reason="$fluxbox_failure_reason"
+        echo "Fluxbox check failed ($reason); restarting ..." >&2
+        if fr; then
+            result="fallback"
+        else
+            result="fallback_failed"
+        fi
+    fi
+
+    pid_after=$(pgrep -xo fluxbox 2>/dev/null)
+    finished_us=${EPOCHREALTIME/./}
+    elapsed_ms=$(((10#$finished_us - 10#$started_us) / 1000))
+    record_fluxbox_test_result \
+        "$result" "$reason" "$pid_before" "$pid_after" "$elapsed_ms" || true
 }
 
 handle_term() {
@@ -383,9 +704,9 @@ main () {
     assert_expected_state
     timing_mark "window layout applied"
 
-    echo "Fluxbox restart ..."
-    fr
-    timing_mark "Fluxbox restarted"
+    echo "Fluxbox safe test ..."
+    run_fluxbox_restart_test
+    timing_mark "Fluxbox checked; fallback restart used only if needed"
 
     echo "Restarting xfce4-panel ..."
     if command -v xfce4-panel-debug-ensure >/dev/null 2>&1; then
