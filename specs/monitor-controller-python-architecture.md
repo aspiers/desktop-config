@@ -221,10 +221,10 @@ then repeats the immutable topology guard from its request immediately before
 mutation. This does not pretend that hardware can be frozen, but it closes the
 known observation-to-dispatch queue race at both process boundaries.
 
-DRM events are coalesced wake-up hints. A persisted nearest deadline always
-causes another observation, even if no DRM event follows. Worker completion is
-also a hint: success is not accepted until a fresh observation confirms the
-same transition. Request-write failure, unit-start rejection, supervisor-query
+DRM events are coalesced wake-up hints. A persisted nearest deadline for
+unresolved or failed work causes another observation even if no DRM event
+follows. `QUIESCENT` has no deadline. Worker completion is also a hint: success
+is not accepted until a fresh observation confirms the same transition. Request-write failure, unit-start rejection, supervisor-query
 failure, and timeout are explicit reducer inputs; no pending action can wait
 forever because an adapter failed silently.
 

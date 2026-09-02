@@ -51,6 +51,11 @@ sm_schedule() {
     sm_emit "SCHEDULE $delay_ms"
 }
 
+sm_quiesce() {
+    SM_PHASE=QUIESCENT
+    SM_NEXT_TIMER_MS=-1
+}
+
 sm_init() {
     local finalized_profile=${1:--}
     local boot_id=${2:-test-boot}
@@ -231,6 +236,24 @@ sm_begin_verification() {
         SM_VERIFY_KEY=$observation_key
     fi
     sm_schedule "$now_ms" 1000
+}
+
+sm_accept_exact_profile() {
+    local now_ms=$1
+    local profile=$2
+    local observation_key=$3
+    local scope=${4:-external}
+
+    if [[ $SM_PHASE == QUIESCENT &&
+        $SM_STABLE_PROFILE == "$profile" &&
+        $SM_DESKTOP_FINALIZED_PROFILE == "$profile" &&
+        $SM_CANDIDATE_PROFILE == "$profile" &&
+        $SM_CANDIDATE_SCOPE == "$scope" &&
+        $SM_CANDIDATE_OBSERVATION_KEY == "$observation_key" ]]; then
+        sm_quiesce
+        return
+    fi
+    sm_begin_verification "$now_ms" "$profile" "$observation_key" "$scope"
 }
 
 sm_request_probe() {
@@ -414,9 +437,8 @@ sm_commit_finalization_result() {
         SM_FINALIZATION_STATUS=succeeded
         SM_DESKTOP_FINALIZED_PROFILE=$SM_FINALIZATION_PROFILE
         SM_STABLE_PROFILE=$SM_FINALIZATION_PROFILE
-        SM_PHASE=QUIESCENT
+        sm_quiesce
         sm_emit "FINALIZATION_DONE $SM_FINALIZATION_ID"
-        sm_schedule "$now_ms" "$SM_HEALTH_POLL_MS"
     else
         SM_FINALIZATION_STATUS=failed
         SM_PHASE=FINALIZE_FAILED
@@ -431,15 +453,13 @@ sm_finish_verification() {
 
     SM_STABLE_PROFILE=$profile
     if [[ $SM_DESKTOP_FINALIZED_PROFILE == "$profile" ]]; then
-        SM_PHASE=QUIESCENT
+        sm_quiesce
         sm_emit "STABLE $profile"
-        sm_schedule "$now_ms" "$SM_HEALTH_POLL_MS"
     elif ((SM_BASELINE_ADOPTION == 1)) && [[ $SM_DESKTOP_FINALIZED_PROFILE == - ]]; then
         SM_DESKTOP_FINALIZED_PROFILE=$profile
         SM_BASELINE_ADOPTION=0
-        SM_PHASE=QUIESCENT
+        sm_quiesce
         sm_emit "ADOPT_BASELINE $profile"
-        sm_schedule "$now_ms" "$SM_HEALTH_POLL_MS"
     else
         sm_request_finalization "$now_ms" "$profile"
     fi
@@ -729,7 +749,7 @@ sm_observe() {
         fi
 
         if [[ $exact_profile != - && $exact_profile == "$current_profile" ]]; then
-            sm_begin_verification "$now_ms" "$exact_profile" "$observation_key" internal
+            sm_accept_exact_profile "$now_ms" "$exact_profile" "$observation_key" internal
         elif [[ $target_profile != - && $target_scope == internal ]]; then
             sm_invalidate_verification
             sm_request_application "$now_ms" "$target_profile" internal "$observation_key"
@@ -764,7 +784,7 @@ sm_observe() {
     elif [[ $exact_profile != - && $exact_profile == "$current_profile" ]]; then
         SM_UNKNOWN_KEY=-
         SM_UNKNOWN_SINCE_MS=-1
-        sm_begin_verification "$now_ms" "$exact_profile" "$observation_key" external
+        sm_accept_exact_profile "$now_ms" "$exact_profile" "$observation_key" external
     elif [[ $target_profile != - && $target_scope == external ]]; then
         SM_UNKNOWN_KEY=-
         SM_UNKNOWN_SINCE_MS=-1
@@ -893,12 +913,15 @@ sm_recover() {
             ;;
         esac
         ;;
-    PROBE_FAILED | APPLY_FAILED | UNSUPPORTED | FINALIZE_FAILED | QUIESCENT)
+    PROBE_FAILED | APPLY_FAILED | UNSUPPORTED | FINALIZE_FAILED)
         if ((SM_NEXT_TIMER_MS <= now_ms)); then
             sm_schedule "$now_ms" 0
         else
             sm_emit "SCHEDULE $((SM_NEXT_TIMER_MS - now_ms))"
         fi
+        ;;
+    QUIESCENT)
+        SM_NEXT_TIMER_MS=-1
         ;;
     RECOVERING | *) sm_schedule "$now_ms" 0 ;;
     esac

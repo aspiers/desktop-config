@@ -39,7 +39,7 @@ def test_simulate_runs_the_strict_scenario_corpus(
     output = capsys.readouterr().out
 
     assert '"scenario_count": 57' in output
-    assert '"step_count": 324' in output
+    assert '"step_count": 325' in output
 
 
 def test_replay_uses_the_production_reducer(

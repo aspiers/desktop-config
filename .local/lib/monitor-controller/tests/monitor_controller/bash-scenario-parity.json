@@ -1,6 +1,6 @@
 {
   "bash_source": "specs/spikes/test-monitor-watcher-state-machine.sh",
-  "bash_test_count": 49,
+  "bash_test_count": 50,
   "codec_behavior": {
     "test_persistence_rejects_duplicate_and_arithmetic_payload": {
       "python_tests": [
@@ -194,6 +194,10 @@
     "test_unchanged_application_evidence_is_deduplicated": {
       "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
       "scenario": "test_unchanged_application_evidence_is_deduplicated"
+    },
+    "test_unchanged_quiescent_observation_does_not_schedule_poll": {
+      "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",
+      "scenario": "test_laptop_startup_adopts_baseline"
     },
     "test_unknown_external_becomes_terminal_but_health_checked": {
       "comparison": "Bash assertion body executes successfully and Python scenario asserts every ordered decision/effect",

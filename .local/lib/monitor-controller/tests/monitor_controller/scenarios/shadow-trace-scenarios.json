@@ -125,15 +125,10 @@
               "prepare_desktop": 0,
               "request_observation": 0,
               "request_plan": 0,
-              "schedule": 2,
+              "schedule": 1,
               "stop_action": 0
             },
-            "effects": [
-              {
-                "deadline_ms": 70000,
-                "type": "schedule"
-              }
-            ],
+            "effects": [],
             "state": {
               "action_sequence_high_water": 0,
               "application_action_id": null,
@@ -146,7 +141,7 @@
               "external_intent": false,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 70000,
+              "next_timer_ms": null,
               "phase": "quiescent",
               "physical_epoch": 1,
               "planning_action_id": null,
@@ -1100,7 +1095,7 @@
               "prepare_desktop": 1,
               "request_observation": 4,
               "request_plan": 1,
-              "schedule": 8,
+              "schedule": 7,
               "stop_action": 0
             },
             "effects": [
@@ -1108,10 +1103,6 @@
                 "action_id": "plan-22222222222222222222222222222222-2",
                 "plan_hash": "plan-v1",
                 "type": "discard_plan"
-              },
-              {
-                "deadline_ms": 72001,
-                "type": "schedule"
               }
             ],
             "state": {
@@ -1126,7 +1117,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 72001,
+              "next_timer_ms": null,
               "phase": "quiescent",
               "physical_epoch": 1,
               "planning_action_id": null,
@@ -2491,15 +2482,10 @@
               "prepare_desktop": 0,
               "request_observation": 1,
               "request_plan": 0,
-              "schedule": 3,
+              "schedule": 2,
               "stop_action": 0
             },
-            "effects": [
-              {
-                "deadline_ms": 70100,
-                "type": "schedule"
-              }
-            ],
+            "effects": [],
             "state": {
               "action_sequence_high_water": 0,
               "application_action_id": null,
@@ -2512,7 +2498,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 70100,
+              "next_timer_ms": null,
               "phase": "quiescent",
               "physical_epoch": 0,
               "planning_action_id": null,
@@ -3178,15 +3164,10 @@
               "prepare_desktop": 0,
               "request_observation": 0,
               "request_plan": 0,
-              "schedule": 2,
+              "schedule": 1,
               "stop_action": 0
             },
-            "effects": [
-              {
-                "deadline_ms": 70000,
-                "type": "schedule"
-              }
-            ],
+            "effects": [],
             "state": {
               "action_sequence_high_water": 0,
               "application_action_id": null,
@@ -3199,7 +3180,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 70000,
+              "next_timer_ms": null,
               "phase": "quiescent",
               "physical_epoch": 1,
               "planning_action_id": null,

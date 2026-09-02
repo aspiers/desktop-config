@@ -118,6 +118,15 @@ def _schedule(state: State, deadline_ms: int, *effects: Effect) -> Decision:
     return _decision(scheduled, *effects, Schedule(deadline_ms))
 
 
+def _quiesce(state: State, *effects: Effect) -> Decision:
+    quiescent = replace(
+        state,
+        phase=ControllerPhase.QUIESCENT,
+        next_timer_ms=None,
+    )
+    return _decision(quiescent, *effects)
+
+
 def _allocate_action(state: State, kind: ActionKind) -> tuple[State, ActionId]:
     sequence = state.action_sequence_high_water + 1
     return (
@@ -590,25 +599,18 @@ def _advance_verification(
         state, discard_effects = _discard_planning(state)
         state = replace(
             state,
-            phase=ControllerPhase.QUIESCENT,
             stable_x_profile=profile,
             baseline_adoption=False,
         )
-        return _schedule(
-            state,
-            now_ms + HEALTH_POLL_MS,
-            *leading_effects,
-            *discard_effects,
-        )
+        return _quiesce(state, *leading_effects, *discard_effects)
     if proof_complete and state.baseline_adoption:
         state = replace(
             state,
-            phase=ControllerPhase.QUIESCENT,
             stable_x_profile=profile,
             desktop_finalized_profile=profile,
             baseline_adoption=False,
         )
-        return _schedule(state, now_ms + HEALTH_POLL_MS, *leading_effects)
+        return _quiesce(state, *leading_effects)
     if (
         proof_complete
         and state.preparation_state is PreparationState.PREPARED
@@ -937,6 +939,14 @@ def _classify_observation(state: State, observation: CanonicalObservation) -> De
         and target.profile in observation.current_profiles
     ):
         state = replace(state, unknown_key=None, unknown_since_ms=None)
+        same_stable_profile = (
+            state.phase is ControllerPhase.QUIESCENT
+            and state.stable_x_profile == target.profile
+            and state.desktop_finalized_profile == target.profile
+            and state.candidate == _candidate(state, observation, target)
+        )
+        if same_stable_profile:
+            return _quiesce(state)
         return _start_verification(state, observation, target)
     if target is not None:
         state = replace(state, unknown_key=None, unknown_since_ms=None)
@@ -1212,17 +1222,11 @@ def _observe(state: State, event: ObservationCompleted) -> Decision:
                 state, discard_effects = _discard_planning(state)
                 state = replace(
                     state,
-                    phase=ControllerPhase.QUIESCENT,
                     stable_x_profile=action.profile,
                     desktop_finalized_profile=action.profile,
                     finalization=None,
                 )
-                return _schedule(
-                    state,
-                    now_ms + HEALTH_POLL_MS,
-                    *epoch_effects,
-                    *discard_effects,
-                )
+                return _quiesce(state, *epoch_effects, *discard_effects)
             action = replace(action, lifecycle=ActionLifecycle.FAILED)
             state = _append_tombstone(state, action, ActionLifecycle.FAILED)
             state = replace(

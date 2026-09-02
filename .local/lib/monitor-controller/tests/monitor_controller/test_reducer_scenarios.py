@@ -98,6 +98,38 @@ def _scenario_state(
     )
 
 
+def test_unchanged_quiescent_observation_does_not_schedule_another_poll() -> None:
+    scenario = next(
+        item
+        for item in _SCENARIOS
+        if item.name == "test_resume_to_same_profile_skips_finalization"
+    )
+    state = run_scenario(scenario).decisions[-1].state
+    previous = state.latest_observation
+    assert state.phase is ControllerPhase.QUIESCENT
+    assert previous is not None
+
+    now_ms = previous.observed_at_ms + 60_000
+    observation = replace(
+        previous,
+        observed_at_ms=now_ms,
+        observation_generation=ObservationGeneration(
+            previous.observation_generation.value + 1
+        ),
+    )
+    decision = reduce(
+        state,
+        ObservationCompleted(
+            EventMetadata(now_ms, state.boot_id),
+            observation,
+        ),
+    )
+
+    assert decision.state.phase is ControllerPhase.QUIESCENT
+    assert decision.state.next_timer_ms is None
+    assert decision.effects == ()
+
+
 def test_worker_completion_schedules_from_processing_not_sample_time() -> None:
     state = _scenario_state(
         "production_worker_timeout",
@@ -810,7 +842,7 @@ def test_parity_manifest_classifies_every_bash_test_honestly() -> None:
     )
 
     assert manifest["schema_version"] == 3
-    assert manifest["bash_test_count"] == len(bash_names) == 49
+    assert manifest["bash_test_count"] == len(bash_names) == 50
     assert set(executable) | set(divergence) | set(codec) == bash_names
     assert not (set(executable) & set(divergence))
     assert not (set(executable) & set(codec))
@@ -832,7 +864,7 @@ def test_executable_bash_oracle_passes_all_classified_behavior_cases() -> None:
     output = completed.stdout.splitlines()
 
     assert completed.returncode == 0, completed.stderr
-    assert len([line for line in output if line.startswith("ok - ")]) == 49
+    assert len([line for line in output if line.startswith("ok - ")]) == 50
     assert not [line for line in output if line.startswith("not ok - ")]
 
 
@@ -963,7 +995,7 @@ def test_strict_loader_rejects_unknown_event_and_effect_fields(
 
 def test_scenario_corpus_is_comprehensive_and_explicit() -> None:
     assert len(_SCENARIOS) == 57
-    assert sum(len(scenario.steps) for scenario in _SCENARIOS) == 324
+    assert sum(len(scenario.steps) for scenario in _SCENARIOS) == 325
     steps = (step for scenario in _SCENARIOS for step in scenario.steps)
     assert all(step.expected_effect_counts for step in steps)
     steps = (step for scenario in _SCENARIOS for step in scenario.steps)

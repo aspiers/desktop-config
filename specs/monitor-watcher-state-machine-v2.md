@@ -220,7 +220,7 @@ verified independently.
 | State | Meaning | Normal wake-up |
 | --- | --- | --- |
 | `RECOVERING` | Validate persisted state against a fresh observation. | immediate |
-| `QUIESCENT` | One known profile is exact and stable; no unresolved work. | DRM or 60s health tick |
+| `QUIESCENT` | One known profile is exact and stable; no unresolved work and no timer is scheduled. | DRM event |
 | `DISCOVER_FAST` | Topology/identity is changing within the aggressive budget. | 0, 250ms, 500ms, 1s, then 2s |
 | `PROBE_PENDING` | A safe output activation is admitted from one exact base identity but not yet acknowledged as dispatched. | same clean observation or dispatch acknowledgement |
 | `PROBING` | One acknowledged safe-mode activation probe is in progress. | process completion |
@@ -322,7 +322,7 @@ prevents action until re-probed.
 | `RECOVERING` | External topology unresolved | Restore deadline/backoff | `DISCOVER_FAST` or `WAIT_SLOW` |
 | `RECOVERING` | Exact current profile, no pending transaction, and no trusted `desktop_finalized_profile` | Adopt as restart baseline without desktop work | `VERIFYING` |
 | `RECOVERING` | Exact current profile differs from trusted `desktop_finalized_profile` | Verify as a real desktop transition | `VERIFYING` |
-| `QUIESCENT` | Same exact stable profile | No action | `QUIESCENT` |
+| `QUIESCENT` | Same exact stable profile | Clear any stale deadline; schedule nothing | `QUIESCENT` |
 | `QUIESCENT` | Candidate EDID disappears but mapped output remains | Preserve intent, do not load internal profile | `DISCOVER_FAST` |
 | `QUIESCENT` | Another exact/current eligible profile appears | Start stability proof | `VERIFYING` |
 | `QUIESCENT` | Other meaningful observation change | Start epoch/deadline | `DISCOVER_FAST` |
@@ -400,13 +400,14 @@ PROFILE_STABILITY_MS  = 10000
 EVENT_QUIET_MS        = 5000
 UNKNOWN_STABILITY_MS  = 10000
 UNPLUG_STABILITY_MS   = 1000
-HEALTH_POLL_MS        = 60000
+HEALTH_POLL_MS        = 60000 (failure/unsupported backoff only)
 ```
 
 Persist absolute deadlines. On service restart, an overdue timer fires
-immediately; unresolved waiting is neither reset nor abandoned. DRM events
-schedule an immediate observation but reset the aggressive deadline only when
-they reveal a new physical epoch.
+immediately; unresolved waiting is neither reset nor abandoned. Entering
+`QUIESCENT` clears the deadline because settled state has no timer-driven work.
+DRM events schedule an immediate observation but reset the aggressive deadline
+only when they reveal a new physical epoch.
 
 ## Safe monitor activation probe
 

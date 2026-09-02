@@ -89,7 +89,7 @@
     "prepare_desktop": 0,
     "request_observation": 0,
     "request_plan": 0,
-    "schedule": 2,
+    "schedule": 1,
     "stop_action": 0
    },
    "live_acceptance": "NOT_SATISFIED",
@@ -104,7 +104,7 @@
     "reducer startup policy"
    ],
    "scenario": "shadow_laptop_startup",
-   "shadow_outcome": "Adopt exact current celtic as a startup baseline, schedule 1s verification then a 60s health tick, and emit no mutating intent.",
+   "shadow_outcome": "Adopt exact current celtic as a startup baseline, complete 1s-spaced verification, enter timer-free quiescence, and emit no mutating intent.",
    "source_evidence": {
     "ng": {
      "acceptance_limit": "comparison input only; not a live shadow trace",
@@ -121,8 +121,7 @@
     "profile_transition_finalization"
    ],
    "timer_deadlines_ms": [
-    1000,
-    70000
+    1000
    ],
    "trace": "laptop_startup.jsonl",
    "trace_semantics": "scenario_replay_not_production_audit"
@@ -138,7 +137,7 @@
     "prepare_desktop": 1,
     "request_observation": 4,
     "request_plan": 1,
-    "schedule": 8,
+    "schedule": 7,
     "stop_action": 0
    },
    "live_acceptance": "NOT_SATISFIED",
@@ -191,8 +190,7 @@
     4000,
     3002,
     5000,
-    12000,
-    72001
+    12000
    ],
    "trace": "samsung_plug.jsonl",
    "trace_semantics": "scenario_replay_not_production_audit"
@@ -327,7 +325,7 @@
     "prepare_desktop": 0,
     "request_observation": 1,
     "request_plan": 0,
-    "schedule": 3,
+    "schedule": 2,
     "stop_action": 0
    },
    "live_acceptance": "NOT_SATISFIED",
@@ -362,8 +360,7 @@
    ],
    "timer_deadlines_ms": [
     100,
-    1100,
-    70100
+    1100
    ],
    "trace": "same_profile_suspend_resume.jsonl",
    "trace_semantics": "scenario_replay_not_production_audit"
@@ -480,7 +477,7 @@
     "prepare_desktop": 0,
     "request_observation": 0,
     "request_plan": 0,
-    "schedule": 2,
+    "schedule": 1,
     "stop_action": 0
    },
    "live_acceptance": "NOT_SATISFIED",
@@ -513,8 +510,7 @@
     "profile_transition_finalization"
    ],
    "timer_deadlines_ms": [
-    1000,
-    70000
+    1000
    ],
    "trace": "aoc_connector_rename.jsonl",
    "trace_semantics": "scenario_replay_not_production_audit"

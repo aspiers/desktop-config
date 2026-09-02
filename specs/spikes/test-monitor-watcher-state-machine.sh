@@ -77,9 +77,21 @@ test_laptop_startup_adopts_baseline() {
     observe 10000 laptop p-laptop none celtic internal celtic celtic
     [[ $SM_PHASE == QUIESCENT ]] &&
         [[ $SM_DESKTOP_FINALIZED_PROFILE == celtic ]] &&
+        [[ $SM_NEXT_TIMER_MS -eq -1 ]] &&
         has_action 'ADOPT_BASELINE celtic' &&
         [[ $(journal_count APPLY) -eq 0 ]] &&
         [[ $(journal_count FINALIZE) -eq 0 ]]
+}
+
+test_unchanged_quiescent_observation_does_not_schedule_poll() {
+    sm_init
+    observe 0 laptop p-laptop none celtic internal celtic celtic
+    observe 10000 laptop p-laptop none celtic internal celtic celtic
+    observe 70000 laptop p-laptop none celtic internal celtic celtic
+
+    [[ $SM_PHASE == QUIESCENT ]] &&
+        [[ $SM_NEXT_TIMER_MS -eq -1 ]] &&
+        [[ ${#SM_ACTIONS[@]} -eq 0 ]]
 }
 
 test_genuine_external_plug_applies_and_finalizes_once() {
@@ -731,6 +743,7 @@ test_boot_mismatch_discards_monotonic_wait() {
 }
 
 run_test 'laptop startup adopts current profile as baseline' test_laptop_startup_adopts_baseline
+run_test 'unchanged quiescent observation does not schedule poll' test_unchanged_quiescent_observation_does_not_schedule_poll
 run_test 'genuine external plug applies and finalizes once' test_genuine_external_plug_applies_and_finalizes_once
 run_test 'known base with broken extensions probes before full match' test_probeable_identity_probes_then_requires_full_match
 run_test 'invalid observation never authorizes activation probe' test_invalid_observation_never_authorizes_probe

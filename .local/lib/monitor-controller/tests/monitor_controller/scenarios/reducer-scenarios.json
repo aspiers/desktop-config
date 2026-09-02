@@ -123,15 +123,10 @@
               "prepare_desktop": 0,
               "request_observation": 0,
               "request_plan": 0,
-              "schedule": 2,
+              "schedule": 1,
               "stop_action": 0
             },
-            "effects": [
-              {
-                "deadline_ms": 70000,
-                "type": "schedule"
-              }
-            ],
+            "effects": [],
             "state": {
               "action_sequence_high_water": 0,
               "application_action_id": null,
@@ -144,7 +139,78 @@
               "external_intent": false,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 70000,
+              "next_timer_ms": null,
+              "phase": "quiescent",
+              "physical_epoch": 1,
+              "planning_action_id": null,
+              "planning_lifecycle": null,
+              "planning_state": "plan_idle",
+              "preparation_action_id": null,
+              "preparation_lifecycle": null,
+              "preparation_state": "prepare_idle",
+              "probe_action_id": null,
+              "probe_lifecycle": null,
+              "stable_x_profile": "celtic",
+              "tombstone_count": 0,
+              "transition_sequence_high_water": 0,
+              "verify_since_ms": 0
+            }
+          }
+        },
+        {
+          "event": {
+            "at_ms": 70000,
+            "base_identity_outputs": [],
+            "complete_edid_outputs": [],
+            "configuration_hashes": {
+              "desktop/common.conf": "sha256:desktop:common",
+              "layouts/celtic.yaml": "sha256:layout:celtic"
+            },
+            "current_profile": "celtic",
+            "event_generation": 0,
+            "exact_profile": "celtic",
+            "external_outputs": [],
+            "external_state": "none",
+            "identity_profile": null,
+            "internal_edid_complete": false,
+            "key": "laptop",
+            "observation_generation": 3,
+            "physical_token": "p-laptop",
+            "probe_internal_output": null,
+            "probe_mode": null,
+            "probe_output": null,
+            "target_layout": "layouts/celtic.yaml",
+            "target_profile": "celtic",
+            "target_scope": "internal",
+            "type": "observation",
+            "valid": true
+          },
+          "expect": {
+            "effect_counts": {
+              "activate_probe": 0,
+              "apply_profile": 0,
+              "discard_plan": 0,
+              "finalize_desktop": 0,
+              "prepare_desktop": 0,
+              "request_observation": 0,
+              "request_plan": 0,
+              "schedule": 1,
+              "stop_action": 0
+            },
+            "effects": [],
+            "state": {
+              "action_sequence_high_water": 0,
+              "application_action_id": null,
+              "application_lifecycle": null,
+              "attempted_application_count": 0,
+              "attempted_probe_count": 0,
+              "baseline_adoption": false,
+              "candidate_profile": "celtic",
+              "desktop_finalized_profile": "celtic",
+              "external_intent": false,
+              "finalization_action_id": null,
+              "finalization_lifecycle": null,
+              "next_timer_ms": null,
               "phase": "quiescent",
               "physical_epoch": 1,
               "planning_action_id": null,
@@ -1095,7 +1161,7 @@
               "prepare_desktop": 1,
               "request_observation": 4,
               "request_plan": 1,
-              "schedule": 8,
+              "schedule": 7,
               "stop_action": 0
             },
             "effects": [
@@ -1103,10 +1169,6 @@
                 "action_id": "plan-22222222222222222222222222222222-2",
                 "plan_hash": "plan-v1",
                 "type": "discard_plan"
-              },
-              {
-                "deadline_ms": 72001,
-                "type": "schedule"
               }
             ],
             "state": {
@@ -1121,7 +1183,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 72001,
+              "next_timer_ms": null,
               "phase": "quiescent",
               "physical_epoch": 1,
               "planning_action_id": null,
@@ -7040,15 +7102,10 @@
               "prepare_desktop": 0,
               "request_observation": 1,
               "request_plan": 0,
-              "schedule": 3,
+              "schedule": 2,
               "stop_action": 0
             },
-            "effects": [
-              {
-                "deadline_ms": 70100,
-                "type": "schedule"
-              }
-            ],
+            "effects": [],
             "state": {
               "action_sequence_high_water": 0,
               "application_action_id": null,
@@ -7061,7 +7118,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 70100,
+              "next_timer_ms": null,
               "phase": "quiescent",
               "physical_epoch": 0,
               "planning_action_id": null,
@@ -7801,15 +7858,10 @@
               "prepare_desktop": 0,
               "request_observation": 0,
               "request_plan": 0,
-              "schedule": 2,
+              "schedule": 1,
               "stop_action": 0
             },
-            "effects": [
-              {
-                "deadline_ms": 70000,
-                "type": "schedule"
-              }
-            ],
+            "effects": [],
             "state": {
               "action_sequence_high_water": 0,
               "application_action_id": null,
@@ -7822,7 +7874,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 70000,
+              "next_timer_ms": null,
               "phase": "quiescent",
               "physical_epoch": 1,
               "planning_action_id": null,
@@ -12514,7 +12566,7 @@
               "prepare_desktop": 1,
               "request_observation": 3,
               "request_plan": 1,
-              "schedule": 8,
+              "schedule": 7,
               "stop_action": 0
             },
             "effects": [
@@ -12522,10 +12574,6 @@
                 "action_id": "plan-22222222222222222222222222222222-1",
                 "plan_hash": "plan-v1",
                 "type": "discard_plan"
-              },
-              {
-                "deadline_ms": 72000,
-                "type": "schedule"
               }
             ],
             "state": {
@@ -12540,7 +12588,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 72000,
+              "next_timer_ms": null,
               "phase": "quiescent",
               "physical_epoch": 1,
               "planning_action_id": null,
@@ -14966,15 +15014,10 @@
               "prepare_desktop": 1,
               "request_observation": 2,
               "request_plan": 1,
-              "schedule": 8,
+              "schedule": 7,
               "stop_action": 0
             },
-            "effects": [
-              {
-                "deadline_ms": 82000,
-                "type": "schedule"
-              }
-            ],
+            "effects": [],
             "state": {
               "action_sequence_high_water": 3,
               "application_action_id": null,
@@ -14987,7 +15030,7 @@
               "external_intent": false,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 82000,
+              "next_timer_ms": null,
               "phase": "quiescent",
               "physical_epoch": 2,
               "planning_action_id": null,
@@ -15048,7 +15091,7 @@
               "prepare_desktop": 1,
               "request_observation": 2,
               "request_plan": 2,
-              "schedule": 9,
+              "schedule": 8,
               "stop_action": 0
             },
             "effects": [
@@ -22966,7 +23009,7 @@
               "prepare_desktop": 1,
               "request_observation": 4,
               "request_plan": 1,
-              "schedule": 8,
+              "schedule": 7,
               "stop_action": 0
             },
             "effects": [
@@ -22974,10 +23017,6 @@
                 "action_id": "plan-22222222222222222222222222222222-2",
                 "plan_hash": "plan-v1",
                 "type": "discard_plan"
-              },
-              {
-                "deadline_ms": 72001,
-                "type": "schedule"
               }
             ],
             "state": {
@@ -22992,7 +23031,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 72001,
+              "next_timer_ms": null,
               "phase": "quiescent",
               "physical_epoch": 1,
               "planning_action_id": null,
