@@ -1,0 +1,76 @@
+#!/bin/bash
+
+set -u
+
+panel_debug=external,positioning,systray
+runtime_dir=${XDG_RUNTIME_DIR:-/run/user/$UID}/xfce4-panel-debug
+control_fifo=$runtime_dir/control
+ack_file=$runtime_dir/last-marker
+own_cgroup=$(cat /proc/$$/cgroup)
+
+mkdir -p "$runtime_dir" || exit 1
+chmod 700 "$runtime_dir" || exit 1
+rm -f "$control_fifo"
+mkfifo -m 600 "$control_fifo" || exit 1
+
+pids_in_own_cgroup() {
+    local process_name=$1
+    local pid
+
+    for pid in $(pgrep -x "$process_name"); do
+        [ -r "/proc/$pid/cgroup" ] || continue
+        [ "$(cat "/proc/$pid/cgroup")" = "$own_cgroup" ] && printf '%s\n' "$pid"
+    done
+}
+
+managed_pids() {
+    pids_in_own_cgroup xfce4-panel
+    pids_in_own_cgroup wrapper-2.0
+}
+
+stop_panel() {
+    local -a pids
+
+    mapfile -t pids < <(managed_pids)
+    ((${#pids[@]} == 0)) || kill "${pids[@]}" 2>/dev/null || true
+    kill "$control_pid" 2>/dev/null || true
+    for _ in {1..20}; do
+        mapfile -t pids < <(managed_pids)
+        ((${#pids[@]} == 0)) && break
+        sleep 0.05
+    done
+    mapfile -t pids < <(managed_pids)
+    ((${#pids[@]} == 0)) || kill -KILL "${pids[@]}" 2>/dev/null || true
+    wait "$control_pid" "$panel_pid" 2>/dev/null || true
+}
+
+# Markers pass through this unit's journal, the same ordered stream as panel
+# debug output. Reopen after each writer closes so every relayout can mark.
+(
+    while true; do
+        while IFS= read -r marker; do
+            printf '%s\n' "$marker"
+            printf '%s\n' "$marker" > "$ack_file"
+        done < "$control_fifo"
+    done
+) &
+control_pid=$!
+
+trap 'stop_panel; exit 0' TERM INT
+
+# Output goes to journald, not a pipe inherited by panel-launched applications.
+# The separate log collector copies this unit's journal into bounded files.
+PANEL_DEBUG=$panel_debug xfce4-panel &
+panel_pid=$!
+wait "$panel_pid" 2>/dev/null || true
+
+# `xfce4-panel -r` makes the original process spawn a replacement and exit.
+# Reap that original above, then keep supervising while a replacement remains.
+declare -a remaining
+while mapfile -t remaining < <(pids_in_own_cgroup xfce4-panel) &&
+    ((${#remaining[@]} > 0)); do
+    sleep 1
+done
+
+stop_panel
+exit 1

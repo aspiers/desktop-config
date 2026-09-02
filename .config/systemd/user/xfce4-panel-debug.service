@@ -1,0 +1,24 @@
+[Unit]
+Description=XFCE panel with debug output
+PartOf=fluxbox-session.target
+Wants=xfce4-panel-debug-log.service
+After=fluxbox-session.target xfce4-panel-debug-log.service
+
+[Service]
+Type=simple
+Environment=HOME=%h
+Environment=PATH=%h/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+PassEnvironment=DISPLAY XAUTHORITY XDG_RUNTIME_DIR
+ExecStart=%h/bin/xfce4-panel-debug-run
+Restart=always
+RestartSec=1s
+# The runner kills only the panel and wrappers. Other cgroup members may be
+# applications launched from panel menus and must survive service recovery.
+KillMode=process
+TimeoutStartSec=15s
+TimeoutStopSec=10s
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=fluxbox-session.target

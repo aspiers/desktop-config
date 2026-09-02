@@ -1,0 +1,119 @@
+#!/bin/bash
+
+set -u
+
+log_dir=${PANEL_DEBUG_LOG_DIR:-$HOME/.log}
+status=$log_dir/xfce4-panel-debug.status
+tmp=$status.$$
+
+mkdir -p "$log_dir" || exit 0
+
+write_outstanding() {
+    {
+        printf 'checked_at=%s\n' "$(date --iso-8601=seconds)"
+        printf 'boundary=%s\n' "$1"
+        printf 'respawn_path=outstanding\n'
+        printf 'tray_allocation=outstanding\n'
+    } > "$tmp" 2>/dev/null || return 0
+    mv -f "$tmp" "$status" || return 0
+    cat "$status"
+}
+
+if [ "${1:-}" = --mark-boundary ]; then
+    label=${2:-unspecified}
+    label=${label//$'\n'/ }
+    boundary="PANEL_DEBUG_RELAYOUT_BOUNDARY $(date --iso-8601=seconds) $$ $label"
+    runtime_dir=${XDG_RUNTIME_DIR:-/run/user/$UID}/xfce4-panel-debug
+    control_fifo=$runtime_dir/control
+    ack_file=$runtime_dir/last-marker
+    [ -p "$control_fifo" ] || exit 1
+    exec 9<> "$control_fifo" || exit 1
+    printf '%s\n' "$boundary" >&9 || exit 1
+    exec 9>&-
+
+    # Wait only for the supervisor to put the marker into its journal stream.
+    # Bounded-file persistence stays asynchronous and cannot delay relayout.
+    for _ in {1..20}; do
+        if grep -Fqx "$boundary" "$ack_file" 2>/dev/null; then
+            write_outstanding "$boundary"
+            exit 0
+        fi
+        sleep 0.01
+    done
+    echo >&2 "Panel debug supervisor did not acknowledge boundary: $boundary"
+    exit 1
+fi
+
+shopt -s nullglob
+ordered_logs=()
+while IFS= read -r -d '' entry; do
+    ordered_logs+=("${entry#* }")
+done < <(
+    find "$log_dir" -maxdepth 1 -name 'xfce4-panel-debug.log*' \
+        -printf '%T@ %p\0' 2>/dev/null | sort -zn
+)
+
+evidence=$(mktemp "$log_dir/.xfce4-panel-debug-evidence.XXXXXX") || exit 0
+trap 'rm -f "$evidence" "$tmp"' EXIT
+
+# Keep only lines after the newest relayout marker. This prevents a retained
+# rotation from answering a later relayout with stale evidence.
+cat "${ordered_logs[@]}" /dev/null 2>/dev/null |
+    awk '
+        /^PANEL_DEBUG_RELAYOUT_BOUNDARY / {
+            boundary = $0
+            evidence = ""
+            next
+        }
+        boundary != "" { evidence = evidence $0 ORS }
+        END {
+            print boundary > "/dev/stderr"
+            printf "%s", evidence
+        }
+    ' > "$evidence" 2> "$evidence.boundary"
+boundary=$(tail -1 "$evidence.boundary" 2>/dev/null)
+rm -f "$evidence.boundary"
+expected_boundary=$(sed -n 's/^boundary=//p' "$status" 2>/dev/null | head -1)
+case "$expected_boundary" in
+    PANEL_DEBUG_RELAYOUT_BOUNDARY*)
+        if [ "$boundary" != "$expected_boundary" ]; then
+            write_outstanding "$expected_boundary"
+            exit 0
+        fi
+        ;;
+esac
+
+{
+    printf 'checked_at=%s\n' "$(date --iso-8601=seconds)"
+    printf 'boundary=%s\n' "${boundary:-none}"
+
+    unrealized=$(grep -F 'plugin unrealized; quitting child' \
+        "$evidence" 2>/dev/null | tail -1)
+    child_exit=$(grep -F 'child exited with status' \
+        "$evidence" 2>/dev/null | tail -1)
+    if [ -n "$unrealized" ] && [ -n "$child_exit" ]; then
+        printf 'respawn_path=mixed\n'
+        printf 'plugin_unrealized_excerpt=%s\n' "$unrealized"
+        printf 'child_exit_excerpt=%s\n' "$child_exit"
+    elif [ -n "$unrealized" ]; then
+        printf 'respawn_path=plugin-unrealized\n'
+        printf 'plugin_unrealized_excerpt=%s\n' "$unrealized"
+    elif [ -n "$child_exit" ]; then
+        printf 'respawn_path=child-exited\n'
+        printf 'child_exit_excerpt=%s\n' "$child_exit"
+    else
+        printf 'respawn_path=outstanding\n'
+    fi
+
+    allocation=$(grep -E 'allocate rows=[0-9]+, icon_size=[0-9]+' \
+        "$evidence" 2>/dev/null | tail -1)
+    if [ -n "$allocation" ]; then
+        printf 'tray_allocation=observed\n'
+        printf 'allocation_excerpt=%s\n' "$allocation"
+    else
+        printf 'tray_allocation=outstanding\n'
+    fi
+} > "$tmp" 2>/dev/null || exit 0
+
+mv -f "$tmp" "$status" || exit 0
+cat "$status"

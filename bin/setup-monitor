@@ -388,6 +388,13 @@ main () {
     timing_mark "Fluxbox restarted"
 
     echo "Restarting xfce4-panel ..."
+    if command -v xfce4-panel-debug-ensure >/dev/null 2>&1; then
+        xfce4-panel-debug-ensure >/dev/null 2>&1 || true
+    fi
+    if command -v panel-debug-status >/dev/null 2>&1; then
+        panel-debug-status --mark-boundary "setup-monitor ${layout:-unknown}" \
+            >/dev/null 2>&1 || true
+    fi
     xfce4-panel -r
     assert_expected_state
 
@@ -541,6 +548,13 @@ capture_tray_diag() {
         # A failed diagnostic may leave partial output, but pre-pruning keeps
         # that file inside the same 200-capture bound.
         tray-diag "$out" >/dev/null 2>&1 || true
+
+        # Wrapper respawns arrive about six seconds after the panel restart.
+        # Update the outstanding-evidence report after that boundary.
+        sleep 2
+        if command -v panel-debug-status >/dev/null 2>&1; then
+            panel-debug-status >/dev/null 2>&1 || true
+        fi
     ) >/dev/null 2>&1 &
 }
 

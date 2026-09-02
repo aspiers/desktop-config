@@ -1,0 +1,19 @@
+#!/bin/bash
+
+set -u
+
+log_dir=${PANEL_DEBUG_LOG_DIR:-$HOME/.log}
+log_file=$log_dir/xfce4-panel-debug.log
+state_dir=${XDG_STATE_HOME:-$HOME/.local/state}/xfce4-panel-debug
+cursor_file=$state_dir/journal.cursor
+
+mkdir -p "$log_dir" "$state_dir" || exit 1
+
+# This collector is outside the panel service. It fsyncs each log message
+# before advancing the cursor, so recovery may duplicate but cannot lose it.
+exec journal-follow-cursor \
+    xfce4-panel-debug.service \
+    "$cursor_file" \
+    "$log_file" \
+    2097152 \
+    5

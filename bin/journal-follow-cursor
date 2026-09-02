@@ -1,0 +1,207 @@
+#!/usr/bin/python3
+
+"""Persist one user unit's journal to bounded files with a durable cursor."""
+
+from __future__ import annotations
+
+import json
+import os
+import shutil
+import subprocess
+import sys
+import time
+from dataclasses import dataclass
+from pathlib import Path
+from typing import cast
+
+EXPECTED_ARGUMENT_COUNT = 6
+RECOVERY_WINDOW = "-10min"
+ALLOWED_COMMS = frozenset(("xfce4-panel", "wrapper-2.0"))
+MARKER_PREFIX = "PANEL_DEBUG_RELAYOUT_BOUNDARY "
+
+
+def durable_replace(path: Path, content: str) -> None:
+    """Atomically replace a small state file after syncing its contents."""
+    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.{os.getpid()}")
+    with temporary.open("w", encoding="utf-8") as stream:
+        stream.write(content)
+        stream.flush()
+        os.fsync(stream.fileno())
+    temporary.replace(path)
+
+
+def rotate(log_file: Path, retained_files: int) -> None:
+    """Rotate the base log through a fixed number of numbered files."""
+    if retained_files <= 1:
+        log_file.unlink(missing_ok=True)
+        return
+    oldest = log_file.with_name(f"{log_file.name}.{retained_files - 1}")
+    oldest.unlink(missing_ok=True)
+    for index in range(retained_files - 2, 0, -1):
+        source = log_file.with_name(f"{log_file.name}.{index}")
+        if source.exists():
+            source.replace(log_file.with_name(f"{log_file.name}.{index + 1}"))
+    if log_file.exists():
+        log_file.replace(log_file.with_name(f"{log_file.name}.1"))
+
+
+def append_durable(
+    log_file: Path,
+    message: str,
+    *,
+    maximum_bytes: int,
+    retained_files: int,
+) -> None:
+    """Append one line and sync it before its journal cursor may advance."""
+    encoded = f"{message}\n".encode()
+    if len(encoded) > maximum_bytes:
+        suffix = b"...[truncated]\n"
+        if maximum_bytes > len(suffix):
+            encoded = encoded[: maximum_bytes - len(suffix)] + suffix
+        else:
+            encoded = encoded[:maximum_bytes]
+    log_file.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    if log_file.exists() and log_file.stat().st_size + len(encoded) > maximum_bytes:
+        rotate(log_file, retained_files)
+    with log_file.open("ab") as stream:
+        stream.write(encoded)
+        stream.flush()
+        os.fsync(stream.fileno())
+    log_file.chmod(0o600)
+
+
+def cursor_is_valid(cursor: str, journalctl: str) -> bool:
+    """Return whether journald can still seek to a persisted cursor."""
+    completed = subprocess.run(  # noqa: S603
+        (
+            journalctl,
+            "--user",
+            "--quiet",
+            "--lines=0",
+            f"--cursor={cursor}",
+        ),
+        check=False,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    return completed.returncode == 0
+
+
+def journal_command(unit: str, cursor_file: Path, journalctl: str) -> list[str]:
+    """Build a follow command, recovering recent entries after cursor expiry."""
+    command = [
+        journalctl,
+        "--user",
+        "--follow",
+        "--no-pager",
+        "--output=json",
+        "--unit",
+        unit,
+    ]
+    if cursor_file.is_file():
+        cursor = cursor_file.read_text(encoding="utf-8").strip()
+        if cursor and cursor_is_valid(cursor, journalctl):
+            command.append(f"--after-cursor={cursor}")
+            return command
+        if cursor:
+            invalid = cursor_file.with_name(
+                f"{cursor_file.name}.invalid-{int(time.time())}"
+            )
+            cursor_file.replace(invalid)
+        command.append(f"--since={RECOVERY_WINDOW}")
+    else:
+        command.extend(("--lines", "0"))
+    return command
+
+
+@dataclass(frozen=True)
+class FollowConfig:
+    """Paths and limits for one durable journal follower."""
+
+    unit: str
+    cursor_file: Path
+    log_file: Path
+    maximum_bytes: int
+    retained_files: int
+    journalctl: str
+
+
+def follow_journal(config: FollowConfig) -> int:
+    """Follow entries until the journal process or output sink stops."""
+    process = subprocess.Popen(  # noqa: S603
+        journal_command(config.unit, config.cursor_file, config.journalctl),
+        stdout=subprocess.PIPE,
+        text=True,
+    )
+    stdout = process.stdout
+    if stdout is None:
+        process.terminate()
+        process.wait()
+        return 1
+    try:
+        for line in stdout:
+            record: object = json.loads(line)
+            if not isinstance(record, dict):
+                continue
+            fields = cast("dict[str, object]", record)
+            message = fields.get("MESSAGE", "")
+            if isinstance(message, list):
+                items = cast("list[object]", message)
+                octets = [item for item in items if isinstance(item, int)]
+                message = bytes(octets).decode(errors="replace")
+            message_text = str(message)
+            comm = fields.get("_COMM")
+            if comm in ALLOWED_COMMS or message_text.startswith(MARKER_PREFIX):
+                append_durable(
+                    config.log_file,
+                    message_text,
+                    maximum_bytes=config.maximum_bytes,
+                    retained_files=config.retained_files,
+                )
+            cursor = fields.get("__CURSOR")
+            if isinstance(cursor, str):
+                durable_replace(config.cursor_file, f"{cursor}\n")
+    except (BrokenPipeError, json.JSONDecodeError, OSError, ValueError) as error:
+        print(f"journal-follow-cursor: {error}", file=sys.stderr)
+        return 1
+    finally:
+        process.terminate()
+        process.wait()
+    return process.returncode
+
+
+def main() -> int:
+    """Validate arguments and follow the requested unit."""
+    if len(sys.argv) != EXPECTED_ARGUMENT_COUNT:
+        print(
+            "usage: journal-follow-cursor UNIT CURSOR LOG MAX_BYTES RETAINED_FILES",
+            file=sys.stderr,
+        )
+        return 2
+    journalctl = shutil.which("journalctl")
+    if journalctl is None:
+        print("journal-follow-cursor: journalctl is unavailable", file=sys.stderr)
+        return 1
+    unit = sys.argv[1]
+    cursor_file = Path(sys.argv[2])
+    log_file = Path(sys.argv[3])
+    maximum_bytes = int(sys.argv[4])
+    retained_files = int(sys.argv[5])
+    if maximum_bytes < 1 or retained_files < 1:
+        print("journal-follow-cursor: bounds must be positive", file=sys.stderr)
+        return 2
+    return follow_journal(
+        FollowConfig(
+            unit=unit,
+            cursor_file=cursor_file,
+            log_file=log_file,
+            maximum_bytes=maximum_bytes,
+            retained_files=retained_files,
+            journalctl=journalctl,
+        )
+    )
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,0 +1,3 @@
+#!/bin/bash
+
+exec xfce4-panel-debug-ensure

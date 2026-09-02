@@ -1,0 +1,21 @@
+[Unit]
+Description=Bounded XFCE panel debug log collector
+PartOf=fluxbox-session.target
+After=fluxbox-session.target
+
+[Service]
+Type=simple
+Environment=HOME=%h
+Environment=PATH=%h/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+PassEnvironment=XDG_RUNTIME_DIR
+ExecStart=%h/bin/xfce4-panel-debug-log
+Restart=always
+RestartSec=1s
+KillMode=control-group
+TimeoutStartSec=15s
+TimeoutStopSec=10s
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=fluxbox-session.target

@@ -1,0 +1,62 @@
+#!/bin/bash
+
+set -u
+
+unit=xfce4-panel-debug.service
+log_unit=xfce4-panel-debug-log.service
+panel_debug=external,positioning,systray
+
+panel_is_managed() {
+    local pid=$1
+
+    [ -r "/proc/$pid/environ" ] &&
+        tr '\0' '\n' < "/proc/$pid/environ" |
+            grep -Fxq "PANEL_DEBUG=$panel_debug" &&
+        grep -Fq "/$unit" "/proc/$pid/cgroup"
+}
+
+if systemctl --user is-active --quiet "$unit"; then
+    for pid in $(pgrep -x xfce4-panel); do
+        if panel_is_managed "$pid"; then
+            if ! systemctl --user is-active --quiet "$log_unit"; then
+                systemctl --user restart "$log_unit" || exit 1
+            fi
+            echo "xfce4-panel debug services already active"
+            panel-debug-status || true
+            exit 0
+        fi
+    done
+    echo >&2 "$unit is active without its debug panel; restarting it"
+    systemctl --user restart "$unit" || exit 1
+else
+    if pgrep -x xfce4-panel >/dev/null; then
+        echo "Replacing the session panel with $unit"
+        xfce4-panel -q || exit 1
+        for _ in {1..50}; do
+            pgrep -x xfce4-panel >/dev/null || break
+            sleep 0.1
+        done
+        if pgrep -x xfce4-panel >/dev/null; then
+            echo >&2 "xfce4-panel did not stop; refusing to start a duplicate"
+            exit 1
+        fi
+    fi
+    systemctl --user start "$unit" || exit 1
+fi
+
+for _ in {1..50}; do
+    if systemctl --user is-active --quiet "$unit" &&
+        systemctl --user is-active --quiet "$log_unit"; then
+        for pid in $(pgrep -x xfce4-panel); do
+            if panel_is_managed "$pid"; then
+                echo "xfce4-panel debug service active (5 x 2 MiB logs)"
+                panel-debug-status --mark-boundary session-start || true
+                exit 0
+            fi
+        done
+    fi
+    sleep 0.1
+done
+
+echo >&2 "$unit did not start a panel with PANEL_DEBUG=$panel_debug"
+exit 1

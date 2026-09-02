@@ -10,6 +10,7 @@ Type=oneshot
 Environment=HOME=%h
 Environment=PATH=/usr/bin:/bin
 PassEnvironment=DISPLAY XAUTHORITY
+ExecStartPre=-%h/bin/panel-debug-status --mark-boundary %I
 ExecStart=/usr/bin/xfce4-panel -r
 TimeoutStartSec=30s
 TimeoutStartFailureMode=terminate
