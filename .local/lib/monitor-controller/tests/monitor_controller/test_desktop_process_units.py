@@ -201,7 +201,8 @@ def test_panel_debug_service_owns_panel_but_not_its_log_pipeline() -> None:
     assert "KillMode=control-group" in log_unit
     assert "PANEL_DEBUG=$panel_debug xfce4-panel &" in runner
     assert 'wait "$panel_pid"' in runner
-    assert "pids_in_own_cgroup wrapper-2.0" in runner
+    assert "wrapper_pids_in_own_cgroup" in runner
+    assert "[[ $executable == */wrapper-2.0 ]]" in runner
     assert "exec journal-follow-cursor" in logger
     assert (
         "xfce4-panel-debug.service \\\n"
@@ -431,12 +432,23 @@ def test_panel_debug_runner_reaps_panel_without_waiting_on_inherited_output(
         "(sleep 0.8) &\n"
         "sleep 5 &\n"
         "printf '%s\\n' $! > \"$APP_PID_FILE\"\n"
+        "wrapper-2.0 &\n"
+        'while [ ! -e "$WRAPPER_PID_FILE" ]; do sleep 0.01; done\n'
         "exit 0\n",
         encoding="utf-8",
     )
     panel.chmod(0o700)
+    wrapper = fake_bin / "wrapper-2.0"
+    wrapper.write_text(
+        "#!/bin/bash\n"
+        "printf '%s\\n' $$ > \"$WRAPPER_PID_FILE\"\n"
+        "exec -a /fake/wrapper-2.0 sleep 5\n",
+        encoding="utf-8",
+    )
+    wrapper.chmod(0o700)
     panel_pid_file = tmp_path / "panel.pid"
     app_pid_file = tmp_path / "application.pid"
+    wrapper_pid_file = tmp_path / "wrapper.pid"
     environment = os.environ.copy()
     environment.update(
         {
@@ -444,6 +456,7 @@ def test_panel_debug_runner_reaps_panel_without_waiting_on_inherited_output(
             "HOME": str(tmp_path / "home"),
             "PANEL_PID_FILE": str(panel_pid_file),
             "PATH": f"{fake_bin}:/usr/bin:/bin",
+            "WRAPPER_PID_FILE": str(wrapper_pid_file),
             "XDG_RUNTIME_DIR": str(tmp_path / "runtime"),
         }
     )
@@ -465,6 +478,8 @@ def test_panel_debug_runner_reaps_panel_without_waiting_on_inherited_output(
 
         assert not Path(f"/proc/{panel_pid}").exists()
         assert process.wait(timeout=2) == 1
+        wrapper_pid = int(wrapper_pid_file.read_text(encoding="utf-8"))
+        assert not Path(f"/proc/{wrapper_pid}").exists()
         app_pid = int(app_pid_file.read_text(encoding="utf-8"))
         assert Path(f"/proc/{app_pid}").exists()
         os.kill(app_pid, signal.SIGTERM)
@@ -478,6 +493,10 @@ def test_panel_debug_runner_reaps_panel_without_waiting_on_inherited_output(
             app_pid = int(app_pid_file.read_text(encoding="utf-8"))
             if Path(f"/proc/{app_pid}").exists():
                 os.kill(app_pid, signal.SIGTERM)
+        if wrapper_pid_file.exists():
+            wrapper_pid = int(wrapper_pid_file.read_text(encoding="utf-8"))
+            if Path(f"/proc/{wrapper_pid}").exists():
+                os.kill(wrapper_pid, signal.SIGTERM)
 
 
 def test_tray_capture_is_bounded_nonblocking_and_skips_on_prune_failure(
