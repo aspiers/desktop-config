@@ -391,10 +391,9 @@ main () {
     xfce4-panel -r
     assert_expected_state
 
-    pkill nm-applet
     wait_for_stable_tray
-    nohup nm-applet >&~/.log/nm-applet.log &
-    timing_mark "panel and system tray settled; nm-applet launched"
+    systemctl --user restart nm-applet.service
+    timing_mark "panel and system tray settled; nm-applet service restarted"
 
     capture_tray_diag
     capture_shadow_trace

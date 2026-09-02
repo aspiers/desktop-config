@@ -135,12 +135,16 @@ def test_persistent_process_units_and_finalizer_have_separate_ownership() -> Non
     )
     panel = (_UNITS / "monitor-panel-restart@.service").read_text(encoding="utf-8")
     restart = (_REPOSITORY / "bin" / "fluxbox-restart").read_text(encoding="utf-8")
+    setup_monitor = (_REPOSITORY / "bin" / "setup-monitor").read_text(
+        encoding="utf-8"
+    )
+    tray_diag = (_REPOSITORY / "bin" / "tray-diag").read_text(encoding="utf-8")
 
     assert "KillMode=mixed" in finalizer
     assert "TimeoutStopSec=130s" in finalizer
     assert "setup-monitor" not in finalizer
     assert "Type=exec" in applet
-    assert "ExecStart=/usr/bin/nm-applet" in applet
+    assert "ExecStart=/usr/bin/nm-applet --indicator" in applet
     assert "PartOf=fluxbox-session.target" in applet
     assert "KillMode=control-group" in applet
     assert "Type=oneshot" in diagnostics
@@ -151,6 +155,15 @@ def test_persistent_process_units_and_finalizer_have_separate_ownership() -> Non
     assert "TimeoutStartSec=30s" in panel
     assert "systemd-run --user" in restart
     assert "-p KillMode=process" in restart
+    assert (
+        "    wait_for_stable_tray\n"
+        "    systemctl --user restart nm-applet.service\n" in setup_monitor
+    )
+    assert "pkill nm-applet" not in setup_monitor
+    assert "nohup nm-applet" not in setup_monitor
+    assert "RegisteredStatusNotifierItems" in tray_diag
+    assert "org.kde.StatusNotifierItem" in tray_diag
+    assert "NO NM-APPLET STATUSNOTIFIER ITEM REGISTERED" in tray_diag
 
 
 @pytest.fixture

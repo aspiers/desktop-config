@@ -208,6 +208,33 @@ done
 section "panel and applets"
 ps -o pid,lstart,cmd -C xfce4-panel 2>&1
 ps -o pid,lstart,cmd -C nm-applet 2>&1
+
+echo "--- StatusNotifier host and nm-applet item ---"
+watcher=org.kde.StatusNotifierWatcher
+if busctl --user status "$watcher" >/dev/null 2>&1; then
+    busctl --user status "$watcher" 2>&1 |
+        grep -E '^(PID|PPID|Comm|Exe|CommandLine)=' || true
+    items=$(busctl --user get-property "$watcher" /StatusNotifierWatcher \
+        org.kde.StatusNotifierWatcher RegisteredStatusNotifierItems 2>&1)
+    printf 'RegisteredStatusNotifierItems: %s\n' "$items"
+    item=$(printf '%s\n' "$items" |
+        grep -oE '"[^"]*/[^" ]*nm_applet"' | head -1 | tr -d '"')
+    if [ -n "$item" ]; then
+        destination=${item%%/*}
+        path=/${item#*/}
+        printf 'nm-applet item: destination=%s path=%s\n' "$destination" "$path"
+        for property in Id Title Status IconName; do
+            printf '%s: ' "$property"
+            busctl --user get-property "$destination" "$path" \
+                org.kde.StatusNotifierItem "$property" 2>&1 || true
+        done
+    else
+        echo "NO NM-APPLET STATUSNOTIFIER ITEM REGISTERED"
+    fi
+else
+    echo "NO STATUSNOTIFIER HOST"
+fi
+
 echo "--- panel plugin wrappers (start times reveal which respawned) ---"
 for p in $(pgrep -f 'xfce4/panel/wrapper-2.0'); do
     printf '%s %s %s\n' \
