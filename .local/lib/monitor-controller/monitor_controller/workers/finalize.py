@@ -11,7 +11,7 @@ import stat
 import subprocess
 import tempfile
 import time
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from subprocess import TimeoutExpired
@@ -126,8 +126,22 @@ class ApplyWindowLayout:
 
 
 @dataclass(frozen=True, slots=True)
+class CheckFluxboxHealth:
+    """Live-reconfigure Fluxbox, then prove geometry and command response."""
+
+    expected_xrandr_state: str
+
+
+@dataclass(frozen=True, slots=True)
 class RestartFluxbox:
     """Request the existing transient-service-owned Fluxbox restart."""
+
+
+@dataclass(frozen=True, slots=True)
+class WaitForFluxbox:
+    """Wait until the replacement Fluxbox is geometrically responsive."""
+
+    expected_xrandr_state: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -153,7 +167,9 @@ type FinalizeOperation = (
     ApplyFluxboxConfiguration
     | ApplyKeyboardIntent
     | ApplyWindowLayout
+    | CheckFluxboxHealth
     | RestartFluxbox
+    | WaitForFluxbox
     | RestartXfcePanel
     | RestartNmApplet
     | CaptureTrayDiagnostics
@@ -342,7 +358,9 @@ class SubprocessFinalizeCommands:
                 self._home_root / ".fluxbox" / "keys",
                 operation.content,
             )
-            return self._run(("fluxbox-remote", "Reconfigure"))
+            # The following health operation owns live reconfiguration. Keeping
+            # it there lets a missing or hung Fluxbox fall back to a restart.
+            return FinalizeCommandResult(0)
         if isinstance(operation, ApplyKeyboardIntent):
             return self._apply_keyboard_intent(operation)
         if isinstance(operation, ApplyWindowLayout):
@@ -358,11 +376,29 @@ class SubprocessFinalizeCommands:
                 )
             finally:
                 payload.unlink(missing_ok=True)
+        if isinstance(operation, CheckFluxboxHealth):
+            return self._run(
+                (
+                    str(self._leaf_root / "run-with-local-X-display"),
+                    str(self._leaf_root / "fluxbox-health-check"),
+                    "check",
+                    operation.expected_xrandr_state,
+                )
+            )
         if isinstance(operation, RestartFluxbox):
             return self._run(
                 (
                     str(self._leaf_root / "run-with-local-X-display"),
                     str(self._leaf_root / "fluxbox-restart"),
+                )
+            )
+        if isinstance(operation, WaitForFluxbox):
+            return self._run(
+                (
+                    str(self._leaf_root / "run-with-local-X-display"),
+                    str(self._leaf_root / "fluxbox-health-check"),
+                    "wait",
+                    operation.expected_xrandr_state,
                 )
             )
         if isinstance(operation, RestartXfcePanel):
@@ -602,6 +638,79 @@ def run_finalize_worker(  # noqa: PLR0913
     )
 
 
+def _command_failure(
+    result: FinalizeCommandResult, description: str
+) -> WorkerExecution | None:
+    if result.timed_out:
+        return WorkerExecution(
+            ActionLifecycle.TIMED_OUT,
+            result.exit_status,
+            f"{description} timed out",
+        )
+    if result.exit_status != 0:
+        return WorkerExecution(
+            ActionLifecycle.FAILED,
+            result.exit_status,
+            f"{description} exited with status {result.exit_status}",
+        )
+    return None
+
+
+def _expected_fluxbox_xrandr_state(bundle: DesktopPlanBundle) -> str:
+    screens = bundle.plan.guards.display_screens
+    root_width = max(screen.x + screen.width for screen in screens)
+    root_height = max(screen.y + screen.height for screen in screens)
+    outputs = ",".join(
+        (
+            f"{screen.output}={screen.width}x{screen.height}"
+            f"{screen.x:+d}{screen.y:+d}:"
+            f"{'primary' if screen.primary else 'secondary'}"
+        )
+        for screen in sorted(screens, key=lambda item: item.output)
+    )
+    return f"{root_width}x{root_height};{outputs}"
+
+
+def _reconcile_fluxbox(
+    startup: WorkerStartup,
+    bundle: DesktopPlanBundle,
+    commands: FinalizeCommands,
+    cancellation: DeferredCancellation,
+    revalidate: Callable[[], CurrentTopology],
+) -> WorkerExecution | None:
+    expected_state = _expected_fluxbox_xrandr_state(bundle)
+    health = commands.apply(CheckFluxboxHealth(expected_state))
+    _raise_if_cancelled(startup, cancellation)
+    # Re-prove authority after the bounded live reconfiguration and before
+    # deciding whether a fallback restart under the staged plan is still safe.
+    revalidate()
+    if health.exit_status == 0 and not health.timed_out:
+        _JOURNAL.info(
+            "FLUXBOX_HEALTH_DECISION action=%s profile=%s result=skip",
+            startup.request.action_id.value,
+            startup.request.profile,
+        )
+        return None
+
+    health_reason = "timeout" if health.timed_out else f"exit-{health.exit_status}"
+    _JOURNAL.warning(
+        "FLUXBOX_HEALTH_DECISION action=%s profile=%s "
+        "result=fallback reason=%s",
+        startup.request.action_id.value,
+        startup.request.profile,
+        health_reason,
+    )
+    restarted = commands.apply(RestartFluxbox())
+    _raise_if_cancelled(startup, cancellation)
+    failure = _command_failure(restarted, "restart_fluxbox")
+    if failure is not None:
+        return failure
+
+    ready = commands.apply(WaitForFluxbox(expected_state))
+    _raise_if_cancelled(startup, cancellation)
+    return _command_failure(ready, "replacement Fluxbox readiness")
+
+
 def execute_finalization(  # noqa: C901, PLR0913
     startup: WorkerStartup,
     *,
@@ -653,6 +762,13 @@ def execute_finalization(  # noqa: C901, PLR0913
                 if bundle is None:
                     _stale("staged plan disappeared at a finalization boundary")
             _raise_if_cancelled(startup, cancellation)
+            if action.kind is PlannedActionKind.RESTART_FLUXBOX:
+                failure = _reconcile_fluxbox(
+                    startup, bundle, commands, cancellation, boundary
+                )
+                if failure is not None:
+                    return failure
+                continue
             if action.kind is PlannedActionKind.RESTART_NM_APPLET:
                 try:
                     commands.wait_for_stable_tray()
@@ -674,18 +790,9 @@ def execute_finalization(  # noqa: C901, PLR0913
             # A durable cancellation which arrived during an atomic restart
             # wins only after the bounded command has returned.
             _raise_if_cancelled(startup, cancellation)
-            if result.timed_out:
-                return WorkerExecution(
-                    ActionLifecycle.TIMED_OUT,
-                    result.exit_status,
-                    f"{action.kind.value} timed out",
-                )
-            if result.exit_status != 0:
-                return WorkerExecution(
-                    ActionLifecycle.FAILED,
-                    result.exit_status,
-                    f"{action.kind.value} exited with status {result.exit_status}",
-                )
+            failure = _command_failure(result, action.kind.value)
+            if failure is not None:
+                return failure
         request = startup.request
         transition = request.transition_id
         plan_hash = request.plan_hash

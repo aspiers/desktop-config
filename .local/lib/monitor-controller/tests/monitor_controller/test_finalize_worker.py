@@ -79,6 +79,7 @@ from monitor_controller.workers.finalize import (
     ApplyWindowLayout,
     BluetoothctlConnectionProbe,
     CaptureTrayDiagnostics,
+    CheckFluxboxHealth,
     DeferredCancellation,
     FinalizationFence,
     FinalizeCommandResult,
@@ -88,6 +89,7 @@ from monitor_controller.workers.finalize import (
     RestartNmApplet,
     RestartXfcePanel,
     SubprocessFinalizeCommands,
+    WaitForFluxbox,
     execute_finalization,
 )
 
@@ -110,11 +112,26 @@ _MAPPING = (
     OutputMapping("DisplayPort-1", "DisplayPort-9"),
     OutputMapping("eDP", "eDP"),
 )
+_EXPECTED_FLUXBOX_STATE: Final = (
+    "8000x2160;DisplayPort-9=5120x2160+2880+0:primary,"
+    "eDP=2880x1920+0+0:secondary"
+)
 _EXPECTED_OPERATIONS: Final = (
     ApplyFluxboxConfiguration,
     ApplyKeyboardIntent,
+    CheckFluxboxHealth,
     ApplyWindowLayout,
+    RestartXfcePanel,
+    RestartNmApplet,
+    CaptureTrayDiagnostics,
+)
+_EXPECTED_FALLBACK_OPERATIONS: Final = (
+    ApplyFluxboxConfiguration,
+    ApplyKeyboardIntent,
+    CheckFluxboxHealth,
     RestartFluxbox,
+    WaitForFluxbox,
+    ApplyWindowLayout,
     RestartXfcePanel,
     RestartNmApplet,
     CaptureTrayDiagnostics,
@@ -145,11 +162,17 @@ class _FakeCommands:
         *,
         on_apply: Callable[[int, FinalizeOperation], None] | None = None,
         tray_ready: bool = True,
+        fluxbox_health_status: int = 0,
+        fluxbox_health_timed_out: bool = False,
+        fluxbox_readiness_status: int = 0,
     ) -> None:
         self.query_text = (_XRANDR / "samsung.query").read_text(encoding="utf-8")
         self.properties_text = (_XRANDR / "samsung.props").read_text(encoding="utf-8")
         self.on_apply = on_apply
         self.tray_ready = tray_ready
+        self.fluxbox_health_status = fluxbox_health_status
+        self.fluxbox_health_timed_out = fluxbox_health_timed_out
+        self.fluxbox_readiness_status = fluxbox_readiness_status
         self.read_calls: list[tuple[str, ...]] = []
         self.operations: list[FinalizeOperation] = []
         self.tray_waits = 0
@@ -174,6 +197,13 @@ class _FakeCommands:
         self.operations.append(operation)
         if self.on_apply is not None:
             self.on_apply(len(self.operations), operation)
+        if isinstance(operation, CheckFluxboxHealth):
+            return FinalizeCommandResult(
+                self.fluxbox_health_status,
+                timed_out=self.fluxbox_health_timed_out,
+            )
+        if isinstance(operation, WaitForFluxbox):
+            return FinalizeCommandResult(self.fluxbox_readiness_status)
         return FinalizeCommandResult(0)
 
     def wait_for_stable_tray(self) -> StableTray:
@@ -390,9 +420,12 @@ def test_ordered_actions_have_fresh_guards_and_bound_success(
 
     assert tuple(type(item) for item in commands.operations) == _EXPECTED_OPERATIONS
     assert commands.tray_waits == 1
-    assert len(commands.read_calls) == 16
-    assert fence.generation_checks == fence.mutator_checks == 8
-    window_operation = commands.operations[2]
+    assert len(commands.read_calls) == 18
+    assert fence.generation_checks == fence.mutator_checks == 9
+    health_operation = commands.operations[2]
+    assert isinstance(health_operation, CheckFluxboxHealth)
+    assert health_operation.expected_xrandr_state == _EXPECTED_FLUXBOX_STATE
+    window_operation = commands.operations[3]
     assert isinstance(window_operation, ApplyWindowLayout)
     assert json.loads(window_operation.content) == [
         {
@@ -406,6 +439,82 @@ def test_ordered_actions_have_fresh_guards_and_bound_success(
     assert result.outcome is ActionLifecycle.COMPLETED
     assert result.plan_hash == hash_plan_bundle(bundle)
     assert "awaiting observation" in result.detail
+
+
+@pytest.mark.parametrize(
+    ("health_status", "timed_out"),
+    [(10, False), (11, False), (12, False), (13, False), (14, False), (124, True)],
+)
+def test_window_layout_runs_after_fluxbox_fallback_restart(
+    tmp_path: Path,
+    health_status: int,
+    *,
+    timed_out: bool,
+) -> None:
+    tree = RootedSysfsReader(_sysfs_tree(tmp_path / "sysfs"))
+    commands = _FakeCommands(
+        fluxbox_health_status=health_status,
+        fluxbox_health_timed_out=timed_out,
+    )
+    startup, _store, plan_store, _bundle = _startup(tmp_path, tree, commands)
+
+    assert _execute(startup, plan_store, tree, commands, _Fence()) == 0
+
+    operation_types = tuple(type(item) for item in commands.operations)
+    assert operation_types == _EXPECTED_FALLBACK_OPERATIONS
+    assert operation_types.index(RestartFluxbox) < operation_types.index(
+        ApplyWindowLayout
+    )
+    assert operation_types.index(WaitForFluxbox) < operation_types.index(
+        ApplyWindowLayout
+    )
+
+
+def test_topology_change_during_fluxbox_check_prevents_restart(
+    tmp_path: Path,
+) -> None:
+    root = _sysfs_tree(tmp_path / "sysfs")
+    tree = RootedSysfsReader(root)
+
+    def disconnect(_index: int, operation: FinalizeOperation) -> None:
+        if isinstance(operation, CheckFluxboxHealth):
+            root.joinpath("card0-DP-3", "status").write_text(
+                "disconnected\n", encoding="ascii"
+            )
+
+    commands = _FakeCommands(on_apply=disconnect, fluxbox_health_status=13)
+    startup, store, plan_store, _bundle = _startup(tmp_path, tree, commands)
+
+    assert _execute(startup, plan_store, tree, commands, _Fence()) == (
+        STALE_EXIT_STATUS
+    )
+    assert tuple(type(item) for item in commands.operations) == (
+        ApplyFluxboxConfiguration,
+        ApplyKeyboardIntent,
+        CheckFluxboxHealth,
+    )
+    assert store.read_result(_FINALIZE_ACTION).detail.startswith("STALE:")
+
+
+def test_unhealthy_replacement_stops_before_window_layout(tmp_path: Path) -> None:
+    tree = RootedSysfsReader(_sysfs_tree(tmp_path / "sysfs"))
+    commands = _FakeCommands(
+        fluxbox_health_status=13,
+        fluxbox_readiness_status=11,
+    )
+    startup, store, plan_store, _bundle = _startup(tmp_path, tree, commands)
+
+    assert _execute(startup, plan_store, tree, commands, _Fence()) == 11
+    assert tuple(type(item) for item in commands.operations) == (
+        ApplyFluxboxConfiguration,
+        ApplyKeyboardIntent,
+        CheckFluxboxHealth,
+        RestartFluxbox,
+        WaitForFluxbox,
+    )
+    result = store.read_result(_FINALIZE_ACTION)
+    assert result.outcome is ActionLifecycle.FAILED
+    assert "readiness exited with status 11" in result.detail
 
 
 @pytest.mark.parametrize(
@@ -506,7 +615,7 @@ def test_durable_cancel_arriving_during_atomic_restart_is_reported_after_step(
     tmp_path: Path,
 ) -> None:
     tree = RootedSysfsReader(_sysfs_tree(tmp_path / "sysfs"))
-    commands = _FakeCommands()
+    commands = _FakeCommands(fluxbox_health_status=13)
     startup, store, plan_store, _bundle = _startup(tmp_path, tree, commands)
 
     def cancel_on_fluxbox(_index: int, operation: FinalizeOperation) -> None:
@@ -518,7 +627,9 @@ def test_durable_cancel_arriving_during_atomic_restart_is_reported_after_step(
     assert _execute(startup, plan_store, tree, commands, _Fence()) == (
         CANCELLED_EXIT_STATUS
     )
-    assert tuple(type(item) for item in commands.operations) == _EXPECTED_OPERATIONS[:4]
+    assert tuple(type(item) for item in commands.operations) == (
+        _EXPECTED_FALLBACK_OPERATIONS[:4]
+    )
     assert isinstance(commands.operations[-1], RestartFluxbox)
     assert store.read_result(_FINALIZE_ACTION).outcome is ActionLifecycle.CANCELLED
 
@@ -643,19 +754,21 @@ def test_production_adapter_uses_only_exact_leaves_and_separate_units(
                 )
             ),
             1: ApplyKeyboardIntent(bundle.plan.keyboard.disposition),
-            2: ApplyWindowLayout(
+            2: CheckFluxboxHealth(_EXPECTED_FLUXBOX_STATE),
+            3: ApplyWindowLayout(
                 next(
                     item.content
                     for item in bundle.artifacts
                     if item.relative_path == bundle.plan.windows.actions_artifact
                 )
             ),
-            3: RestartFluxbox(),
             4: RestartXfcePanel(_FINALIZE_ACTION),
             5: RestartNmApplet(),
             6: CaptureTrayDiagnostics(_FINALIZE_ACTION),
         }[action.sequence - 1]
         assert commands.apply(operation).exit_status == 0
+    assert commands.apply(RestartFluxbox()).exit_status == 0
+    assert commands.apply(WaitForFluxbox(_EXPECTED_FLUXBOX_STATE)).exit_status == 0
 
     joined = "\0".join(
         argument for call, _environment in capture.calls for argument in call
@@ -664,6 +777,26 @@ def test_production_adapter_uses_only_exact_leaves_and_separate_units(
     assert "--resolved-actions" in joined
     assert "get-layout" not in joined
     assert "fluxbox-restart" in joined
+    assert "fluxbox-health-check" in joined
+    health_calls = [
+        call
+        for call, _environment in capture.calls
+        if "fluxbox-health-check" in "\0".join(call)
+    ]
+    assert health_calls == [
+        (
+            str(_REPO / "bin" / "run-with-local-X-display"),
+            str(_REPO / "bin" / "fluxbox-health-check"),
+            "check",
+            _EXPECTED_FLUXBOX_STATE,
+        ),
+        (
+            str(_REPO / "bin" / "run-with-local-X-display"),
+            str(_REPO / "bin" / "fluxbox-health-check"),
+            "wait",
+            _EXPECTED_FLUXBOX_STATE,
+        ),
+    ]
     escaped_instance = escape_unit_instance(_FINALIZE_ACTION.value)
     # Unescaped dashes unescape to '/' in %I, mangling the action ID the
     # worker receives (dc-ocx); the escaped form must round-trip.

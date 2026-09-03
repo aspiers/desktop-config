@@ -141,8 +141,8 @@ _PREPARE_ACTION_KINDS: Final = (
 _FINALIZE_ACTION_KINDS: Final = (
     PlannedActionKind.APPLY_FLUXBOX_CONFIGURATION,
     PlannedActionKind.APPLY_KEYBOARD_INTENT,
-    PlannedActionKind.APPLY_WINDOW_LAYOUT,
     PlannedActionKind.RESTART_FLUXBOX,
+    PlannedActionKind.APPLY_WINDOW_LAYOUT,
     PlannedActionKind.RESTART_XFCE_PANEL,
     PlannedActionKind.RESTART_NM_APPLET,
     PlannedActionKind.CAPTURE_TRAY_DIAGNOSTICS,
@@ -1119,7 +1119,7 @@ def _write_relative_file_at(root_fd: int, path: str, content: bytes) -> None:
                     os.mkdir(component, _PRIVATE_DIRECTORY_MODE, dir_fd=descriptor)
                     created = True
                 except FileExistsError:
-                    pass
+                    created = False
                 child = os.open(component, _DIRECTORY_OPEN_FLAGS, dir_fd=descriptor)
                 if created:
                     os.fchmod(child, _PRIVATE_DIRECTORY_MODE)

@@ -1,0 +1,259 @@
+#!/bin/bash
+
+# Harmless command-adapter tests for the active finalizer's Fluxbox health check.
+
+set -u
+
+repo=$(cd "$(dirname "$0")/.." && pwd)
+check=$repo/bin/fluxbox-health-check
+expected_state='8000x2160;DisplayPort-1=5120x2160+2880+0:primary,eDP=2880x1920+0+0:secondary'
+failures=0
+
+run_test() {
+    local name=$1
+    shift
+    if "$@"; then
+        printf 'ok - %s\n' "$name"
+    else
+        printf 'not ok - %s\n' "$name" >&2
+        failures=$((failures + 1))
+    fi
+}
+
+prepare_case() {
+    local root=$1
+
+    mkdir -p "$root/bin" "$root/runtime"
+    cat > "$root/bin/xrandr" <<'EOF'
+#!/bin/bash
+printf '%s\n' \
+    'Screen 0: minimum 320 x 200, current 8000 x 2160, maximum 16384 x 16384' \
+    'eDP connected 2880x1920+0+0' \
+    'DisplayPort-1 connected primary 5120x2160+2880+0'
+EOF
+    cat > "$root/bin/xprop" <<'EOF'
+#!/bin/bash
+[[ $* == *-remove* ]] && exit 0
+[ "${STUB_ACTUAL_GEOMETRY:-}" != unavailable ] || exit 1
+printf '_NET_DESKTOP_GEOMETRY(CARDINAL) = %s\n' \
+    "${STUB_ACTUAL_GEOMETRY/x/, }"
+EOF
+    cat > "$root/bin/fluxbox-remote" <<'EOF'
+#!/bin/bash
+printf '%s\n' "$*" >> "$FLUXBOX_REMOTE_LOG"
+if [ "${1:-}" = Reconfigure ] && [ "${STUB_RESPONSE:-}" = eventual ]; then
+    count=0
+    [ ! -r "$FLUXBOX_REMOTE_COUNT" ] || count=$(cat "$FLUXBOX_REMOTE_COUNT")
+    printf '%s\n' "$((count + 1))" > "$FLUXBOX_REMOTE_COUNT"
+elif [ "${1:-}" = result ]; then
+    if [ "${STUB_RESPONSE:-}" = eventual ]; then
+        [ "$(cat "$FLUXBOX_REMOTE_COUNT")" -ge 2 ] && printf '0\n'
+    elif [ "${STUB_RESPONSE:-}" != none ]; then
+        printf '%s\n' "$STUB_RESPONSE"
+    fi
+fi
+EOF
+    cat > "$root/bin/sleep" <<'EOF'
+#!/bin/bash
+:
+EOF
+    chmod 755 "$root/bin"/*
+}
+
+run_case() (
+    local actual_geometry=$1
+    local response=$2
+    local expected_status=$3
+    local expected_reason=$4
+    local root output status
+
+    root=$(mktemp -d)
+    trap 'rm -rf "$root"' EXIT
+    prepare_case "$root"
+    export PATH="$root/bin:/usr/bin:/bin"
+    export XDG_RUNTIME_DIR="$root/runtime"
+    export STUB_ACTUAL_GEOMETRY=$actual_geometry
+    export STUB_RESPONSE=$response
+    export FLUXBOX_REMOTE_LOG="$root/fluxbox-remote.log"
+
+    output=$($check check "$expected_state")
+    status=$?
+
+    [ "$status" -eq "$expected_status" ] &&
+        grep -q "$expected_reason" <<< "$output" &&
+        grep -qx 'Reconfigure' "$FLUXBOX_REMOTE_LOG" &&
+        grep -q '^ClientPatternTest ' "$FLUXBOX_REMOTE_LOG"
+)
+
+test_success() {
+    run_case 8000x2160 0 0 "result=healthy state=$expected_state"
+}
+
+test_geometry_mismatch() {
+    run_case 7999x2160 0 13 'reason=geometry_mismatch expected=8000x2160 actual=7999x2160'
+}
+
+test_unresponsive_fluxbox() {
+    run_case 8000x2160 none 11 'reason=fluxbox_unresponsive'
+}
+
+test_unavailable_desktop_geometry() {
+    run_case unavailable 0 12 'reason=desktop_geometry_unavailable'
+}
+
+test_xrandr_change_is_reported() (
+    local root output status
+
+    root=$(mktemp -d)
+    trap 'rm -rf "$root"' EXIT
+    prepare_case "$root"
+    cat > "$root/bin/xrandr" <<'EOF'
+#!/bin/bash
+count=0
+[ ! -r "$XRANDR_COUNT" ] || count=$(cat "$XRANDR_COUNT")
+count=$((count + 1))
+printf '%s\n' "$count" > "$XRANDR_COUNT"
+if [ "$count" -eq 1 ]; then
+    printf '%s\n' \
+        'Screen 0: minimum 320 x 200, current 8000 x 2160, maximum 16384 x 16384' \
+        'eDP connected 2880x1920+0+0' \
+        'DisplayPort-1 connected primary 5120x2160+2880+0'
+else
+    printf '%s\n' \
+        'Screen 0: minimum 320 x 200, current 2880 x 1920, maximum 16384 x 16384' \
+        'eDP connected primary 2880x1920+0+0'
+fi
+EOF
+    chmod 755 "$root/bin/xrandr"
+    export PATH="$root/bin:/usr/bin:/bin"
+    export XDG_RUNTIME_DIR="$root/runtime"
+    export XRANDR_COUNT="$root/xrandr-count"
+    export STUB_ACTUAL_GEOMETRY=8000x2160
+    export STUB_RESPONSE=0
+    export FLUXBOX_REMOTE_LOG="$root/fluxbox-remote.log"
+
+    output=$($check check "$expected_state")
+    status=$?
+
+    [ "$status" -eq 14 ] && grep -q 'reason=xrandr_changed' <<< "$output"
+)
+
+test_equal_size_output_swap_is_rejected() (
+    local root output status
+
+    root=$(mktemp -d)
+    trap 'rm -rf "$root"' EXIT
+    prepare_case "$root"
+    cat > "$root/bin/xrandr" <<'EOF'
+#!/bin/bash
+printf '%s\n' \
+    'Screen 0: minimum 320 x 200, current 8000 x 2160, maximum 16384 x 16384' \
+    'DisplayPort-1 connected 5120x2160+0+0' \
+    'eDP connected primary 2880x1920+5120+0'
+EOF
+    chmod 755 "$root/bin/xrandr"
+    export PATH="$root/bin:/usr/bin:/bin"
+    export XDG_RUNTIME_DIR="$root/runtime"
+    export STUB_ACTUAL_GEOMETRY=8000x2160
+    export STUB_RESPONSE=0
+    export FLUXBOX_REMOTE_LOG="$root/fluxbox-remote.log"
+
+    output=$($check check "$expected_state")
+    status=$?
+
+    [ "$status" -eq 14 ] &&
+        grep -q 'reason=xrandr_changed' <<< "$output" &&
+        [ ! -e "$FLUXBOX_REMOTE_LOG" ]
+)
+
+test_wait_retries_until_fluxbox_is_healthy() (
+    local root output
+
+    root=$(mktemp -d)
+    trap 'rm -rf "$root"' EXIT
+    prepare_case "$root"
+    export PATH="$root/bin:/usr/bin:/bin"
+    export XDG_RUNTIME_DIR="$root/runtime"
+    export STUB_ACTUAL_GEOMETRY=8000x2160
+    export STUB_RESPONSE=eventual
+    export FLUXBOX_REMOTE_LOG="$root/fluxbox-remote.log"
+    export FLUXBOX_REMOTE_COUNT="$root/fluxbox-remote.count"
+    export FLUXBOX_HEALTH_WAIT_SECONDS=2
+
+    output=$($check wait "$expected_state")
+
+    grep -q "result=healthy state=$expected_state" <<< "$output" &&
+        [ "$(cat "$FLUXBOX_REMOTE_COUNT")" -eq 2 ]
+)
+
+test_wait_returns_final_failure_at_deadline() (
+    local root output status
+
+    root=$(mktemp -d)
+    trap 'rm -rf "$root"' EXIT
+    prepare_case "$root"
+    export PATH="$root/bin:/usr/bin:/bin"
+    export XDG_RUNTIME_DIR="$root/runtime"
+    export STUB_ACTUAL_GEOMETRY=8000x2160
+    export STUB_RESPONSE=none
+    export FLUXBOX_REMOTE_LOG="$root/fluxbox-remote.log"
+    export FLUXBOX_HEALTH_WAIT_SECONDS=0
+
+    output=$($check wait "$expected_state")
+    status=$?
+
+    [ "$status" -eq 11 ] && grep -q 'reason=fluxbox_unresponsive' <<< "$output"
+)
+
+test_probe_lock_serializes_command_exchange() (
+    local root first second
+
+    root=$(mktemp -d)
+    trap 'rm -rf "$root"' EXIT
+    prepare_case "$root"
+    cat > "$root/bin/fluxbox-remote" <<'EOF'
+#!/bin/bash
+if [ "${1:-}" = Reconfigure ]; then
+    if ! mkdir "$EXCHANGE_GUARD" 2>/dev/null; then
+        touch "$EXCHANGE_OVERLAP"
+    fi
+    /usr/bin/sleep 0.2
+    rmdir "$EXCHANGE_GUARD" 2>/dev/null || true
+elif [ "${1:-}" = result ]; then
+    printf '0\n'
+fi
+EOF
+    chmod 755 "$root/bin/fluxbox-remote"
+    export PATH="$root/bin:/usr/bin:/bin"
+    export XDG_RUNTIME_DIR="$root/runtime"
+    export STUB_ACTUAL_GEOMETRY=8000x2160
+    export FLUXBOX_REMOTE_LOG="$root/unused.log"
+    export EXCHANGE_GUARD="$root/exchange-active"
+    export EXCHANGE_OVERLAP="$root/exchange-overlap"
+
+    $check check "$expected_state" > "$root/first.out" &
+    first=$!
+    $check check "$expected_state" > "$root/second.out" &
+    second=$!
+    wait "$first" "$second"
+
+    [ ! -e "$EXCHANGE_OVERLAP" ] &&
+        grep -q 'result=healthy' "$root/first.out" &&
+        grep -q 'result=healthy' "$root/second.out"
+)
+
+run_test 'healthy geometry and command channel pass' test_success
+run_test 'desktop geometry mismatch fails' test_geometry_mismatch
+run_test 'unresponsive Fluxbox fails' test_unresponsive_fluxbox
+run_test 'missing desktop geometry fails' test_unavailable_desktop_geometry
+run_test 'RandR change during probe fails stale' test_xrandr_change_is_reported
+run_test 'equal-size output swap fails staged layout' test_equal_size_output_swap_is_rejected
+run_test 'wait retries until Fluxbox is healthy' test_wait_retries_until_fluxbox_is_healthy
+run_test 'wait returns failure at its deadline' test_wait_returns_final_failure_at_deadline
+run_test 'probe lock serializes command exchange' test_probe_lock_serializes_command_exchange
+
+if [ "$failures" -ne 0 ]; then
+    printf '%d test(s) failed\n' "$failures" >&2
+    exit 1
+fi
+printf 'all tests passed\n'

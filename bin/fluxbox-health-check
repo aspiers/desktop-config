@@ -1,0 +1,186 @@
+#!/bin/bash
+
+# Prove that Fluxbox has consumed the current RandR geometry and answers its
+# command channel. Used only by the authoritative monitor finalizer.
+
+set -u
+export LC_ALL=C
+
+readonly HEALTHY=0
+readonly XRANDR_UNAVAILABLE=10
+readonly FLUXBOX_UNRESPONSIVE=11
+readonly DESKTOP_GEOMETRY_UNAVAILABLE=12
+readonly GEOMETRY_MISMATCH=13
+readonly XRANDR_CHANGED=14
+readonly USAGE_ERROR=64
+
+xrandr_state() {
+    local query
+
+    query=$(xrandr --current 2>/dev/null) || return 1
+    awk '
+        /^Screen 0:/ {
+            for (i = 1; i <= NF; i++) {
+                if ($i == "current") {
+                    height = $(i + 3)
+                    sub(/,$/, "", height)
+                    geometry = $(i + 1) "x" height
+                    break
+                }
+            }
+        }
+        $2 == "connected" {
+            primary = "secondary"
+            for (i = 3; i <= NF; i++) {
+                if ($i == "primary")
+                    primary = "primary"
+                if ($i ~ /^[0-9]+x[0-9]+[+-][0-9]+[+-][0-9]+$/) {
+                    entries[count++] = $1 "=" $i ":" primary
+                    break
+                }
+            }
+        }
+        END {
+            if (geometry == "" || count == 0)
+                exit 1
+            for (i = 0; i < count; i++)
+                for (j = i + 1; j < count; j++)
+                    if (entries[i] > entries[j]) {
+                        swap = entries[i]
+                        entries[i] = entries[j]
+                        entries[j] = swap
+                    }
+            state = geometry ";"
+            for (i = 0; i < count; i++)
+                state = state (i ? "," : "") entries[i]
+            print state
+        }
+    ' <<< "$query"
+}
+
+fluxbox_desktop_geometry() {
+    local property
+
+    property=$(xprop -root _NET_DESKTOP_GEOMETRY 2>/dev/null) || return 1
+    sed -n 's/.*= *\([0-9][0-9]*\), *\([0-9][0-9]*\).*/\1x\2/p' \
+        <<< "$property" | grep -m1 .
+}
+
+fluxbox_responds() {
+    local probe="__monitor_controller_probe_${BASHPID}__"
+    local result
+    local attempt
+
+    # Reconfigure lives in this guarded probe rather than the preceding file
+    # installation. If Fluxbox is absent or hung, this whole operation fails
+    # into the restart path instead of aborting finalization early.
+    fluxbox-remote Reconfigure >/dev/null 2>&1 || return 1
+    xprop -root -remove _FLUXBOX_ACTION_RESULT >/dev/null 2>&1 || return 1
+    fluxbox-remote "ClientPatternTest (name=$probe)" >/dev/null 2>&1 || return 1
+
+    for ((attempt = 0; attempt < 20; attempt++)); do
+        result=$(fluxbox-remote result 2>/dev/null)
+        [ "$result" = 0 ] && return 0
+        [ -n "$result" ] && return 1
+        sleep 0.05
+    done
+    return 1
+}
+
+check_once() {
+    local expected_state=$1
+    local initial_state
+    local final_state
+    local expected_geometry
+    local actual_geometry=""
+    local attempt
+
+    initial_state=$(xrandr_state) || {
+        echo "FLUXBOX_HEALTH result=unhealthy reason=xrandr_unavailable"
+        return "$XRANDR_UNAVAILABLE"
+    }
+    expected_geometry=${expected_state%%;*}
+    if [ "$initial_state" != "$expected_state" ]; then
+        echo "FLUXBOX_HEALTH result=unhealthy reason=xrandr_changed expected=$expected_state actual=$initial_state"
+        return "$XRANDR_CHANGED"
+    fi
+
+    if ! fluxbox_responds; then
+        echo "FLUXBOX_HEALTH result=unhealthy reason=fluxbox_unresponsive expected=$expected_geometry"
+        return "$FLUXBOX_UNRESPONSIVE"
+    fi
+
+    for ((attempt = 0; attempt < 20; attempt++)); do
+        actual_geometry=$(fluxbox_desktop_geometry) || actual_geometry=""
+        [ "$actual_geometry" = "$expected_geometry" ] && break
+        sleep 0.05
+    done
+
+    if [ -z "$actual_geometry" ]; then
+        echo "FLUXBOX_HEALTH result=unhealthy reason=desktop_geometry_unavailable expected=$expected_geometry"
+        return "$DESKTOP_GEOMETRY_UNAVAILABLE"
+    fi
+    if [ "$actual_geometry" != "$expected_geometry" ]; then
+        echo "FLUXBOX_HEALTH result=unhealthy reason=geometry_mismatch expected=$expected_geometry actual=$actual_geometry"
+        return "$GEOMETRY_MISMATCH"
+    fi
+
+    final_state=$(xrandr_state) || {
+        echo "FLUXBOX_HEALTH result=unhealthy reason=xrandr_changed initial=$initial_state final=unavailable"
+        return "$XRANDR_CHANGED"
+    }
+    if [ "$final_state" != "$initial_state" ]; then
+        echo "FLUXBOX_HEALTH result=unhealthy reason=xrandr_changed initial=$initial_state final=$final_state"
+        return "$XRANDR_CHANGED"
+    fi
+
+    echo "FLUXBOX_HEALTH result=healthy state=$expected_state"
+    return "$HEALTHY"
+}
+
+main() {
+    local mode=${1:-}
+    local expected_state=${2:-}
+    local runtime=${XDG_RUNTIME_DIR:-/run/user/$UID}
+    local lock_dir="$runtime/monitor-controller/active"
+    local deadline
+    local status
+    local wait_seconds=${FLUXBOX_HEALTH_WAIT_SECONDS:-10}
+
+    case "$mode:$expected_state" in
+        check:?*|wait:?*) ;;
+        *)
+            echo "Usage: ${0##*/} {check|wait} EXPECTED_XRANDR_STATE" >&2
+            return "$USAGE_ERROR"
+            ;;
+    esac
+
+    case "$wait_seconds" in
+        ''|*[!0-9]*)
+            echo "Invalid Fluxbox health wait: $wait_seconds" >&2
+            return "$USAGE_ERROR"
+            ;;
+    esac
+
+    mkdir -p "$lock_dir" || return "$XRANDR_UNAVAILABLE"
+    exec 9>"$lock_dir/fluxbox-health.lock" || return "$XRANDR_UNAVAILABLE"
+    flock -w 2 9 || {
+        echo "FLUXBOX_HEALTH result=unhealthy reason=probe_lock_timeout"
+        return "$FLUXBOX_UNRESPONSIVE"
+    }
+
+    if [ "$mode" = check ]; then
+        check_once "$expected_state"
+        return
+    fi
+
+    deadline=$((SECONDS + wait_seconds))
+    while :; do
+        check_once "$expected_state" && return "$HEALTHY"
+        status=$?
+        [ "$SECONDS" -ge "$deadline" ] && return "$status"
+        sleep 0.1
+    done
+}
+
+main "$@"
