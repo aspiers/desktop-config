@@ -10,7 +10,7 @@ paths = [
 ]
 
 [[allowlists]]
-description = "Monitor audit trace fixture uses key as a state-field suffix"
+description = "Monitor audit trace fixtures contain deterministic state hashes"
 paths = [
-  '''^\.local/lib/monitor-controller/tests/monitor_controller/fixtures/traces/live_samsung_restart_steady\.audit\.jsonl$''',
+  '''^\.local/lib/monitor-controller/tests/monitor_controller/fixtures/traces/[^/]+\.audit\.jsonl$''',
 ]
