@@ -427,6 +427,45 @@ def test_real_saved_edids_drive_model_and_complete_plan(  # noqa: PLR0913, PLR09
     assert monitor_comment in rendered_keys
 
 
+def test_home_samsung_ultrawide_uses_full_ui_scale() -> None:
+    source, request = _case(
+        sequence=4,
+        profile="celtic+Samsung-Odyssey-G75F",
+        layout="celtic+ultrawide",
+        external="DisplayPort-1",
+        external_size=(5120, 2160, 930, 400),
+    )
+
+    bundle = build_desktop_plan(source.load(request))
+    primary_panel = next(item for item in bundle.plan.panels if item.panel == 1)
+    overlay = next(
+        item.content
+        for item in bundle.artifacts
+        if item.relative_path == "artifacts/fluxbox/overlay"
+    )
+
+    assert primary_panel.size == 36
+    assert b"window.font:                      sans-12:bold" in overlay
+    assert b"menu.title.font:                  sans-12:bold" in overlay
+    assert b"menu.frame.font:                  sans-13" in overlay
+
+
+def test_level39_external_keeps_compact_ui_scale() -> None:
+    source, request = _case(
+        sequence=5,
+        profile="Level39",
+        layout="celtic+external",
+        external="DisplayPort-1",
+        external_size=(3840, 2160, 600, 340),
+    )
+
+    bundle = build_desktop_plan(source.load(request))
+    primary_panel = next(item for item in bundle.plan.panels if item.panel == 1)
+
+    assert bundle.plan.resolved_layout.ui_scale == "0.85"
+    assert primary_panel.size == 31
+
+
 def test_host_overlay_serves_only_the_bare_host_layout() -> None:
     """A multi-monitor layout must not inherit the laptop's host overlay.
 
