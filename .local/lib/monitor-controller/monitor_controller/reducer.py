@@ -46,6 +46,7 @@ from .model import (
     MappingProof,
     ObservationCompleted,
     ObservationFailed,
+    ObservationInvalidityReason,
     ObservationKey,
     PlanCompleted,
     PlanFailed,
@@ -999,6 +1000,35 @@ def _observe(state: State, event: ObservationCompleted) -> Decision:
         or observation.event_generation < state.event_generation
     ):
         return _no_op(state)
+    unavailable_reasons = {
+        ObservationInvalidityReason.COMMAND_TIMED_OUT,
+        ObservationInvalidityReason.PARSE_FAILED,
+    }
+    profile_evidence_can_dirty_desktop = (
+        observation.valid or observation.invalidity_reason not in unavailable_reasons
+    )
+    prior_current_profiles = (
+        () if prior_observation is None else prior_observation.current_profiles
+    )
+    prior_physical_token = (
+        None if prior_observation is None else prior_observation.physical_token
+    )
+    prior_profile_evidence_can_dirty_desktop = (
+        prior_observation is not None
+        and (
+            prior_observation.valid
+            or prior_observation.invalidity_reason not in unavailable_reasons
+        )
+    )
+    finalized_profile = state.desktop_finalized_profile
+    finalized_profile_returned = (
+        finalized_profile is not None
+        and profile_evidence_can_dirty_desktop
+        and prior_profile_evidence_can_dirty_desktop
+        and prior_physical_token == observation.physical_token
+        and finalized_profile in observation.current_profiles
+        and finalized_profile not in prior_current_profiles
+    )
     state = replace(
         state,
         latest_observation=observation,
@@ -1006,6 +1036,12 @@ def _observe(state: State, event: ObservationCompleted) -> Decision:
             state.observation_generation, observation.observation_generation
         ),
         event_generation=max(state.event_generation, observation.event_generation),
+        # Output loss can move windows and reset panel, notification, and
+        # wallpaper state. If a previously finalized profile returns after
+        # trustworthy evidence that it was absent, it must be finalized again.
+        desktop_finalized_profile=(
+            None if finalized_profile_returned else finalized_profile
+        ),
     )
     # Enforce the no-laptop-fallback invariant at the one place observations
     # are recorded, rather than in every downstream branch: external hardware

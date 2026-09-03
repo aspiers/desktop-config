@@ -19,6 +19,7 @@ from monitor_controller.model import (
     ActionKind,
     ActionLifecycle,
     ActionTombstone,
+    ApplicationDispatched,
     ApplicationFinished,
     ControllerPhase,
     DispatchRejected,
@@ -29,16 +30,20 @@ from monitor_controller.model import (
     FinalizationFinished,
     ObservationCompleted,
     ObservationGeneration,
+    ObservationInvalidityReason,
     ObservationKey,
+    ObservationValidity,
     PreparationAction,
     PreparationFinished,
     ProbeFinished,
     RequestObservation,
+    RequestPlan,
     State,
     StopAction,
     WorkerCancellationAcknowledged,
     WorkerOutcome,
     WorkerTimedOut,
+    WorkerUnit,
 )
 from monitor_controller.reducer import reduce
 from monitor_controller.runtime.persistence import StateNamespace
@@ -128,6 +133,161 @@ def test_unchanged_quiescent_observation_does_not_schedule_another_poll() -> Non
     assert decision.state.phase is ControllerPhase.QUIESCENT
     assert decision.state.next_timer_ms is None
     assert decision.effects == ()
+
+
+def test_transient_inactive_output_dirties_same_profile_desktop() -> None:
+    scenario = next(
+        item
+        for item in _SCENARIOS
+        if item.name == "test_resume_to_same_profile_skips_finalization"
+    )
+    state = run_scenario(scenario).decisions[-1].state
+    previous = state.latest_observation
+    assert state.desktop_finalized_profile == "samsung"
+    assert previous is not None
+
+    now_ms = previous.observed_at_ms + 1_000
+    inactive = replace(
+        previous,
+        observed_at_ms=now_ms,
+        observation_generation=ObservationGeneration(
+            previous.observation_generation.value + 1
+        ),
+        begin_event_generation=EventGeneration(previous.event_generation.value + 1),
+        end_event_generation=EventGeneration(previous.event_generation.value + 1),
+        x_active_outputs=("eDP-1",),
+        current_profiles=("celtic",),
+        exact_profile=None,
+        observation_key=ObservationKey("external-inactive"),
+    )
+    decision = reduce(
+        state,
+        ObservationCompleted(EventMetadata(now_ms, state.boot_id), inactive),
+    )
+
+    assert decision.state.desktop_finalized_profile == "samsung"
+    application = decision.state.application
+    assert application is not None
+    assert application.lifecycle is ActionLifecycle.ADMITTED
+
+    dispatched_at_ms = now_ms + 100
+    dispatched = reduce(
+        decision.state,
+        ApplicationDispatched(
+            EventMetadata(dispatched_at_ms, state.boot_id),
+            application.action_id,
+            WorkerUnit(application.action_id, "monitor-apply@test.service"),
+        ),
+    )
+    running = dispatched.state.application
+    assert running is not None
+    assert running.lifecycle is ActionLifecycle.DISPATCHED
+
+    still_inactive_at_ms = dispatched_at_ms + 50
+    still_inactive = replace(
+        inactive,
+        observed_at_ms=still_inactive_at_ms,
+        observation_generation=ObservationGeneration(
+            inactive.observation_generation.value + 1
+        ),
+    )
+    during_application = reduce(
+        dispatched.state,
+        ObservationCompleted(
+            EventMetadata(still_inactive_at_ms, state.boot_id), still_inactive
+        ),
+    )
+    assert during_application.state.desktop_finalized_profile == "samsung"
+    assert during_application.state.application == running
+
+    finished_at_ms = still_inactive_at_ms + 50
+    finished = reduce(
+        during_application.state,
+        ApplicationFinished(
+            EventMetadata(finished_at_ms, state.boot_id),
+            application.action_id,
+            WorkerOutcome.SUCCEEDED,
+            0,
+        ),
+    )
+    assert finished.state.application is None
+    assert finished.state.desktop_finalized_profile == "samsung"
+
+    recovered_at_ms = finished_at_ms + 1_000
+    recovered = replace(
+        previous,
+        observed_at_ms=recovered_at_ms,
+        observation_generation=ObservationGeneration(
+            still_inactive.observation_generation.value + 1
+        ),
+        begin_event_generation=still_inactive.event_generation,
+        end_event_generation=still_inactive.event_generation,
+    )
+    recovered_decision = reduce(
+        finished.state,
+        ObservationCompleted(EventMetadata(recovered_at_ms, state.boot_id), recovered),
+    )
+
+    assert recovered_decision.state.desktop_finalized_profile is None
+    assert any(isinstance(effect, RequestPlan) for effect in recovered_decision.effects)
+
+
+@pytest.mark.parametrize(
+    "reason",
+    [
+        ObservationInvalidityReason.COMMAND_TIMED_OUT,
+        ObservationInvalidityReason.PARSE_FAILED,
+    ],
+)
+def test_unavailable_profile_evidence_preserves_finalized_desktop(
+    reason: ObservationInvalidityReason,
+) -> None:
+    scenario = next(
+        item
+        for item in _SCENARIOS
+        if item.name == "test_resume_to_same_profile_skips_finalization"
+    )
+    state = run_scenario(scenario).decisions[-1].state
+    previous = state.latest_observation
+    assert previous is not None
+
+    now_ms = previous.observed_at_ms + 1_000
+    unavailable = replace(
+        previous,
+        observed_at_ms=now_ms,
+        observation_generation=ObservationGeneration(
+            previous.observation_generation.value + 1
+        ),
+        current_profiles=(),
+        exact_profile=None,
+        probe_candidate=None,
+        validity=ObservationValidity.INVALID,
+        invalidity_reason=reason,
+    )
+    decision = reduce(
+        state,
+        ObservationCompleted(EventMetadata(now_ms, state.boot_id), unavailable),
+    )
+
+    assert decision.state.desktop_finalized_profile == "samsung"
+
+    recovered_at_ms = now_ms + 1_000
+    recovered = replace(
+        previous,
+        observed_at_ms=recovered_at_ms,
+        observation_generation=ObservationGeneration(
+            unavailable.observation_generation.value + 1
+        ),
+    )
+    recovered_decision = reduce(
+        decision.state,
+        ObservationCompleted(EventMetadata(recovered_at_ms, state.boot_id), recovered),
+    )
+
+    assert recovered_decision.state.desktop_finalized_profile == "samsung"
+    assert not any(
+        isinstance(effect, RequestPlan) for effect in recovered_decision.effects
+    )
 
 
 def test_worker_completion_schedules_from_processing_not_sample_time() -> None:

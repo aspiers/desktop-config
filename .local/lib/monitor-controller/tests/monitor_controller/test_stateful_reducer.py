@@ -39,6 +39,7 @@ from monitor_controller.model import (
     FinalizationFinished,
     FinalizeDesktop,
     ObservationCompleted,
+    ObservationInvalidityReason,
     PlanCompleted,
     PlanFailed,
     PlanHash,
@@ -352,7 +353,27 @@ class ReducerStateMachine(RuleBasedStateMachine):
         if isinstance(event, ObservationCompleted) and not event.observation.valid:
             assert after.physical_epoch == before.physical_epoch
             assert after.physical_token == before.physical_token
-            assert after.desktop_finalized_profile == before.desktop_finalized_profile
+            unavailable_reasons = {
+                ObservationInvalidityReason.COMMAND_TIMED_OUT,
+                ObservationInvalidityReason.PARSE_FAILED,
+            }
+            prior = before.latest_observation
+            finalized_profile = before.desktop_finalized_profile
+            finalized_profile_returned = (
+                finalized_profile is not None
+                and event.observation.invalidity_reason not in unavailable_reasons
+                and prior is not None
+                and (
+                    prior.valid
+                    or prior.invalidity_reason not in unavailable_reasons
+                )
+                and prior.physical_token == event.observation.physical_token
+                and finalized_profile in event.observation.current_profiles
+                and finalized_profile not in prior.current_profiles
+            )
+            assert after.desktop_finalized_profile == (
+                None if finalized_profile_returned else finalized_profile
+            )
             mutating = any(
                 isinstance(effect, _MUTATING_EFFECTS) for effect in decision.effects
             )
@@ -620,9 +641,7 @@ def test_external_evidence_revokes_internal_candidate_during_preparation() -> No
     def observe(shape: str) -> None:
         nonlocal now, state
         now += 1
-        data = _observation_data(
-            state, now_ms=now, shape=shape, changed_token=False
-        )
+        data = _observation_data(state, now_ms=now, shape=shape, changed_token=False)
         state = reduce(state, event_from_data(data, state)).state
 
     observe("internal_exact")

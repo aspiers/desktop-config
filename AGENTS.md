@@ -40,6 +40,11 @@ Run scripts using relative paths rather than via `~`, like this:
 ./lib/libdpy.py
 ```
 
+When running Fluxbox against Xvfb or another test display, always give it a
+temporary `HOME`. Fluxbox writes `~/.fluxbox/lastwallpaper` even when `DISPLAY`
+is not `:0`; sharing the live home can replace the wallpaper restored after the
+next RandR event.
+
 ### Key Commands
 
 ```bash
