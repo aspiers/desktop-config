@@ -122,6 +122,21 @@ def test_codec_round_trips_multiple_application_attempt_keys() -> None:
     assert decode_state(encode_state(state)) == state
 
 
+def test_immediate_retry_marker_is_optional_and_persists_when_used() -> None:
+    default_encoded = cast("dict[str, object]", json.loads(encode_state(_state())))
+    assert "immediate_retry_used_profiles" not in default_encoded
+    assert decode_state(json.dumps(default_encoded)) == _state()
+
+    state = replace(
+        _state(),
+        immediate_retry_used_profiles=frozenset({"external"}),
+    )
+    encoded = cast("dict[str, object]", json.loads(encode_state(state)))
+
+    assert encoded["immediate_retry_used_profiles"] == ["external"]
+    assert decode_state(json.dumps(encoded)) == state
+
+
 def test_version_one_state_migrates_in_flight_worker_to_immediate_deadline() -> None:
     state = _state()
     probe = state.probe

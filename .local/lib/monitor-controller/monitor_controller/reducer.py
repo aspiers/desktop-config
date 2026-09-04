@@ -220,6 +220,38 @@ def _candidate(
     )
 
 
+def _rearm_achieved_application(state: State, profile: str) -> State:
+    """Permit one immediate reload after a proven profile later regresses."""
+    if profile in state.immediate_retry_used_profiles:
+        return state
+    retained = frozenset(
+        key
+        for key in state.attempted_application_keys
+        if key.physical_epoch != state.physical_epoch or key.profile != profile
+    )
+    if retained == state.attempted_application_keys:
+        return state
+    return replace(
+        state,
+        attempted_application_keys=retained,
+        immediate_retry_used_profiles=state.immediate_retry_used_profiles | {profile},
+    )
+
+
+def _reset_application_recovery(state: State, profile: str) -> State:
+    """Begin a fresh bounded retry cycle after stable profile proof."""
+    attempts = frozenset(
+        key
+        for key in state.attempted_application_keys
+        if key.physical_epoch != state.physical_epoch or key.profile != profile
+    )
+    return replace(
+        state,
+        attempted_application_keys=attempts,
+        immediate_retry_used_profiles=state.immediate_retry_used_profiles - {profile},
+    )
+
+
 def _preparation_observation_status(
     state: State,
     observation: CanonicalObservation,
@@ -334,6 +366,7 @@ def _reset_for_epoch(
         attempted_probe_keys=frozenset(),
         probe=None,
         attempted_application_keys=frozenset(),
+        immediate_retry_used_profiles=frozenset(),
         application=None,
         finalization=None,
         unknown_key=None,
@@ -599,14 +632,14 @@ def _advance_verification(
     if proof_complete and state.desktop_finalized_profile == profile:
         state, discard_effects = _discard_planning(state)
         state = replace(
-            state,
+            _reset_application_recovery(state, profile),
             stable_x_profile=profile,
             baseline_adoption=False,
         )
         return _quiesce(state, *leading_effects, *discard_effects)
     if proof_complete and state.baseline_adoption:
         state = replace(
-            state,
+            _reset_application_recovery(state, profile),
             stable_x_profile=profile,
             desktop_finalized_profile=profile,
             baseline_adoption=False,
@@ -939,7 +972,10 @@ def _classify_observation(state: State, observation: CanonicalObservation) -> De
         and observation.exact_profile == target.profile
         and target.profile in observation.current_profiles
     ):
-        state = replace(state, unknown_key=None, unknown_since_ms=None)
+        state = _rearm_achieved_application(
+            replace(state, unknown_key=None, unknown_since_ms=None),
+            target.profile,
+        )
         same_stable_profile = (
             state.phase is ControllerPhase.QUIESCENT
             and state.stable_x_profile == target.profile
@@ -1257,7 +1293,7 @@ def _observe(state: State, event: ObservationCompleted) -> Decision:
                 state = _append_tombstone(state, action, ActionLifecycle.COMPLETED)
                 state, discard_effects = _discard_planning(state)
                 state = replace(
-                    state,
+                    _reset_application_recovery(state, action.profile),
                     stable_x_profile=action.profile,
                     desktop_finalized_profile=action.profile,
                     finalization=None,
@@ -2119,6 +2155,7 @@ def _boot_changed(state: State, event: BootChanged) -> Decision:
         attempted_probe_keys=frozenset(),
         probe=None,
         attempted_application_keys=frozenset(),
+        immediate_retry_used_profiles=frozenset(),
         application=None,
         planning=None,
         preparation=None,

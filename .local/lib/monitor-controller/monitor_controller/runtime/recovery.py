@@ -577,6 +577,7 @@ def _boot_mismatch_state(
         attempted_probe_keys=frozenset(),
         probe=None,
         attempted_application_keys=frozenset(),
+        immediate_retry_used_profiles=frozenset(),
         application=None,
         planning=None,
         preparation=None,

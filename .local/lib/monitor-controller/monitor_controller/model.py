@@ -8,6 +8,7 @@ through explicitly typed event fields.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from dataclasses import field as dataclass_field
 from enum import StrEnum
 from uuid import UUID
 
@@ -15,6 +16,10 @@ SCHEMA_VERSION = 3
 # Keep generated state comfortably below the codec's 1,024-record hard ceiling.
 ACTION_TOMBSTONE_RETENTION_LIMIT = 768
 _MAX_EXIT_STATUS = 255
+
+
+def _empty_strings() -> frozenset[str]:
+    return frozenset()
 
 
 def _require_uuid(value: object, field: str) -> None:
@@ -53,7 +58,7 @@ def _normalize_display(value: str) -> str:
     display, dot, screen = rest.partition(".")
     if not dot or not display.isdigit() or not screen.isdigit():
         return value
-    if int(screen) != 0:
+    if screen.lstrip("0"):
         return value
     return f"{host}:{display}"
 
@@ -1245,6 +1250,10 @@ class State:
     attempted_probe_keys: frozenset[ProbeAttemptKey] = frozenset()
     probe: ProbeAction | None = None
     attempted_application_keys: frozenset[ApplicationAttemptKey] = frozenset()
+    immediate_retry_used_profiles: frozenset[str] = dataclass_field(
+        default_factory=_empty_strings,
+        metadata={"codec_optional": True},
+    )
     application: ApplicationAction | None = None
     planning: PlanningAction | None = None
     preparation: PreparationAction | None = None
@@ -1283,12 +1292,14 @@ class State:
         ):
             if value is not None:
                 _require_nonnegative(value, field)
-        for field, value in (
+        for field_name, value in (
             ("stable X profile", self.stable_x_profile),
             ("desktop finalized profile", self.desktop_finalized_profile),
         ):
             if value is not None:
-                _require_nonempty(value, field)
+                _require_nonempty(value, field_name)
+        for profile in self.immediate_retry_used_profiles:
+            _require_nonempty(profile, "immediate-retry-used profile")
 
 
 @dataclass(frozen=True, slots=True)

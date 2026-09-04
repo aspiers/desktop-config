@@ -343,6 +343,7 @@ def test_boot_change_drops_monotonic_waits_and_keeps_verified_durable_facts() ->
         verify_since_ms=77_000,
         last_drm_at_ms=76_000,
         desktop_finalized_profile="external",
+        immediate_retry_used_profiles=frozenset({"external"}),
         action_sequence_high_water=8,
         action_tombstones=(tombstone,),
     )
@@ -373,6 +374,7 @@ def test_boot_change_drops_monotonic_waits_and_keeps_verified_durable_facts() ->
     assert result.state.verify_since_ms is None
     assert result.state.last_drm_at_ms is None
     assert result.state.desktop_finalized_profile == "external"
+    assert not result.state.immediate_retry_used_profiles
     assert result.state.action_tombstones == (tombstone,)
     assert not result.effects
 

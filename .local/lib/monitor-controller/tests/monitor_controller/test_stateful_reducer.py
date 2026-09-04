@@ -570,6 +570,81 @@ TestReducerStateMachine = cast(
 )
 
 
+def test_exact_profile_rearms_same_application_evidence_after_link_regression() -> None:
+    """A proven successful load may retry immediately if the link regresses."""
+    state = _initial_state()
+    now = 1
+
+    first_data = _observation_data(
+        state,
+        now_ms=now,
+        shape="external_eligible",
+        changed_token=False,
+    )
+    first_data["key"] = "regressed-evidence"
+    first = reduce(state, event_from_data(first_data, state))
+    assert any(isinstance(effect, ApplyProfile) for effect in first.effects)
+    state = first.state
+    action = state.application
+    assert action is not None
+    for event in (
+        _dispatch_event(state, action, now + 1),
+        _finish_event(state, action, now + 2, WorkerOutcome.SUCCEEDED),
+    ):
+        state = reduce(state, event).state
+    now += 2
+
+    exact_data = _observation_data(
+        state,
+        now_ms=now + 1,
+        shape="external_exact",
+        changed_token=False,
+    )
+    state = reduce(state, event_from_data(exact_data, state)).state
+    assert state.immediate_retry_used_profiles == frozenset({"dock"})
+    assert decode_state(encode_state(state)) == state
+
+    regressed_data = _observation_data(
+        state,
+        now_ms=now + 2,
+        shape="external_eligible",
+        changed_token=False,
+    )
+    regressed_data["key"] = "regressed-evidence"
+    retried = reduce(state, event_from_data(regressed_data, state))
+
+    assert any(isinstance(effect, ApplyProfile) for effect in retried.effects)
+    assert retried.state.phase is ControllerPhase.APPLY_PENDING
+
+    state = retried.state
+    action = state.application
+    assert action is not None
+    for event in (
+        _dispatch_event(state, action, now + 3),
+        _finish_event(state, action, now + 4, WorkerOutcome.SUCCEEDED),
+    ):
+        state = reduce(state, event).state
+
+    second_exact = _observation_data(
+        state,
+        now_ms=now + 5,
+        shape="external_exact",
+        changed_token=False,
+    )
+    state = reduce(state, event_from_data(second_exact, state)).state
+    second_regression = _observation_data(
+        state,
+        now_ms=now + 6,
+        shape="external_eligible",
+        changed_token=False,
+    )
+    second_regression["key"] = "regressed-evidence"
+    bounded = reduce(state, event_from_data(second_regression, state))
+
+    assert not any(isinstance(effect, ApplyProfile) for effect in bounded.effects)
+    assert bounded.state.phase is ControllerPhase.DISCOVER_FAST
+
+
 def test_capped_wait_slow_tick_repeats_an_attempted_application() -> None:
     """Evidence that regresses to an attempted key must not starve forever.
 

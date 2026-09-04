@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import types
 from collections.abc import Callable, Mapping
-from dataclasses import fields, is_dataclass, replace
+from dataclasses import MISSING, fields, is_dataclass, replace
 from enum import Enum
 from typing import Any, Never, cast, get_args, get_origin, get_type_hints
 from uuid import UUID
@@ -126,16 +126,21 @@ def _decode_dataclass(value: object, expected: object, path: str) -> object:
     actual = set(object_value)
     unknown = actual - allowed
     missing = allowed - actual
+    optional = {
+        item.name for item in dataclass_fields if item.metadata.get("codec_optional")
+    }
     if unknown:
         _fail(f"{path} has unknown fields: {', '.join(sorted(unknown))}")
-    if missing:
-        _fail(f"{path} is missing fields: {', '.join(sorted(missing))}")
+    required_missing = missing - optional
+    if required_missing:
+        _fail(f"{path} is missing fields: {', '.join(sorted(required_missing))}")
     hints = cast("dict[str, object]", get_type_hints(dataclass_type))
     kwargs = {
-        field.name: _decode_value(
-            object_value[field.name], hints[field.name], f"{path}.{field.name}"
+        item.name: _decode_value(
+            object_value[item.name], hints[item.name], f"{path}.{item.name}"
         )
-        for field in dataclass_fields
+        for item in dataclass_fields
+        if item.name in object_value
     }
     constructor = cast("Callable[..., object]", dataclass_type)
     try:
@@ -213,18 +218,29 @@ def _decode_value(  # noqa: C901, PLR0911, PLR0912
     _fail(f"{path} uses an unsupported schema type")
 
 
+def _encode_dataclass(value: object, path: str) -> dict[str, object]:
+    encoded: dict[str, object] = {}
+    for item in fields(cast("Any", value)):
+        item_value = cast("object", getattr(value, item.name))
+        if item.metadata.get("codec_optional"):
+            if item.default is not MISSING:
+                default = item.default
+            else:
+                factory = cast("Callable[[], object]", item.default_factory)
+                default = factory()
+            if item_value == default:
+                continue
+        encoded[item.name] = _encode_value(item_value, f"{path}.{item.name}")
+    return encoded
+
+
 def _encode_value(value: object, path: str) -> object:  # noqa: PLR0911
     if isinstance(value, Enum):
         return value.value
     if isinstance(value, UUID):
         return str(value)
     if is_dataclass(value) and not isinstance(value, type):
-        return {
-            field.name: _encode_value(
-                cast("object", getattr(value, field.name)), f"{path}.{field.name}"
-            )
-            for field in fields(cast("Any", value))
-        }
+        return _encode_dataclass(value, path)
     if isinstance(value, tuple):
         items = cast("tuple[object, ...]", value)
         return [
