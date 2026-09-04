@@ -77,6 +77,11 @@
   [FocusNewWindow]	{yes}
   [Position]	(TOP)	{0 0}
 [end]
+# Keep the dedicated agent-browser profile on the laptop display.
+[app] (name=google-chrome.*agent-browser-data.*)
+  [Head]	{2}
+  [Position]	(UPPERLEFT)	{0 0}
+[end]
 [app] (title=Telegram)
   [Workspace]	{3}
   [Dimensions]	{96% 89%}
