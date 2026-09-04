@@ -363,10 +363,7 @@ class ReducerStateMachine(RuleBasedStateMachine):
                 finalized_profile is not None
                 and event.observation.invalidity_reason not in unavailable_reasons
                 and prior is not None
-                and (
-                    prior.valid
-                    or prior.invalidity_reason not in unavailable_reasons
-                )
+                and (prior.valid or prior.invalidity_reason not in unavailable_reasons)
                 and prior.physical_token == event.observation.physical_token
                 and finalized_profile in event.observation.current_profiles
                 and finalized_profile not in prior.current_profiles

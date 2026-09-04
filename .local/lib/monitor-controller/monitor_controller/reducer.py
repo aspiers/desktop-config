@@ -1049,12 +1049,9 @@ def _observe(state: State, event: ObservationCompleted) -> Decision:
     prior_physical_token = (
         None if prior_observation is None else prior_observation.physical_token
     )
-    prior_profile_evidence_can_dirty_desktop = (
-        prior_observation is not None
-        and (
-            prior_observation.valid
-            or prior_observation.invalidity_reason not in unavailable_reasons
-        )
+    prior_profile_evidence_can_dirty_desktop = prior_observation is not None and (
+        prior_observation.valid
+        or prior_observation.invalidity_reason not in unavailable_reasons
     )
     finalized_profile = state.desktop_finalized_profile
     finalized_profile_returned = (

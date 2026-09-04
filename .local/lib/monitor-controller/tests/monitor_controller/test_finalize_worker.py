@@ -119,8 +119,7 @@ _MAPPING = (
     OutputMapping("eDP", "eDP"),
 )
 _EXPECTED_FLUXBOX_STATE: Final = (
-    "8000x2160;DisplayPort-9=5120x2160+2880+0:primary,"
-    "eDP=2880x1920+0+0:secondary"
+    "8000x2160;DisplayPort-9=5120x2160+2880+0:primary,eDP=2880x1920+0+0:secondary"
 )
 _EXPECTED_OPERATIONS: Final = (
     ApplyFluxboxConfiguration,
@@ -279,9 +278,7 @@ class _FakeCommands:
             observed_pids=observed_pids,
             common_pid=observed_pids[0] if len(observed_pids) == 1 else None,
             diagnostic=(
-                f'{{"observed":"injected-{label}-panel"}}'
-                if not healthy
-                else ""
+                f'{{"observed":"injected-{label}-panel"}}' if not healthy else ""
             ),
         )
 
@@ -656,8 +653,7 @@ def test_fluxbox_check_failure_selects_ordered_paired_repair(
     assert commands.replacement_panel_waits == 1
     assert commands.exact_panel_exclusions == [(777777, 2394373)]
     assert (
-        'evidence={"observed":"injected-post-reconfigure-sample-panel"}'
-        in caplog.text
+        'evidence={"observed":"injected-post-reconfigure-sample-panel"}' in caplog.text
     )
     assert "injected-initial-panel" not in caplog.text
 
@@ -680,9 +676,7 @@ def test_post_reconfigure_panel_timeout_selects_paired_repair(
     assert commands.post_reconfigure_panel_waits == 1
     assert commands.replacement_panel_waits == 1
     assert commands.exact_panel_exclusions == [(), (777777, 2394373)]
-    assert (
-        'evidence={"observed":"injected-post-reconfigure-panel"}' in caplog.text
-    )
+    assert 'evidence={"observed":"injected-post-reconfigure-panel"}' in caplog.text
     assert "result=skip" not in caplog.text
 
 
@@ -745,8 +739,7 @@ def test_topology_change_after_panel_read_stops_before_next_mutation(
             )
 
     commands = _FakeCommands(
-        panel_healthy=read_boundary
-        not in {"process-enumeration", "replacement"},
+        panel_healthy=read_boundary not in {"process-enumeration", "replacement"},
         on_panel_read=disconnect,
     )
     startup, store, plan_store, _bundle = _startup(tmp_path, tree, commands)
@@ -772,8 +765,7 @@ def test_cancel_after_panel_read_wins_before_next_mutation(
 ) -> None:
     tree = RootedSysfsReader(_sysfs_tree(tmp_path / "sysfs"))
     commands = _FakeCommands(
-        panel_healthy=read_boundary
-        not in {"process-enumeration", "replacement"}
+        panel_healthy=read_boundary not in {"process-enumeration", "replacement"}
     )
     startup, store, plan_store, _bundle = _startup(tmp_path, tree, commands)
 
@@ -950,8 +942,9 @@ def test_durable_cancel_arriving_during_atomic_restart_is_reported_after_step(
     assert _execute(startup, plan_store, tree, commands, _Fence()) == (
         CANCELLED_EXIT_STATUS
     )
-    assert tuple(type(item) for item in commands.operations) == (
-        _EXPECTED_PAIRED_FALLBACK_OPERATIONS[:4]
+    assert (
+        tuple(type(item) for item in commands.operations)
+        == (_EXPECTED_PAIRED_FALLBACK_OPERATIONS[:4])
     )
     assert isinstance(commands.operations[-1], RestartFluxbox)
     assert store.read_result(_FINALIZE_ACTION).outcome is ActionLifecycle.CANCELLED
@@ -1224,15 +1217,11 @@ def test_bluetoothctl_probe_parses_connection_state(tmp_path: Path) -> None:
     environment = {"PATH": f"{fake_bin}:/usr/bin:/bin"}
     probe = BluetoothctlConnectionProbe(environment=environment)
 
-    executable.write_text(
-        "#!/bin/sh\nprintf 'Device X\\n\\tConnected: yes\\n'\n"
-    )
+    executable.write_text("#!/bin/sh\nprintf 'Device X\\n\\tConnected: yes\\n'\n")
     executable.chmod(0o700)
     assert probe.connected("AA:BB") is True
 
-    executable.write_text(
-        "#!/bin/sh\nprintf 'Device X\\n\\tConnected: no\\n'\n"
-    )
+    executable.write_text("#!/bin/sh\nprintf 'Device X\\n\\tConnected: no\\n'\n")
     assert probe.connected("AA:BB") is False
 
     executable.write_text("#!/bin/sh\necho 'Device AA:BB not available' >&2\nexit 1\n")

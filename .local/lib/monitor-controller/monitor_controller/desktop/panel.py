@@ -369,9 +369,7 @@ def journal_panel_diagnostic(diagnostic: str) -> str:
     return json.dumps(
         {
             "diagnostic": (
-                "unavailable"
-                if not diagnostic
-                else "discarded-invalid-or-over-limit"
+                "unavailable" if not diagnostic else "discarded-invalid-or-over-limit"
             ),
             "encoded_bytes": raw_size,
             "truncated": bool(diagnostic),
@@ -404,8 +402,7 @@ def _panel_diagnostic(
                 window_types.append(bounded)
                 type_truncated = type_truncated or truncated
             type_truncated = (
-                type_truncated
-                or len(window.window_type) > _DIAGNOSTIC_TYPE_LIMIT
+                type_truncated or len(window.window_type) > _DIAGNOSTIC_TYPE_LIMIT
             )
         field_truncated = field_truncated or process_truncated or type_truncated
         observed.append(
@@ -437,9 +434,7 @@ def _panel_diagnostic(
         ),
         "observed": observed,
         "observed_count": len(panel_windows),
-        "truncated": (
-            field_truncated or len(panel_windows) > _DIAGNOSTIC_PANEL_LIMIT
-        ),
+        "truncated": (field_truncated or len(panel_windows) > _DIAGNOSTIC_PANEL_LIMIT),
     }
     return journal_panel_diagnostic(
         json.dumps(payload, separators=(",", ":"), sort_keys=True)

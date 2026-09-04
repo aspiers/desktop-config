@@ -138,9 +138,7 @@ def test_persistent_process_units_and_finalizer_have_separate_ownership() -> Non
     )
     panel = (_UNITS / "monitor-panel-restart@.service").read_text(encoding="utf-8")
     restart = (_REPOSITORY / "bin" / "fluxbox-restart").read_text(encoding="utf-8")
-    setup_monitor = (_REPOSITORY / "bin" / "setup-monitor").read_text(
-        encoding="utf-8"
-    )
+    setup_monitor = (_REPOSITORY / "bin" / "setup-monitor").read_text(encoding="utf-8")
     tray_diag = (_REPOSITORY / "bin" / "tray-diag").read_text(encoding="utf-8")
 
     assert "KillMode=mixed" in finalizer
@@ -184,12 +182,8 @@ def test_panel_debug_service_owns_panel_but_not_its_log_pipeline() -> None:
     ensure = (_REPOSITORY / "bin" / "xfce4-panel-debug-ensure").read_text(
         encoding="utf-8"
     )
-    runner = (_REPOSITORY / "bin" / "xfce4-panel-debug-run").read_text(
-        encoding="utf-8"
-    )
-    logger = (_REPOSITORY / "bin" / "xfce4-panel-debug-log").read_text(
-        encoding="utf-8"
-    )
+    runner = (_REPOSITORY / "bin" / "xfce4-panel-debug-run").read_text(encoding="utf-8")
+    logger = (_REPOSITORY / "bin" / "xfce4-panel-debug-log").read_text(encoding="utf-8")
 
     assert "exec xfce4-panel-debug-ensure" in hook
     assert 'grep -Fq "/$unit" "/proc/$pid/cgroup"' in ensure
@@ -206,9 +200,7 @@ def test_panel_debug_service_owns_panel_but_not_its_log_pipeline() -> None:
     assert "[[ $executable == */wrapper-2.0 ]]" in runner
     assert "exec journal-follow-cursor" in logger
     assert (
-        "xfce4-panel-debug.service \\\n"
-        '    "$cursor_file" \\\n'
-        '    "$log_file"' in logger
+        'xfce4-panel-debug.service \\\n    "$cursor_file" \\\n    "$log_file"' in logger
     )
     assert "2097152" in logger
 
@@ -225,20 +217,20 @@ def test_journal_follower_durably_resumes_and_recovers_invalid_cursor(
         '  [ "${JOURNAL_CURSOR_INVALID:-0}" = 1 ] && exit 1\n'
         "  exit 0\n"
         "fi\n"
-        "printf '%s\\n' \"$*\" > \"$JOURNAL_ARGS\"\n"
+        'printf \'%s\\n\' "$*" > "$JOURNAL_ARGS"\n'
         "emit() {\n"
-        "  printf '{\"MESSAGE\":\"%s\",\"_COMM\":\"%s\","
-        "\"__CURSOR\":\"%s\"}\\n' \"$1\" \"$2\" \"$3\"\n"
+        '  printf \'{"MESSAGE":"%s","_COMM":"%s",'
+        '"__CURSOR":"%s"}\\n\' "$1" "$2" "$3"\n'
         "}\n"
         'case "${JOURNAL_BATCH:-1}" in\n'
-        '  1) emit one xfce4-panel cursor-1\n'
+        "  1) emit one xfce4-panel cursor-1\n"
         '     emit "child exited with status 99" application cursor-1a\n'
-        '     emit two wrapper-2.0 cursor-2 ;;\n'
-        '  2) emit three xfce4-panel cursor-3 ;;\n'
-        '  3) emit recovered xfce4-panel cursor-4 ;;\n'
-        '  4) emit aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa xfce4-panel a\n'
-        '     emit bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb wrapper-2.0 b\n'
-        '     emit cccccccccccccccccccccccccccccc xfce4-panel c ;;\n'
+        "     emit two wrapper-2.0 cursor-2 ;;\n"
+        "  2) emit three xfce4-panel cursor-3 ;;\n"
+        "  3) emit recovered xfce4-panel cursor-4 ;;\n"
+        "  4) emit aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa xfce4-panel a\n"
+        "     emit bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb wrapper-2.0 b\n"
+        "     emit cccccccccccccccccccccccccccccc xfce4-panel c ;;\n"
         "esac\n",
         encoding="utf-8",
     )
@@ -346,8 +338,7 @@ def test_panel_debug_status_reports_outstanding_and_observed_evidence(
     assert "tray_allocation=outstanding" in outstanding.stdout
 
     tmp_path.joinpath("xfce4-panel-debug.log.1").write_text(
-        "plugin unrealized; quitting child\n"
-        "allocate rows=1, icon_size=21\n",
+        "plugin unrealized; quitting child\nallocate rows=1, icon_size=21\n",
         encoding="utf-8",
     )
 

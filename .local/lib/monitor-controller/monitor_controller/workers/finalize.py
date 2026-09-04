@@ -1243,5 +1243,3 @@ def run_tray_diagnostics(  # noqa: PLR0913
         timeout_seconds=timeout_seconds,
     )
     return result.exit_status
-
-

@@ -340,9 +340,7 @@ def test_hidden_unmapped_panel_leader_is_ignored() -> None:
 
 
 def test_active_panel_with_unconstrained_size_matches_exact_bottom_placement() -> None:
-    expected = derive_expected_panel_signatures(
-        _panels(primary_size=None), _screens()
-    )
+    expected = derive_expected_panel_signatures(_panels(primary_size=None), _screens())
     external = _window(
         1,
         (2880, 2111, 5120, 49),
@@ -379,9 +377,7 @@ def test_active_panel_with_unconstrained_size_matches_exact_bottom_placement() -
 def test_unconstrained_size_rejects_displacement_or_wrong_strut(
     external: PanelWindowEvidence,
 ) -> None:
-    expected = derive_expected_panel_signatures(
-        _panels(primary_size=None), _screens()
-    )
+    expected = derive_expected_panel_signatures(_panels(primary_size=None), _screens())
 
     health = assess_panel_snapshot(
         PanelSnapshot((external, _healthy_windows()[1])), expected

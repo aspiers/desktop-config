@@ -1531,4 +1531,3 @@ def _validate_configuration_file(details: os.stat_result, logical: str) -> None:
         raise DesktopPlanningError(
             f"configuration {logical!r} is not a bounded regular file"
         )
-

@@ -1003,9 +1003,7 @@ def test_plan_codec_rejects_unknown_duplicate_and_tampered_schema() -> None:
 
     raw = json.loads(encoded)
     raw["schema_version"] = 2
-    with pytest.raises(
-        PlanCodecError, match="unsupported desktop plan schema version"
-    ):
+    with pytest.raises(PlanCodecError, match="unsupported desktop plan schema version"):
         decode_plan(json.dumps(raw).encode())
 
 
@@ -1651,9 +1649,9 @@ def _assert_legacy_geometry_parity(
         assert set(_LEGACY_GEOMETRY_FIELDS) <= set(legacy_screen)
         assert {
             name: planned_screen.value(name) for name in _LEGACY_GEOMETRY_FIELDS
-        } == {
-            name: legacy_screen[name] for name in _LEGACY_GEOMETRY_FIELDS
-        }, f"{layout}: geometry drift against lib/liblayout.py"
+        } == {name: legacy_screen[name] for name in _LEGACY_GEOMETRY_FIELDS}, (
+            f"{layout}: geometry drift against lib/liblayout.py"
+        )
 
 
 @pytest.mark.parametrize(
@@ -1694,9 +1692,7 @@ def test_offline_real_layouts_match_legacy_liblayout(  # noqa: PLR0913, PLR0917
     inputs = source.load(request)
     assert inputs.context.primary_monitor_model == model
     planned = build_desktop_plan(inputs).plan.resolved_layout
-    _assert_legacy_geometry_parity(
-        planned, layout, inputs.display.screens, tmp_path
-    )
+    _assert_legacy_geometry_parity(planned, layout, inputs.display.screens, tmp_path)
 
 
 def test_real_celtic_reducer_controller_capture_stage_completion_and_baseline(
