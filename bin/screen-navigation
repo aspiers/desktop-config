@@ -135,7 +135,7 @@ def adjust_sticky_for_head(win_id, src, dst, dbg):
         )
 
 
-def move_window_to_adjacent_screen(adjacent_screen, debug=False):
+def move_window_to_adjacent_screen(adjacent_screen, debug=False, use_cache=False):
     dbg = make_logger(debug)
 
     set_head_cmd = adjacent_screen.get('SetHead')
@@ -146,7 +146,7 @@ def move_window_to_adjacent_screen(adjacent_screen, debug=False):
     win_id, win_x, win_y, win_w, win_h = get_active_window_geometry()
     dbg(f"active window: id={win_id} x={win_x} y={win_y} w={win_w} h={win_h}")
 
-    src = libdpy.get_screen(int(win_x + win_w / 2), use_cache=True)
+    src = libdpy.get_screen(int(win_x + win_w / 2), use_cache=use_cache)
     dbg(f"source screen: {src['name']} x_offset={src['x_offset']} y_offset={src['y_offset']} w={src['width']} h={src['height']}")
 
     new_x, new_y, new_w, new_h = compute_target_geometry(win_x, win_y, win_w, win_h, src, adjacent_screen, dbg)
@@ -253,7 +253,11 @@ def main():
             sys.stderr.write(f"No screen at position {args.head} (out of range)\n")
             sys.exit(1)
         if args.move_window:
-            move_window_to_adjacent_screen(target_screen, debug=args.debug)
+            move_window_to_adjacent_screen(
+                target_screen,
+                debug=args.debug,
+                use_cache=args.use_xrandr_cache,
+            )
         elif args.move:
             move_to_adjacent_screen(target_screen)
         elif args.json:
@@ -302,7 +306,11 @@ def main():
         return
 
     if args.move_window:
-        move_window_to_adjacent_screen(adjacent_screen, debug=args.debug)
+        move_window_to_adjacent_screen(
+            adjacent_screen,
+            debug=args.debug,
+            use_cache=args.use_xrandr_cache,
+        )
         return
 
     if args.json:

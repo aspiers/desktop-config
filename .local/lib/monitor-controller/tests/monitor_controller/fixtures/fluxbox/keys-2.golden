@@ -403,8 +403,8 @@ Mod1 Mod4 period :If {Matches (Stuck=no)} {MacroCmd {Raise} {TakeToNextWorkspace
 
 # send the current window to the next/previous head, follow it, and
 # stick/unstick depending on whether destination is primary
-Mod1 Shift Mod4 period :Exec screen-navigation right --move-window --use-xrandr-cache
-Mod1 Shift Mod4 comma :Exec screen-navigation left --move-window --use-xrandr-cache
+Mod1 Shift Mod4 period :Exec screen-navigation right --move-window
+Mod1 Shift Mod4 comma :Exec screen-navigation left --move-window
 
 # change to a specific workspace
 Mod4 1 :Workspace 1
@@ -458,8 +458,8 @@ reorg: Mod1 Mod4 period :If {Matches (Stuck=no)} {MacroCmd {Raise} {TakeToNextWo
 
 # send the current window to the next/previous head, follow it, and
 # stick/unstick depending on whether destination is primary
-reorg: Mod1 Shift Mod4 period :Exec screen-navigation right --move-window --use-xrandr-cache
-reorg: Mod1 Shift Mod4 comma :Exec screen-navigation left --move-window --use-xrandr-cache
+reorg: Mod1 Shift Mod4 period :Exec screen-navigation right --move-window
+reorg: Mod1 Shift Mod4 comma :Exec screen-navigation left --move-window
 
 # change to a specific workspace
 reorg: Mod4 1 :Workspace 1
@@ -500,10 +500,10 @@ reorg: Mod1 Mod4 6 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToW
 # Number of monitors connected: 2
 # Change to previous/next head.
 # Make sure synergys isn't running otherwise it will grab these keys!
-Shift Mod4 comma :Exec screen-navigation --move left --use-xrandr-cache
-Shift Mod4 period :Exec screen-navigation --move right --use-xrandr-cache
+Shift Mod4 comma :Exec screen-navigation --move left
+Shift Mod4 period :Exec screen-navigation --move right
 
 # Move current window to a specific screen by physical position (1=leftmost).
-Shift Mod1 Mod4 1 :Exec screen-navigation --head 1 --move-window --use-xrandr-cache
-Shift Mod1 Mod4 quotedbl :Exec screen-navigation --head 2 --move-window --use-xrandr-cache
-Shift Mod1 Mod4 3 :Exec screen-navigation --head 3 --move-window --use-xrandr-cache
+Shift Mod1 Mod4 1 :Exec screen-navigation --head 1 --move-window
+Shift Mod1 Mod4 quotedbl :Exec screen-navigation --head 2 --move-window
+Shift Mod1 Mod4 3 :Exec screen-navigation --head 3 --move-window

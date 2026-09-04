@@ -11,7 +11,13 @@ fake_bin="$tmpdir/bin"
 mkdir -p "$fake_home/lib" "$fake_home/.log" "$fake_bin"
 
 cat > "$fake_home/lib/libdpy.py" <<'PY'
+import os
+
+
 def get_screen(x, use_cache=False):
+    expected_cache = os.environ.get("EXPECT_XRANDR_CACHE") == "1"
+    if use_cache != expected_cache:
+        raise AssertionError("navigation used the wrong XRandR cache policy")
     if x < 2880:
         return {
             "num": 0,
@@ -34,9 +40,15 @@ def get_screen(x, use_cache=False):
 PY
 
 cat > "$fake_home/lib/liblayout.py" <<'PY'
+import os
+
+
 def get_adjacent_screen(
     direction, layout_name_or_path=None, use_cache=False, current_x=None
 ):
+    expected_cache = os.environ.get("EXPECT_XRANDR_CACHE") == "1"
+    if use_cache != expected_cache:
+        raise AssertionError("navigation used the wrong XRandR cache policy")
     if direction == "left" and current_x >= 2880:
         return {
             "name": "celtic",
@@ -107,6 +119,10 @@ run_navigation 4000 --layout dummy --move left -d 2> "$stderr"
 grep -Fx 'DEBUG: source=pointer x=4000 screen=DisplayPort-1 bounds=2880..7999' "$stderr"
 grep -Fx 'DEBUG: target=celtic bounds=0..2879' "$stderr"
 grep -Fx 'mousemove 1440 960' "$tmpdir/xdotool.calls"
+
+EXPECT_XRANDR_CACHE=1 run_navigation \
+    4000 --layout dummy left --use-xrandr-cache -d >/dev/null 2> "$stderr"
+grep -Fx 'DEBUG: source=pointer x=4000 screen=DisplayPort-1 bounds=2880..7999' "$stderr"
 
 if run_navigation 1440 --layout dummy --move left -d 2> "$stderr"; then
     echo 'left-edge navigation unexpectedly succeeded' >&2

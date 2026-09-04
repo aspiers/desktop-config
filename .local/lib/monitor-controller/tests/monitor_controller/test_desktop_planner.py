@@ -698,42 +698,22 @@ def test_cross_monitor_bindings_survive_single_monitor_generation() -> None:
         generator_label="bin/fluxbox-gen-config",
     ).decode()
 
-    cache_option = "--use-xrandr-cache"
     expected_bindings = (
-        (
-            "Mod1 Shift Mod4 period :Exec screen-navigation right --move-window "
-            f"{cache_option}"
-        ),
-        (
-            "Mod1 Shift Mod4 comma :Exec screen-navigation left --move-window "
-            f"{cache_option}"
-        ),
-        (
-            "reorg: Mod1 Shift Mod4 period :Exec screen-navigation right "
-            f"--move-window {cache_option}"
-        ),
-        (
-            "reorg: Mod1 Shift Mod4 comma :Exec screen-navigation left "
-            f"--move-window {cache_option}"
-        ),
-        f"Shift Mod4 comma :Exec screen-navigation --move left {cache_option}",
-        f"Shift Mod4 period :Exec screen-navigation --move right {cache_option}",
-        (
-            "Shift Mod1 Mod4 1 :Exec screen-navigation --head 1 --move-window "
-            f"{cache_option}"
-        ),
-        (
-            "Shift Mod1 Mod4 quotedbl :Exec screen-navigation --head 2 "
-            f"--move-window {cache_option}"
-        ),
-        (
-            "Shift Mod1 Mod4 3 :Exec screen-navigation --head 3 --move-window "
-            f"{cache_option}"
-        ),
+        "Mod1 Shift Mod4 period :Exec screen-navigation right --move-window",
+        "Mod1 Shift Mod4 comma :Exec screen-navigation left --move-window",
+        "reorg: Mod1 Shift Mod4 period :Exec screen-navigation right --move-window",
+        "reorg: Mod1 Shift Mod4 comma :Exec screen-navigation left --move-window",
+        "Shift Mod4 comma :Exec screen-navigation --move left",
+        "Shift Mod4 period :Exec screen-navigation --move right",
+        "Shift Mod1 Mod4 1 :Exec screen-navigation --head 1 --move-window",
+        "Shift Mod1 Mod4 quotedbl :Exec screen-navigation --head 2 --move-window",
+        "Shift Mod1 Mod4 3 :Exec screen-navigation --head 3 --move-window",
     )
     rendered_lines = rendered.splitlines()
     for binding in expected_bindings:
         assert binding in rendered_lines
+    navigation_lines = [line for line in rendered_lines if "screen-navigation" in line]
+    assert all("--use-xrandr-cache" not in line for line in navigation_lines)
 
 
 def test_closed_fluxbox_renderer_rejects_unknown_execution() -> None:
