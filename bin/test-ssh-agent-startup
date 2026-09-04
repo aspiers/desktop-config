@@ -28,4 +28,13 @@ if ! grep -qx 'Hidden=true' "$override"; then
     exit 1
 fi
 
-echo "PASS: both GNOME Keyring SSH startup routes are disabled"
+agent_pids=$(pgrep -x ssh-agent || true)
+agent_count=$(printf '%s\n' "$agent_pids" | grep -c . || true)
+
+if [ "$agent_count" -ne 1 ]; then
+    echo >&2 "FAIL: expected one live ssh-agent, found $agent_count"
+    ps -ww -o pid=,ppid=,lstart=,args= -p "$(printf '%s' "$agent_pids" | paste -sd, -)" >&2
+    exit 1
+fi
+
+echo "PASS: both GNOME Keyring SSH startup routes are disabled and one ssh-agent is running"
