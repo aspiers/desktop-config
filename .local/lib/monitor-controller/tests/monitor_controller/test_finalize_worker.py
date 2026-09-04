@@ -178,6 +178,7 @@ class _FakeCommands:
         on_apply: Callable[[int, FinalizeOperation], None] | None = None,
         tray_ready: bool = True,
         panel_healthy: bool = True,
+        post_reconfigure_sample_healthy: bool | None = None,
         initial_panel_observed_pids: tuple[int, ...] = (2394373,),
         replacement_panel_ready: bool = True,
         post_reconfigure_panel_ready: bool = True,
@@ -196,6 +197,7 @@ class _FakeCommands:
         self.on_apply = on_apply
         self.tray_ready = tray_ready
         self.panel_healthy = panel_healthy
+        self.post_reconfigure_sample_healthy = post_reconfigure_sample_healthy
         self.initial_panel_observed_pids = initial_panel_observed_pids
         self.replacement_panel_ready = replacement_panel_ready
         self.post_reconfigure_panel_ready = post_reconfigure_panel_ready
@@ -266,11 +268,21 @@ class _FakeCommands:
         )
         if self.on_panel_read is not None:
             self.on_panel_read(label)
+        healthy = (
+            self.panel_healthy
+            if initial or self.post_reconfigure_sample_healthy is None
+            else self.post_reconfigure_sample_healthy
+        )
         return PanelHealth(
-            healthy=self.panel_healthy,
-            reason="injected panel mismatch" if not self.panel_healthy else "exact",
+            healthy=healthy,
+            reason="injected panel mismatch" if not healthy else "exact",
             observed_pids=observed_pids,
             common_pid=observed_pids[0] if len(observed_pids) == 1 else None,
+            diagnostic=(
+                f'{{"observed":"injected-{label}-panel"}}'
+                if not healthy
+                else ""
+            ),
         )
 
     def wait_for_exact_panel(
@@ -299,6 +311,9 @@ class _FakeCommands:
             reason=f"{label} {'exact' if ready else 'mismatch'}",
             observed_pids=(pid,),
             common_pid=pid,
+            diagnostic=(
+                f'{{"observed":"injected-{label}-panel"}}' if not ready else ""
+            ),
         )
         if not ready:
             message = f"injected {label} timeout"
@@ -555,7 +570,10 @@ def test_healthy_panel_and_fluxbox_skip_both_restarts(
     assert "awaiting observation" in result.detail
 
 
-def test_initial_unhealthy_panel_selects_ordered_paired_repair(tmp_path: Path) -> None:
+def test_initial_unhealthy_panel_selects_ordered_paired_repair(
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     tree = RootedSysfsReader(_sysfs_tree(tmp_path / "sysfs"))
     commands = _FakeCommands(panel_healthy=False)
     startup, _store, plan_store, _bundle = _startup(tmp_path, tree, commands)
@@ -569,6 +587,7 @@ def test_initial_unhealthy_panel_selects_ordered_paired_repair(tmp_path: Path) -
     assert commands.replacement_panel_waits == 1
     assert commands.panel_process_checks == 1
     assert commands.exact_panel_exclusions == [(2394373,)]
+    assert 'evidence={"observed":"injected-initial-panel"}' in caplog.text
     assert CheckFluxboxHealth not in operation_types
     assert operation_types.index(RestartFluxbox) < operation_types.index(WaitForFluxbox)
     assert operation_types.index(WaitForFluxbox) < operation_types.index(
@@ -615,6 +634,7 @@ def test_untrusted_process_enumeration_fails_closed_before_panel_restart(
 )
 def test_fluxbox_check_failure_selects_ordered_paired_repair(
     tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
     health_status: int,
     *,
     timed_out: bool,
@@ -624,6 +644,7 @@ def test_fluxbox_check_failure_selects_ordered_paired_repair(
         fluxbox_health_status=health_status,
         fluxbox_health_timed_out=timed_out,
         post_reconfigure_panel_pid=777777,
+        post_reconfigure_sample_healthy=False,
     )
     startup, _store, plan_store, _bundle = _startup(tmp_path, tree, commands)
 
@@ -634,6 +655,11 @@ def test_fluxbox_check_failure_selects_ordered_paired_repair(
     assert commands.post_reconfigure_panel_waits == 0
     assert commands.replacement_panel_waits == 1
     assert commands.exact_panel_exclusions == [(777777, 2394373)]
+    assert (
+        'evidence={"observed":"injected-post-reconfigure-sample-panel"}'
+        in caplog.text
+    )
+    assert "injected-initial-panel" not in caplog.text
 
 
 def test_post_reconfigure_panel_timeout_selects_paired_repair(
@@ -654,6 +680,9 @@ def test_post_reconfigure_panel_timeout_selects_paired_repair(
     assert commands.post_reconfigure_panel_waits == 1
     assert commands.replacement_panel_waits == 1
     assert commands.exact_panel_exclusions == [(), (777777, 2394373)]
+    assert (
+        'evidence={"observed":"injected-post-reconfigure-panel"}' in caplog.text
+    )
     assert "result=skip" not in caplog.text
 
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import contextlib
 import ctypes
+import json
 import multiprocessing
 import os
 import time
@@ -14,7 +15,7 @@ from itertools import permutations
 from multiprocessing.connection import Connection, wait
 from multiprocessing.process import BaseProcess
 from pathlib import Path
-from typing import TYPE_CHECKING, Final
+from typing import TYPE_CHECKING, Final, cast
 
 if TYPE_CHECKING:
     from .layout import DisplayScreenSnapshot
@@ -35,6 +36,10 @@ _PANEL_GEOMETRY_VALUES: Final = 4
 _WM_CLASS_VALUES: Final = 2
 _FORMAT_8: Final = 8
 _MAX_ACTIVE_PANELS: Final = 3
+_DIAGNOSTIC_PANEL_LIMIT: Final = 6
+_DIAGNOSTIC_TYPE_LIMIT: Final = 4
+_DIAGNOSTIC_TEXT_LIMIT: Final = 64
+_DIAGNOSTIC_MAX_BYTES: Final = 4096
 _DEFAULT_SNAPSHOT_TIMEOUT_SECONDS: Final = 2.0
 _CHILD_STOP_GRACE_SECONDS: Final = 0.2
 type PanelGeometry = tuple[int, int, int, int]
@@ -93,12 +98,13 @@ class PanelExpectation:
 
 @dataclass(frozen=True, slots=True)
 class PanelHealth:
-    """Exact health verdict plus observed PIDs needed by restart readiness."""
+    """Exact health verdict plus bounded evidence needed for safe recovery."""
 
     healthy: bool
     reason: str
     observed_pids: tuple[int, ...] = ()
     common_pid: int | None = None
+    diagnostic: str = ""
 
 
 class _XWindowAttributes(ctypes.Structure):
@@ -198,8 +204,12 @@ def assess_panel_snapshot(  # noqa: C901, PLR0911
     excluded_pids: tuple[int, ...] = (),
 ) -> PanelHealth:
     """Match mapped panel clients through one unambiguous one-to-one assignment."""
+    diagnostic = _panel_diagnostic(snapshot, expected)
     if expected is None:
-        return _unhealthy("expected panel geometry is unprovable")
+        return _unhealthy(
+            "expected panel geometry is unprovable",
+            diagnostic=diagnostic,
+        )
     candidates = tuple(
         window
         for window in snapshot.windows
@@ -217,29 +227,47 @@ def assess_panel_snapshot(  # noqa: C901, PLR0911
         )
     )
     if len(candidates) != len(expected):
-        return _unhealthy("mapped panel window count differs", pids)
+        return _unhealthy(
+            "mapped panel window count differs", pids, diagnostic=diagnostic
+        )
     if len(candidates) > _MAX_ACTIVE_PANELS:
-        return _unhealthy("mapped panel window count exceeds proof bound", pids)
+        return _unhealthy(
+            "mapped panel window count exceeds proof bound",
+            pids,
+            diagnostic=diagnostic,
+        )
     if any(window.window_type != (_DOCK_TYPE,) for window in candidates):
-        return _unhealthy("panel window type is missing or malformed", pids)
+        return _unhealthy(
+            "panel window type is missing or malformed", pids, diagnostic=diagnostic
+        )
     if any(
         not isinstance(window.pid, int)
         or isinstance(window.pid, bool)
         or window.pid <= 0
         for window in candidates
     ):
-        return _unhealthy("panel PID is missing or malformed", pids)
+        return _unhealthy(
+            "panel PID is missing or malformed", pids, diagnostic=diagnostic
+        )
     if len(pids) != 1:
-        return _unhealthy("panel windows have mixed PIDs", pids)
+        return _unhealthy("panel windows have mixed PIDs", pids, diagnostic=diagnostic)
     common_pid = pids[0]
     if common_pid in excluded_pids:
-        return _unhealthy("panel replacement still uses an old PID", pids)
+        return _unhealthy(
+            "panel replacement still uses an old PID", pids, diagnostic=diagnostic
+        )
     if any(window.process_comm != _PANEL_COMM for window in candidates):
-        return _unhealthy("panel process evidence is missing or stale", pids)
+        return _unhealthy(
+            "panel process evidence is missing or stale", pids, diagnostic=diagnostic
+        )
     if any(not _valid_geometry(window.geometry) for window in candidates):
-        return _unhealthy("panel geometry is missing or malformed", pids)
+        return _unhealthy(
+            "panel geometry is missing or malformed", pids, diagnostic=diagnostic
+        )
     if any(not _valid_strut(window.strut) for window in candidates):
-        return _unhealthy("panel strut is missing or malformed", pids)
+        return _unhealthy(
+            "panel strut is missing or malformed", pids, diagnostic=diagnostic
+        )
 
     assignments = tuple(
         assignment
@@ -251,11 +279,17 @@ def assess_panel_snapshot(  # noqa: C901, PLR0911
     )
     if not assignments:
         return _unhealthy(
-            "panel geometry or strut assignment differs", pids, common_pid
+            "panel geometry or strut assignment differs",
+            pids,
+            common_pid,
+            diagnostic=diagnostic,
         )
     if len(assignments) != 1:
         return _unhealthy(
-            "panel geometry or strut assignment is ambiguous", pids, common_pid
+            "panel geometry or strut assignment is ambiguous",
+            pids,
+            common_pid,
+            diagnostic=diagnostic,
         )
     return PanelHealth(
         healthy=True,
@@ -299,16 +333,132 @@ def _matches_expectation(
     return strut == expected_strut
 
 
+def _diagnostic_text(value: str) -> tuple[str, bool]:
+    if len(value) <= _DIAGNOSTIC_TEXT_LIMIT:
+        return value, False
+    return value[:_DIAGNOSTIC_TEXT_LIMIT], True
+
+
+def _reject_json_constant(value: str) -> None:
+    raise ValueError(f"non-standard JSON constant: {value}")
+
+
+def _require_diagnostic_object(payload: object) -> dict[str, object]:
+    if not isinstance(payload, dict):
+        raise TypeError("panel diagnostic is not a JSON object")
+    return cast("dict[str, object]", payload)
+
+
+def journal_panel_diagnostic(diagnostic: str) -> str:
+    """Return one valid, bounded JSON object safe for a single journal field."""
+    raw_size = len(diagnostic.encode("utf-8", errors="replace"))
+    try:
+        payload = _require_diagnostic_object(
+            json.loads(diagnostic, parse_constant=_reject_json_constant)
+        )
+        normalized = json.dumps(
+            payload,
+            allow_nan=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        )
+    except (json.JSONDecodeError, TypeError, UnicodeError, ValueError):
+        normalized = ""
+    if normalized and len(normalized.encode("utf-8")) <= _DIAGNOSTIC_MAX_BYTES:
+        return normalized
+    return json.dumps(
+        {
+            "diagnostic": (
+                "unavailable"
+                if not diagnostic
+                else "discarded-invalid-or-over-limit"
+            ),
+            "encoded_bytes": raw_size,
+            "truncated": bool(diagnostic),
+        },
+        separators=(",", ":"),
+        sort_keys=True,
+    )
+
+
+def _panel_diagnostic(
+    snapshot: PanelSnapshot,
+    expected: tuple[PanelExpectation, ...] | None,
+) -> str:
+    panel_windows = tuple(
+        window for window in snapshot.windows if window.wm_class == _PANEL_CLASS
+    )
+    observed: list[dict[str, object]] = []
+    field_truncated = False
+    for window in panel_windows[:_DIAGNOSTIC_PANEL_LIMIT]:
+        process: str | None = None
+        process_truncated = False
+        if window.process_comm is not None:
+            process, process_truncated = _diagnostic_text(window.process_comm)
+        window_types: list[str] | None = None
+        type_truncated = False
+        if window.window_type is not None:
+            window_types = []
+            for value in window.window_type[:_DIAGNOSTIC_TYPE_LIMIT]:
+                bounded, truncated = _diagnostic_text(value)
+                window_types.append(bounded)
+                type_truncated = type_truncated or truncated
+            type_truncated = (
+                type_truncated
+                or len(window.window_type) > _DIAGNOSTIC_TYPE_LIMIT
+            )
+        field_truncated = field_truncated or process_truncated or type_truncated
+        observed.append(
+            {
+                "geometry": window.geometry,
+                "id": f"0x{window.window_id:x}",
+                "mapped": window.mapped,
+                "pid": window.pid,
+                "process": process,
+                "strut": window.strut,
+                "type": window_types,
+            }
+        )
+    payload = {
+        "expected": (
+            None
+            if expected is None
+            else [
+                {
+                    "bottom": item.bottom,
+                    "height": item.height,
+                    "root_height": item.root_height,
+                    "top": item.top,
+                    "width": item.width,
+                    "x": item.x,
+                }
+                for item in expected
+            ]
+        ),
+        "observed": observed,
+        "observed_count": len(panel_windows),
+        "truncated": (
+            field_truncated or len(panel_windows) > _DIAGNOSTIC_PANEL_LIMIT
+        ),
+    }
+    return journal_panel_diagnostic(
+        json.dumps(payload, separators=(",", ":"), sort_keys=True)
+    )
+
+
 def _unhealthy(
     reason: str,
     pids: tuple[int, ...] = (),
     common_pid: int | None = None,
+    *,
+    diagnostic: str = "",
 ) -> PanelHealth:
     return PanelHealth(
         healthy=False,
         reason=reason,
         observed_pids=pids,
         common_pid=common_pid,
+        diagnostic=diagnostic,
     )
 
 

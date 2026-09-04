@@ -22,6 +22,7 @@ from monitor_controller.desktop.panel import (
     PanelHealth,
     PanelProbe,
     PanelReadinessError,
+    journal_panel_diagnostic,
     wait_for_panel_health,
 )
 from monitor_controller.desktop.plan_codec import (
@@ -778,6 +779,7 @@ def _reconcile_fluxbox(
     revalidate()
     excluded_pids = initial_panel.observed_pids
     fallback_reason: str | None = None
+    fallback_panel_health: PanelHealth | None = initial_panel
 
     if not initial_panel.healthy:
         fallback_reason = f"initial-panel-{initial_panel.reason}"
@@ -790,6 +792,7 @@ def _reconcile_fluxbox(
             _raise_if_cancelled(startup, cancellation)
             revalidate()
             excluded_pids = _panel_pids(initial_panel, post_reconfigure_panel)
+            fallback_panel_health = post_reconfigure_panel
             fallback_reason = (
                 "fluxbox-timeout"
                 if fluxbox_health.timed_out
@@ -805,6 +808,7 @@ def _reconcile_fluxbox(
                 _raise_if_cancelled(startup, cancellation)
                 revalidate()
                 excluded_pids = _panel_pids(initial_panel, error.latest_health)
+                fallback_panel_health = error.latest_health
                 fallback_reason = f"post-reconfigure-panel-{error}"
             else:
                 _raise_if_cancelled(startup, cancellation)
@@ -834,10 +838,16 @@ def _reconcile_fluxbox(
         fallback_reason,
     )
     _JOURNAL.warning(
-        "PANEL_HEALTH_DECISION action=%s profile=%s result=fallback reason=%s",
+        "PANEL_HEALTH_DECISION action=%s profile=%s result=fallback "
+        "reason=%s evidence=%s",
         startup.request.action_id.value,
         startup.request.profile,
         fallback_reason,
+        journal_panel_diagnostic(
+            fallback_panel_health.diagnostic
+            if fallback_panel_health is not None
+            else ""
+        ),
     )
     restarted = commands.apply(RestartFluxbox())
     _raise_if_cancelled(startup, cancellation)

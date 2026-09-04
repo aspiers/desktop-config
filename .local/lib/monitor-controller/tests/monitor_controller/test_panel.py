@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ctypes
+import json
 import os
 import shutil
 import subprocess
@@ -24,6 +25,7 @@ from monitor_controller.desktop.panel import (
     PanelWindowEvidence,
     assess_panel_snapshot,
     derive_expected_panel_signatures,
+    journal_panel_diagnostic,
 )
 from monitor_controller.desktop.plan_codec import PanelIntent
 from monitor_controller.model import ConfigurationContentHash
@@ -168,6 +170,110 @@ def test_panel_health_fails_closed_on_bad_or_malformed_evidence(
 
     assert not health.healthy
     assert reason.lower() in health.reason.lower()
+
+
+def test_geometry_mismatch_records_bounded_expected_and_observed_evidence() -> None:
+    expected = derive_expected_panel_signatures(_panels(), _screens())
+    unrelated = _window(
+        0xDEADBEEF,
+        (123, 456, 789, 101),
+        None,
+        wm_class=("private-app", "Private-app"),
+        window_type=None,
+        process_comm="private-browser-process",
+    )
+    misplaced = (
+        _window(0x2300003, (0, 0, 5120, 37), _STRUT_EXTERNAL),
+        unrelated,
+        _healthy_windows()[1],
+    )
+
+    health = assess_panel_snapshot(PanelSnapshot(misplaced), expected)
+    diagnostic = json.loads(health.diagnostic)
+
+    assert not health.healthy
+    assert diagnostic["expected"] == [
+        {
+            "bottom": 1920,
+            "height": 37,
+            "root_height": 2160,
+            "top": 0,
+            "width": 2880,
+            "x": 0,
+        },
+        {
+            "bottom": 2160,
+            "height": 37,
+            "root_height": 2160,
+            "top": 0,
+            "width": 5120,
+            "x": 2880,
+        },
+    ]
+    assert diagnostic["observed_count"] == 2
+    assert diagnostic["truncated"] is False
+    assert "private-app" not in health.diagnostic
+    assert "private-browser-process" not in health.diagnostic
+    assert "deadbeef" not in health.diagnostic
+    assert diagnostic["observed"][0] == {
+        "geometry": [0, 0, 5120, 37],
+        "id": "0x2300003",
+        "mapped": True,
+        "pid": 2394373,
+        "process": "xfce4-panel",
+        "strut": list(_STRUT_EXTERNAL),
+        "type": ["_NET_WM_WINDOW_TYPE_DOCK"],
+    }
+
+
+def test_mismatch_diagnostic_is_bounded() -> None:
+    expected = derive_expected_panel_signatures(_panels(), _screens())
+    windows = tuple(
+        _window(
+            index,
+            (0, 0, 100, 10),
+            _STRUT_INTERNAL,
+            process_comm="p" * 10_000,
+            window_type=tuple("type-" + "x" * 10_000 for _ in range(10)),
+        )
+        for index in range(10)
+    )
+
+    health = assess_panel_snapshot(PanelSnapshot(windows), expected)
+    diagnostic = json.loads(health.diagnostic)
+
+    assert diagnostic["observed_count"] == 10
+    assert len(diagnostic["observed"]) == 6
+    assert diagnostic["truncated"] is True
+    assert "p" * 65 not in health.diagnostic
+    assert "x" * 65 not in health.diagnostic
+    assert len(health.diagnostic.encode()) <= 4_096
+
+
+@pytest.mark.parametrize(
+    ("value", "expected_status"),
+    [
+        ("", "unavailable"),
+        ('{"value":NaN}', "discarded-invalid-or-over-limit"),
+        ('["not-an-object"]', "discarded-invalid-or-over-limit"),
+        ('{"value":"' + "x" * 5_000 + '"}', "discarded-invalid-or-over-limit"),
+    ],
+)
+def test_journal_diagnostic_rejects_invalid_or_oversized_values(
+    value: str,
+    expected_status: str,
+) -> None:
+    diagnostic = journal_panel_diagnostic(value)
+
+    assert "\n" not in diagnostic
+    assert len(diagnostic.encode()) <= 4_096
+    assert json.loads(diagnostic)["diagnostic"] == expected_status
+
+
+def test_journal_diagnostic_normalizes_valid_multiline_json() -> None:
+    diagnostic = journal_panel_diagnostic('{\n  "observed": "exact"\n}')
+
+    assert diagnostic == '{"observed":"exact"}'
 
 
 def test_replacement_proof_requires_exact_geometry_from_a_new_pid() -> None:
