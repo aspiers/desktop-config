@@ -17,11 +17,14 @@ mkfifo -m 600 "$control_fifo" || exit 1
 
 pids_in_own_cgroup() {
     local process_name=$1
-    local pid
+    local comm pid
 
     while IFS= read -r pid; do
-        [ "$(cat "/proc/$pid/comm" 2>/dev/null)" = "$process_name" ] &&
-            printf '%s\n' "$pid"
+        # The process-substitution scanner joins this cgroup and can briefly
+        # inherit the command name it is searching for. Never discover itself.
+        { [ "$pid" = "$$" ] || [ "$pid" = "$BASHPID" ]; } && continue
+        IFS= read -r comm < "/proc/$pid/comm" 2>/dev/null || continue
+        [ "$comm" = "$process_name" ] && printf '%s\n' "$pid"
     done < "$cgroup_procs"
 }
 
@@ -31,7 +34,7 @@ wrapper_pids_in_own_cgroup() {
 
     while IFS= read -r pid; do
         [ -r "/proc/$pid/cmdline" ] || continue
-        executable=$(tr '\0' '\n' < "/proc/$pid/cmdline" | head -1)
+        IFS= read -r -d '' executable < "/proc/$pid/cmdline" || continue
         [[ $executable == */wrapper-2.0 ]] && printf '%s\n' "$pid"
     done < "$cgroup_procs"
 }
