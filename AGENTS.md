@@ -193,9 +193,11 @@ below. Work is NOT complete until they are completed.
 2. **Run quality gates** (if code changed) - Tests, linters, builds
 3. **Update issue status** - Close finished work, update in-progress items
 4. **Report push readiness** - Do NOT push automatically:
+
    ```bash
    git status  # report what is unpushed
    ```
+
    Propose `bd dolt push` and `git push`; run them only when explicitly
    requested.
 5. **Verify** - All changes committed, and unpushed state reported
