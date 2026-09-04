@@ -57,7 +57,9 @@ from monitor_controller.strictjson import strict_loads
 
 from .layout import DisplayScreenSnapshot, ResolvedLayout  # noqa: TC001
 
-PLAN_SCHEMA_VERSION: Final = 2
+# Version 2 encoded the old finalize action order. It is intentionally rejected;
+# deploy this schema change only while no older plan is in flight.
+PLAN_SCHEMA_VERSION: Final = 3
 MAX_PLAN_BYTES: Final = 1024 * 1024
 MAX_PLAN_ARTIFACT_BYTES: Final = 512 * 1024
 MAX_PLAN_ARTIFACT_TOTAL_BYTES: Final = 2 * 1024 * 1024
@@ -142,8 +144,8 @@ _FINALIZE_ACTION_KINDS: Final = (
     PlannedActionKind.APPLY_FLUXBOX_CONFIGURATION,
     PlannedActionKind.APPLY_KEYBOARD_INTENT,
     PlannedActionKind.RESTART_FLUXBOX,
-    PlannedActionKind.APPLY_WINDOW_LAYOUT,
     PlannedActionKind.RESTART_XFCE_PANEL,
+    PlannedActionKind.APPLY_WINDOW_LAYOUT,
     PlannedActionKind.RESTART_NM_APPLET,
     PlannedActionKind.CAPTURE_TRAY_DIAGNOSTICS,
 )

@@ -391,6 +391,16 @@ def test_real_saved_edids_drive_model_and_complete_plan(  # noqa: PLR0913, PLR09
     assert tuple(item.sequence for item in plan.finalize_actions) == tuple(
         range(1, len(plan.finalize_actions) + 1)
     )
+    finalize_kinds = tuple(item.kind for item in plan.finalize_actions)
+    assert finalize_kinds == (
+        PlannedActionKind.APPLY_FLUXBOX_CONFIGURATION,
+        PlannedActionKind.APPLY_KEYBOARD_INTENT,
+        PlannedActionKind.RESTART_FLUXBOX,
+        PlannedActionKind.RESTART_XFCE_PANEL,
+        PlannedActionKind.APPLY_WINDOW_LAYOUT,
+        PlannedActionKind.RESTART_NM_APPLET,
+        PlannedActionKind.CAPTURE_TRAY_DIAGNOSTICS,
+    )
     assert not {item.name for item in plan.prepare_actions} & {
         item.name for item in plan.finalize_actions
     }
@@ -771,6 +781,7 @@ def test_identical_inputs_have_identical_canonical_bytes_and_hash() -> None:
     second = build_desktop_plan(source.load(request))
 
     assert first == second
+    assert first.plan.schema_version == PLAN_SCHEMA_VERSION == 3
     assert encode_plan(first.plan) == encode_plan(second.plan)
     assert hash_plan_bundle(first) == hash_plan_bundle(second)
     assert decode_plan(encode_plan(first.plan)) == first.plan
@@ -991,8 +1002,10 @@ def test_plan_codec_rejects_unknown_duplicate_and_tampered_schema() -> None:
         decode_plan(duplicate)
 
     raw = json.loads(encoded)
-    raw["schema_version"] = PLAN_SCHEMA_VERSION - 1
-    with pytest.raises(PlanCodecError, match="schema"):
+    raw["schema_version"] = 2
+    with pytest.raises(
+        PlanCodecError, match="unsupported desktop plan schema version"
+    ):
         decode_plan(json.dumps(raw).encode())
 
 

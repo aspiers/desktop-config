@@ -17,6 +17,13 @@ from pathlib import Path
 from subprocess import TimeoutExpired
 from typing import TYPE_CHECKING, Final, Protocol, final
 
+from monitor_controller.desktop.panel import (
+    PanelEvidenceError,
+    PanelHealth,
+    PanelProbe,
+    PanelReadinessError,
+    wait_for_panel_health,
+)
 from monitor_controller.desktop.plan_codec import (
     AtomicPlanStore,
     DesktopPlanBundle,
@@ -80,6 +87,7 @@ _JOURNAL = service_logger("monitor_controller.journal")
 
 FINALIZE_COMMAND_TIMEOUT_SECONDS: Final = 120.0
 TRAY_TIMEOUT_EXIT_STATUS: Final = 69
+PANEL_TIMEOUT_EXIT_STATUS: Final = 70
 _XRANDR_QUERY = ("xrandr", "--query")
 _XRANDR_PROPERTIES = ("xrandr", "--props")
 _FINALIZATION_PAYLOAD_FIELDS: Final = frozenset(
@@ -101,6 +109,8 @@ _SAFE_INACTIVE_UNIT_STATES: Final = frozenset({"failed", "inactive"})
 _DIAGNOSTIC_COMPONENT = re.compile(r"^[A-Za-z0-9+_.-]+$")
 
 if TYPE_CHECKING:
+    from monitor_controller.desktop.layout import DisplayScreenSnapshot
+    from monitor_controller.desktop.plan_codec import PanelIntent
     from monitor_controller.observer.evidence import TextCommandEvidence
 
 
@@ -181,10 +191,31 @@ FinalizeCommandResult = CommandResult
 
 
 class FinalizeCommands(XrandrEvidenceSource, Protocol):
-    """Injected read-only topology/tray probes and typed mutation operations."""
+    """Injected read-only topology/panel/tray probes and typed mutations."""
 
     def apply(self, operation: FinalizeOperation) -> FinalizeCommandResult:
         """Run one exact closed operation."""
+        ...
+
+    def check_panel_health(
+        self,
+        panels: tuple[PanelIntent, ...],
+        screens: tuple[DisplayScreenSnapshot, ...],
+    ) -> PanelHealth:
+        """Snapshot exact panel geometry and struts without mutation."""
+        ...
+
+    def wait_for_exact_panel(
+        self,
+        panels: tuple[PanelIntent, ...],
+        screens: tuple[DisplayScreenSnapshot, ...],
+        excluded_pids: tuple[int, ...] = (),
+    ) -> PanelHealth:
+        """Wait for exact panel evidence, optionally from a replacement PID."""
+        ...
+
+    def panel_process_pids(self) -> tuple[int, ...]:
+        """Independently enumerate every live xfce4-panel process."""
         ...
 
     def wait_for_stable_tray(self) -> StableTray:
@@ -297,6 +328,7 @@ class SubprocessFinalizeCommands:
         reader: CommandRunner | None = None,
         leaf_runner: FinalizeLeafRunner | None = None,
         tray_probe: TrayProbe | None = None,
+        panel_probe: PanelProbe | None = None,
         base_environment: Mapping[str, str] | None = None,
         keyboard_probe: KeyboardConnectionProbe | None = None,
     ) -> None:
@@ -318,10 +350,12 @@ class SubprocessFinalizeCommands:
         )
         values = os.environ if base_environment is None else base_environment
         self._environment = _finalize_environment(values, home_root, leaf_root)
+        display = self._environment.get("DISPLAY")
         self._tray_probe = (
-            TrayProbe(display=self._environment.get("DISPLAY"))
-            if tray_probe is None
-            else tray_probe
+            TrayProbe(display=display) if tray_probe is None else tray_probe
+        )
+        self._panel_probe = (
+            PanelProbe(display=display) if panel_probe is None else panel_probe
         )
         self._keyboard_probe = (
             BluetoothctlConnectionProbe(environment=self._environment)
@@ -413,6 +447,33 @@ class SubprocessFinalizeCommands:
         instance = escape_unit_instance(operation.action_id.value)
         unit = f"monitor-tray-diagnostics@{instance}.service"
         return self._run(("systemctl", "--user", "start", "--no-block", unit))
+
+    def check_panel_health(
+        self,
+        panels: tuple[PanelIntent, ...],
+        screens: tuple[DisplayScreenSnapshot, ...],
+    ) -> PanelHealth:
+        """Return one exact fail-closed panel health verdict."""
+        return self._panel_probe.health(panels, screens)
+
+    def wait_for_exact_panel(
+        self,
+        panels: tuple[PanelIntent, ...],
+        screens: tuple[DisplayScreenSnapshot, ...],
+        excluded_pids: tuple[int, ...] = (),
+    ) -> PanelHealth:
+        """Wait for exact geometry and struts from an allowed panel PID."""
+        return wait_for_panel_health(
+            lambda: self._panel_probe.health(
+                panels,
+                screens,
+                excluded_pids=excluded_pids,
+            )
+        )
+
+    def panel_process_pids(self) -> tuple[int, ...]:
+        """Enumerate live panel processes directly from procfs."""
+        return self._panel_probe.panel_process_pids()
 
     def wait_for_stable_tray(self) -> StableTray:
         """Wait for both proven tray signals; absence is a hard finalization error."""
@@ -671,47 +732,135 @@ def _expected_fluxbox_xrandr_state(bundle: DesktopPlanBundle) -> str:
     return f"{root_width}x{root_height};{outputs}"
 
 
+@dataclass(frozen=True, slots=True)
+class _FluxboxReconciliation:
+    """Paired-repair decision plus evidence needed by the panel restart."""
+
+    paired_repair: bool
+    excluded_panel_pids: tuple[int, ...]
+    failure: WorkerExecution | None = None
+
+
+def _panel_pids(*health: PanelHealth | None) -> tuple[int, ...]:
+    return tuple(
+        sorted(
+            {
+                pid
+                for verdict in health
+                if verdict is not None
+                for pid in verdict.observed_pids
+                if pid > 0
+            }
+        )
+    )
+
+
+def _validate_panel_process_pids(pids: tuple[int, ...]) -> tuple[int, ...]:
+    if pids != tuple(sorted(set(pids))) or any(
+        isinstance(pid, bool) or pid <= 0 for pid in pids
+    ):
+        raise PanelEvidenceError("panel process enumeration returned malformed PIDs")
+    return pids
+
+
 def _reconcile_fluxbox(
     startup: WorkerStartup,
     bundle: DesktopPlanBundle,
     commands: FinalizeCommands,
     cancellation: DeferredCancellation,
     revalidate: Callable[[], CurrentTopology],
-) -> WorkerExecution | None:
+) -> _FluxboxReconciliation:
+    panels = bundle.plan.panels
+    screens = bundle.plan.guards.display_screens
     expected_state = _expected_fluxbox_xrandr_state(bundle)
-    health = commands.apply(CheckFluxboxHealth(expected_state))
+    initial_panel = commands.check_panel_health(panels, screens)
     _raise_if_cancelled(startup, cancellation)
-    # Re-prove authority after the bounded live reconfiguration and before
-    # deciding whether a fallback restart under the staged plan is still safe.
     revalidate()
-    if health.exit_status == 0 and not health.timed_out:
-        _JOURNAL.info(
-            "FLUXBOX_HEALTH_DECISION action=%s profile=%s result=skip",
-            startup.request.action_id.value,
-            startup.request.profile,
-        )
-        return None
+    excluded_pids = initial_panel.observed_pids
+    fallback_reason: str | None = None
 
-    health_reason = "timeout" if health.timed_out else f"exit-{health.exit_status}"
+    if not initial_panel.healthy:
+        fallback_reason = f"initial-panel-{initial_panel.reason}"
+    else:
+        fluxbox_health = commands.apply(CheckFluxboxHealth(expected_state))
+        _raise_if_cancelled(startup, cancellation)
+        revalidate()
+        if fluxbox_health.exit_status != 0 or fluxbox_health.timed_out:
+            post_reconfigure_panel = commands.check_panel_health(panels, screens)
+            _raise_if_cancelled(startup, cancellation)
+            revalidate()
+            excluded_pids = _panel_pids(initial_panel, post_reconfigure_panel)
+            fallback_reason = (
+                "fluxbox-timeout"
+                if fluxbox_health.timed_out
+                else f"fluxbox-exit-{fluxbox_health.exit_status}"
+            )
+        else:
+            try:
+                post_reconfigure_panel = commands.wait_for_exact_panel(
+                    panels,
+                    screens,
+                )
+            except PanelReadinessError as error:
+                _raise_if_cancelled(startup, cancellation)
+                revalidate()
+                excluded_pids = _panel_pids(initial_panel, error.latest_health)
+                fallback_reason = f"post-reconfigure-panel-{error}"
+            else:
+                _raise_if_cancelled(startup, cancellation)
+                revalidate()
+                _JOURNAL.info(
+                    "FLUXBOX_HEALTH_DECISION action=%s profile=%s result=skip",
+                    startup.request.action_id.value,
+                    startup.request.profile,
+                )
+                _JOURNAL.info(
+                    "PANEL_HEALTH_DECISION action=%s profile=%s result=skip",
+                    startup.request.action_id.value,
+                    startup.request.profile,
+                )
+                return _FluxboxReconciliation(
+                    paired_repair=False,
+                    excluded_panel_pids=_panel_pids(
+                        initial_panel,
+                        post_reconfigure_panel,
+                    ),
+                )
+
     _JOURNAL.warning(
-        "FLUXBOX_HEALTH_DECISION action=%s profile=%s "
-        "result=fallback reason=%s",
+        "FLUXBOX_HEALTH_DECISION action=%s profile=%s result=fallback reason=%s",
         startup.request.action_id.value,
         startup.request.profile,
-        health_reason,
+        fallback_reason,
+    )
+    _JOURNAL.warning(
+        "PANEL_HEALTH_DECISION action=%s profile=%s result=fallback reason=%s",
+        startup.request.action_id.value,
+        startup.request.profile,
+        fallback_reason,
     )
     restarted = commands.apply(RestartFluxbox())
     _raise_if_cancelled(startup, cancellation)
+    revalidate()
     failure = _command_failure(restarted, "restart_fluxbox")
     if failure is not None:
-        return failure
+        return _FluxboxReconciliation(
+            paired_repair=True,
+            excluded_panel_pids=excluded_pids,
+            failure=failure,
+        )
 
     ready = commands.apply(WaitForFluxbox(expected_state))
     _raise_if_cancelled(startup, cancellation)
-    return _command_failure(ready, "replacement Fluxbox readiness")
+    revalidate()
+    return _FluxboxReconciliation(
+        paired_repair=True,
+        excluded_panel_pids=excluded_pids,
+        failure=_command_failure(ready, "replacement Fluxbox readiness"),
+    )
 
 
-def execute_finalization(  # noqa: C901, PLR0913
+def execute_finalization(  # noqa: C901, PLR0913, PLR0915
     startup: WorkerStartup,
     *,
     plan_store: AtomicPlanStore,
@@ -748,13 +897,15 @@ def execute_finalization(  # noqa: C901, PLR0913
     def topology_reader(_request: TransactionRequest) -> CurrentTopology:
         return boundary()
 
-    def implementation(  # noqa: C901
+    def implementation(  # noqa: C901, PLR0911, PLR0912, PLR0915
         _request: TransactionRequest,
     ) -> WorkerExecution:
         nonlocal guarded_bundle
         bundle = guarded_bundle
         if bundle is None:
             _stale("staged plan was not validated before finalization")
+        paired_repair = False
+        excluded_panel_pids: tuple[int, ...] = ()
         for index, action in enumerate(bundle.plan.finalize_actions):
             if index:
                 boundary()
@@ -763,11 +914,61 @@ def execute_finalization(  # noqa: C901, PLR0913
                     _stale("staged plan disappeared at a finalization boundary")
             _raise_if_cancelled(startup, cancellation)
             if action.kind is PlannedActionKind.RESTART_FLUXBOX:
-                failure = _reconcile_fluxbox(
-                    startup, bundle, commands, cancellation, boundary
+                reconciliation = _reconcile_fluxbox(
+                    startup,
+                    bundle,
+                    commands,
+                    cancellation,
+                    boundary,
                 )
+                paired_repair = reconciliation.paired_repair
+                excluded_panel_pids = reconciliation.excluded_panel_pids
+                if reconciliation.failure is not None:
+                    return reconciliation.failure
+                continue
+            if action.kind is PlannedActionKind.RESTART_XFCE_PANEL:
+                if not paired_repair:
+                    continue
+                try:
+                    independent_pids = _validate_panel_process_pids(
+                        commands.panel_process_pids()
+                    )
+                except (OSError, PanelEvidenceError) as error:
+                    return WorkerExecution(
+                        ActionLifecycle.FAILED,
+                        PANEL_TIMEOUT_EXIT_STATUS,
+                        f"cannot prove pre-restart panel PIDs: {error}",
+                    )
+                _raise_if_cancelled(startup, cancellation)
+                boundary()
+                bundle = guarded_bundle
+                if bundle is None:
+                    _stale("staged plan disappeared before panel restart")
+                excluded_panel_pids = tuple(
+                    sorted({*excluded_panel_pids, *independent_pids})
+                )
+                restarted = commands.apply(RestartXfcePanel(startup.request.action_id))
+                _raise_if_cancelled(startup, cancellation)
+                boundary()
+                failure = _command_failure(restarted, action.kind.value)
                 if failure is not None:
                     return failure
+                try:
+                    commands.wait_for_exact_panel(
+                        bundle.plan.panels,
+                        bundle.plan.guards.display_screens,
+                        excluded_panel_pids,
+                    )
+                except PanelReadinessError as error:
+                    _raise_if_cancelled(startup, cancellation)
+                    boundary()
+                    return WorkerExecution(
+                        ActionLifecycle.FAILED,
+                        PANEL_TIMEOUT_EXIT_STATUS,
+                        f"replacement panel readiness failed: {error}",
+                    )
+                _raise_if_cancelled(startup, cancellation)
+                boundary()
                 continue
             if action.kind is PlannedActionKind.RESTART_NM_APPLET:
                 try:

@@ -101,8 +101,8 @@ _FINALIZE_ACTIONS: Final = (
     PlannedActionKind.APPLY_FLUXBOX_CONFIGURATION,
     PlannedActionKind.APPLY_KEYBOARD_INTENT,
     PlannedActionKind.RESTART_FLUXBOX,
-    PlannedActionKind.APPLY_WINDOW_LAYOUT,
     PlannedActionKind.RESTART_XFCE_PANEL,
+    PlannedActionKind.APPLY_WINDOW_LAYOUT,
     PlannedActionKind.RESTART_NM_APPLET,
     PlannedActionKind.CAPTURE_TRAY_DIAGNOSTICS,
 )

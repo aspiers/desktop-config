@@ -14,10 +14,16 @@ import pytest
 from worker_evidence import saved_edid, write_sysfs_connectors
 
 from monitor_controller.desktop.layout import DisplayScreenSnapshot
+from monitor_controller.desktop.panel import (
+    PanelEvidenceError,
+    PanelHealth,
+    PanelReadinessError,
+)
 from monitor_controller.desktop.plan_codec import (
     AtomicPlanStore,
     DesktopPlanBundle,
     KeyboardDisposition,
+    PanelIntent,
     PlannedTopology,
     hash_plan_bundle,
 )
@@ -121,18 +127,27 @@ _EXPECTED_OPERATIONS: Final = (
     ApplyKeyboardIntent,
     CheckFluxboxHealth,
     ApplyWindowLayout,
-    RestartXfcePanel,
     RestartNmApplet,
     CaptureTrayDiagnostics,
 )
-_EXPECTED_FALLBACK_OPERATIONS: Final = (
+_EXPECTED_PAIRED_FALLBACK_OPERATIONS: Final = (
     ApplyFluxboxConfiguration,
     ApplyKeyboardIntent,
     CheckFluxboxHealth,
     RestartFluxbox,
     WaitForFluxbox,
-    ApplyWindowLayout,
     RestartXfcePanel,
+    ApplyWindowLayout,
+    RestartNmApplet,
+    CaptureTrayDiagnostics,
+)
+_EXPECTED_INITIAL_PANEL_FALLBACK_OPERATIONS: Final = (
+    ApplyFluxboxConfiguration,
+    ApplyKeyboardIntent,
+    RestartFluxbox,
+    WaitForFluxbox,
+    RestartXfcePanel,
+    ApplyWindowLayout,
     RestartNmApplet,
     CaptureTrayDiagnostics,
 )
@@ -157,24 +172,49 @@ def _sysfs_tree(root: Path) -> Path:
 
 
 class _FakeCommands:
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         *,
         on_apply: Callable[[int, FinalizeOperation], None] | None = None,
         tray_ready: bool = True,
+        panel_healthy: bool = True,
+        initial_panel_observed_pids: tuple[int, ...] = (2394373,),
+        replacement_panel_ready: bool = True,
+        post_reconfigure_panel_ready: bool = True,
+        post_reconfigure_panel_pid: int = 2394373,
+        independent_panel_pids: tuple[int, ...] = (2394373,),
+        panel_process_error: bool = False,
         fluxbox_health_status: int = 0,
         fluxbox_health_timed_out: bool = False,
+        fluxbox_restart_status: int = 0,
         fluxbox_readiness_status: int = 0,
+        panel_restart_status: int = 0,
+        on_panel_read: Callable[[str], None] | None = None,
     ) -> None:
         self.query_text = (_XRANDR / "samsung.query").read_text(encoding="utf-8")
         self.properties_text = (_XRANDR / "samsung.props").read_text(encoding="utf-8")
         self.on_apply = on_apply
         self.tray_ready = tray_ready
+        self.panel_healthy = panel_healthy
+        self.initial_panel_observed_pids = initial_panel_observed_pids
+        self.replacement_panel_ready = replacement_panel_ready
+        self.post_reconfigure_panel_ready = post_reconfigure_panel_ready
+        self.post_reconfigure_panel_pid = post_reconfigure_panel_pid
+        self.independent_panel_pids = independent_panel_pids
+        self.panel_process_error = panel_process_error
+        self.on_panel_read = on_panel_read
         self.fluxbox_health_status = fluxbox_health_status
         self.fluxbox_health_timed_out = fluxbox_health_timed_out
+        self.fluxbox_restart_status = fluxbox_restart_status
         self.fluxbox_readiness_status = fluxbox_readiness_status
+        self.panel_restart_status = panel_restart_status
         self.read_calls: list[tuple[str, ...]] = []
         self.operations: list[FinalizeOperation] = []
+        self.panel_checks = 0
+        self.post_reconfigure_panel_waits = 0
+        self.replacement_panel_waits = 0
+        self.exact_panel_exclusions: list[tuple[int, ...]] = []
+        self.panel_process_checks = 0
         self.tray_waits = 0
 
     def query(self) -> TextCommandEvidence:
@@ -202,9 +242,77 @@ class _FakeCommands:
                 self.fluxbox_health_status,
                 timed_out=self.fluxbox_health_timed_out,
             )
+        if isinstance(operation, RestartFluxbox):
+            return FinalizeCommandResult(self.fluxbox_restart_status)
         if isinstance(operation, WaitForFluxbox):
             return FinalizeCommandResult(self.fluxbox_readiness_status)
+        if isinstance(operation, RestartXfcePanel):
+            return FinalizeCommandResult(self.panel_restart_status)
         return FinalizeCommandResult(0)
+
+    def check_panel_health(
+        self,
+        panels: tuple[PanelIntent, ...],
+        screens: tuple[DisplayScreenSnapshot, ...],
+    ) -> PanelHealth:
+        del panels, screens
+        self.panel_checks += 1
+        initial = self.panel_checks == 1
+        label = "initial" if initial else "post-reconfigure-sample"
+        observed_pids = (
+            self.initial_panel_observed_pids
+            if initial
+            else (self.post_reconfigure_panel_pid,)
+        )
+        if self.on_panel_read is not None:
+            self.on_panel_read(label)
+        return PanelHealth(
+            healthy=self.panel_healthy,
+            reason="injected panel mismatch" if not self.panel_healthy else "exact",
+            observed_pids=observed_pids,
+            common_pid=observed_pids[0] if len(observed_pids) == 1 else None,
+        )
+
+    def wait_for_exact_panel(
+        self,
+        panels: tuple[PanelIntent, ...],
+        screens: tuple[DisplayScreenSnapshot, ...],
+        excluded_pids: tuple[int, ...] = (),
+    ) -> PanelHealth:
+        del panels, screens
+        self.exact_panel_exclusions.append(excluded_pids)
+        replacement = bool(excluded_pids)
+        if replacement:
+            self.replacement_panel_waits += 1
+            ready = self.replacement_panel_ready
+            label = "replacement"
+            pid = 551475
+        else:
+            self.post_reconfigure_panel_waits += 1
+            ready = self.post_reconfigure_panel_ready
+            label = "post-reconfigure"
+            pid = self.post_reconfigure_panel_pid
+        if self.on_panel_read is not None:
+            self.on_panel_read(label)
+        health = PanelHealth(
+            healthy=ready,
+            reason=f"{label} {'exact' if ready else 'mismatch'}",
+            observed_pids=(pid,),
+            common_pid=pid,
+        )
+        if not ready:
+            message = f"injected {label} timeout"
+            raise PanelReadinessError(message, health)
+        return health
+
+    def panel_process_pids(self) -> tuple[int, ...]:
+        self.panel_process_checks += 1
+        if self.on_panel_read is not None:
+            self.on_panel_read("process-enumeration")
+        if self.panel_process_error:
+            message = "injected procfs failure"
+            raise PanelEvidenceError(message)
+        return self.independent_panel_pids
 
     def wait_for_stable_tray(self) -> StableTray:
         self.tray_waits += 1
@@ -408,8 +516,9 @@ def _execute(  # noqa: PLR0913, PLR0917
     )
 
 
-def test_ordered_actions_have_fresh_guards_and_bound_success(
+def test_healthy_panel_and_fluxbox_skip_both_restarts(
     tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     tree = RootedSysfsReader(_sysfs_tree(tmp_path / "sysfs"))
     commands = _FakeCommands()
@@ -419,9 +528,13 @@ def test_ordered_actions_have_fresh_guards_and_bound_success(
     assert _execute(startup, plan_store, tree, commands, fence) == 0
 
     assert tuple(type(item) for item in commands.operations) == _EXPECTED_OPERATIONS
+    assert "FLUXBOX_HEALTH_DECISION" in caplog.text
+    assert "PANEL_HEALTH_DECISION" in caplog.text
+    assert caplog.text.count("result=skip") == 2
+    assert commands.panel_checks == 1
+    assert commands.post_reconfigure_panel_waits == 1
+    assert commands.replacement_panel_waits == 0
     assert commands.tray_waits == 1
-    assert len(commands.read_calls) == 18
-    assert fence.generation_checks == fence.mutator_checks == 9
     health_operation = commands.operations[2]
     assert isinstance(health_operation, CheckFluxboxHealth)
     assert health_operation.expected_xrandr_state == _EXPECTED_FLUXBOX_STATE
@@ -435,17 +548,72 @@ def test_ordered_actions_have_fresh_guards_and_bound_success(
         }
         for item in bundle.plan.resolved_layout.window_actions
     ]
+    assert fence.generation_checks == fence.mutator_checks
     result = store.read_result(_FINALIZE_ACTION)
     assert result.outcome is ActionLifecycle.COMPLETED
     assert result.plan_hash == hash_plan_bundle(bundle)
     assert "awaiting observation" in result.detail
 
 
+def test_initial_unhealthy_panel_selects_ordered_paired_repair(tmp_path: Path) -> None:
+    tree = RootedSysfsReader(_sysfs_tree(tmp_path / "sysfs"))
+    commands = _FakeCommands(panel_healthy=False)
+    startup, _store, plan_store, _bundle = _startup(tmp_path, tree, commands)
+
+    assert _execute(startup, plan_store, tree, commands, _Fence()) == 0
+
+    operation_types = tuple(type(item) for item in commands.operations)
+    assert operation_types == _EXPECTED_INITIAL_PANEL_FALLBACK_OPERATIONS
+    assert commands.panel_checks == 1
+    assert commands.post_reconfigure_panel_waits == 0
+    assert commands.replacement_panel_waits == 1
+    assert commands.panel_process_checks == 1
+    assert commands.exact_panel_exclusions == [(2394373,)]
+    assert CheckFluxboxHealth not in operation_types
+    assert operation_types.index(RestartFluxbox) < operation_types.index(WaitForFluxbox)
+    assert operation_types.index(WaitForFluxbox) < operation_types.index(
+        RestartXfcePanel
+    )
+    assert operation_types.index(RestartXfcePanel) < operation_types.index(
+        ApplyWindowLayout
+    )
+
+
+def test_independent_process_pid_is_excluded_when_initial_health_observes_none(
+    tmp_path: Path,
+) -> None:
+    tree = RootedSysfsReader(_sysfs_tree(tmp_path / "sysfs"))
+    commands = _FakeCommands(
+        panel_healthy=False,
+        initial_panel_observed_pids=(),
+        independent_panel_pids=(2394373,),
+    )
+    startup, _store, plan_store, _bundle = _startup(tmp_path, tree, commands)
+
+    assert _execute(startup, plan_store, tree, commands, _Fence()) == 0
+    assert commands.panel_process_checks == 1
+    assert commands.exact_panel_exclusions == [(2394373,)]
+
+
+def test_untrusted_process_enumeration_fails_closed_before_panel_restart(
+    tmp_path: Path,
+) -> None:
+    tree = RootedSysfsReader(_sysfs_tree(tmp_path / "sysfs"))
+    commands = _FakeCommands(panel_healthy=False, panel_process_error=True)
+    startup, store, plan_store, _bundle = _startup(tmp_path, tree, commands)
+
+    assert _execute(startup, plan_store, tree, commands, _Fence()) == 70
+    assert RestartXfcePanel not in tuple(type(item) for item in commands.operations)
+    result = store.read_result(_FINALIZE_ACTION)
+    assert result.outcome is ActionLifecycle.FAILED
+    assert "cannot prove pre-restart panel PIDs" in result.detail
+
+
 @pytest.mark.parametrize(
     ("health_status", "timed_out"),
-    [(10, False), (11, False), (12, False), (13, False), (14, False), (124, True)],
+    [(13, False), (124, True)],
 )
-def test_window_layout_runs_after_fluxbox_fallback_restart(
+def test_fluxbox_check_failure_selects_ordered_paired_repair(
     tmp_path: Path,
     health_status: int,
     *,
@@ -455,19 +623,166 @@ def test_window_layout_runs_after_fluxbox_fallback_restart(
     commands = _FakeCommands(
         fluxbox_health_status=health_status,
         fluxbox_health_timed_out=timed_out,
+        post_reconfigure_panel_pid=777777,
     )
     startup, _store, plan_store, _bundle = _startup(tmp_path, tree, commands)
 
     assert _execute(startup, plan_store, tree, commands, _Fence()) == 0
+    assert tuple(type(item) for item in commands.operations) == (
+        _EXPECTED_PAIRED_FALLBACK_OPERATIONS
+    )
+    assert commands.post_reconfigure_panel_waits == 0
+    assert commands.replacement_panel_waits == 1
+    assert commands.exact_panel_exclusions == [(777777, 2394373)]
 
+
+def test_post_reconfigure_panel_timeout_selects_paired_repair(
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    tree = RootedSysfsReader(_sysfs_tree(tmp_path / "sysfs"))
+    commands = _FakeCommands(
+        post_reconfigure_panel_ready=False,
+        post_reconfigure_panel_pid=777777,
+    )
+    startup, _store, plan_store, _bundle = _startup(tmp_path, tree, commands)
+
+    assert _execute(startup, plan_store, tree, commands, _Fence()) == 0
+    assert tuple(type(item) for item in commands.operations) == (
+        _EXPECTED_PAIRED_FALLBACK_OPERATIONS
+    )
+    assert commands.post_reconfigure_panel_waits == 1
+    assert commands.replacement_panel_waits == 1
+    assert commands.exact_panel_exclusions == [(), (777777, 2394373)]
+    assert "result=skip" not in caplog.text
+
+
+@pytest.mark.parametrize(
+    ("settings", "expected_status", "expected_operations"),
+    [
+        (
+            {"panel_healthy": False, "fluxbox_restart_status": 8},
+            8,
+            _EXPECTED_INITIAL_PANEL_FALLBACK_OPERATIONS[:3],
+        ),
+        (
+            {"panel_healthy": False, "fluxbox_readiness_status": 11},
+            11,
+            _EXPECTED_INITIAL_PANEL_FALLBACK_OPERATIONS[:4],
+        ),
+        (
+            {"panel_healthy": False, "panel_restart_status": 12},
+            12,
+            _EXPECTED_INITIAL_PANEL_FALLBACK_OPERATIONS[:5],
+        ),
+        (
+            {"panel_healthy": False, "replacement_panel_ready": False},
+            70,
+            _EXPECTED_INITIAL_PANEL_FALLBACK_OPERATIONS[:5],
+        ),
+    ],
+)
+def test_paired_repair_failure_stops_before_later_mutations(
+    tmp_path: Path,
+    settings: dict[str, object],
+    expected_status: int,
+    expected_operations: tuple[type[object], ...],
+) -> None:
+    tree = RootedSysfsReader(_sysfs_tree(tmp_path / "sysfs"))
+    commands = _FakeCommands(**settings)  # type: ignore[arg-type]
+    startup, store, plan_store, _bundle = _startup(tmp_path, tree, commands)
+
+    assert _execute(startup, plan_store, tree, commands, _Fence()) == expected_status
+    assert tuple(type(item) for item in commands.operations) == expected_operations
+    assert ApplyWindowLayout not in expected_operations
+    assert store.read_result(_FINALIZE_ACTION).outcome is not ActionLifecycle.COMPLETED
+
+
+@pytest.mark.parametrize(
+    "read_boundary",
+    ["initial", "post-reconfigure", "process-enumeration", "replacement"],
+)
+def test_topology_change_after_panel_read_stops_before_next_mutation(
+    tmp_path: Path,
+    read_boundary: str,
+) -> None:
+    root = _sysfs_tree(tmp_path / "sysfs")
+    tree = RootedSysfsReader(root)
+
+    def disconnect(boundary: str) -> None:
+        if boundary == read_boundary:
+            root.joinpath("card0-DP-3", "status").write_text(
+                "disconnected\n", encoding="ascii"
+            )
+
+    commands = _FakeCommands(
+        panel_healthy=read_boundary
+        not in {"process-enumeration", "replacement"},
+        on_panel_read=disconnect,
+    )
+    startup, store, plan_store, _bundle = _startup(tmp_path, tree, commands)
+
+    assert _execute(startup, plan_store, tree, commands, _Fence()) == STALE_EXIT_STATUS
     operation_types = tuple(type(item) for item in commands.operations)
-    assert operation_types == _EXPECTED_FALLBACK_OPERATIONS
-    assert operation_types.index(RestartFluxbox) < operation_types.index(
-        ApplyWindowLayout
+    if read_boundary in {"initial", "post-reconfigure"}:
+        assert RestartFluxbox not in operation_types
+    elif read_boundary == "process-enumeration":
+        assert operation_types[-1] is WaitForFluxbox
+    else:
+        assert operation_types[-1] is RestartXfcePanel
+    assert store.read_result(_FINALIZE_ACTION).detail.startswith("STALE:")
+
+
+@pytest.mark.parametrize(
+    "read_boundary",
+    ["initial", "post-reconfigure", "process-enumeration", "replacement"],
+)
+def test_cancel_after_panel_read_wins_before_next_mutation(
+    tmp_path: Path,
+    read_boundary: str,
+) -> None:
+    tree = RootedSysfsReader(_sysfs_tree(tmp_path / "sysfs"))
+    commands = _FakeCommands(
+        panel_healthy=read_boundary
+        not in {"process-enumeration", "replacement"}
     )
-    assert operation_types.index(WaitForFluxbox) < operation_types.index(
-        ApplyWindowLayout
+    startup, store, plan_store, _bundle = _startup(tmp_path, tree, commands)
+
+    def cancel(boundary: str) -> None:
+        if boundary == read_boundary:
+            store.create_stop_intent(_FINALIZE_ACTION, ActionLifecycle.CANCELLED)
+
+    commands.on_panel_read = cancel
+
+    assert _execute(startup, plan_store, tree, commands, _Fence()) == (
+        CANCELLED_EXIT_STATUS
     )
+    operation_types = tuple(type(item) for item in commands.operations)
+    if read_boundary in {"initial", "post-reconfigure"}:
+        assert RestartFluxbox not in operation_types
+    elif read_boundary == "process-enumeration":
+        assert operation_types[-1] is WaitForFluxbox
+    else:
+        assert operation_types[-1] is RestartXfcePanel
+    assert store.read_result(_FINALIZE_ACTION).outcome is ActionLifecycle.CANCELLED
+
+
+def test_cancel_during_panel_restart_wins_after_atomic_step(tmp_path: Path) -> None:
+    tree = RootedSysfsReader(_sysfs_tree(tmp_path / "sysfs"))
+    commands = _FakeCommands(panel_healthy=False)
+    startup, store, plan_store, _bundle = _startup(tmp_path, tree, commands)
+
+    def cancel(_index: int, operation: FinalizeOperation) -> None:
+        if isinstance(operation, RestartXfcePanel):
+            store.create_stop_intent(_FINALIZE_ACTION, ActionLifecycle.CANCELLED)
+
+    commands.on_apply = cancel
+
+    assert _execute(startup, plan_store, tree, commands, _Fence()) == (
+        CANCELLED_EXIT_STATUS
+    )
+    assert isinstance(commands.operations[-1], RestartXfcePanel)
+    assert store.read_result(_FINALIZE_ACTION).outcome is ActionLifecycle.CANCELLED
 
 
 def test_topology_change_during_fluxbox_check_prevents_restart(
@@ -494,27 +809,6 @@ def test_topology_change_during_fluxbox_check_prevents_restart(
         CheckFluxboxHealth,
     )
     assert store.read_result(_FINALIZE_ACTION).detail.startswith("STALE:")
-
-
-def test_unhealthy_replacement_stops_before_window_layout(tmp_path: Path) -> None:
-    tree = RootedSysfsReader(_sysfs_tree(tmp_path / "sysfs"))
-    commands = _FakeCommands(
-        fluxbox_health_status=13,
-        fluxbox_readiness_status=11,
-    )
-    startup, store, plan_store, _bundle = _startup(tmp_path, tree, commands)
-
-    assert _execute(startup, plan_store, tree, commands, _Fence()) == 11
-    assert tuple(type(item) for item in commands.operations) == (
-        ApplyFluxboxConfiguration,
-        ApplyKeyboardIntent,
-        CheckFluxboxHealth,
-        RestartFluxbox,
-        WaitForFluxbox,
-    )
-    result = store.read_result(_FINALIZE_ACTION)
-    assert result.outcome is ActionLifecycle.FAILED
-    assert "readiness exited with status 11" in result.detail
 
 
 @pytest.mark.parametrize(
@@ -605,7 +899,7 @@ def test_missing_stable_tray_blocks_nm_applet_and_diagnostics(
     startup, store, plan_store, _bundle = _startup(tmp_path, tree, commands)
 
     assert _execute(startup, plan_store, tree, commands, _Fence()) == 69
-    assert tuple(type(item) for item in commands.operations) == _EXPECTED_OPERATIONS[:5]
+    assert tuple(type(item) for item in commands.operations) == _EXPECTED_OPERATIONS[:4]
     result = store.read_result(_FINALIZE_ACTION)
     assert result.outcome is ActionLifecycle.FAILED
     assert "stable tray readiness" in result.detail
@@ -628,7 +922,7 @@ def test_durable_cancel_arriving_during_atomic_restart_is_reported_after_step(
         CANCELLED_EXIT_STATUS
     )
     assert tuple(type(item) for item in commands.operations) == (
-        _EXPECTED_FALLBACK_OPERATIONS[:4]
+        _EXPECTED_PAIRED_FALLBACK_OPERATIONS[:4]
     )
     assert isinstance(commands.operations[-1], RestartFluxbox)
     assert store.read_result(_FINALIZE_ACTION).outcome is ActionLifecycle.CANCELLED
@@ -754,20 +1048,20 @@ def test_production_adapter_uses_only_exact_leaves_and_separate_units(
                 )
             ),
             1: ApplyKeyboardIntent(bundle.plan.keyboard.disposition),
-            2: CheckFluxboxHealth(_EXPECTED_FLUXBOX_STATE),
-            3: ApplyWindowLayout(
+            2: RestartFluxbox(),
+            3: RestartXfcePanel(_FINALIZE_ACTION),
+            4: ApplyWindowLayout(
                 next(
                     item.content
                     for item in bundle.artifacts
                     if item.relative_path == bundle.plan.windows.actions_artifact
                 )
             ),
-            4: RestartXfcePanel(_FINALIZE_ACTION),
             5: RestartNmApplet(),
             6: CaptureTrayDiagnostics(_FINALIZE_ACTION),
         }[action.sequence - 1]
         assert commands.apply(operation).exit_status == 0
-    assert commands.apply(RestartFluxbox()).exit_status == 0
+    assert commands.apply(CheckFluxboxHealth(_EXPECTED_FLUXBOX_STATE)).exit_status == 0
     assert commands.apply(WaitForFluxbox(_EXPECTED_FLUXBOX_STATE)).exit_status == 0
 
     joined = "\0".join(
