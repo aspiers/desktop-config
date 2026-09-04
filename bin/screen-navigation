@@ -184,6 +184,42 @@ def get_window_centre_x():
         sys.exit(1)
 
 
+def get_pointer_x():
+    try:
+        output = subprocess.check_output(
+            ['xdotool', 'getmouselocation', '--shell'], text=True
+        )
+        for line in output.splitlines():
+            key, _, value = line.partition('=')
+            if key == 'X':
+                return int(value)
+    except (OSError, subprocess.SubprocessError, ValueError) as e:
+        sys.stderr.write(f"Error getting pointer position: {str(e)}\n")
+        sys.exit(1)
+    sys.stderr.write(
+        "Error getting pointer position: xdotool returned no X coordinate\n"
+    )
+    sys.exit(1)
+
+
+def debug_navigation_reference(source, current_x, use_cache):
+    screen = libdpy.get_screen(int(current_x), use_cache=use_cache)
+    name = screen.get('name', screen.get('assignment', '<unnamed>'))
+    left = screen['x_offset']
+    right = left + screen['width'] - 1
+    sys.stderr.write(
+        f"DEBUG: source={source} x={int(current_x)} "
+        f"screen={name} bounds={left}..{right}\n"
+    )
+
+
+def debug_navigation_target(screen):
+    name = screen.get('name', screen.get('assignment', '<unnamed>'))
+    left = screen['x_offset']
+    right = left + screen['width'] - 1
+    sys.stderr.write(f"DEBUG: target={name} bounds={left}..{right}\n")
+
+
 def main():
     parser = argparse.ArgumentParser(description='Get the adjacent screen (left or right) from the current screen')
     parser.add_argument('direction', nargs='?', choices=['left', 'right'], help='Direction to look for adjacent screen')
@@ -226,11 +262,23 @@ def main():
             print(target_screen.get('name', target_screen.get('assignment', '')))
         return
 
-    # When moving a window, use its centre to determine the current screen
-    # rather than the mouse position, as they may differ
-    current_x = get_window_centre_x() if args.move_window else None
+    # Moving a window is relative to that window. Mouse navigation remains
+    # pointer-relative so repeated commands can step across several screens.
+    if args.move_window:
+        reference_source = 'active-window'
+        current_x = get_window_centre_x()
+    elif args.debug:
+        reference_source = 'pointer'
+        current_x = get_pointer_x()
+    else:
+        reference_source = 'pointer'
+        current_x = None
 
     try:
+        if args.debug:
+            debug_navigation_reference(
+                reference_source, current_x, args.use_xrandr_cache
+            )
         adjacent_screen = liblayout.get_adjacent_screen(
             args.direction, layout_file,
             use_cache=args.use_xrandr_cache,
@@ -241,8 +289,13 @@ def main():
         sys.exit(1)
 
     if adjacent_screen is None:
+        if args.debug:
+            sys.stderr.write(f"DEBUG: target=<none> direction={args.direction}\n")
         sys.stderr.write(f"No {args.direction} screen found from current position\n")
         sys.exit(1)
+
+    if args.debug:
+        debug_navigation_target(adjacent_screen)
 
     if args.move:
         move_to_adjacent_screen(adjacent_screen)

@@ -1,0 +1,124 @@
+#!/bin/bash
+
+set -euo pipefail
+
+repo_root=$(cd "$(dirname "$0")/.." && pwd)
+tmpdir=$(mktemp -d)
+trap 'rm -rf "$tmpdir"' EXIT
+
+fake_home="$tmpdir/home"
+fake_bin="$tmpdir/bin"
+mkdir -p "$fake_home/lib" "$fake_home/.log" "$fake_bin"
+
+cat > "$fake_home/lib/libdpy.py" <<'PY'
+def get_screen(x, use_cache=False):
+    if x < 2880:
+        return {
+            "num": 0,
+            "name": "eDP",
+            "x_offset": 0,
+            "y_offset": 0,
+            "width": 2880,
+            "height": 1920,
+            "primary": False,
+        }
+    return {
+        "num": 1,
+        "name": "DisplayPort-1",
+        "x_offset": 2880,
+        "y_offset": 0,
+        "width": 5120,
+        "height": 2160,
+        "primary": True,
+    }
+PY
+
+cat > "$fake_home/lib/liblayout.py" <<'PY'
+def get_adjacent_screen(
+    direction, layout_name_or_path=None, use_cache=False, current_x=None
+):
+    if direction == "left" and current_x >= 2880:
+        return {
+            "name": "celtic",
+            "x_offset": 0,
+            "y_offset": 0,
+            "width": 2880,
+            "height": 1920,
+            "primary": False,
+            "SetHead": "SetHead 1",
+        }
+    return None
+PY
+
+cat > "$fake_bin/xdotool" <<'SH'
+#!/bin/bash
+set -euo pipefail
+case "$1" in
+    getmouselocation)
+        printf 'X=%s\nY=100\nSCREEN=0\nWINDOW=1\n' "${FAKE_POINTER_X:?}"
+        ;;
+    getactivewindow)
+        if [[ -e "${TEST_STATE:?}/sethead" ]]; then
+            x=100
+        else
+            x=4000
+        fi
+        printf 'WINDOW=42\nX=%s\nY=100\nWIDTH=1000\nHEIGHT=800\nSCREEN=0\n' "$x"
+        ;;
+    mousemove|windowmove|windowsize)
+        printf '%s\n' "$*" >> "${TEST_STATE:?}/xdotool.calls"
+        ;;
+    *)
+        printf 'unexpected xdotool call: %s\n' "$*" >&2
+        exit 2
+        ;;
+esac
+SH
+
+cat > "$fake_bin/fluxbox-remote" <<'SH'
+#!/bin/bash
+touch "${TEST_STATE:?}/sethead"
+SH
+
+cat > "$fake_bin/xprop" <<'SH'
+#!/bin/bash
+printf '_NET_WM_STATE(ATOM) = \n'
+SH
+
+cat > "$fake_bin/wmctrl" <<'SH'
+#!/bin/bash
+exit 0
+SH
+
+chmod +x "$fake_bin/xdotool" "$fake_bin/fluxbox-remote" \
+    "$fake_bin/xprop" "$fake_bin/wmctrl"
+
+run_navigation() {
+    HOME="$fake_home" \
+    PATH="$fake_bin:$PATH" \
+    TEST_STATE="$tmpdir" \
+    FAKE_POINTER_X="$1" \
+        python3 "$repo_root/bin/screen-navigation" "${@:2}"
+}
+
+stderr="$tmpdir/stderr"
+
+run_navigation 4000 --layout dummy --move left -d 2> "$stderr"
+grep -Fx 'DEBUG: source=pointer x=4000 screen=DisplayPort-1 bounds=2880..7999' "$stderr"
+grep -Fx 'DEBUG: target=celtic bounds=0..2879' "$stderr"
+grep -Fx 'mousemove 1440 960' "$tmpdir/xdotool.calls"
+
+if run_navigation 1440 --layout dummy --move left -d 2> "$stderr"; then
+    echo 'left-edge navigation unexpectedly succeeded' >&2
+    exit 1
+fi
+grep -Fx 'DEBUG: source=pointer x=1440 screen=eDP bounds=0..2879' "$stderr"
+grep -Fx 'DEBUG: target=<none> direction=left' "$stderr"
+grep -Fx 'No left screen found from current position' "$stderr"
+
+rm -f "$tmpdir/sethead"
+run_navigation 1440 --layout dummy --move-window left -d 2> "$stderr"
+grep -Fx 'DEBUG: source=active-window x=4500 screen=DisplayPort-1 bounds=2880..7999' "$stderr"
+grep -Fx 'DEBUG: target=celtic bounds=0..2879' "$stderr"
+
+echo 'screen-navigation tests passed'
