@@ -239,7 +239,7 @@ Mod4 grave :Exec fluxbox-focus-or-launch --toggle btop top-term btop
 Mod4 Shift grave :Exec fluxbox-focus-or-launch --toggle ccmonitor top-term ccmonitor
 
 # opening programs
-Control Mod4 b :Exec brave-browser
+#Control Mod4 b :Exec brave-browser
 #Control Mod4 c :Exec google-chrome-stable
 Mod4 f :Exec fluxbox-focus-or-launch -c firefox firefox
 Mod4 p :Exec fluxbox-focus-or-launch --toggle -c '[Pp]avucontrol' pavucontrol
@@ -336,7 +336,9 @@ Control Mod4 g :Exec fluxbox-focus-window 'NextWindow (Title=Google Meet.*) (Foc
 #Control Mod4 g :Exec chrome-session-tabs https://app.gather.town/
 
 Mod4 h :Exec chrome-session-rofi 'https://github.com/ '
-Control Mod4 h :Exec chrome-session-tabs 'octobox( \([0-9]+\))? \| '
+Control Mod4 h :Exec chrome-session-rofi '^octobox( \([0-9]+\))? \| '
+# bead-me-up-scotty
+Control Mod4 b :Exec chrome-session-rofi 'http://localhost:19847/'
 
 Control Mod4 2 :Exec switch-emacs-eval '(as-find-personal-todo)'
 Control Mod4 5 :Exec switch-emacs-eval '(as-find-Toucan-todo)'
@@ -401,10 +403,8 @@ Mod1 Mod4 period :If {Matches (Stuck=no)} {MacroCmd {Raise} {TakeToNextWorkspace
 
 # send the current window to the next/previous head, follow it, and
 # stick/unstick depending on whether destination is primary
-
 Mod1 Shift Mod4 period :Exec screen-navigation right --move-window --use-xrandr-cache
 Mod1 Shift Mod4 comma :Exec screen-navigation left --move-window --use-xrandr-cache
-
 
 # change to a specific workspace
 Mod4 1 :Workspace 1
@@ -458,10 +458,8 @@ reorg: Mod1 Mod4 period :If {Matches (Stuck=no)} {MacroCmd {Raise} {TakeToNextWo
 
 # send the current window to the next/previous head, follow it, and
 # stick/unstick depending on whether destination is primary
-
 reorg: Mod1 Shift Mod4 period :Exec screen-navigation right --move-window --use-xrandr-cache
 reorg: Mod1 Shift Mod4 comma :Exec screen-navigation left --move-window --use-xrandr-cache
-
 
 # change to a specific workspace
 reorg: Mod4 1 :Workspace 1
@@ -500,7 +498,6 @@ reorg: Mod1 Mod4 6 :MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Raise} {TakeToW
 
 
 # Number of monitors connected: 3
-
 # Change to previous/next head.
 # Make sure synergys isn't running otherwise it will grab these keys!
 Shift Mod4 comma :Exec screen-navigation --move left --use-xrandr-cache
@@ -510,4 +507,3 @@ Shift Mod4 period :Exec screen-navigation --move right --use-xrandr-cache
 Shift Mod1 Mod4 1 :Exec screen-navigation --head 1 --move-window --use-xrandr-cache
 Shift Mod1 Mod4 quotedbl :Exec screen-navigation --head 2 --move-window --use-xrandr-cache
 Shift Mod1 Mod4 3 :Exec screen-navigation --head 3 --move-window --use-xrandr-cache
-

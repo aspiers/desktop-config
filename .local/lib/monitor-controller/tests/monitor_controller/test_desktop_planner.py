@@ -689,6 +689,53 @@ def test_closed_fluxbox_renderer_matches_legacy_erb_golden_bytes(
         )
 
 
+def test_cross_monitor_bindings_survive_single_monitor_generation() -> None:
+    rendered = render_fluxbox_keys(
+        (_REPO / ".fluxbox" / "keys.erb").read_bytes(),
+        monitor_count=1,
+        host_name="celtic",
+        template_label=".fluxbox/keys.erb",
+        generator_label="bin/fluxbox-gen-config",
+    ).decode()
+
+    cache_option = "--use-xrandr-cache"
+    expected_bindings = (
+        (
+            "Mod1 Shift Mod4 period :Exec screen-navigation right --move-window "
+            f"{cache_option}"
+        ),
+        (
+            "Mod1 Shift Mod4 comma :Exec screen-navigation left --move-window "
+            f"{cache_option}"
+        ),
+        (
+            "reorg: Mod1 Shift Mod4 period :Exec screen-navigation right "
+            f"--move-window {cache_option}"
+        ),
+        (
+            "reorg: Mod1 Shift Mod4 comma :Exec screen-navigation left "
+            f"--move-window {cache_option}"
+        ),
+        f"Shift Mod4 comma :Exec screen-navigation --move left {cache_option}",
+        f"Shift Mod4 period :Exec screen-navigation --move right {cache_option}",
+        (
+            "Shift Mod1 Mod4 1 :Exec screen-navigation --head 1 --move-window "
+            f"{cache_option}"
+        ),
+        (
+            "Shift Mod1 Mod4 quotedbl :Exec screen-navigation --head 2 "
+            f"--move-window {cache_option}"
+        ),
+        (
+            "Shift Mod1 Mod4 3 :Exec screen-navigation --head 3 --move-window "
+            f"{cache_option}"
+        ),
+    )
+    rendered_lines = rendered.splitlines()
+    for binding in expected_bindings:
+        assert binding in rendered_lines
+
+
 def test_closed_fluxbox_renderer_rejects_unknown_execution() -> None:
     template = (_REPO / ".fluxbox" / "keys.erb").read_bytes()
     with pytest.raises(FluxboxRenderError, match="unknown Ruby expression"):
