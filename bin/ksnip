@@ -1,0 +1,27 @@
+#!/bin/sh
+#
+# Wrapper around /usr/bin/ksnip forcing Qt6 HighDPI scaling off.
+#
+# ksnip migrated from Qt5 to Qt6, and Qt6 enables HighDPI scaling
+# unconditionally - the Qt5 opt-out attribute no longer exists. On this
+# mixed-DPI setup Qt then collapses both monitors to a single
+# devicePixelRatio:
+#
+#   default                       eDP 1989x1326  DisplayPort-1 3536x1492  dpr=1.448
+#   QT_ENABLE_HIGHDPI_SCALING=0   eDP 2880x1920  DisplayPort-1 5120x2160  dpr=1.0
+#
+# xrandr reports eDP 2880x1920+0+0 and DisplayPort-1 5120x2160+2880+0, so the
+# scaled figures are wrong in two ways that match the two observed bugs:
+#
+#   Quality - capturing at logical pixels is a real 1.448x downsample, which
+#             is then upscaled again on paste.
+#   Offset  - widths are divided by 1.448 while the x origin stays at an
+#             unscaled 2880, so a selection on the external monitor lands
+#             shifted left onto the laptop panel.
+#
+# Setting dpr back to 1.0 makes Qt use true device pixels, addressing both.
+#
+# Upstream: quality https://github.com/ksnip/ksnip/issues/1141 (open)
+#           offset  https://github.com/ksnip/ksnip/pull/1164 (merged)
+
+exec env QT_ENABLE_HIGHDPI_SCALING=0 /usr/bin/ksnip "$@"
