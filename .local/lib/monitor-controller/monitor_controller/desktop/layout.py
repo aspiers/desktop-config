@@ -229,6 +229,7 @@ class ParsedLayout:
     expanded_yaml: str
     dpi: int | None
     ui_scale: str | None
+    font_scale: str | None
     screens: tuple[LayoutScreen, ...]
     window_rules: tuple[WindowRule, ...]
 
@@ -248,6 +249,7 @@ class ResolvedLayout:
     expanded_yaml: str
     dpi: int | None
     ui_scale: str | None
+    font_scale: str | None
     screens: tuple[ResolvedScreen, ...]
     window_actions: tuple[ResolvedWindowAction, ...]
 
@@ -347,7 +349,9 @@ def parse_layout(layout: str, files: tuple[tuple[str, bytes], ...]) -> ParsedLay
         budget=_ExpansionBudget(),
     )
     expanded = "".join(output)
-    dpi, ui_scale, screens, window_rules = _parse_expanded(source_path, expanded)
+    dpi, ui_scale, font_scale, screens, window_rules = _parse_expanded(
+        source_path, expanded
+    )
     return ParsedLayout(
         layout=layout,
         source_path=source_path,
@@ -355,6 +359,7 @@ def parse_layout(layout: str, files: tuple[tuple[str, bytes], ...]) -> ParsedLay
         expanded_yaml=expanded,
         dpi=dpi,
         ui_scale=ui_scale,
+        font_scale=font_scale,
         screens=screens,
         window_rules=window_rules,
     )
@@ -411,6 +416,7 @@ def resolve_layout(
         expanded_yaml=parsed.expanded_yaml,
         dpi=parsed.dpi,
         ui_scale=parsed.ui_scale,
+        font_scale=parsed.font_scale,
         screens=tuple(resolved),
         window_actions=actions,
     )
@@ -601,11 +607,18 @@ def _include_path(value: str) -> str:
 
 def _parse_expanded(  # noqa: C901, PLR0912, PLR0915
     path: str, expanded: str
-) -> tuple[int | None, str | None, tuple[LayoutScreen, ...], tuple[WindowRule, ...]]:
+) -> tuple[
+    int | None,
+    str | None,
+    str | None,
+    tuple[LayoutScreen, ...],
+    tuple[WindowRule, ...],
+]:
     section: str | None = None
     seen_sections: set[str] = set()
     dpi: int | None = None
     ui_scale: str | None = None
+    font_scale: str | None = None
     screens: list[dict[str, str]] = []
     current_screen: dict[str, str] | None = None
     anchors: dict[str, str] = {}
@@ -674,6 +687,10 @@ def _parse_expanded(  # noqa: C901, PLR0912, PLR0915
                 if ui_scale is not None:
                     raise LayoutPlanningError("layout repeats ui_scale")
                 ui_scale = _positive_decimal(value, "layout ui_scale")
+            elif key == "font_scale":
+                if font_scale is not None:
+                    raise LayoutPlanningError("layout repeats font_scale")
+                font_scale = _positive_decimal(value, "layout font_scale")
             else:
                 raise LayoutPlanningError(f"unsupported top-level layout key: {key}")
             continue
@@ -747,6 +764,7 @@ def _parse_expanded(  # noqa: C901, PLR0912, PLR0915
     return (
         dpi,
         ui_scale,
+        font_scale,
         tuple(_screen_from_mapping(item) for item in screens),
         tuple(windows),
     )

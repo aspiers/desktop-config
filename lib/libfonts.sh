@@ -30,13 +30,24 @@
 
 read_localhost_nickname
 
-# Check if layout file specifies a manual ui_scale to override dynamic calculation
-get_layout_ui_scale() {
+# Let a layout tune fonts independently of other UI.  Layouts without a
+# font_scale retain the existing ui_scale behavior.
+get_layout_font_scale() {
     local layout_file
     layout_file=$(get-layout)
     if [[ -f "$layout_file" ]]; then
         local scale
-        scale=$(grep -E '^[[:space:]]*ui_scale:' "$layout_file" | sed 's/.*ui_scale:[[:space:]]*//')
+        scale=$(awk '
+            /^[[:space:]]*font_scale:/ {
+                font_scale = $0
+                sub(/.*font_scale:[[:space:]]*/, "", font_scale)
+            }
+            /^[[:space:]]*ui_scale:/ {
+                ui_scale = $0
+                sub(/.*ui_scale:[[:space:]]*/, "", ui_scale)
+            }
+            END { print font_scale != "" ? font_scale : ui_scale }
+        ' "$layout_file")
         if [[ -n "$scale" ]]; then
             echo "$scale"
             return 0
@@ -77,9 +88,9 @@ case "$localhost_nickname" in
         # new hi-res display 2880x1920 (256x256 dpi)
         # old matte display 2256x1504 (193x167 dpi)
 
-        # Check for manual ui_scale in layout file first
-        if ui_scale=$(get_layout_ui_scale); then
-            scale_factor="$ui_scale"
+        # Check for a manual layout font scale before dynamic calculation.
+        if font_scale=$(get_layout_font_scale); then
+            scale_factor="$font_scale"
         else
             # Calculate font sizes based on DPI scale factor
             scale_factor=$($ZDOTDIR/lib/libdpy.py --calculate-ui-scale)
@@ -178,7 +189,6 @@ xl_font_gnome="${xl_font_gnome/:size=/ }"
 # Calculate zoom factors for gnome-terminal (relative to medium_font for
 # unified profiles).  Pure-bash size extraction (parameter expansion strips
 # everything up to and including the last space) avoids 5 sed subshells.
-tiny_font_size="${tiny_font_gnome##* }"
 medium_font_size="${medium_font_gnome##* }"
 small_font_size="${small_font_gnome##* }"
 large_font_size="${large_font_gnome##* }"

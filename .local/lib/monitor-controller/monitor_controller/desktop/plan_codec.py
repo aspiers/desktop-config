@@ -57,9 +57,10 @@ from monitor_controller.strictjson import strict_loads
 
 from .layout import DisplayScreenSnapshot, ResolvedLayout  # noqa: TC001
 
-# Version 2 encoded the old finalize action order. It is intentionally rejected;
-# deploy this schema change only while no older plan is in flight.
-PLAN_SCHEMA_VERSION: Final = 3
+# Version 3 predates independent layout font scaling. It is intentionally
+# rejected because its resolved layout lacks font_scale; deploy this schema
+# change only while no older plan is in flight.
+PLAN_SCHEMA_VERSION: Final = 4
 MAX_PLAN_BYTES: Final = 1024 * 1024
 MAX_PLAN_ARTIFACT_BYTES: Final = 512 * 1024
 MAX_PLAN_ARTIFACT_TOTAL_BYTES: Final = 2 * 1024 * 1024

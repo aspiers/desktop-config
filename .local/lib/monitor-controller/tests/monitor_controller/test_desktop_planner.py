@@ -319,10 +319,7 @@ def _celtic() -> tuple[FilesystemDesktopPlanningInputSource, RequestPlan]:
             "Samsung Odyssey G75F",
             139,
             DpiSource.PHYSICAL_SIZE,
-            # No .fluxbox/overlay.celtic+ultrawide exists, and the host overlay
-            # is laptop-sized, so this layout must reach the DPI-aware
-            # generator rather than inherit overlay.celtic.
-            OverlaySelection.DYNAMIC,
+            OverlaySelection.LAYOUT,
             1976,
         ),
         (
@@ -454,7 +451,14 @@ def test_home_samsung_ultrawide_uses_full_ui_scale() -> None:
         if item.relative_path == "artifacts/fluxbox/overlay"
     )
 
+    assert bundle.plan.resolved_layout.ui_scale == "1"
+    assert bundle.plan.resolved_layout.font_scale == "0.85"
     assert primary_panel.size == 36
+    assert bundle.plan.terminal.medium_font_size == 12
+    assert bundle.plan.overlay.selection is OverlaySelection.LAYOUT
+    assert (
+        bundle.plan.overlay.source_path == ".fluxbox/overlay.celtic+ultrawide"
+    )
     assert b"window.font:                      sans-12:bold" in overlay
     assert b"menu.title.font:                  sans-12:bold" in overlay
     assert b"menu.frame.font:                  sans-13" in overlay
@@ -473,18 +477,13 @@ def test_level39_external_keeps_compact_ui_scale() -> None:
     primary_panel = next(item for item in bundle.plan.panels if item.panel == 1)
 
     assert bundle.plan.resolved_layout.ui_scale == "0.85"
+    assert bundle.plan.resolved_layout.font_scale is None
     assert primary_panel.size == 31
+    assert bundle.plan.terminal.medium_font_size == 12
 
 
 def test_host_overlay_serves_only_the_bare_host_layout() -> None:
-    """A multi-monitor layout must not inherit the laptop's host overlay.
-
-    ``.fluxbox/overlay.celtic`` is sized for the internal 2880x1920 panel.
-    Because the host nickname is also a layout name, an unqualified host
-    match would apply those HiDPI fonts to every layout lacking its own
-    overlay file, which is how the 139 DPI ultrawide ended up drawing
-    ``sans-16:bold`` window titles.
-    """
+    """A multi-monitor layout must not inherit the laptop's host overlay."""
     bare_source, bare_request = _celtic()
     bare_plan = build_desktop_plan(bare_source.load(bare_request)).plan
     # For the bare host layout the two roles name the same file, so the
@@ -501,8 +500,8 @@ def test_host_overlay_serves_only_the_bare_host_layout() -> None:
         external_size=(5120, 2160, 930, 400),
     )
     plan = build_desktop_plan(source.load(request)).plan
-    assert plan.overlay.selection is OverlaySelection.DYNAMIC
-    assert plan.overlay.source_path is None
+    assert plan.overlay.selection is OverlaySelection.LAYOUT
+    assert plan.overlay.source_path == ".fluxbox/overlay.celtic+ultrawide"
 
     overlay = next(
         item.content
@@ -808,7 +807,7 @@ def test_identical_inputs_have_identical_canonical_bytes_and_hash() -> None:
     second = build_desktop_plan(source.load(request))
 
     assert first == second
-    assert first.plan.schema_version == PLAN_SCHEMA_VERSION == 3
+    assert first.plan.schema_version == PLAN_SCHEMA_VERSION == 4
     assert encode_plan(first.plan) == encode_plan(second.plan)
     assert hash_plan_bundle(first) == hash_plan_bundle(second)
     assert decode_plan(encode_plan(first.plan)) == first.plan
@@ -1029,7 +1028,7 @@ def test_plan_codec_rejects_unknown_duplicate_and_tampered_schema() -> None:
         decode_plan(duplicate)
 
     raw = json.loads(encoded)
-    raw["schema_version"] = 2
+    raw["schema_version"] = 3
     with pytest.raises(PlanCodecError, match="unsupported desktop plan schema version"):
         decode_plan(json.dumps(raw).encode())
 

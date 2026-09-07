@@ -1,0 +1,43 @@
+#!/bin/bash
+
+set -eu
+
+repo_root=$(cd "$(dirname "$0")/.." && pwd)
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+
+mkdir -p "$tmp/bin" "$tmp/layouts" "$tmp/zdot/lib"
+cat > "$tmp/bin/get-layout" <<'EOF'
+#!/bin/sh
+printf '%s\n' "$TEST_LAYOUT"
+EOF
+cat > "$tmp/zdot/lib/libhost.sh" <<'EOF'
+read_localhost_nickname() {
+    localhost_nickname=celtic
+}
+EOF
+chmod +x "$tmp/bin/get-layout"
+
+font_output() {
+    TEST_LAYOUT=$1 \
+        ZDOTDIR="$tmp/zdot" \
+        PATH="$tmp/bin:$PATH" \
+        "$repo_root/lib/libfonts.sh"
+}
+
+cat > "$tmp/layouts/ultrawide.yaml" <<'EOF'
+ui_scale: 1.0
+font_scale: 0.85
+EOF
+ultrawide=$(font_output "$tmp/layouts/ultrawide.yaml")
+grep -Fqx 'scale_factor=0.85' <<< "$ultrawide"
+grep -Fqx 'medium_font=xft:SauceCodePro Nerd Font:size=12' <<< "$ultrawide"
+
+cat > "$tmp/layouts/legacy.yaml" <<'EOF'
+ui_scale: 0.85
+EOF
+legacy=$(font_output "$tmp/layouts/legacy.yaml")
+grep -Fqx 'scale_factor=0.85' <<< "$legacy"
+grep -Fqx 'medium_font=xft:SauceCodePro Nerd Font:size=12' <<< "$legacy"
+
+echo 'libfonts tests passed'

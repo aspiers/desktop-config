@@ -82,7 +82,7 @@ mr stow
 
 - **Configuration**: YAML files in `.fluxbox/layouts/` define monitor setups and window positions
 - **Model-based**: Monitor identification by model strings for consistent configuration
-- **HiDPI support**: Scaling factors via `calculate_ui_scale_factor()` in libdpy.py, can be overridden with `ui_scale` in layout files
+- **HiDPI support**: Scaling factors via `calculate_ui_scale_factor()` in libdpy.py; layout `ui_scale` overrides panel and window-manager scaling, while `font_scale` can override fonts independently
 - **Event-driven**: Automatic reconfiguration on hardware changes
 
 ### Terminal Configuration
@@ -92,7 +92,7 @@ mr stow
   - `gnome-terminal-profile` - switches profiles via D-Bus
   - `xfce4-terminal-config` - sets colors via xfconf-query
   - `kitty-theme-config` - copies theme files and live-updates via `kitty @` remote control
-- **Font scaling**: `libfonts.sh` calculates font sizes per-host, optionally capped by `ui_scale` in layout YAML files (e.g. `ui_scale: 1.0`)
+- **Font scaling**: `libfonts.sh` calculates font sizes per-host; layout `font_scale` overrides font sizing, falling back to `ui_scale` when absent
 
 ### Browser Integration
 

@@ -972,10 +972,12 @@ def build_desktop_plan(  # noqa: PLR0915
         ),
     )
     overlay, overlay_artifact = _overlay_intent(inputs, resolved)
-    scale = _ui_scale(resolved, inputs)
-    panels = _panel_intents(inputs, scale)
+    ui_scale = _ui_scale(resolved, inputs)
+    panels = _panel_intents(inputs, ui_scale)
     dpi = _dpi_intent(inputs, resolved)
-    terminal, kitty_artifact = _terminal_intent(inputs, scale)
+    terminal, kitty_artifact = _terminal_intent(
+        inputs, _font_scale(resolved, ui_scale)
+    )
     emacs = EmacsFontIntent(
         expression="monitor-controller-apply-font-height",
         font_height=inputs.context.emacs_font_height,
@@ -1312,6 +1314,12 @@ def _ui_scale(resolved: ResolvedLayout, inputs: DesktopPlanningInputs) -> Decima
         physical_dpi = Decimal(primary.width) * Decimal("25.4") / primary.width_mm
         return physical_dpi / inputs.context.reference_dpi
     return Decimal(primary.width) / Decimal(2560)
+
+
+def _font_scale(resolved: ResolvedLayout, ui_scale: Decimal) -> Decimal:
+    if resolved.font_scale is not None:
+        return Decimal(resolved.font_scale)
+    return ui_scale
 
 
 def _panel_intents(
