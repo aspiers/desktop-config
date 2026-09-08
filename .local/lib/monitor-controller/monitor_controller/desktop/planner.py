@@ -975,9 +975,7 @@ def build_desktop_plan(  # noqa: PLR0915
     ui_scale = _ui_scale(resolved, inputs)
     panels = _panel_intents(inputs, ui_scale)
     dpi = _dpi_intent(inputs, resolved)
-    terminal, kitty_artifact = _terminal_intent(
-        inputs, _font_scale(resolved, ui_scale)
-    )
+    terminal, kitty_artifact = _terminal_intent(inputs, _font_scale(resolved, ui_scale))
     emacs = EmacsFontIntent(
         expression="monitor-controller-apply-font-height",
         font_height=inputs.context.emacs_font_height,

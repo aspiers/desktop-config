@@ -456,9 +456,7 @@ def test_home_samsung_ultrawide_uses_full_ui_scale() -> None:
     assert primary_panel.size == 36
     assert bundle.plan.terminal.medium_font_size == 12
     assert bundle.plan.overlay.selection is OverlaySelection.LAYOUT
-    assert (
-        bundle.plan.overlay.source_path == ".fluxbox/overlay.celtic+ultrawide"
-    )
+    assert bundle.plan.overlay.source_path == ".fluxbox/overlay.celtic+ultrawide"
     assert b"window.font:                      sans-12:bold" in overlay
     assert b"menu.title.font:                  sans-12:bold" in overlay
     assert b"menu.frame.font:                  sans-13" in overlay
