@@ -33,15 +33,36 @@ printf '%s\n' \
 EOF
     cat > "$root/bin/xprop" <<'EOF'
 #!/bin/bash
-[[ $* == *-remove* ]] && exit 0
+[[ $* == *-remove* || $* == *-set* ]] && exit 0
 [ "${STUB_ACTUAL_GEOMETRY:-}" != unavailable ] || exit 1
 printf '_NET_DESKTOP_GEOMETRY(CARDINAL) = %s\n' \
     "${STUB_ACTUAL_GEOMETRY/x/, }"
 EOF
+    cat > "$root/bin/xev" <<'EOF'
+#!/bin/bash
+printf '    atom 0x200 (_MONITOR_CONTROLLER_RESTART_ARM), state PropertyNewValue\n'
+if [ "${STUB_PRE_REQUEST_SUPPORT:-}" = yes ]; then
+    printf '    atom 0x201 (_NET_SUPPORTING_WM_CHECK), state PropertyNewValue\n'
+fi
+if [ "${STUB_WATCHER_ERROR:-}" = yes ]; then
+    printf 'xev diagnostic mentioning (_NET_SUPPORTING_WM_CHECK)\n' >&2
+fi
+while [ ! -e "${STUB_RESTART_EVENT:-/nonexistent}" ]; do
+    /usr/bin/sleep 0.001
+done
+printf '    atom 0x202 (_FLUXBOX_ACTION), state PropertyNewValue\n'
+if [ "${STUB_RESTART:-}" = confirmed ]; then
+    printf '    atom 0x201 (_NET_SUPPORTING_WM_CHECK), state PropertyNewValue\n'
+fi
+while :; do /usr/bin/sleep 1; done
+EOF
     cat > "$root/bin/fluxbox-remote" <<'EOF'
 #!/bin/bash
 printf '%s\n' "$*" >> "$FLUXBOX_REMOTE_LOG"
-if [ "${1:-}" = Reconfigure ] && [ "${STUB_RESPONSE:-}" = eventual ]; then
+if [ "${1:-}" = Restart ]; then
+    [ "${STUB_RESTART:-}" != request-failed ] || exit 1
+    touch "$STUB_RESTART_EVENT"
+elif [ "${1:-}" = Reconfigure ] && [ "${STUB_RESPONSE:-}" = eventual ]; then
     count=0
     [ ! -r "$FLUXBOX_REMOTE_COUNT" ] || count=$(cat "$FLUXBOX_REMOTE_COUNT")
     printf '%s\n' "$((count + 1))" > "$FLUXBOX_REMOTE_COUNT"
@@ -186,6 +207,155 @@ test_wait_retries_until_fluxbox_is_healthy() (
         [ "$(cat "$FLUXBOX_REMOTE_COUNT")" -eq 2 ]
 )
 
+test_restart_requires_positive_incarnation_proof() (
+    local root output status
+
+    root=$(mktemp -d)
+    trap 'rm -rf "$root"' EXIT
+    prepare_case "$root"
+    export PATH="$root/bin:/usr/bin:/bin"
+    export XDG_RUNTIME_DIR="$root/runtime"
+    export STUB_ACTUAL_GEOMETRY=8000x2160
+    export STUB_RESPONSE=0
+    export STUB_RESTART=unconfirmed
+    export STUB_RESTART_EVENT="$root/restart-event"
+    export FLUXBOX_REMOTE_LOG="$root/fluxbox-remote.log"
+    export FLUXBOX_HEALTH_WAIT_SECONDS=0
+
+    output=$($check restart "$expected_state")
+    status=$?
+
+    [ "$status" -eq 15 ] &&
+        grep -q 'reason=restart_unconfirmed' <<< "$output" &&
+        grep -qx 'Restart' "$FLUXBOX_REMOTE_LOG" &&
+        ! grep -q '^Reconfigure$' "$FLUXBOX_REMOTE_LOG"
+)
+
+test_restart_waits_for_incarnation_then_health() (
+    local root output
+
+    root=$(mktemp -d)
+    trap 'rm -rf "$root"' EXIT
+    prepare_case "$root"
+    export PATH="$root/bin:/usr/bin:/bin"
+    export XDG_RUNTIME_DIR="$root/runtime"
+    export STUB_ACTUAL_GEOMETRY=8000x2160
+    export STUB_RESPONSE=0
+    export STUB_RESTART=confirmed
+    export FLUXBOX_REMOTE_LOG="$root/fluxbox-remote.log"
+    export STUB_RESTART_EVENT="$root/restart-event"
+    export FLUXBOX_HEALTH_WAIT_SECONDS=2
+
+    output=$($check restart "$expected_state")
+
+    grep -q 'FLUXBOX_RESTART result=healthy mode=in-place' <<< "$output" &&
+        grep -qx 'Restart' "$FLUXBOX_REMOTE_LOG" &&
+        grep -qx 'Reconfigure' "$FLUXBOX_REMOTE_LOG" &&
+        grep -q '^ClientPatternTest ' "$FLUXBOX_REMOTE_LOG"
+)
+
+test_restart_request_failure_is_distinct() (
+    local root output status
+
+    root=$(mktemp -d)
+    trap 'rm -rf "$root"' EXIT
+    prepare_case "$root"
+    export PATH="$root/bin:/usr/bin:/bin"
+    export XDG_RUNTIME_DIR="$root/runtime"
+    export STUB_ACTUAL_GEOMETRY=8000x2160
+    export STUB_RESPONSE=0
+    export STUB_RESTART=request-failed
+    export FLUXBOX_REMOTE_LOG="$root/fluxbox-remote.log"
+    export FLUXBOX_HEALTH_WAIT_SECONDS=0
+
+    output=$($check restart "$expected_state")
+    status=$?
+
+    [ "$status" -eq 15 ] &&
+        grep -q 'reason=restart_request_failed' <<< "$output"
+)
+
+test_pre_request_support_event_is_not_credited() (
+    local root output status
+
+    root=$(mktemp -d)
+    trap 'rm -rf "$root"' EXIT
+    prepare_case "$root"
+    export PATH="$root/bin:/usr/bin:/bin"
+    export XDG_RUNTIME_DIR="$root/runtime"
+    export STUB_ACTUAL_GEOMETRY=8000x2160
+    export STUB_RESPONSE=0
+    export STUB_RESTART=unconfirmed
+    export STUB_PRE_REQUEST_SUPPORT=yes
+    export STUB_RESTART_EVENT="$root/restart-event"
+    export FLUXBOX_REMOTE_LOG="$root/fluxbox-remote.log"
+    export FLUXBOX_HEALTH_WAIT_SECONDS=1
+
+    output=$($check restart "$expected_state")
+    status=$?
+
+    [ "$status" -eq 15 ] &&
+        grep -q 'reason=restart_unconfirmed' <<< "$output"
+)
+
+test_watcher_stderr_cannot_satisfy_restart_proof() (
+    local root output status
+
+    root=$(mktemp -d)
+    trap 'rm -rf "$root"' EXIT
+    prepare_case "$root"
+    export PATH="$root/bin:/usr/bin:/bin"
+    export XDG_RUNTIME_DIR="$root/runtime"
+    export STUB_ACTUAL_GEOMETRY=8000x2160
+    export STUB_RESPONSE=0
+    export STUB_RESTART=confirmed
+    export STUB_WATCHER_ERROR=yes
+    export STUB_RESTART_EVENT="$root/restart-event"
+    export FLUXBOX_REMOTE_LOG="$root/fluxbox-remote.log"
+    export FLUXBOX_HEALTH_WAIT_SECONDS=2
+
+    output=$($check restart "$expected_state")
+    status=$?
+
+    [ "$status" -eq 15 ] &&
+        grep -q 'reason=restart_probe_unavailable' <<< "$output" &&
+        [ -z "$(find "$root/runtime" -name 'fluxbox-restart-events.*' -print -quit)" ]
+)
+
+test_interruption_cleans_restart_watcher() (
+    local root command_pid watcher_pid status
+
+    root=$(mktemp -d)
+    trap 'rm -rf "$root"' EXIT
+    prepare_case "$root"
+    export PATH="$root/bin:/usr/bin:/bin"
+    export XDG_RUNTIME_DIR="$root/runtime"
+    export STUB_ACTUAL_GEOMETRY=8000x2160
+    export STUB_RESPONSE=0
+    export STUB_RESTART=unconfirmed
+    export STUB_RESTART_EVENT="$root/restart-event"
+    export FLUXBOX_REMOTE_LOG="$root/fluxbox-remote.log"
+    export FLUXBOX_HEALTH_WAIT_SECONDS=10
+
+    $check restart "$expected_state" > "$root/restart.out" &
+    command_pid=$!
+    watcher_pid=
+    for _attempt in {1..100}; do
+        watcher_pid=$(pgrep -P "$command_pid" -x xev | head -1)
+        [ -n "$watcher_pid" ] && break
+        /usr/bin/sleep 0.01
+    done
+    [ -n "$watcher_pid" ] || return 1
+
+    kill -TERM "$command_pid"
+    wait "$command_pid"
+    status=$?
+
+    [ "$status" -ne 0 ] &&
+        ! kill -0 "$watcher_pid" 2>/dev/null &&
+        [ -z "$(find "$root/runtime" -name 'fluxbox-restart-events.*' -print -quit)" ]
+)
+
 test_wait_returns_final_failure_at_deadline() (
     local root output status
 
@@ -203,6 +373,60 @@ test_wait_returns_final_failure_at_deadline() (
     status=$?
 
     [ "$status" -eq 11 ] && grep -q 'reason=fluxbox_unresponsive' <<< "$output"
+)
+
+test_real_fluxbox_restart_preserves_pid_and_proves_incarnation() (
+    local root display_number display xvfb_pid fluxbox_pid output
+    local expected_xvfb_state='1280x720;screen=1280x720+0+0:secondary'
+
+    root=$(mktemp -d)
+    xvfb_pid=
+    fluxbox_pid=
+    cleanup() {
+        [ -z "$fluxbox_pid" ] || kill "$fluxbox_pid" 2>/dev/null || true
+        [ -z "$xvfb_pid" ] || kill "$xvfb_pid" 2>/dev/null || true
+        [ -z "$fluxbox_pid" ] || wait "$fluxbox_pid" 2>/dev/null || true
+        [ -z "$xvfb_pid" ] || wait "$xvfb_pid" 2>/dev/null || true
+        rm -rf "$root"
+    }
+    trap cleanup EXIT
+
+    display=
+    for display_number in $(seq 90 110); do
+        if [ ! -e "/tmp/.X11-unix/X$display_number" ]; then
+            display=":$display_number"
+            break
+        fi
+    done
+    [ -n "$display" ] || return 1
+
+    mkdir -p "$root/.fluxbox" "$root/.log" "$root/runtime"
+    printf 'session.screen0.allowRemoteActions: true\n' > "$root/.fluxbox/init"
+    Xvfb "$display" -screen 0 1280x720x24 -nolisten tcp \
+        > "$root/xvfb.log" 2>&1 &
+    xvfb_pid=$!
+    for _attempt in {1..100}; do
+        DISPLAY=$display xdpyinfo >/dev/null 2>&1 && break
+        /usr/bin/sleep 0.01
+    done
+    DISPLAY=$display xdpyinfo >/dev/null 2>&1 || return 1
+
+    HOME=$root XDG_RUNTIME_DIR=$root/runtime DISPLAY=$display \
+        fluxbox -log "$root/.log/fluxbox.log" \
+        > "$root/fluxbox.stdout" 2> "$root/fluxbox.stderr" &
+    fluxbox_pid=$!
+    for _attempt in {1..100}; do
+        DISPLAY=$display xprop -root _NET_SUPPORTING_WM_CHECK 2>/dev/null |
+            grep -q 'window id' && break
+        /usr/bin/sleep 0.01
+    done
+
+    output=$(HOME=$root XDG_RUNTIME_DIR=$root/runtime DISPLAY=$display \
+        FLUXBOX_HEALTH_WAIT_SECONDS=5 \
+        "$check" restart "$expected_xvfb_state") || return 1
+    kill -0 "$fluxbox_pid" 2>/dev/null &&
+        [ "$(cat "/proc/$fluxbox_pid/comm")" = fluxbox ] &&
+        grep -q 'FLUXBOX_RESTART result=healthy mode=in-place' <<< "$output"
 )
 
 test_probe_lock_serializes_command_exchange() (
@@ -249,7 +473,14 @@ run_test 'missing desktop geometry fails' test_unavailable_desktop_geometry
 run_test 'RandR change during probe fails stale' test_xrandr_change_is_reported
 run_test 'equal-size output swap fails staged layout' test_equal_size_output_swap_is_rejected
 run_test 'wait retries until Fluxbox is healthy' test_wait_retries_until_fluxbox_is_healthy
+run_test 'restart rejects old-process health without incarnation proof' test_restart_requires_positive_incarnation_proof
+run_test 'restart proves a new incarnation before health' test_restart_waits_for_incarnation_then_health
+run_test 'restart request failure is distinct' test_restart_request_failure_is_distinct
+run_test 'pre-request supporting event is not credited' test_pre_request_support_event_is_not_credited
+run_test 'watcher stderr cannot satisfy restart proof' test_watcher_stderr_cannot_satisfy_restart_proof
+run_test 'interruption cleans restart watcher' test_interruption_cleans_restart_watcher
 run_test 'wait returns failure at its deadline' test_wait_returns_final_failure_at_deadline
+run_test 'real Fluxbox restart preserves PID and proves incarnation' test_real_fluxbox_restart_preserves_pid_and_proves_incarnation
 run_test 'probe lock serializes command exchange' test_probe_lock_serializes_command_exchange
 
 if [ "$failures" -ne 0 ]; then

@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# Prove that Fluxbox has consumed the current RandR geometry and answers its
-# command channel. Used only by the authoritative monitor finalizer.
+# Restart or probe Fluxbox, then prove that it consumed the current RandR
+# geometry and answers its command channel. Used only by the authoritative
+# monitor finalizer.
 
 set -u
 export LC_ALL=C
@@ -12,6 +13,7 @@ readonly FLUXBOX_UNRESPONSIVE=11
 readonly DESKTOP_GEOMETRY_UNAVAILABLE=12
 readonly GEOMETRY_MISMATCH=13
 readonly XRANDR_CHANGED=14
+readonly RESTART_UNCONFIRMED=15
 readonly USAGE_ERROR=64
 
 xrandr_state() {
@@ -138,6 +140,109 @@ check_once() {
     return "$HEALTHY"
 }
 
+stop_restart_watcher() {
+    local watcher_pid=$1
+    local event_log=$2
+    local error_log=$3
+    local arm_property=$4
+
+    kill "$watcher_pid" 2>/dev/null || true
+    wait "$watcher_pid" 2>/dev/null || true
+    xprop -root -remove "$arm_property" >/dev/null 2>&1 || true
+    rm -f "$event_log" "$error_log"
+}
+
+restart_in_place() {
+    local expected_state=$1
+    local wait_seconds=$2
+    local runtime=$3
+    local state_dir="$runtime/monitor-controller/active"
+    local event_log="$state_dir/fluxbox-restart-events.$$"
+    local error_log="$state_dir/fluxbox-restart-events.$$.err"
+    local arm_property=_MONITOR_CONTROLLER_RESTART_ARM
+    local watcher_pid
+    local deadline
+    local status=$RESTART_UNCONFIRMED
+    local watcher_armed=0
+    local watcher_error=0
+    local restart_observed=0
+    local request_failed=0
+
+    umask 077
+    : > "$event_log" || return "$RESTART_UNCONFIRMED"
+    : > "$error_log" || return "$RESTART_UNCONFIRMED"
+    /usr/bin/stdbuf -oL xev -root -event property \
+        > "$event_log" 2> "$error_log" &
+    watcher_pid=$!
+    trap 'stop_restart_watcher "$watcher_pid" "$event_log" "$error_log" "$arm_property"' EXIT
+
+    # The private marker is an X-server ordering handshake: once xev reports
+    # it, every later action and supporting-WM event is known to be observed.
+    for _attempt in {1..100}; do
+        xprop -root -f "$arm_property" 8s -set "$arm_property" \
+            "$$.$_attempt" >/dev/null 2>&1 || true
+        /usr/bin/sleep 0.01
+        if grep -q "($arm_property)" "$event_log"; then
+            watcher_armed=1
+            break
+        fi
+        kill -0 "$watcher_pid" 2>/dev/null || break
+    done
+    xprop -root -remove "$arm_property" >/dev/null 2>&1 || true
+
+    if [ "$watcher_armed" -eq 0 ]; then
+        status=$RESTART_UNCONFIRMED
+    elif ! fluxbox-remote Restart >/dev/null 2>&1; then
+        request_failed=1
+        status=$RESTART_UNCONFIRMED
+    else
+        deadline=$((SECONDS + wait_seconds))
+        while :; do
+            # Tie the proof to a Fluxbox action observed after the arm marker;
+            # a stray supporting-WM event before that action cannot satisfy it.
+            if awk -v arm="$arm_property" '
+                index($0, "(" arm ")") { armed = 1 }
+                armed && /\(_FLUXBOX_ACTION\)/ { action_seen = 1 }
+                action_seen && /\(_NET_SUPPORTING_WM_CHECK\)/ { found = 1; exit }
+                END { exit !found }
+            ' "$event_log"; then
+                restart_observed=1
+                if check_once "$expected_state"; then
+                    status=$HEALTHY
+                    break
+                else
+                    status=$?
+                fi
+            fi
+            kill -0 "$watcher_pid" 2>/dev/null || break
+            [ "$SECONDS" -ge "$deadline" ] && break
+            /usr/bin/sleep 0.01
+        done
+    fi
+
+    [ ! -s "$error_log" ] || watcher_error=1
+    stop_restart_watcher "$watcher_pid" "$event_log" "$error_log" "$arm_property"
+    trap - EXIT
+
+    if [ "$watcher_armed" -eq 0 ] || [ "$watcher_error" -eq 1 ]; then
+        echo "FLUXBOX_RESTART result=unhealthy reason=restart_probe_unavailable"
+        return "$RESTART_UNCONFIRMED"
+    fi
+    if [ "$status" -eq "$HEALTHY" ] && [ "$restart_observed" -eq 1 ]; then
+        echo "FLUXBOX_RESTART result=healthy mode=in-place"
+        return "$HEALTHY"
+    fi
+    if [ "$request_failed" -eq 1 ]; then
+        echo "FLUXBOX_RESTART result=unhealthy reason=restart_request_failed"
+        return "$RESTART_UNCONFIRMED"
+    fi
+    if [ "$restart_observed" -eq 0 ]; then
+        echo "FLUXBOX_RESTART result=unhealthy reason=restart_unconfirmed"
+        return "$RESTART_UNCONFIRMED"
+    fi
+    return "$status"
+}
+
 main() {
     local mode=${1:-}
     local expected_state=${2:-}
@@ -148,9 +253,9 @@ main() {
     local wait_seconds=${FLUXBOX_HEALTH_WAIT_SECONDS:-10}
 
     case "$mode:$expected_state" in
-        check:?*|wait:?*) ;;
+        check:?*|restart:?*|wait:?*) ;;
         *)
-            echo "Usage: ${0##*/} {check|wait} EXPECTED_XRANDR_STATE" >&2
+            echo "Usage: ${0##*/} {check|restart|wait} EXPECTED_XRANDR_STATE" >&2
             return "$USAGE_ERROR"
             ;;
     esac
@@ -171,6 +276,10 @@ main() {
 
     if [ "$mode" = check ]; then
         check_once "$expected_state"
+        return
+    fi
+    if [ "$mode" = restart ]; then
+        restart_in_place "$expected_state" "$wait_seconds" "$runtime"
         return
     fi
 

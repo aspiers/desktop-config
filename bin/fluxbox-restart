@@ -95,21 +95,25 @@ desktop_fluxbox_pid () {
     return 1
 }
 
+find_recorded_fluxbox_unit () {
+    local unit
+
+    [ -r "$FLUXBOX_DESKTOP_UNIT_FILE" ] || return 1
+    unit=$(<"$FLUXBOX_DESKTOP_UNIT_FILE")
+    if ! print -r -- "$unit" | grep -Eq '^fluxbox-[0-9]+\.service$'; then
+        error "Invalid desktop Fluxbox unit record: $unit"
+        return 2
+    fi
+    systemctl --user is-active --quiet "$unit" || return 1
+    unit_has_fluxbox_main_process "$unit" || return 1
+    print -r -- "$unit"
+}
+
 find_desktop_fluxbox_unit () {
     local unit wm_pid unit_pid
 
+    unit=$(find_recorded_fluxbox_unit) || return $?
     wm_pid=$(desktop_fluxbox_pid) || return 1
-    [ -r "$FLUXBOX_DESKTOP_UNIT_FILE" ] || return 1
-    unit=$(<"$FLUXBOX_DESKTOP_UNIT_FILE")
-    case "$unit" in
-        fluxbox-[0-9]*.service) ;;
-        *)
-            error "Invalid desktop Fluxbox unit record: $unit"
-            return 2
-            ;;
-    esac
-    systemctl --user is-active --quiet "$unit" || return 1
-    unit_has_fluxbox_main_process "$unit" || return 1
     unit_pid=$(unit_main_pid "$unit")
     if [ "$unit_pid" != "$wm_pid" ]; then
         error "Recorded unit $unit owns PID $unit_pid, not desktop Fluxbox PID $wm_pid"
@@ -302,6 +306,23 @@ require_fluxbox_shell () {
 main () {
     local fluxbox_unit
     local fluxbox_shell=${FLUXBOX_SHELL:-$HOME/bin/fluxbox-shell}
+    local require_recorded_unit=0
+
+    case "${1:-}" in
+        --require-recorded-unit)
+            require_recorded_unit=1
+            shift
+            ;;
+        '') ;;
+        *)
+            error "Usage: $0 [--require-recorded-unit]"
+            exit 2
+            ;;
+    esac
+    if [ "$#" -ne 0 ]; then
+        error "Usage: $0 [--require-recorded-unit]"
+        exit 2
+    fi
 
     me=$(basename $0)
 
@@ -328,6 +349,15 @@ main () {
         fi
     elif desktop_is_fluxbox; then
         error "Fluxbox owns the desktop but its exact recorded systemd unit could not be verified"
+        exit 1
+    elif fluxbox_unit=$(find_recorded_fluxbox_unit); then
+        # An in-place Restart briefly drops the WM selection while retaining
+        # the same Fluxbox PID and cgroup. Stop that exact recorded unit before
+        # full recovery instead of starting a competing second window manager.
+        info "Recovering recorded $fluxbox_unit while its WM selection is absent"
+        ensure_fluxbox_stopped "$fluxbox_unit"
+    elif [ "$require_recorded_unit" -eq 1 ]; then
+        error "Full recovery requires the exact recorded Fluxbox unit"
         exit 1
     fi
 

@@ -117,7 +117,7 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True, slots=True)
 class ApplyFluxboxConfiguration:
-    """Install and live-reload the exact staged Fluxbox key configuration."""
+    """Install the exact staged Fluxbox key configuration for the next restart."""
 
     content: bytes
 
@@ -137,15 +137,15 @@ class ApplyWindowLayout:
 
 
 @dataclass(frozen=True, slots=True)
-class CheckFluxboxHealth:
-    """Live-reconfigure Fluxbox, then prove geometry and command response."""
+class RestartFluxboxInPlace:
+    """Restart Fluxbox in place and prove a new healthy incarnation."""
 
     expected_xrandr_state: str
 
 
 @dataclass(frozen=True, slots=True)
 class RestartFluxbox:
-    """Request the existing transient-service-owned Fluxbox restart."""
+    """Request full transient-service-owned Fluxbox recovery."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -178,7 +178,7 @@ type FinalizeOperation = (
     ApplyFluxboxConfiguration
     | ApplyKeyboardIntent
     | ApplyWindowLayout
-    | CheckFluxboxHealth
+    | RestartFluxboxInPlace
     | RestartFluxbox
     | WaitForFluxbox
     | RestartXfcePanel
@@ -393,8 +393,8 @@ class SubprocessFinalizeCommands:
                 self._home_root / ".fluxbox" / "keys",
                 operation.content,
             )
-            # The following health operation owns live reconfiguration. Keeping
-            # it there lets a missing or hung Fluxbox fall back to a restart.
+            # The following in-place restart owns live configuration loading;
+            # a missing or hung Fluxbox then falls back to full recovery.
             return FinalizeCommandResult(0)
         if isinstance(operation, ApplyKeyboardIntent):
             return self._apply_keyboard_intent(operation)
@@ -411,12 +411,12 @@ class SubprocessFinalizeCommands:
                 )
             finally:
                 payload.unlink(missing_ok=True)
-        if isinstance(operation, CheckFluxboxHealth):
+        if isinstance(operation, RestartFluxboxInPlace):
             return self._run(
                 (
                     str(self._leaf_root / "run-with-local-X-display"),
                     str(self._leaf_root / "fluxbox-health-check"),
-                    "check",
+                    "restart",
                     operation.expected_xrandr_state,
                 )
             )
@@ -425,6 +425,7 @@ class SubprocessFinalizeCommands:
                 (
                     str(self._leaf_root / "run-with-local-X-display"),
                     str(self._leaf_root / "fluxbox-restart"),
+                    "--require-recorded-unit",
                 )
             )
         if isinstance(operation, WaitForFluxbox):
@@ -735,9 +736,9 @@ def _expected_fluxbox_xrandr_state(bundle: DesktopPlanBundle) -> str:
 
 @dataclass(frozen=True, slots=True)
 class _FluxboxReconciliation:
-    """Paired-repair decision plus evidence needed by the panel restart."""
+    """Independent panel decision after Fluxbox has been reconciled."""
 
-    paired_repair: bool
+    restart_panel: bool
     excluded_panel_pids: tuple[int, ...]
     failure: WorkerExecution | None = None
 
@@ -777,96 +778,84 @@ def _reconcile_fluxbox(
     initial_panel = commands.check_panel_health(panels, screens)
     _raise_if_cancelled(startup, cancellation)
     revalidate()
-    excluded_pids = initial_panel.observed_pids
-    fallback_reason: str | None = None
-    fallback_panel_health: PanelHealth | None = initial_panel
 
-    if not initial_panel.healthy:
-        fallback_reason = f"initial-panel-{initial_panel.reason}"
-    else:
-        fluxbox_health = commands.apply(CheckFluxboxHealth(expected_state))
+    in_place = commands.apply(RestartFluxboxInPlace(expected_state))
+    _raise_if_cancelled(startup, cancellation)
+    revalidate()
+    fallback_reason: str | None = None
+    if in_place.exit_status != 0 or in_place.timed_out:
+        fallback_reason = (
+            "in-place-timeout"
+            if in_place.timed_out
+            else f"in-place-exit-{in_place.exit_status}"
+        )
+        _JOURNAL.warning(
+            "FLUXBOX_HEALTH_DECISION action=%s profile=%s result=fallback reason=%s",
+            startup.request.action_id.value,
+            startup.request.profile,
+            fallback_reason,
+        )
+        restarted = commands.apply(RestartFluxbox())
         _raise_if_cancelled(startup, cancellation)
         revalidate()
-        if fluxbox_health.exit_status != 0 or fluxbox_health.timed_out:
-            post_reconfigure_panel = commands.check_panel_health(panels, screens)
-            _raise_if_cancelled(startup, cancellation)
-            revalidate()
-            excluded_pids = _panel_pids(initial_panel, post_reconfigure_panel)
-            fallback_panel_health = post_reconfigure_panel
-            fallback_reason = (
-                "fluxbox-timeout"
-                if fluxbox_health.timed_out
-                else f"fluxbox-exit-{fluxbox_health.exit_status}"
+        failure = _command_failure(restarted, "recover_fluxbox")
+        if failure is not None:
+            return _FluxboxReconciliation(
+                restart_panel=False,
+                excluded_panel_pids=initial_panel.observed_pids,
+                failure=failure,
             )
-        else:
-            try:
-                post_reconfigure_panel = commands.wait_for_exact_panel(
-                    panels,
-                    screens,
-                )
-            except PanelReadinessError as error:
-                _raise_if_cancelled(startup, cancellation)
-                revalidate()
-                excluded_pids = _panel_pids(initial_panel, error.latest_health)
-                fallback_panel_health = error.latest_health
-                fallback_reason = f"post-reconfigure-panel-{error}"
-            else:
-                _raise_if_cancelled(startup, cancellation)
-                revalidate()
-                _JOURNAL.info(
-                    "FLUXBOX_HEALTH_DECISION action=%s profile=%s result=skip",
-                    startup.request.action_id.value,
-                    startup.request.profile,
-                )
-                _JOURNAL.info(
-                    "PANEL_HEALTH_DECISION action=%s profile=%s result=skip",
-                    startup.request.action_id.value,
-                    startup.request.profile,
-                )
-                return _FluxboxReconciliation(
-                    paired_repair=False,
-                    excluded_panel_pids=_panel_pids(
-                        initial_panel,
-                        post_reconfigure_panel,
-                    ),
-                )
 
-    _JOURNAL.warning(
-        "FLUXBOX_HEALTH_DECISION action=%s profile=%s result=fallback reason=%s",
-        startup.request.action_id.value,
-        startup.request.profile,
-        fallback_reason,
-    )
-    _JOURNAL.warning(
-        "PANEL_HEALTH_DECISION action=%s profile=%s result=fallback "
-        "reason=%s evidence=%s",
-        startup.request.action_id.value,
-        startup.request.profile,
-        fallback_reason,
-        journal_panel_diagnostic(
-            fallback_panel_health.diagnostic
-            if fallback_panel_health is not None
-            else ""
-        ),
-    )
-    restarted = commands.apply(RestartFluxbox())
-    _raise_if_cancelled(startup, cancellation)
-    revalidate()
-    failure = _command_failure(restarted, "restart_fluxbox")
-    if failure is not None:
-        return _FluxboxReconciliation(
-            paired_repair=True,
-            excluded_panel_pids=excluded_pids,
-            failure=failure,
+        ready = commands.apply(WaitForFluxbox(expected_state))
+        _raise_if_cancelled(startup, cancellation)
+        revalidate()
+        failure = _command_failure(ready, "replacement Fluxbox readiness")
+        if failure is not None:
+            return _FluxboxReconciliation(
+                restart_panel=False,
+                excluded_panel_pids=initial_panel.observed_pids,
+                failure=failure,
+            )
+    else:
+        _JOURNAL.info(
+            "FLUXBOX_HEALTH_DECISION action=%s profile=%s result=restart "
+            "mode=in-place reason=notification-placement-unobservable",
+            startup.request.action_id.value,
+            startup.request.profile,
         )
 
-    ready = commands.apply(WaitForFluxbox(expected_state))
+    try:
+        post_fluxbox_panel = commands.wait_for_exact_panel(panels, screens)
+    except PanelReadinessError as error:
+        _raise_if_cancelled(startup, cancellation)
+        revalidate()
+        latest_panel = error.latest_health
+        panel_reason = f"post-fluxbox-panel-{error}"
+        _JOURNAL.warning(
+            "PANEL_HEALTH_DECISION action=%s profile=%s result=fallback "
+            "reason=%s evidence=%s",
+            startup.request.action_id.value,
+            startup.request.profile,
+            panel_reason,
+            journal_panel_diagnostic(
+                latest_panel.diagnostic if latest_panel is not None else ""
+            ),
+        )
+        return _FluxboxReconciliation(
+            restart_panel=True,
+            excluded_panel_pids=_panel_pids(initial_panel, latest_panel),
+        )
+
     _raise_if_cancelled(startup, cancellation)
     revalidate()
+    _JOURNAL.info(
+        "PANEL_HEALTH_DECISION action=%s profile=%s result=skip",
+        startup.request.action_id.value,
+        startup.request.profile,
+    )
     return _FluxboxReconciliation(
-        paired_repair=True,
-        excluded_panel_pids=excluded_pids,
-        failure=_command_failure(ready, "replacement Fluxbox readiness"),
+        restart_panel=False,
+        excluded_panel_pids=_panel_pids(initial_panel, post_fluxbox_panel),
     )
 
 
@@ -914,7 +903,7 @@ def execute_finalization(  # noqa: C901, PLR0913, PLR0915
         bundle = guarded_bundle
         if bundle is None:
             _stale("staged plan was not validated before finalization")
-        paired_repair = False
+        restart_panel = False
         excluded_panel_pids: tuple[int, ...] = ()
         for index, action in enumerate(bundle.plan.finalize_actions):
             if index:
@@ -931,13 +920,13 @@ def execute_finalization(  # noqa: C901, PLR0913, PLR0915
                     cancellation,
                     boundary,
                 )
-                paired_repair = reconciliation.paired_repair
+                restart_panel = reconciliation.restart_panel
                 excluded_panel_pids = reconciliation.excluded_panel_pids
                 if reconciliation.failure is not None:
                     return reconciliation.failure
                 continue
             if action.kind is PlannedActionKind.RESTART_XFCE_PANEL:
-                if not paired_repair:
+                if not restart_panel:
                     continue
                 try:
                     independent_pids = _validate_panel_process_pids(
@@ -1155,7 +1144,7 @@ def _operation(  # noqa: PLR0911
     if kind is PlannedActionKind.APPLY_WINDOW_LAYOUT:
         return ApplyWindowLayout(artifacts[plan.windows.actions_artifact])
     if kind is PlannedActionKind.RESTART_FLUXBOX:
-        return RestartFluxbox()
+        return RestartFluxboxInPlace(_expected_fluxbox_xrandr_state(bundle))
     if kind is PlannedActionKind.RESTART_XFCE_PANEL:
         return RestartXfcePanel(action_id)
     if kind is PlannedActionKind.RESTART_NM_APPLET:

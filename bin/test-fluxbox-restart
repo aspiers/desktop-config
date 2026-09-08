@@ -73,6 +73,10 @@ print 'fluxbox-123.service' > "$FLUXBOX_DESKTOP_UNIT_FILE"
 assert_equal "finds the recorded live desktop unit" \
     'fluxbox-123.service' "$(find_desktop_fluxbox_unit)"
 
+desktop_fluxbox_pid () { return 1; }
+assert_equal "finds the exact recorded unit during a WM-selection gap" \
+    'fluxbox-123.service' "$(find_recorded_fluxbox_unit)"
+
 rm -f "$FLUXBOX_DESKTOP_UNIT_FILE"
 desktop_fluxbox_pid () { return 1; }
 systemctl () {
@@ -93,6 +97,13 @@ if find_desktop_fluxbox_unit >/dev/null; then
     fail "rejects an invalid recorded unit name"
 else
     assert_equal "invalid unit record has a distinct failure" 2 "$?"
+fi
+
+print 'fluxbox-1evil.service' > "$FLUXBOX_DESKTOP_UNIT_FILE"
+if find_recorded_fluxbox_unit >/dev/null; then
+    fail "rejects a near-match recorded unit name"
+else
+    assert_equal "near-match unit record has a distinct failure" 2 "$?"
 fi
 
 print 'fluxbox-123.service' > "$FLUXBOX_DESKTOP_UNIT_FILE"
@@ -165,9 +176,44 @@ else
     fail "routes Fluxbox Exec commands through the journal wrapper"
 fi
 
+start_marker=$tmp_dir/unsafe-second-fluxbox
+stop_marker=$tmp_dir/unsafe-unit-stop
+if (
+    SSH_CONNECTION=
+    require_fluxbox_shell () { return 0; }
+    find_desktop_fluxbox_unit () { return 2; }
+    desktop_is_fluxbox () { return 0; }
+    find_recorded_fluxbox_unit () { print fluxbox-999.service; }
+    ensure_fluxbox_stopped () { touch "$stop_marker"; }
+    systemd-run () { touch "$start_marker"; }
+    main --require-recorded-unit
+); then
+    fail "supervised recovery rejects a recorded-unit ownership mismatch"
+elif [ -e "$stop_marker" ] || [ -e "$start_marker" ]; then
+    fail "supervised recovery mutated after an ownership mismatch"
+else
+    pass "supervised recovery rejects a recorded-unit ownership mismatch"
+fi
+
+if (
+    SSH_CONNECTION=
+    require_fluxbox_shell () { return 0; }
+    find_desktop_fluxbox_unit () { return 1; }
+    find_recorded_fluxbox_unit () { return 1; }
+    desktop_is_fluxbox () { return 1; }
+    systemd-run () { touch "$start_marker"; }
+    main --require-recorded-unit
+); then
+    fail "supervised recovery rejects an unavailable recorded unit"
+elif [ -e "$start_marker" ]; then
+    fail "supervised recovery started a competing Fluxbox"
+else
+    pass "supervised recovery rejects an unavailable recorded unit"
+fi
+
 if [ "$failures" -ne 0 ]; then
     print -u2 "$failures test(s) failed"
     exit 1
 fi
 
-print "1..15"
+print "1..19"
