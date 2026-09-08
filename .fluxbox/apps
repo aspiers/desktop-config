@@ -79,6 +79,7 @@
 [end]
 # Keep the dedicated agent-browser profile on the laptop display.
 [app] (name=google-chrome.*agent-browser-data.*)
+  [Sticky]	{yes}
   [Head]	{2}
   [Position]	(UPPERLEFT)	{0 0}
 [end]
