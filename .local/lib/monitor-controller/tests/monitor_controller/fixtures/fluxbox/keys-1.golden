@@ -333,7 +333,7 @@ Control Mod4 g :Exec fluxbox-focus-window 'NextWindow (Title=Google Meet.*) (Foc
 #Control Mod4 g :Exec chrome-session-tabs https://app.gather.town/
 
 Mod4 h :Exec chrome-session-rofi 'https://github.com/ '
-Control Mod4 h :Exec chrome-session-rofi '^octobox( \([0-9]+\))? \| '
+Control Mod4 h :Exec chrome-session-rofi --no-tokenize '^octobox( \([0-9]+\))? \| '
 # bead-me-up-scotty
 Control Mod4 b :Exec chrome-session-rofi 'http://localhost:19847/'
 
@@ -360,7 +360,7 @@ Mod4 y :Exec chrome-session-rofi youtube.com
 Mod4 z :Exec fluxbox-focus-or-launch -c zulip zulip
 
 #Shift Mod4 z :Exec fluxbox-focus-or-launch Zoom 'zoom --disable-gpu-sandbox'
-Shift Mod4 z :Exec chrome-session-rofi 'Zoom meeting|Personal Meeting|://app.zoom.us/'
+Shift Mod4 z :Exec chrome-session-rofi --no-tokenize 'Zoom meeting|Personal Meeting|://app.zoom.us/'
 # This one not doing anything for some weird reason, but I only use the browser version
 # these days anyway
 Control Mod4 z :MacroCmd {NextWindow (Title=Zoom Meeting|Personal Meeting|://.*\.zoom\.us/.*)} {Delay {Exec focus-active-window} 300000}

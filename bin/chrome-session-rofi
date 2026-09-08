@@ -6,12 +6,22 @@
 #
 # Optional argument: initial regex pre-filled in rofi. A leading `^` anchors
 # the match to the start of the tab title, after rofi's window metadata.
+#
+# Usually spaces in the initial query are there to separate it from the extra
+# conjunctive terms typed next, so rofi must keep tokenizing on whitespace.
+# `--no-tokenize` is for the minority of queries whose own spaces are part of
+# a single regex, which tokenizing would split into invalid fragments.
 
 set -euo pipefail
 
+rofi_matching_args=()
+if [ "${1:-}" = --no-tokenize ]; then
+    rofi_matching_args=(-no-tokenize)
+    shift
+fi
+
 initial_query="${1:-}"
 rofi_filter="$initial_query"
-rofi_matching_args=()
 
 tabs=$(chrome-session-tabs --rofi)
 
@@ -23,7 +33,6 @@ if [ -n "$initial_query" ]; then
     if [[ $rofi_filter == ^* ]]; then
         rofi_filter=" -~- ${rofi_filter#^}"
     fi
-    rofi_matching_args=(-no-tokenize)
     matches=$(printf '%s\n' "$tabs" | grep -iE -- "$rofi_filter" || true)
     match_count=$(printf '%s\n' "$matches" | grep -c . || true)
     if [ "$match_count" = "1" ]; then

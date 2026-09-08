@@ -45,7 +45,7 @@ printf '%s\n' \
     'work     / repos /  3 -~- GitHub | Pull requests' \
     > "$CHROME_SESSION_ROFI_TEST_TABS"
 
-"$repo/bin/chrome-session-rofi" "$query" > "$tmp/stdout" 2> "$tmp/stderr"
+"$repo/bin/chrome-session-rofi" --no-tokenize "$query" > "$tmp/stdout" 2> "$tmp/stderr"
 
 if [[ -s $tmp/stderr ]]; then
     echo 'not ok - valid regex produced an error:' >&2
@@ -71,7 +71,7 @@ printf '%s\n' \
 export CHROME_SESSION_ROFI_TEST_ROFI_CHOICE='work     / repos /  3 -~- Octobox (7) | Notifications'
 rm -f "$CHROME_SESSION_ROFI_TEST_ROFI_ARGS"
 
-"$repo/bin/chrome-session-rofi" "$query"
+"$repo/bin/chrome-session-rofi" --no-tokenize "$query"
 
 mapfile -d '' -t rofi_args < "$CHROME_SESSION_ROFI_TEST_ROFI_ARGS"
 for ((i = 0; i < ${#rofi_args[@]}; i++)); do
@@ -102,7 +102,7 @@ printf '%s\n' 'GitHub | Pull requests' > "$CHROME_SESSION_ROFI_TEST_TABS"
 export CHROME_SESSION_ROFI_TEST_ROFI_CHOICE='GitHub | Pull requests'
 rm -f "$CHROME_SESSION_ROFI_TEST_ROFI_ARGS"
 
-"$repo/bin/chrome-session-rofi" "$query"
+"$repo/bin/chrome-session-rofi" --no-tokenize "$query"
 
 if [[ ! -e $CHROME_SESSION_ROFI_TEST_ROFI_ARGS ]]; then
     echo 'not ok - rofi did not open when the regex had no matches' >&2
@@ -115,3 +115,25 @@ if ! grep -Fxq "$CHROME_SESSION_ROFI_TEST_ROFI_CHOICE" \
 fi
 
 echo 'ok - no matches open rofi for interactive fallback'
+
+# Without --no-tokenize, rofi must keep splitting the query on whitespace so
+# that a URL query plus a trailing space leaves you ready to type more terms.
+query='https://github.com/ '
+printf '%s\n' \
+    'personal /       /  6 -~- GitHub | Issues' \
+    'work     / repos /  3 -~- GitHub | Pull requests' \
+    > "$CHROME_SESSION_ROFI_TEST_TABS"
+export CHROME_SESSION_ROFI_TEST_ROFI_CHOICE='work     / repos /  3 -~- GitHub | Pull requests'
+rm -f "$CHROME_SESSION_ROFI_TEST_ROFI_ARGS"
+
+"$repo/bin/chrome-session-rofi" "$query"
+
+mapfile -d '' -t rofi_args < "$CHROME_SESSION_ROFI_TEST_ROFI_ARGS"
+for arg in "${rofi_args[@]}"; do
+    if [[ $arg == -no-tokenize ]]; then
+        echo 'not ok - tokenization disabled without --no-tokenize' >&2
+        exit 1
+    fi
+done
+
+echo 'ok - tokenized search stays enabled by default'
