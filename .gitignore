@@ -41,3 +41,5 @@ tasks/
 .beads.failed-server-restore.*/
 .beads.failed-server-attempt/
 /docs/*.html
+
+tmp/
