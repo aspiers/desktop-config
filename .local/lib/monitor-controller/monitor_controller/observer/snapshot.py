@@ -62,11 +62,11 @@ from .drm import (
     sample_drm,
 )
 from .evidence import ParseIssue, ParseIssueCode, TextCommandEvidence
+from .mapping import AmbiguousBijectionError, unique_bijection
 from .topology import derive_canonical_topology
 
 DEFAULT_OBSERVER_TIMEOUT_SECONDS: float = 5.0
 EDID_BASE_HEX_CHARS: int = 256
-MAX_MAPPING_SOLUTIONS: int = 2
 ZERO_OBSERVATION_GENERATION = ObservationGeneration(0)
 MAX_PLANNING_CAPTURES = 16
 
@@ -874,7 +874,7 @@ def _geometry_matches_saved_config(  # noqa: PLR0911 - one closed comparison
     return True
 
 
-def _resolve_probe_mapping(  # noqa: C901
+def _resolve_probe_mapping(  # probe edges also admit base-EDID matches
     profile: SavedAutorandrProfile,
     live_fingerprints: tuple[Fingerprint, ...],
     connectors: tuple[DrmConnector, ...],
@@ -909,30 +909,13 @@ def _resolve_probe_mapping(  # noqa: C901
         if not matches:
             return None
         candidates[saved.output] = tuple(sorted(matches))
-    solutions: list[dict[str, str]] = []
-    ordered = tuple(sorted(candidates, key=lambda item: (len(candidates[item]), item)))
-
-    def search(index: int, used: frozenset[str], value: dict[str, str]) -> None:
-        if len(solutions) >= MAX_MAPPING_SOLUTIONS:
-            return
-        if index == len(ordered):
-            if used == frozenset(connected):
-                solutions.append(value.copy())
-            return
-        saved = ordered[index]
-        for live in candidates[saved]:
-            if live in used:
-                continue
-            value[saved] = live
-            search(index + 1, used | {live}, value)
-            del value[saved]
-
-    search(0, frozenset(), {})
-    if len(solutions) != 1:
+    try:
+        solution = unique_bijection(candidates, frozenset(connected))
+    except AmbiguousBijectionError:
         return None
-    return tuple(
-        OutputMapping(saved, solutions[0][saved]) for saved in sorted(solutions[0])
-    )
+    if solution is None:
+        return None
+    return tuple(OutputMapping(saved, solution[saved]) for saved in sorted(solution))
 
 
 def _invalidity_reason(  # noqa: PLR0913, PLR0917

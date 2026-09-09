@@ -22,6 +22,7 @@ from .evidence import (
     TextCommandEvidence,
     bounded_lines,
 )
+from .mapping import AmbiguousBijectionError, unique_bijection
 
 MAX_PROFILE_OUTPUTS: int = 128
 MAX_PROFILE_NAME_CHARS: int = 255
@@ -30,7 +31,6 @@ MAX_FINGERPRINT_CHARS: int = 65536
 MAX_LAYOUT_CHARS: int = 255
 FINGERPRINT_FIELDS: int = 2
 KEY_VALUE_FIELDS: int = 2
-MAX_MAPPING_SOLUTIONS: int = 2
 
 _OUTPUT_NAME = re.compile(r"^[^\s\x00-\x1f\x7f]+$")
 _PROFILE_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._+-]*$")
@@ -376,42 +376,23 @@ def resolve_output_mapping(  # noqa: C901
     if collector.issues:
         return MappingResult(None, collector.issues)
 
-    ordered_saved = tuple(
-        sorted(candidates, key=lambda output: (len(candidates[output]), output))
-    )
-    solutions: list[dict[str, str]] = []
-
-    def search(index: int, used: frozenset[str], mapping: dict[str, str]) -> None:
-        if len(solutions) >= MAX_MAPPING_SOLUTIONS:
-            return
-        if index == len(ordered_saved):
-            if len(used) == len(connected_outputs):
-                solutions.append(mapping.copy())
-            return
-        saved_output = ordered_saved[index]
-        for live_output in candidates[saved_output]:
-            if live_output in used:
-                continue
-            mapping[saved_output] = live_output
-            search(index + 1, used | {live_output}, mapping)
-            del mapping[saved_output]
-
-    search(0, frozenset(), {})
-    if not solutions:
-        collector.add(
-            ParseIssueCode.UNMATCHED,
-            "candidate edges do not form a complete bijection",
-        )
-        return MappingResult(None, collector.issues)
-    if len(solutions) > 1:
+    try:
+        solution = unique_bijection(candidates, frozenset(connected_outputs))
+    except AmbiguousBijectionError:
         collector.add(
             ParseIssueCode.AMBIGUOUS,
             "multiple complete fingerprint bijections exist",
         )
         return MappingResult(None, collector.issues)
+    if solution is None:
+        collector.add(
+            ParseIssueCode.UNMATCHED,
+            "candidate edges do not form a complete bijection",
+        )
+        return MappingResult(None, collector.issues)
     mapping = tuple(
-        OutputMapping(saved_output, solutions[0][saved_output])
-        for saved_output in sorted(solutions[0])
+        OutputMapping(saved_output, solution[saved_output])
+        for saved_output in sorted(solution)
     )
     return MappingResult(mapping, ())
 
