@@ -328,7 +328,7 @@ def test_corrupt_state_never_discards_worker_exclusions_or_authorizes_work() -> 
     assert any("corrupt" in reason for reason in result.reasons)
 
 
-def test_boot_change_drops_monotonic_waits_and_keeps_verified_durable_facts() -> None:
+def test_boot_change_drops_monotonic_waits_and_session_finalization() -> None:
     tombstone = ActionTombstone(
         ActionId(_OLD_INSTANCE, ActionKind.APPLICATION, 8),
         ActionLifecycle.COMPLETED,
@@ -373,7 +373,9 @@ def test_boot_change_drops_monotonic_waits_and_keeps_verified_durable_facts() ->
     assert result.state.next_timer_ms is None
     assert result.state.verify_since_ms is None
     assert result.state.last_drm_at_ms is None
-    assert result.state.desktop_finalized_profile == "external"
+    assert result.state.desktop_finalized_profile is None
+    assert result.state.desktop_finalization_required
+    assert not result.state.baseline_adoption
     assert not result.state.immediate_retry_used_profiles
     assert result.state.action_tombstones == (tombstone,)
     assert not result.effects

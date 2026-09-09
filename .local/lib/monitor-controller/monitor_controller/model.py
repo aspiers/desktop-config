@@ -281,6 +281,22 @@ class DisplayIdentity:
         object.__setattr__(self, "value", _normalize_display(self.value))
 
 
+@dataclass(frozen=True, slots=True)
+class GraphicalSessionId:
+    """Logind session whose mutable desktop state this record describes."""
+
+    value: str
+
+    def __post_init__(self) -> None:
+        _require_nonempty(self.value, "graphical session ID")
+        if any(
+            not character.isascii() or not (character.isalnum() or character in "_.-")
+            for character in self.value
+        ):
+            msg = "graphical session ID contains unsafe characters"
+            raise ValueError(msg)
+
+
 @dataclass(frozen=True, slots=True, order=True)
 class ObservationGeneration:
     """Sequence allocated to completed canonical observation samples."""
@@ -1222,6 +1238,21 @@ def bound_action_tombstones(
     return tuple(retained)
 
 
+def _validate_desktop_finalization_requirement(
+    required: bool,
+    finalized_profile: str | None,
+    baseline_adoption: bool,
+) -> None:
+    if not required:
+        return
+    if finalized_profile is not None:
+        msg = "required desktop finalization cannot retain completed proof"
+        raise ValueError(msg)
+    if baseline_adoption:
+        msg = "required desktop finalization forbids baseline adoption"
+        raise ValueError(msg)
+
+
 @dataclass(frozen=True, slots=True)
 class State:
     """Complete immutable reducer state and recovery identity."""
@@ -1229,6 +1260,10 @@ class State:
     boot_id: BootId
     controller_instance: ControllerInstanceId
     display_identity: DisplayIdentity
+    graphical_session_id: GraphicalSessionId | None = dataclass_field(
+        default=None,
+        metadata={"codec_optional": True},
+    )
     schema_version: int = SCHEMA_VERSION
     latest_observation: CanonicalObservation | None = None
     phase: ControllerPhase = ControllerPhase.RECOVERING
@@ -1245,6 +1280,10 @@ class State:
     last_drm_at_ms: int | None = None
     stable_x_profile: str | None = None
     desktop_finalized_profile: str | None = None
+    desktop_finalization_required: bool = dataclass_field(
+        default=False,
+        metadata={"codec_optional": True},
+    )
     external_intent: bool = False
     baseline_adoption: bool = False
     attempted_probe_keys: frozenset[ProbeAttemptKey] = frozenset()
@@ -1298,6 +1337,11 @@ class State:
         ):
             if value is not None:
                 _require_nonempty(value, field_name)
+        _validate_desktop_finalization_requirement(
+            self.desktop_finalization_required,
+            self.desktop_finalized_profile,
+            self.baseline_adoption,
+        )
         for profile in self.immediate_retry_used_profiles:
             _require_nonempty(profile, "immediate-retry-used profile")
 

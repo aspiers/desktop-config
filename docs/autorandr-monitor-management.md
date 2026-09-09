@@ -244,14 +244,19 @@ verification.
 
 ### Login
 
-After `00-systemd-user-env` has put `DISPLAY` into the systemd `--user`
-environment, `01-window-manager` registers its exact `XDG_SESSION_ID`; a
-user-global fallback is deliberately forbidden because it could identify a
-different concurrent session. Registration starts `fluxbox-session.target`,
+`00-systemd-user-env` puts `DISPLAY` and the exact `XDG_SESSION_ID` into the
+systemd `--user` environment. The monitor controller stores that session ID
+with its finalized-desktop proof: a controller-only restart in the same login
+can reuse the proof, while a reboot or new login must finalize the desktop
+again. `01-window-manager` registers the same session ID; a user-global
+fallback is forbidden because it could identify a different concurrent
+session. Registration starts `fluxbox-session.target`,
 which both watcher units are `WantedBy=`, so whichever one is enabled starts
 there. The separately supervised `fluxbox-session-lifetime@watch.service`
 reference-counts registered logind sessions under a lock and stops the target
-only after the last session is authoritatively closing or removed. The watcher
+only after the last session is authoritatively closing or removed. If a new
+login overlaps the old one, registration stops old monitor workers and restarts
+the controller so it reads the newly published session ID. The watcher
 is started before registration and remains supervised even while no graphical
 target is active. The same lock is held through target stop, so a concurrent
 login registers and restarts the target afterward; a failed stop restarts the

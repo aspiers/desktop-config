@@ -112,6 +112,13 @@ echo "ok - one closing session cannot stop another live Fluxbox session"
 
 reset_state
 run_helper register 3
+: > "$tmp_dir/systemctl-calls"
+run_helper register 4
+assert_calls $'--user start fluxbox-session.target\n--user stop monitor-probe@*.service monitor-apply@*.service monitor-prepare@*.service monitor-finalize@*.service\n--user try-restart monitor-controller.service'
+echo "ok - overlapping login stops old workers and rebinds the controller"
+
+reset_state
+run_helper register 3
 run_helper unregister 3
 assert_calls '--user start fluxbox-session.target'
 [ ! -e "$tmp_dir/runtime/session.3" ]
@@ -145,4 +152,22 @@ if grep -Eq '^(PartOf|Requires)=fluxbox-session.target' "$unit"; then
 fi
 echo "ok - persistent independent watcher retries and closes handoffs"
 
-echo '1..8'
+reset_state
+FAKE_STATE_DIR="$tmp_dir" HOST=test-host XDG_SESSION_ID=3 \
+    PATH="$tmp_dir:/usr/bin:/bin" \
+    bash "$repo_root/.xsession-progs.d/person-adam.spiers/00-systemd-user-env"
+assert_calls $'--user set-environment DISPLAY=:0 XAUTHLOCALHOSTNAME=test-host\n--user set-environment XDG_SESSION_ID=3'
+echo "ok - X session identity is published before target registration"
+
+reset_state
+if env -u XDG_SESSION_ID FAKE_STATE_DIR="$tmp_dir" HOST=test-host \
+    PATH="$tmp_dir:/usr/bin:/bin" \
+    bash "$repo_root/.xsession-progs.d/person-adam.spiers/00-systemd-user-env" \
+    >/dev/null 2>&1; then
+    echo "not ok - missing X session identity was published" >&2
+    exit 1
+fi
+assert_calls '--user set-environment DISPLAY=:0 XAUTHLOCALHOSTNAME=test-host'
+echo "ok - missing session identity preserves the established display publication"
+
+echo '1..11'

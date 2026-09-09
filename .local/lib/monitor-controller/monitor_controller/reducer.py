@@ -375,6 +375,7 @@ def _reset_for_epoch(
         baseline_adoption=(
             state.phase is ControllerPhase.RECOVERING
             and state.desktop_finalized_profile is None
+            and not state.desktop_finalization_required
         ),
     )
     return state, discard_effects
@@ -1293,6 +1294,7 @@ def _observe(state: State, event: ObservationCompleted) -> Decision:
                     _reset_application_recovery(state, action.profile),
                     stable_x_profile=action.profile,
                     desktop_finalized_profile=action.profile,
+                    desktop_finalization_required=False,
                     finalization=None,
                 )
                 return _quiesce(state, *epoch_effects, *discard_effects)
@@ -2147,8 +2149,10 @@ def _boot_changed(state: State, event: BootChanged) -> Decision:
         verify_since_ms=None,
         last_drm_at_ms=None,
         stable_x_profile=None,
+        desktop_finalized_profile=None,
+        desktop_finalization_required=True,
         external_intent=False,
-        baseline_adoption=state.desktop_finalized_profile is None,
+        baseline_adoption=False,
         attempted_probe_keys=frozenset(),
         probe=None,
         attempted_application_keys=frozenset(),

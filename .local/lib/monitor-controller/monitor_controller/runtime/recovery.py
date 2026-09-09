@@ -531,12 +531,20 @@ def _minimum_recovery_state(  # noqa: PLR0913
     units: tuple[WorkerUnit, ...] | None = None,
 ) -> State:
     recovery_units = _unique_units(snapshot.units if units is None else units)
+    finalization_required = (
+        persisted is not None and persisted.desktop_finalization_required
+    )
+    finalized_profile = (
+        None if finalization_required else snapshot.verified_finalized_profile
+    )
     return State(
         boot_id=current_boot_id,
         controller_instance=controller_instance,
         display_identity=display_identity,
         phase=ControllerPhase.RECOVERING,
-        desktop_finalized_profile=snapshot.verified_finalized_profile,
+        desktop_finalized_profile=finalized_profile,
+        desktop_finalization_required=finalization_required,
+        baseline_adoption=finalized_profile is None and not finalization_required,
         action_sequence_high_water=_action_high_water(
             persisted, snapshot, tombstones, recovery_units
         ),
@@ -554,7 +562,6 @@ def _boot_mismatch_state(
     snapshot: WorkerNamespaceSnapshot,
     tombstones: tuple[ActionTombstone, ...],
 ) -> State:
-    finalized = snapshot.verified_finalized_profile
     return replace(
         persisted,
         boot_id=current_boot_id,
@@ -571,9 +578,10 @@ def _boot_mismatch_state(
         verify_since_ms=None,
         last_drm_at_ms=None,
         stable_x_profile=None,
-        desktop_finalized_profile=finalized,
+        desktop_finalized_profile=None,
+        desktop_finalization_required=True,
         external_intent=False,
-        baseline_adoption=finalized is None,
+        baseline_adoption=False,
         attempted_probe_keys=frozenset(),
         probe=None,
         attempted_application_keys=frozenset(),

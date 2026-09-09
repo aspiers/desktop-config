@@ -58,6 +58,7 @@ from monitor_controller.model import (
     ControllerInstanceId,
     DisplayIdentity,
     EventGeneration,
+    GraphicalSessionId,
     State,
 )
 from monitor_controller.observer.drm import RootedSysfsReader
@@ -228,9 +229,7 @@ class ActivePaths:
         the disruptive boundary when this file is missing, malformed, or
         differs from its admitted generation.
         """
-        return (
-            self.runtime_dir / "monitor-controller" / "active" / "event-generation"
-        )
+        return self.runtime_dir / "monitor-controller" / "active" / "event-generation"
 
     @property
     def autorandr_profiles(self) -> Path:
@@ -554,12 +553,13 @@ def cutover_authorization_error(environ: Mapping[str, str]) -> str | None:
     )
 
 
-def load_active_state(
+def load_active_state(  # noqa: PLR0913
     store: AtomicStateStore,
     *,
     boot_id: BootId,
     controller_instance: ControllerInstanceId,
     display_identity: DisplayIdentity,
+    graphical_session_id: GraphicalSessionId,
     scanner: WorkerNamespaceScanner,
 ) -> RecoveryResult:
     """Load authoritative active state and reconcile it against real workers.
@@ -599,21 +599,26 @@ def load_active_state(
             f"{persisted.display_identity.value!r} != {display_identity.value!r}"
         )
         raise ActiveStartupError(msg)
-    if persisted is not None and persisted.boot_id != boot_id:
-        # Absolute monotonic values are meaningful only on their source boot.
-        # Preserve non-temporal identity history, but force recovery through a
-        # fresh startup observation before any scheduler deadline is armed.
+    if persisted is not None and (
+        persisted.boot_id != boot_id
+        or persisted.graphical_session_id != graphical_session_id
+    ):
+        # Desktop finalization proves state inside one graphical session. A new
+        # boot or login recreates Fluxbox, the panel, and notification daemon,
+        # so matching monitor geometry cannot adopt the old proof. Sequence
+        # history remains durable to prevent action-ID reuse.
         persisted = State(
             boot_id=boot_id,
             controller_instance=controller_instance,
             display_identity=display_identity,
-            desktop_finalized_profile=persisted.desktop_finalized_profile,
-            baseline_adoption=persisted.desktop_finalized_profile is None,
+            graphical_session_id=graphical_session_id,
+            desktop_finalization_required=True,
+            baseline_adoption=False,
             action_sequence_high_water=persisted.action_sequence_high_water,
             transition_sequence_high_water=persisted.transition_sequence_high_water,
             action_tombstones=persisted.action_tombstones,
         )
-    return recover_state(
+    recovery = recover_state(
         persisted,
         current_boot_id=boot_id,
         controller_instance=controller_instance,
@@ -621,6 +626,13 @@ def load_active_state(
         namespace=StateNamespace.ACTIVE,
         scanner=scanner,
         corruption=corruption,
+    )
+    return replace(
+        recovery,
+        state=replace(
+            recovery.state,
+            graphical_session_id=graphical_session_id,
+        ),
     )
 
 
@@ -676,6 +688,15 @@ def build_active_composition(
     if not display_value:
         msg = "DISPLAY is required for canonical active observation"
         raise ActiveStartupError(msg)
+    session_value = values.get("XDG_SESSION_ID")
+    if not session_value:
+        msg = "XDG_SESSION_ID is required to scope desktop finalization"
+        raise ActiveStartupError(msg)
+    try:
+        graphical_session_id = GraphicalSessionId(session_value)
+    except ValueError as error:
+        msg = f"invalid XDG_SESSION_ID: {error}"
+        raise ActiveStartupError(msg) from error
     boot_source = ProcBootIdSource()
     boot_id = boot_source.current_boot_id()
     instance = ControllerInstanceId(uuid4())
@@ -694,6 +715,7 @@ def build_active_composition(
         boot_id=boot_id,
         controller_instance=instance,
         display_identity=display,
+        graphical_session_id=graphical_session_id,
         scanner=SystemdRecoveryScanner(transactions, supervisor),
     )
     initial = recovery.state

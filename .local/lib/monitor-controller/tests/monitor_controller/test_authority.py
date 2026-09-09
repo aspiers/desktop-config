@@ -39,6 +39,7 @@ from monitor_controller.model import (
     ControllerPhase,
     DisplayIdentity,
     EventGeneration,
+    GraphicalSessionId,
     State,
 )
 from monitor_controller.postswitch import PostswitchNotificationMonitor
@@ -57,6 +58,7 @@ _STOP_MARKER = "stop here"
 _UNAUTHORIZED_BUILD = "composition built without authorisation"
 _STUB_REACHED = "the non-starting wrapper must refuse before delegating"
 _INJECTED_FAILURE = "injected monitor failure"
+_CURRENT_SESSION = GraphicalSessionId("3")
 
 
 class _NullLock:
@@ -151,6 +153,29 @@ class TestActivePaths:
         assert paths.postswitch_notification == (
             paths.runtime_dir / "monitor-controller" / "active" / "autorandr-postswitch"
         )
+
+
+class TestActiveCompositionIdentity:
+    """Composition requires the login identity that scopes desktop proof."""
+
+    def test_missing_graphical_session_identity_is_refused(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """Unscoped finalization proof must never reach active recovery."""
+        with pytest.raises(ActiveStartupError, match="XDG_SESSION_ID is required"):
+            active.build_active_composition(_paths(tmp_path), {"DISPLAY": ":0"})
+
+    def test_unsafe_graphical_session_identity_is_refused(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """Reject values that cannot be exact logind session identifiers."""
+        with pytest.raises(ActiveStartupError, match="invalid XDG_SESSION_ID"):
+            active.build_active_composition(
+                _paths(tmp_path),
+                {"DISPLAY": ":0", "XDG_SESSION_ID": "../3"},
+            )
 
 
 class TestActiveAuthorityLock:
@@ -309,6 +334,12 @@ class TestUnitConflictContract:
         exec_start = _directives(ACTIVE_UNIT, "ExecStart")
         assert "monitor_controller.active" in " ".join(exec_start)
         assert "monitor_controller.shadow" not in " ".join(exec_start)
+
+    def test_controller_restart_preserves_worker_transaction_evidence(self) -> None:
+        """Session rebinding must not erase results before recovery scans them."""
+        assert _directives(
+            "monitor-controller.service", "RuntimeDirectoryPreserve"
+        ) == {"restart"}
 
     def test_active_declares_the_active_postswitch_policy(self) -> None:
         """The autorandr hook only notifies the controller under this policy.
@@ -565,6 +596,7 @@ class TestLoadActiveState:
                 boot_id=boot,
                 controller_instance=instance,
                 display_identity=display,
+                graphical_session_id=_CURRENT_SESSION,
                 scanner=_StubScanner(),
             )
 
@@ -588,6 +620,7 @@ class TestLoadActiveState:
             boot_id=boot,
             controller_instance=instance,
             display_identity=display,
+            graphical_session_id=_CURRENT_SESSION,
             scanner=scanner,
         )
 
@@ -595,6 +628,7 @@ class TestLoadActiveState:
         assert result.requires_fresh_observation
         assert result.state.boot_id == boot
         assert result.state.display_identity == display
+        assert result.state.graphical_session_id == _CURRENT_SESSION
         # Recovery must scan the active namespace, never shadow's.
         assert scanner.namespaces == [StateNamespace.ACTIVE]
 
@@ -615,19 +649,15 @@ class TestLoadActiveState:
                 boot_id=boot,
                 controller_instance=instance,
                 display_identity=display,
+                graphical_session_id=_CURRENT_SESSION,
                 scanner=_StubScanner(),
             )
 
-    def test_boot_change_keeps_identity_but_drops_temporal_state(
+    def test_boot_change_invalidates_desktop_finalization(
         self,
         tmp_path: Path,
     ) -> None:
-        """Monotonic values are meaningless across boots; identity is not.
-
-        Discarding the whole record would lose the finalized profile and the
-        sequence high-water marks, so a reboot would re-apply work already
-        done and could reuse action IDs.
-        """
+        """A new boot recreates every process whose setup finalization proves."""
         boot, instance, display = _identity()
         previous_boot = BootId(UUID("33333333-3333-3333-3333-333333333333"))
         store = _active_store(tmp_path)
@@ -636,6 +666,7 @@ class TestLoadActiveState:
                 boot_id=previous_boot,
                 controller_instance=instance,
                 display_identity=display,
+                graphical_session_id=GraphicalSessionId("2"),
                 desktop_finalized_profile="celtic+external",
                 action_sequence_high_water=7,
                 transition_sequence_high_water=4,
@@ -647,13 +678,114 @@ class TestLoadActiveState:
             boot_id=boot,
             controller_instance=instance,
             display_identity=display,
+            graphical_session_id=_CURRENT_SESSION,
             scanner=_StubScanner(),
         )
 
         assert result.state.boot_id == boot
-        assert result.state.desktop_finalized_profile == "celtic+external"
+        assert result.state.graphical_session_id == _CURRENT_SESSION
+        assert result.state.desktop_finalized_profile is None
+        assert result.state.desktop_finalization_required
+        assert not result.state.baseline_adoption
         assert result.state.action_sequence_high_water >= 7
         assert result.state.transition_sequence_high_water >= 4
+
+    @pytest.mark.parametrize(
+        "previous_session",
+        [GraphicalSessionId("2"), None],
+    )
+    def test_new_or_unscoped_session_invalidates_desktop_finalization(
+        self,
+        tmp_path: Path,
+        previous_session: GraphicalSessionId | None,
+    ) -> None:
+        """A new login or legacy record cannot prove this session's desktop."""
+        boot, instance, display = _identity()
+        store = _active_store(tmp_path)
+        store.save(
+            State(
+                boot_id=boot,
+                controller_instance=instance,
+                display_identity=display,
+                graphical_session_id=previous_session,
+                desktop_finalized_profile="celtic+external",
+            )
+        )
+
+        result = load_active_state(
+            store,
+            boot_id=boot,
+            controller_instance=instance,
+            display_identity=display,
+            graphical_session_id=_CURRENT_SESSION,
+            scanner=_StubScanner(),
+        )
+
+        assert result.state.graphical_session_id == _CURRENT_SESSION
+        assert result.state.desktop_finalized_profile is None
+        assert result.state.desktop_finalization_required
+        assert not result.state.baseline_adoption
+
+    def test_session_invalidation_survives_worker_scan_failure(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """Ambiguous workers cannot turn required setup into baseline adoption."""
+        boot, instance, display = _identity()
+        store = _active_store(tmp_path)
+        store.save(
+            State(
+                boot_id=boot,
+                controller_instance=instance,
+                display_identity=display,
+                graphical_session_id=GraphicalSessionId("2"),
+                desktop_finalized_profile="celtic+external",
+            )
+        )
+
+        result = load_active_state(
+            store,
+            boot_id=boot,
+            controller_instance=instance,
+            display_identity=display,
+            graphical_session_id=_CURRENT_SESSION,
+            scanner=_StubScanner(error=OSError("systemctl unreachable")),
+        )
+
+        assert not result.authority_allowed
+        assert result.state.desktop_finalized_profile is None
+        assert result.state.desktop_finalization_required
+        assert not result.state.baseline_adoption
+
+    def test_same_session_restart_keeps_desktop_finalization(
+        self,
+        tmp_path: Path,
+    ) -> None:
+        """Restarting only the controller does not invalidate live desktop setup."""
+        boot, instance, display = _identity()
+        store = _active_store(tmp_path)
+        store.save(
+            State(
+                boot_id=boot,
+                controller_instance=instance,
+                display_identity=display,
+                graphical_session_id=_CURRENT_SESSION,
+                desktop_finalized_profile="celtic+external",
+            )
+        )
+
+        result = load_active_state(
+            store,
+            boot_id=boot,
+            controller_instance=instance,
+            display_identity=display,
+            graphical_session_id=_CURRENT_SESSION,
+            scanner=_StubScanner(),
+        )
+
+        assert result.state.graphical_session_id == _CURRENT_SESSION
+        assert result.state.desktop_finalized_profile == "celtic+external"
+        assert not result.state.desktop_finalization_required
 
     def test_unreadable_state_denies_authority_rather_than_discarding(
         self,
@@ -674,6 +806,7 @@ class TestLoadActiveState:
             boot_id=boot,
             controller_instance=instance,
             display_identity=display,
+            graphical_session_id=_CURRENT_SESSION,
             scanner=_StubScanner(),
         )
 
@@ -697,6 +830,7 @@ class TestLoadActiveState:
             boot_id=boot,
             controller_instance=instance,
             display_identity=display,
+            graphical_session_id=_CURRENT_SESSION,
             scanner=_StubScanner(error=OSError("systemctl unreachable")),
         )
 
@@ -714,6 +848,7 @@ class TestLoadActiveState:
             boot_id=boot,
             controller_instance=instance,
             display_identity=display,
+            graphical_session_id=_CURRENT_SESSION,
             scanner=_StubScanner(
                 WorkerNamespaceSnapshot(ambiguities=("unknown worker survived",)),
             ),

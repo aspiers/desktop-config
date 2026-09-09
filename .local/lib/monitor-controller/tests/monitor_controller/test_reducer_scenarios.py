@@ -56,6 +56,8 @@ from monitor_controller.simulation.scenario import (
     SCENARIO_SCHEMA_VERSION,
     Scenario,
     ScenarioFormatError,
+    event_from_data,
+    initial_state,
     load_scenarios,
     normalize_effect,
     normalize_state,
@@ -101,6 +103,26 @@ def _scenario_state(
             )
         )
     )
+
+
+def test_invalidated_session_plans_instead_of_adopting_startup_baseline() -> None:
+    """A known stale session must not regain baseline adoption on observation."""
+    scenario = next(
+        item
+        for item in _SCENARIOS
+        if item.name == "test_laptop_startup_adopts_baseline"
+    )
+    state = replace(
+        initial_state(scenario.initial),
+        desktop_finalization_required=True,
+        baseline_adoption=False,
+    )
+    event = event_from_data(scenario.steps[0].event_data, state)
+
+    decision = reduce(state, event)
+
+    assert not decision.state.baseline_adoption
+    assert any(isinstance(effect, RequestPlan) for effect in decision.effects)
 
 
 def test_unchanged_quiescent_observation_does_not_schedule_another_poll() -> None:

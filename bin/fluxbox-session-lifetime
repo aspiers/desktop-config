@@ -73,12 +73,34 @@ register_session() {
     marker="$runtime_dir/session.$session_id"
 
     flock 9
+    # The target can remain active across an overlapping logout/login. In that
+    # case it will not restart the controller, so stop old-session workers and
+    # restart only the controller after publishing the new session identity.
+    target_already_referenced=0
+    for existing_marker in "$runtime_dir"/session.*; do
+        [ -e "$existing_marker" ] || continue
+        target_already_referenced=1
+        break
+    done
     printf '%s\n' "$$" > "$marker.tmp"
     mv -f "$marker.tmp" "$marker"
     if ! "$systemctl_command" --user start fluxbox-session.target; then
         rm -f "$marker"
         flock -u 9
         return 1
+    fi
+    if [ "$target_already_referenced" -eq 1 ]; then
+        if ! "$systemctl_command" --user stop \
+            'monitor-probe@*.service' \
+            'monitor-apply@*.service' \
+            'monitor-prepare@*.service' \
+            'monitor-finalize@*.service' ||
+            ! "$systemctl_command" --user try-restart \
+                monitor-controller.service; then
+            rm -f "$marker"
+            flock -u 9
+            return 1
+        fi
     fi
     flock -u 9
 }

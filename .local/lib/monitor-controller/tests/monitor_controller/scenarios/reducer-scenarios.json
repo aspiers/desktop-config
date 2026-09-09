@@ -18686,7 +18686,7 @@
               "attempted_probe_count": 0,
               "baseline_adoption": false,
               "candidate_profile": null,
-              "desktop_finalized_profile": "celtic",
+              "desktop_finalized_profile": null,
               "external_intent": false,
               "finalization_action_id": null,
               "finalization_lifecycle": null,

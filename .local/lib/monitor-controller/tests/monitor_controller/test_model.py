@@ -55,6 +55,7 @@ from monitor_controller.model import (
     FinalizationFinished,
     FinalizeDesktop,
     Fingerprint,
+    GraphicalSessionId,
     MappingProof,
     ObservationCompleted,
     ObservationFailed,
@@ -929,6 +930,31 @@ def test_display_identity_canonicalises_default_screen_suffix(
     expected: str,
 ) -> None:
     assert DisplayIdentity(raw).value == expected
+
+
+@pytest.mark.parametrize("value", ["", "two words", "../3", "3/4", "é"])
+def test_graphical_session_identity_rejects_unsafe_values(value: str) -> None:
+    with pytest.raises(ValueError, match="graphical session ID"):
+        GraphicalSessionId(value)
+
+
+def test_required_desktop_finalization_rejects_conflicting_proof() -> None:
+    with pytest.raises(ValueError, match="cannot retain completed proof"):
+        State(
+            boot_id=_BOOT,
+            controller_instance=_INSTANCE,
+            display_identity=_DISPLAY,
+            desktop_finalized_profile="celtic",
+            desktop_finalization_required=True,
+        )
+    with pytest.raises(ValueError, match="forbids baseline adoption"):
+        State(
+            boot_id=_BOOT,
+            controller_instance=_INSTANCE,
+            display_identity=_DISPLAY,
+            desktop_finalization_required=True,
+            baseline_adoption=True,
+        )
 
 
 def test_display_identity_compares_equal_across_screen_spellings() -> None:

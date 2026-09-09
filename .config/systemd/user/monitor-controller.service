@@ -54,6 +54,9 @@ StateDirectory=monitor-controller/active
 StateDirectoryMode=0700
 RuntimeDirectory=monitor-controller/active
 RuntimeDirectoryMode=0700
+# Preserve transaction evidence across a controller-only restart so startup
+# recovery can account for workers stopped during graphical-session rebinding.
+RuntimeDirectoryPreserve=restart
 ProtectSystem=strict
 # Unlike shadow, this controller dispatches desktop work, which means it must
 # be able to write the desktop configuration state its workers act on.

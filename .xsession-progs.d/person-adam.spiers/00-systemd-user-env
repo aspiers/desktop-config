@@ -11,7 +11,18 @@ host=${host%%.*}
 # and read by systemd's environment generator before any unit starts.
 #
 # DISPLAY and XAUTHLOCALHOSTNAME cannot move: there is no correct DISPLAY
-# until X is up, and XAUTHLOCALHOSTNAME is derived from the hostname.
+# until X is up, and XAUTHLOCALHOSTNAME is derived from the hostname. The
+# controller persists this exact logind session ID so desktop-finalization
+# proof cannot cross a logout/login boundary.
 systemctl --user set-environment \
     DISPLAY=:0 \
     XAUTHLOCALHOSTNAME="$host"
+
+session_id=${XDG_SESSION_ID:-}
+case "$session_id" in
+    ''|*[!A-Za-z0-9_.-]*)
+        echo >&2 "Cannot publish a safe XDG_SESSION_ID: $session_id"
+        exit 1
+        ;;
+esac
+systemctl --user set-environment XDG_SESSION_ID="$session_id"
