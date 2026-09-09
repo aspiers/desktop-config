@@ -26,8 +26,7 @@ SyslogIdentifier=epicenter
 # DBUS_SESSION_BUS_ADDRESS, ...).
 ExecStart=%h/bin/run-with-local-X-display %h/bin/whispering
 
-Restart=on-failure
-RestartSec=5s
+Restart=no
 
 # 'bun run dev:epicenter' is a dev server: it forks a tree of bun and Tauri
 # child processes, none of which is the main PID, so the whole control group
