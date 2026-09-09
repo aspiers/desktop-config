@@ -29,8 +29,7 @@ SyslogIdentifier=beeper
 # .desktop files hardcode a version and silently rot when it changes.
 ExecStart=/bin/bash -c 'exec ${HOME}/bin/run-with-local-X-display "$(echo ${HOME}/software/comms/Beeper-4*.AppImage)"'
 
-Restart=on-failure
-RestartSec=5s
+Restart=no
 
 # Electron leaves a tree of renderer and zygote processes behind.
 KillMode=control-group

@@ -24,8 +24,7 @@ SyslogIdentifier=sussurro
 # manager's environment and so is inherited directly.
 ExecStart=%h/bin/run-with-local-X-display %h/bin/sussurro
 
-Restart=on-failure
-RestartSec=5s
+Restart=no
 
 # Only one instance can hold the trigger socket: a second finds it taken and
 # refuses to start (removeStaleSocket in internal/trigger/server.go). Killing
