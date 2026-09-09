@@ -1,5 +1,6 @@
 [Unit]
 Description=Keyed cancellable monitor desktop preparation (%I)
+PartOf=fluxbox-session.target
 CollectMode=inactive-or-failed
 
 [Service]

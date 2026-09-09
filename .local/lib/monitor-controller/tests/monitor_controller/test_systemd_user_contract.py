@@ -416,6 +416,7 @@ def test_static_production_templates_are_explicit_and_fail_closed() -> None:
         text = (_STATIC_UNIT_DIRECTORY / name).read_text(encoding="utf-8")
         directives = set(text.splitlines())
         assert "Type=oneshot" in directives
+        assert "PartOf=fluxbox-session.target" in directives
         assert "CollectMode=inactive-or-failed" in directives
         assert f"TimeoutStartSec={timeout}" in directives
         assert "TimeoutStartFailureMode=terminate" in directives

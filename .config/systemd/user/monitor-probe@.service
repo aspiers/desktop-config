@@ -1,5 +1,6 @@
 [Unit]
 Description=Keyed bounded monitor activation probe (%I)
+PartOf=fluxbox-session.target
 CollectMode=inactive-or-failed
 
 [Service]

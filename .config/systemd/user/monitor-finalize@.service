@@ -1,5 +1,6 @@
 [Unit]
 Description=Keyed disruptive monitor desktop finalization (%I)
+PartOf=fluxbox-session.target
 CollectMode=inactive-or-failed
 
 [Service]

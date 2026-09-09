@@ -1,5 +1,6 @@
 [Unit]
 Description=Keyed explicit monitor profile application (%I)
+PartOf=fluxbox-session.target
 CollectMode=inactive-or-failed
 
 [Service]
