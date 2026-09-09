@@ -9,8 +9,8 @@ Environment=HOME=%h
 ExecStart=%h/bin/keyd-application-mapper
 Restart=on-failure
 RestartSec=2s
-StandardOutput=append:%h/.config/keyd/app.log
-StandardError=append:%h/.config/keyd/app.log
+StandardOutput=append:%S/keyd/app.log
+StandardError=append:%S/keyd/app.log
 
 [Install]
 WantedBy=fluxbox-session.target
