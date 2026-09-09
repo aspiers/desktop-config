@@ -319,7 +319,9 @@ def _planning_input_key(
         observation_key=key,
         mapping=target.mapping,
         active_outputs=target.active_outputs,
-        configuration_hashes=target.configuration_hashes,
+        configuration_hashes=(
+            target.planning_configuration_hashes or target.configuration_hashes
+        ),
     )
 
 
@@ -549,13 +551,23 @@ def _start_verification(
         and state.candidate.observation_key == observation.observation_key
         and state.verify_since_ms is not None
     )
-    if not same_proof:
+    refreshed_planning_key = _planning_input_key(
+        state,
+        target,
+        observation.observation_key,
+    )
+    planning_inputs_changed = (
+        state.planning is not None
+        and state.planning.input_key != refreshed_planning_key
+    )
+    if not same_proof or planning_inputs_changed:
         state, discard_effects = _discard_planning(state)
-        state = replace(
-            state,
-            verify_since_ms=observation.observed_at_ms,
-            candidate=_candidate(state, observation, target),
-        )
+        if not same_proof:
+            state = replace(
+                state,
+                verify_since_ms=observation.observed_at_ms,
+                candidate=_candidate(state, observation, target),
+            )
     else:
         discard_effects = ()
     state = replace(state, phase=ControllerPhase.VERIFYING)
@@ -1811,6 +1823,17 @@ def _plan_failed(state: State, event: PlanFailed) -> Decision:
         or action.input_key != event.input_key
     ):
         return _no_op(state)
+    if event.retryable:
+        state, discard_effects = _discard_planning(state)
+        return _schedule(
+            replace(
+                state,
+                phase=ControllerPhase.DISCOVER_FAST,
+                verify_since_ms=None,
+            ),
+            event.metadata.processed_at_ms + OBSERVATION_FAILURE_RETRY_MS,
+            *discard_effects,
+        )
     action = replace(
         action, lifecycle=ActionLifecycle.FAILED, exit_status=event.exit_status
     )

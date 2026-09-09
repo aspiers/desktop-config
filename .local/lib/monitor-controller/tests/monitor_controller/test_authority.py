@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 import fcntl
 import os
+import shutil
 from pathlib import Path
 from types import SimpleNamespace, TracebackType
 from typing import Self
@@ -84,6 +85,22 @@ class _NullLock:
         _traceback: TracebackType | None,
     ) -> None:
         """Release nothing."""
+
+
+def test_live_saved_profiles_are_recaptured_for_each_observation(
+    tmp_path: Path,
+) -> None:
+    fixture = Path(__file__).parent / "fixtures" / "autorandr" / "profiles" / "celtic"
+    root = tmp_path / "profiles"
+    shutil.copytree(fixture, root / "celtic")
+    source = active.ReloadingSavedProfiles(root)
+
+    before = source.saved_profiles()
+    setup = root / "celtic" / "setup"
+    setup.write_text(setup.read_text(encoding="utf-8") + "\n", encoding="utf-8")
+    after = source.saved_profiles()
+
+    assert before[0].configuration_hashes != after[0].configuration_hashes
 
 
 def _paths(root: Path) -> ActivePaths:

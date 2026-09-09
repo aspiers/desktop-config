@@ -62,10 +62,7 @@ from monitor_controller.model import (
     State,
 )
 from monitor_controller.observer.drm import RootedSysfsReader
-from monitor_controller.observer.snapshot import (
-    CanonicalSnapshotCoordinator,
-    StaticSavedProfiles,
-)
+from monitor_controller.observer.snapshot import CanonicalSnapshotCoordinator
 from monitor_controller.postswitch import (
     PostswitchNotification,
     PostswitchNotificationMonitor,
@@ -103,8 +100,21 @@ from monitor_controller.shadow import (
     load_saved_profiles,
 )
 
+
+@dataclass(frozen=True, slots=True)
+class ReloadingSavedProfiles:
+    """Reload live autorandr identity/application files for each observation."""
+
+    root: Path
+
+    def saved_profiles(self) -> tuple[SavedAutorandrProfile, ...]:
+        """Return a new immutable profile capture."""
+        return load_saved_profiles(self.root)
+
+
 if TYPE_CHECKING:
     from monitor_controller.model import ActionId, ActionLifecycle, WorkerUnit
+    from monitor_controller.observer.autorandr import SavedAutorandrProfile
     from monitor_controller.runtime.dispatcher import (
         ActionDispatcher,
         DispatchEffect,
@@ -734,14 +744,9 @@ def build_active_composition(
             reference_dpi=read_reference_dpi(),
         ),
     )
-    # Read the live profiles, not an isolated copy: these are the profiles this
-    # controller will actually apply.
-    profiles = StaticSavedProfiles(
-        tuple(
-            planning_source.complete_profile(profile)
-            for profile in load_saved_profiles(paths.autorandr_profiles)
-        )
-    )
+    # Recapture the live identity/application files for each observation.
+    # Desktop planning captures its wider manifest through the coordinator.
+    profiles = ReloadingSavedProfiles(paths.autorandr_profiles)
     coordinator = CanonicalSnapshotCoordinator(
         drm_tree=RootedSysfsReader(Path("/sys/class/drm")),
         command_runner=BoundedCommandRunner(),
@@ -749,6 +754,7 @@ def build_active_composition(
         boot_id_source=boot_source,
         clock=clock,
         event_generation_source=bridge,
+        planning_configuration_source=planning_source,
         initial_observation_generation=initial.observation_generation,
     )
     display_bridge.bind(SnapshotDesktopDisplaySource(coordinator))

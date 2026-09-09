@@ -68,6 +68,22 @@ That is the property the shell watcher cannot have. It is also why the
 controller can safely be *slower* to act: a late-arriving correct answer is
 harmless, whereas a fast wrong one moves all your windows.
 
+### Configuration changes
+
+A running controller sees configuration edits without a service restart.
+Every observation reloads the live autorandr `config`, `setup`, and optional
+`layout` files. A valid observation also captures the complete desktop-planning
+manifest and verifies that its autorandr subset came from the same bytes.
+Unrelated desktop inputs such as `.fluxbox/keys.erb` do not change monitor
+identity.
+
+The planner recaptures that manifest before staging a plan and still requires
+exact equality with the admitted hashes. If an edit races with planning, the
+attempt fails closed and retries from a fresh observation after one second.
+A stable malformed configuration remains failed; once its manifest changes,
+the next health observation discards the failed plan and admits the corrected
+inputs.
+
 ### The physical epoch
 
 A counter that increments whenever the hardware genuinely changes. It makes

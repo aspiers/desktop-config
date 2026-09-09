@@ -77,6 +77,7 @@ from monitor_controller.runtime.persistence import AtomicStateStore, StateNamesp
 from monitor_controller.shadow import (
     SHADOW_OBSERVATION_TIMEOUT_SECONDS,
     AsyncSnapshotObserver,
+    RefreshingIsolatedSavedProfiles,
     ShadowAuthorityLock,
     ShadowControllerAdapters,
     ShadowPaths,
@@ -312,7 +313,7 @@ def test_composition_api_cannot_accept_dispatch_or_transaction_adapters() -> Non
     assert "systemctl" not in source
     assert "request.json" not in source
     assert "AuditOnlyPlanner" not in source
-    assert "complete_profile" in inspect.getsource(
+    assert "planning_configuration_source" in inspect.getsource(
         shadow_module.build_shadow_composition
     )
 
@@ -524,6 +525,24 @@ def test_corrupt_shadow_state_is_not_discarded_on_restart(tmp_path: Path) -> Non
         )
 
     assert store.path.read_bytes() == corrupt
+
+
+def test_shadow_profile_isolation_refreshes_from_live_files(tmp_path: Path) -> None:
+    fixture = Path(__file__).parent / "fixtures" / "autorandr" / "profiles" / "celtic"
+    source_root = tmp_path / "profiles"
+    shutil.copytree(fixture, source_root / "celtic")
+    isolation_root = tmp_path / "isolation"
+    source = RefreshingIsolatedSavedProfiles(source_root, isolation_root)
+
+    before = source.saved_profiles()
+    setup = source_root / "celtic" / "setup"
+    setup.write_text(setup.read_text(encoding="utf-8") + "\n", encoding="utf-8")
+    after = source.saved_profiles()
+
+    assert before[0].configuration_hashes != after[0].configuration_hashes
+    assert (isolation_root / "config" / "autorandr" / "celtic" / "setup").read_text(
+        encoding="utf-8"
+    ) == setup.read_text(encoding="utf-8")
 
 
 def test_saved_profile_loader_uses_only_explicit_profile_root(tmp_path: Path) -> None:

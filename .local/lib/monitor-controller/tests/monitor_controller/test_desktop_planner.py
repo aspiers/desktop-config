@@ -60,6 +60,7 @@ from monitor_controller.desktop.planner import (
     DesktopPlanningError,
     FilesystemDesktopPlanningInputSource,
     InputRole,
+    PlanningInputsChangedError,
     build_desktop_plan,
     derive_profile_monitor_identity,
     dynamic_overlay,
@@ -241,12 +242,10 @@ def _case(  # noqa: PLR0913
         display=display,
         context=ShadowDesktopContextSource(host_name="celtic", theme=theme),
     )
-    captured_profile = source.complete_profile(
-        next(
-            item
-            for item in load_saved_profiles(_REPO / ".config" / "autorandr")
-            if item.name == profile
-        )
+    captured_profile = next(
+        item
+        for item in load_saved_profiles(_REPO / ".config" / "autorandr")
+        if item.name == profile
     )
     key = PlanningInputKey(
         physical_epoch=sequence,
@@ -255,7 +254,10 @@ def _case(  # noqa: PLR0913
         observation_key=observation_key,
         mapping=mapping,
         active_outputs=display.topology.x_active_outputs,
-        configuration_hashes=captured_profile.configuration_hashes,
+        configuration_hashes=source.planning_configuration_hashes(
+            captured_profile.name,
+            captured_profile.layout,
+        ),
     )
     request = RequestPlan(
         ActionId(_INSTANCE, ActionKind.PLAN, sequence),
@@ -825,12 +827,10 @@ def _request_from_production_profile_capture(
     source: FilesystemDesktopPlanningInputSource,
     root: Path,
 ) -> RequestPlan:
-    profile = source.complete_profile(
-        next(
-            item
-            for item in load_saved_profiles(root / ".config" / "autorandr")
-            if item.name == template.profile
-        )
+    profile = next(
+        item
+        for item in load_saved_profiles(root / ".config" / "autorandr")
+        if item.name == template.profile
     )
     admitted = PlanningInputKey(
         physical_epoch=template.input_key.physical_epoch,
@@ -839,7 +839,10 @@ def _request_from_production_profile_capture(
         observation_key=template.input_key.observation_key,
         mapping=template.input_key.mapping,
         active_outputs=template.input_key.active_outputs,
-        configuration_hashes=profile.configuration_hashes,
+        configuration_hashes=source.planning_configuration_hashes(
+            profile.name,
+            profile.layout,
+        ),
     )
     return replace(template, input_key=admitted)
 
@@ -879,6 +882,73 @@ def _semantic_projection(desktop: DesktopPlan, roles: tuple[InputRole, ...]) -> 
         values.append(desktop.emacs)
     assert values, roles
     return tuple(values)
+
+
+def test_live_desktop_edit_refreshes_manifest_without_changing_profile_identity(
+    tmp_path: Path,
+) -> None:
+    source, template = _celtic()
+    original_inputs = source.load(template)
+    _materialize_snapshot(tmp_path, original_inputs.configuration)
+    subject = FilesystemDesktopPlanningInputSource(
+        root=tmp_path,
+        display=original_inputs.display,
+        context=original_inputs.context,
+    )
+    profile = next(
+        item
+        for item in load_saved_profiles(tmp_path / ".config" / "autorandr")
+        if item.name == template.profile
+    )
+    before_identity = profile.configuration_hashes
+    before_capture = subject.capture_planning_configuration(
+        profile.name,
+        profile.layout,
+    )
+    admitted = _request_from_production_profile_capture(template, subject, tmp_path)
+
+    keys = tmp_path / ".fluxbox" / "keys.erb"
+    keys.write_bytes(keys.read_bytes() + b"\n# changed while controller is running\n")
+    after_profile = next(
+        item
+        for item in load_saved_profiles(tmp_path / ".config" / "autorandr")
+        if item.name == template.profile
+    )
+    after_capture = subject.capture_planning_configuration(
+        after_profile.name,
+        after_profile.layout,
+    )
+
+    assert before_capture.profile_configuration_hashes == before_identity
+    assert (
+        after_capture.profile_configuration_hashes == after_profile.configuration_hashes
+    )
+    assert before_identity == after_profile.configuration_hashes
+    assert before_capture.configuration_hashes != after_capture.configuration_hashes
+    with pytest.raises(PlanningInputsChangedError):
+        subject.load(admitted)
+    refreshed = _request_from_production_profile_capture(template, subject, tmp_path)
+    assert subject.load(refreshed).request == refreshed
+    subject.close()
+
+
+def test_transient_missing_planning_input_is_retryable(tmp_path: Path) -> None:
+    source, template = _celtic()
+    original_inputs = source.load(template)
+    _materialize_snapshot(tmp_path, original_inputs.configuration)
+    subject = FilesystemDesktopPlanningInputSource(
+        root=tmp_path,
+        display=original_inputs.display,
+        context=original_inputs.context,
+    )
+    (tmp_path / ".fluxbox" / "keys.erb").unlink()
+
+    with pytest.raises(PlanningInputsChangedError, match="does not exist"):
+        subject.capture_planning_configuration(
+            template.profile,
+            template.input_key.layout,
+        )
+    subject.close()
 
 
 def test_every_consumed_real_configuration_changes_its_semantic_intent(

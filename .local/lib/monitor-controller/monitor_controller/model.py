@@ -572,7 +572,7 @@ class RawEvidenceReference:
 
 @dataclass(frozen=True, slots=True)
 class ProfileMatch:
-    """Eligible profile, exact layout, mapping, and planning configuration inputs."""
+    """Eligible profile with separate application and desktop-plan inputs."""
 
     profile: str
     scope: ProfileScope
@@ -580,6 +580,9 @@ class ProfileMatch:
     mapping: tuple[OutputMapping, ...]
     active_outputs: tuple[str, ...]
     configuration_hashes: tuple[ConfigurationContentHash, ...]
+    planning_configuration_hashes: tuple[ConfigurationContentHash, ...] = (
+        dataclass_field(default=(), metadata={"codec_optional": True})
+    )
 
     def __post_init__(self) -> None:
         _require_nonempty(self.profile, "profile")
@@ -587,6 +590,15 @@ class ProfileMatch:
         if not self.configuration_hashes:
             msg = "profile match requires configuration content hashes"
             raise ValueError(msg)
+        if self.planning_configuration_hashes:
+            planning_hash_keys = tuple(
+                f"{item.path}\0{item.sha256}"
+                for item in self.planning_configuration_hashes
+            )
+            _require_sorted_unique_keys(
+                planning_hash_keys,
+                "profile planning configuration hashes",
+            )
         hash_keys = tuple(
             f"{item.path}\0{item.sha256}" for item in self.configuration_hashes
         )
@@ -1422,6 +1434,10 @@ class PlanFailed(EventEnvelope):
     input_key: PlanningInputKey
     reason: str
     exit_status: int | None = None
+    retryable: bool = dataclass_field(
+        default=False,
+        metadata={"codec_optional": True},
+    )
 
     def __post_init__(self) -> None:
         _require_nonempty(self.reason, "failure reason")

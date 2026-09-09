@@ -11,6 +11,10 @@ from uuid import UUID
 
 import pytest
 
+from monitor_controller.desktop.planner import (
+    DesktopPlanningError,
+    PlanningInputsChangedError,
+)
 from monitor_controller.model import (
     ActionId,
     ActionKind,
@@ -403,6 +407,7 @@ def _observation(
     observation_generation: int = 1,
     event_generation: int = 0,
     at_ms: int = 0,
+    planning_hashes: tuple[ConfigurationContentHash, ...] = _CONFIG,
 ) -> CanonicalObservation:
     outputs = ("DP-1", "eDP-1")
     match = ProfileMatch(
@@ -412,6 +417,7 @@ def _observation(
         (OutputMapping("DP-SAVED", "DP-1"), OutputMapping("eDP-1", "eDP-1")),
         outputs,
         _CONFIG,
+        planning_hashes,
     )
     return CanonicalObservation(
         observed_at_ms=at_ms,
@@ -943,6 +949,90 @@ def test_planner_crash_enqueues_plan_failed_and_cannot_wait_forever(
         assert controller.state.planning_state.value == "plan_failed"
         assert controller.state.planning is not None
         assert controller.state.planning.lifecycle is ActionLifecycle.FAILED
+        await controller.close()
+
+    asyncio.run(exercise())
+
+
+def test_changed_planning_inputs_trigger_fresh_observation_and_retry(
+    tmp_path: Path,
+) -> None:
+    async def exercise() -> None:
+        planner = _Planner(PlanningInputsChangedError("configuration changed"))
+        observer = _Observer(exact=True)
+        controller, _store, _observer, _planner, _dispatcher, clock = _controller(
+            tmp_path,
+            state=_state(finalized="laptop"),
+            observer=observer,
+            planner=planner,
+        )
+
+        await controller.consume(_event(_observation(exact=True)))
+        for _unused in range(5):
+            await asyncio.sleep(0)
+        await controller.process_next()
+
+        assert observer.calls == 0
+        assert controller.state.planning_state.value == "plan_idle"
+        assert controller.state.phase is ControllerPhase.DISCOVER_FAST
+        deadline = controller.state.next_timer_ms
+        assert deadline == 1_000
+        assert all(
+            tombstone.lifecycle is not ActionLifecycle.FAILED
+            for tombstone in controller.state.action_tombstones
+        )
+
+        planner.failure = None
+        clock.advance(deadline)
+        await controller.consume(TimerFired(EventMetadata(deadline, _BOOT), deadline))
+        await controller.process_next()
+        for _unused in range(10):
+            await asyncio.sleep(0)
+        await controller.process_available()
+
+        assert observer.calls >= 1
+        assert controller.state.planning_state.value == "plan_ready"
+        await controller.close()
+
+    asyncio.run(exercise())
+
+
+def test_corrected_manifest_replaces_a_nonretryable_failed_plan(
+    tmp_path: Path,
+) -> None:
+    async def exercise() -> None:
+        planner = _Planner(DesktopPlanningError("invalid desktop configuration"))
+        controller, _store, _observer, _planner, _dispatcher, _clock = _controller(
+            tmp_path,
+            state=_state(finalized="laptop"),
+            planner=planner,
+        )
+
+        await controller.consume(_event(_observation(exact=True)))
+        for _unused in range(5):
+            await asyncio.sleep(0)
+        await controller.process_next()
+        assert controller.state.planning_state.value == "plan_failed"
+
+        planner.failure = None
+        changed = (ConfigurationContentHash("layouts/dock.yaml", "sha256:corrected"),)
+        await controller.consume(
+            _event(
+                _observation(
+                    exact=True,
+                    observation_generation=2,
+                    at_ms=5_000,
+                    planning_hashes=changed,
+                )
+            )
+        )
+        for _unused in range(5):
+            await asyncio.sleep(0)
+        await controller.process_next()
+
+        assert len(planner.requests) == 2
+        assert planner.requests[-1].input_key.configuration_hashes == changed
+        assert controller.state.planning_state.value == "plan_ready"
         await controller.close()
 
     asyncio.run(exercise())

@@ -25,12 +25,15 @@ from monitor_controller.model import (
     ActionTombstone,
     ApplicationAttemptKey,
     BootId,
+    ConfigurationContentHash,
     ControllerInstanceId,
     ControllerPhase,
     DisplayIdentity,
     EventGeneration,
     EventMetadata,
+    ObservationCompleted,
     ObservationKey,
+    PlanFailed,
     PlanningState,
     PlanRequested,
     PreparationState,
@@ -352,6 +355,74 @@ def _downgrade_replay_value(value: object) -> None:
         data.pop("active_outputs")
     for item in data.values():
         _downgrade_replay_value(item)
+
+
+def test_optional_planning_refresh_fields_remain_replay_compatible() -> None:
+    legacy = decode_replay(_PREPARATION_TRACE.read_bytes())
+    observation_event = next(
+        event
+        for event in legacy.events
+        if isinstance(event, ObservationCompleted)
+        and event.observation.eligible_profiles
+    )
+    assert all(
+        not profile.planning_configuration_hashes
+        for profile in observation_event.observation.eligible_profiles
+    )
+
+    profile = observation_event.observation.eligible_profiles[0]
+    planning_hashes = (ConfigurationContentHash(".fluxbox/keys.erb", "sha256:changed"),)
+    enriched_observation = replace(
+        observation_event.observation,
+        eligible_profiles=(
+            replace(
+                profile,
+                planning_configuration_hashes=planning_hashes,
+            ),
+            *observation_event.observation.eligible_profiles[1:],
+        ),
+    )
+    enriched = capture_replay(
+        legacy.initial_state,
+        (replace(observation_event, observation=enriched_observation),),
+    )
+    decoded_enriched = decode_replay(encode_replay(enriched))
+    decoded_observation = cast("ObservationCompleted", decoded_enriched.events[0])
+    assert (
+        decoded_observation.observation.eligible_profiles[
+            0
+        ].planning_configuration_hashes
+        == planning_hashes
+    )
+
+    initial = decode_state_value(_pending_live_v2_document(), authoritative=False)
+    planning = initial.planning
+    assert planning is not None
+    failure = PlanFailed(
+        EventMetadata(378_366_136, initial.boot_id),
+        planning.action_id,
+        planning.input_key,
+        "planning inputs changed",
+        retryable=True,
+    )
+    retry_trace = capture_replay(initial, (failure,))
+    decoded_failure = cast(
+        "PlanFailed",
+        decode_replay(encode_replay(retry_trace)).events[0],
+    )
+    assert decoded_failure.retryable
+
+    legacy_failure_trace = capture_replay(
+        initial,
+        (replace(failure, retryable=False),),
+    )
+    encoded_legacy_failure = encode_replay(legacy_failure_trace)
+    assert b'"retryable"' not in encoded_legacy_failure
+    decoded_legacy_failure = cast(
+        "PlanFailed",
+        decode_replay(encoded_legacy_failure).events[0],
+    )
+    assert not decoded_legacy_failure.retryable
 
 
 def test_version_two_replay_migrates_planning_keys_deterministically() -> None:

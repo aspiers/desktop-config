@@ -16,6 +16,7 @@ import pytest
 
 from monitor_controller.model import (
     BootId,
+    ConfigurationContentHash,
     EventGeneration,
     ObservationInvalidityReason,
     ProfileScope,
@@ -30,6 +31,8 @@ from monitor_controller.observer.evidence import TextCommandEvidence
 from monitor_controller.observer.snapshot import (
     CanonicalSnapshotCoordinator,
     ObserverCommands,
+    PlanningConfigurationCapture,
+    PlanningConfigurationChangedError,
     StaticSavedProfiles,
 )
 from monitor_controller.runtime.commands import (
@@ -190,6 +193,64 @@ def coordinator(
         clock=clock or _FakeClock(),
         event_generation_source=generation or _FakeGeneration(),
     )
+
+
+def test_planning_manifest_refresh_does_not_change_profile_identity(
+    tmp_path: Path,
+) -> None:
+    @dataclass
+    class PlanningConfigurations:
+        profile_hashes: tuple[ConfigurationContentHash, ...]
+        revision: str = "before"
+
+        def capture_planning_configuration(
+            self,
+            profile: str,
+            layout: str,
+        ) -> PlanningConfigurationCapture:
+            assert profile == "celtic+AOC-U28G2G6B"
+            assert layout == "celtic+external"
+            return PlanningConfigurationCapture(
+                (
+                    ConfigurationContentHash(
+                        ".fluxbox/keys.erb",
+                        self.revision,
+                    ),
+                ),
+                self.profile_hashes,
+            )
+
+    root, commands, profiles = load_manifest(tmp_path, "exact-aoc")
+    planning = PlanningConfigurations(profiles[0].configuration_hashes)
+    subject = CanonicalSnapshotCoordinator(
+        drm_tree=RootedSysfsReader(root),
+        command_runner=_FixtureRunner(commands),
+        profiles=StaticSavedProfiles(profiles),
+        boot_id_source=_FakeBoot(),
+        clock=_FakeClock(),
+        event_generation_source=_FakeGeneration(),
+        planning_configuration_source=planning,
+    )
+
+    before = subject.observe()
+    planning.revision = "after"
+    after = subject.observe()
+
+    assert before.observation_key == after.observation_key
+    assert (
+        before.eligible_profiles[0].configuration_hashes
+        == after.eligible_profiles[0].configuration_hashes
+    )
+    assert (
+        before.eligible_profiles[0].planning_configuration_hashes
+        != after.eligible_profiles[0].planning_configuration_hashes
+    )
+
+    planning.profile_hashes = (
+        ConfigurationContentHash("autorandr:changed/config", "changed"),
+    )
+    with pytest.raises(PlanningConfigurationChangedError):
+        subject.observe()
 
 
 def test_observation_key_is_derived_from_exact_x_geometry(tmp_path: Path) -> None:

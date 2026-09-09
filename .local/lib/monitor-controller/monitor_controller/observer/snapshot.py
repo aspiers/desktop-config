@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import threading
 from collections.abc import Mapping
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from hashlib import sha256
 from typing import Protocol
 
@@ -22,6 +22,7 @@ from ..model import (  # noqa: TID252
     BaseIdentityMatch,
     BootId,
     CanonicalObservation,
+    ConfigurationContentHash,
     ConnectorIdentityEvidence,
     EdidEvidence,
     EventGeneration,
@@ -95,11 +96,35 @@ class EventGenerationSource(Protocol):
 
 
 class SavedProfileSource(Protocol):
-    """Injected immutable saved autorandr profile collection."""
+    """Injected saved autorandr profile collection."""
 
     def saved_profiles(self) -> tuple[SavedAutorandrProfile, ...]:
         """Return every profile available to identity classification."""
         ...
+
+
+@dataclass(frozen=True, slots=True)
+class PlanningConfigurationCapture:
+    """One coherent full manifest and its autorandr identity subset."""
+
+    configuration_hashes: tuple[ConfigurationContentHash, ...]
+    profile_configuration_hashes: tuple[ConfigurationContentHash, ...]
+
+
+class PlanningConfigurationSource(Protocol):
+    """Capture complete desktop-planning configuration at observation time."""
+
+    def capture_planning_configuration(
+        self,
+        profile: str,
+        layout: str,
+    ) -> PlanningConfigurationCapture:
+        """Return one immutable full manifest and profile identity subset."""
+        ...
+
+
+class PlanningConfigurationChangedError(ValueError):
+    """Profile files changed between identity and planning capture."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -279,6 +304,7 @@ class CanonicalSnapshotCoordinator:
         boot_id_source: BootIdSource,
         clock: MonotonicClock,
         event_generation_source: EventGenerationSource,
+        planning_configuration_source: PlanningConfigurationSource | None = None,
         initial_observation_generation: ObservationGeneration = (
             ZERO_OBSERVATION_GENERATION
         ),
@@ -295,6 +321,7 @@ class CanonicalSnapshotCoordinator:
         self._boot_id_source = boot_id_source
         self._clock = clock
         self._event_generation_source = event_generation_source
+        self._planning_configuration_source = planning_configuration_source
         self._observation_generation = initial_observation_generation
         self._planning_capture_lock = threading.Lock()
         self._planning_captures: dict[ObservationKey, CanonicalPlanningCapture] = {}
@@ -313,6 +340,7 @@ class CanonicalSnapshotCoordinator:
         begin_generation = self._event_generation_source.current_generation()
         boot_id = self._boot_id_source.current_boot_id()
         begin_drm = sample_drm(self._drm_tree)
+        profiles = self._normalized_profiles()
         xrandr = sample_xrandr(self._xrandr_source)
         autorandr = sample_autorandr(self._autorandr_source)
         end_drm = sample_drm(self._drm_tree)
@@ -321,7 +349,6 @@ class CanonicalSnapshotCoordinator:
         self._observation_generation = ObservationGeneration(
             self._observation_generation.value + 1
         )
-        profiles = self._normalized_profiles()
         facts = _derive_facts(begin_drm, end_drm, xrandr, autorandr, profiles)
 
         reason = _invalidity_reason(
@@ -334,6 +361,8 @@ class CanonicalSnapshotCoordinator:
             facts,
             profiles,
         )
+        if reason is None:
+            facts = self._attach_planning_configuration(facts)
         exact = facts.exact if reason is None else None
         probe = facts.probe if reason is None else None
         validity_value = "valid" if reason is None else "invalid"
@@ -403,6 +432,33 @@ class CanonicalSnapshotCoordinator:
             msg = "saved profile source returned duplicate names"
             raise ValueError(msg)
         return profiles
+
+    def _attach_planning_configuration(
+        self,
+        facts: _CanonicalFacts,
+    ) -> _CanonicalFacts:
+        source = self._planning_configuration_source
+        if source is None:
+            return facts
+        enriched: list[ProfileMatch] = []
+        for profile in facts.eligible:
+            capture = source.capture_planning_configuration(
+                profile.profile,
+                profile.layout,
+            )
+            if capture.profile_configuration_hashes != profile.configuration_hashes:
+                msg = (
+                    "saved profile changed between identity and planning capture: "
+                    f"{profile.profile}"
+                )
+                raise PlanningConfigurationChangedError(msg)
+            enriched.append(
+                replace(
+                    profile,
+                    planning_configuration_hashes=capture.configuration_hashes,
+                )
+            )
+        return replace(facts, eligible=tuple(enriched))
 
 
 SnapshotCoordinator = CanonicalSnapshotCoordinator

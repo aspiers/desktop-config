@@ -62,7 +62,6 @@ from monitor_controller.observer.evidence import (
 from monitor_controller.observer.snapshot import (
     DEFAULT_OBSERVER_TIMEOUT_SECONDS,
     CanonicalSnapshotCoordinator,
-    StaticSavedProfiles,
 )
 from monitor_controller.runtime.audit import RotatingAuditLog
 from monitor_controller.runtime.commands import BoundedCommandRunner
@@ -305,7 +304,8 @@ class SnapshotDesktopDisplaySource:
             if profile.profile == request.profile
             and profile.layout == request.input_key.layout
             and profile.mapping == request.input_key.mapping
-            and profile.configuration_hashes == request.input_key.configuration_hashes
+            and (profile.planning_configuration_hashes or profile.configuration_hashes)
+            == request.input_key.configuration_hashes
         )
         if len(matching) != 1:
             msg = "planning request is absent from its canonical observation"
@@ -608,7 +608,7 @@ def isolated_autorandr_environment(
 
 
 def load_saved_profiles(root: Path) -> tuple[SavedAutorandrProfile, ...]:
-    """Strictly load immutable autorandr config/setup/layout files once."""
+    """Strictly load current autorandr config/setup/layout files."""
     try:
         candidates = tuple(
             sorted(
@@ -648,6 +648,21 @@ def load_saved_profiles(root: Path) -> tuple[SavedAutorandrProfile, ...]:
             raise ShadowStartupError(msg)
         profiles.append(result.profile)
     return tuple(sorted(profiles, key=lambda item: item.name))
+
+
+@dataclass(frozen=True, slots=True)
+class RefreshingIsolatedSavedProfiles:
+    """Rebuild autorandr's private profile data before each observation."""
+
+    source_root: Path
+    isolation_root: Path
+
+    def saved_profiles(self) -> tuple[SavedAutorandrProfile, ...]:
+        """Return profiles parsed from the exact copies autorandr will read."""
+        return prepare_isolated_autorandr_namespace(
+            self.source_root,
+            self.isolation_root,
+        )
 
 
 def _resolve_shadow_recovery_exclusions(state: State) -> State:
@@ -769,14 +784,9 @@ def build_shadow_composition(
             reference_dpi=read_reference_dpi(),
         ),
     )
-    profiles = StaticSavedProfiles(
-        tuple(
-            planning_source.complete_profile(profile)
-            for profile in prepare_isolated_autorandr_namespace(
-                paths.autorandr_profiles,
-                paths.autorandr_isolation_root,
-            )
-        )
+    profiles = RefreshingIsolatedSavedProfiles(
+        paths.autorandr_profiles,
+        paths.autorandr_isolation_root,
     )
     coordinator = CanonicalSnapshotCoordinator(
         drm_tree=RootedSysfsReader(Path("/sys/class/drm")),
@@ -785,6 +795,7 @@ def build_shadow_composition(
         boot_id_source=boot_source,
         clock=clock,
         event_generation_source=bridge,
+        planning_configuration_source=planning_source,
         initial_observation_generation=initial.observation_generation,
         autorandr_environment=isolated_autorandr_environment(
             paths.autorandr_isolation_root,

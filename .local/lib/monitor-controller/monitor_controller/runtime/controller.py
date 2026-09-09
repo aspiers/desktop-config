@@ -6,6 +6,7 @@ import asyncio
 from collections.abc import Callable
 from typing import Protocol, cast
 
+from monitor_controller.desktop.planner import PlanningInputsChangedError
 from monitor_controller.model import (
     PROBE_ADMISSIBLE_EDID_INTEGRITIES,
     ActionId,
@@ -81,6 +82,7 @@ WORKER_STATUS_POLL_MS = 1_000
 
 
 _JOURNAL = service_logger("monitor_controller.journal")
+
 
 class RuntimeAuthorityError(RuntimeError):
     """Raised when more than one asyncio task tries to consume controller events."""
@@ -635,6 +637,7 @@ class SerializedController:
                 request.action_id,
                 request.input_key,
                 _exception_detail(error),
+                retryable=isinstance(error, PlanningInputsChangedError),
             )
         finally:
             self._planning_tasks.pop(request.action_id, None)

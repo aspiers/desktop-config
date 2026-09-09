@@ -219,12 +219,10 @@ def _plan(
         display=display,
         context=ShadowDesktopContextSource(host_name="celtic", theme="dark"),
     )
-    profile = source.complete_profile(
-        next(
-            item
-            for item in load_saved_profiles(_REPO / ".config" / "autorandr")
-            if item.name == _PROFILE
-        )
+    profile = next(
+        item
+        for item in load_saved_profiles(_REPO / ".config" / "autorandr")
+        if item.name == _PROFILE
     )
     key = PlanningInputKey(
         7,
@@ -233,7 +231,7 @@ def _plan(
         display.observation_key,
         _MAPPING,
         display.topology.x_active_outputs,
-        profile.configuration_hashes,
+        source.planning_configuration_hashes(profile.name, profile.layout),
     )
     request = RequestPlan(_PLAN_ACTION, _TRANSITION, key, _PROFILE)
     bundle = build_desktop_plan(source.load(request))

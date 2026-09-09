@@ -10,7 +10,7 @@ import json
 import os
 import re
 import stat
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from decimal import ROUND_HALF_UP, Decimal
 from enum import StrEnum
 from pathlib import Path, PurePosixPath
@@ -28,6 +28,7 @@ from monitor_controller.model import (
 )
 from monitor_controller.observer.autorandr import parse_saved_profile
 from monitor_controller.observer.evidence import TextCommandEvidence
+from monitor_controller.observer.snapshot import PlanningConfigurationCapture
 from monitor_controller.safeio import (
     DIRECTORY_OPEN_FLAGS as _DIRECTORY_OPEN_FLAGS,
 )
@@ -132,6 +133,10 @@ _EDID_VENDOR_NAMES: Final = {
 
 class DesktopPlanningError(ValueError):
     """Immutable inputs cannot produce one exact safe desktop plan."""
+
+
+class PlanningInputsChangedError(DesktopPlanningError):
+    """The desktop inputs changed after admission and require re-observation."""
 
 
 class InputRole(StrEnum):
@@ -660,10 +665,28 @@ class FilesystemDesktopPlanningInputSource:
             tuple(sorted(by_path.values(), key=lambda item: item.path))
         )
 
-    def complete_profile(self, profile: SavedAutorandrProfile) -> SavedAutorandrProfile:
-        """Attach the complete desktop manifest used by reducer planning keys."""
-        configuration = self.configuration_for(profile.name, profile.layout)
-        return replace(profile, configuration_hashes=configuration.hashes)
+    def capture_planning_configuration(
+        self,
+        profile: str,
+        layout: str,
+    ) -> PlanningConfigurationCapture:
+        """Capture one full manifest and its coherent autorandr identity subset."""
+        configuration = self.configuration_for(profile, layout)
+        return PlanningConfigurationCapture(
+            configuration.hashes,
+            _profile_configuration_hashes(configuration, profile),
+        )
+
+    def planning_configuration_hashes(
+        self,
+        profile: str,
+        layout: str,
+    ) -> tuple[ConfigurationContentHash, ...]:
+        """Capture the full desktop manifest admitted for one observation."""
+        return self.capture_planning_configuration(
+            profile,
+            layout,
+        ).configuration_hashes
 
     def load(self, request: RequestPlan) -> DesktopPlanningInputs:
         """Capture the exact already-admitted full manifest and display snapshot."""
@@ -671,7 +694,7 @@ class FilesystemDesktopPlanningInputSource:
         layout = request.input_key.layout
         configuration = self.configuration_for(profile, layout)
         if request.input_key.configuration_hashes != configuration.hashes:
-            raise DesktopPlanningError(
+            raise PlanningInputsChangedError(
                 "admitted planning key differs from the captured full manifest"
             )
         captured_profile = _parse_captured_profile(
@@ -780,11 +803,11 @@ class FilesystemDesktopPlanningInputSource:
                 except FileNotFoundError:
                     if not required:
                         return None
-                    raise DesktopPlanningError(
+                    raise PlanningInputsChangedError(
                         f"required configuration {logical!r} does not exist"
                     ) from None
                 except OSError as error:
-                    raise DesktopPlanningError(
+                    raise PlanningInputsChangedError(
                         f"cannot safely open configuration parent for {logical!r}"
                     ) from error
                 _validate_configuration_directory(child)
@@ -796,12 +819,12 @@ class FilesystemDesktopPlanningInputSource:
                 )
             except FileNotFoundError:
                 if required:
-                    raise DesktopPlanningError(
+                    raise PlanningInputsChangedError(
                         f"required configuration {logical!r} does not exist"
                     ) from None
                 return None
             except OSError as error:
-                raise DesktopPlanningError(
+                raise PlanningInputsChangedError(
                     f"cannot safely open configuration {logical!r}"
                 ) from error
             try:
@@ -812,19 +835,19 @@ class FilesystemDesktopPlanningInputSource:
                 while remaining:
                     chunk = os.read(descriptor, min(remaining, 64 * 1024))
                     if not chunk:
-                        raise DesktopPlanningError(
+                        raise PlanningInputsChangedError(
                             f"configuration {logical!r} was truncated during read"
                         )
                     chunks.append(chunk)
                     remaining -= len(chunk)
                 if os.read(descriptor, 1):
-                    raise DesktopPlanningError(
+                    raise PlanningInputsChangedError(
                         f"configuration {logical!r} grew during capture"
                     )
                 after = os.fstat(descriptor)
                 _validate_configuration_file(after, logical)
                 if _stable_file_details(before) != _stable_file_details(after):
-                    raise DesktopPlanningError(
+                    raise PlanningInputsChangedError(
                         f"configuration {logical!r} changed during capture"
                     )
                 _validate_configuration_directory(directory_fd)
@@ -1163,6 +1186,28 @@ def _profile_evidence(item: ConfigurationInput) -> TextCommandEvidence:
         item.path,
         text,
     )
+
+
+def _profile_configuration_hashes(
+    configuration: DesktopConfigurationSnapshot,
+    profile: str,
+) -> tuple[ConfigurationContentHash, ...]:
+    values: list[ConfigurationContentHash] = []
+    roles = (
+        (InputRole.AUTORANDR_CONFIG, "config"),
+        (InputRole.AUTORANDR_SETUP, "setup"),
+        (InputRole.AUTORANDR_LAYOUT, "layout"),
+    )
+    for role, name in roles:
+        content = configuration.one(role).content
+        if content is not None:
+            values.append(
+                ConfigurationContentHash(
+                    f"autorandr:{profile}/{name}",
+                    hashlib.sha256(content).hexdigest(),
+                )
+            )
+    return tuple(sorted(values, key=lambda item: item.path))
 
 
 def _parse_captured_profile(
