@@ -1,13 +1,16 @@
 [Unit]
 Description=Apply the keyboard map and reapply it when keyboards are plugged in
 
-# setup-keyboard ends up in keymap-menu, which runs xmodmap, so this needs a
-# graphical session. graphical-session.target rather than a window-manager
-# specific target: every desktop environment raises it (gnome-session.target
-# and plasma-workspace.target bind to it, as does fluxbox-session.target
-# here), so this watcher follows whichever desktop is in use.
-PartOf=graphical-session.target
-After=graphical-session.target
+# setup-keyboard ends up in keymap-menu, which runs setxkbmap, so this needs a
+# graphical session. It binds to fluxbox-session.target rather than
+# graphical-session.target because the latter never deactivates here: it goes
+# active at boot and stays active across session restarts, so PartOf= never
+# propagates a stop and WantedBy= never retriggers a start. The watcher then
+# survives with a stale DISPLAY and silently stops applying the keymap on
+# session restart, leaving the localectl default (gb) in place -- which maps
+# backslash to numbersign. fluxbox-session.target does cycle with the session.
+PartOf=fluxbox-session.target
+After=fluxbox-session.target
 
 [Service]
 SyslogIdentifier=keyboard-watcher
@@ -18,4 +21,4 @@ StandardOutput=journal
 StandardError=journal
 
 [Install]
-WantedBy=graphical-session.target
+WantedBy=fluxbox-session.target
