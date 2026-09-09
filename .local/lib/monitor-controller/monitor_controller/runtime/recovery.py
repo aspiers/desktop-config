@@ -756,6 +756,7 @@ def recover_state(  # noqa: PLR0913, PLR0915
     )
 
     if persisted_state is None:
+        clean_first_start = corruption is None and not reasons and not snapshot.units
         if corruption is not None:
             reasons = (*reasons, f"authoritative state is corrupt: {corruption}")
         else:
@@ -770,7 +771,7 @@ def recover_state(  # noqa: PLR0913, PLR0915
         assert_controller_invariants(state)
         return RecoveryResult(
             state=state,
-            authority_allowed=False,
+            authority_allowed=clean_first_start,
             requires_fresh_observation=True,
             reasons=reasons,
         )

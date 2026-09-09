@@ -34,7 +34,7 @@ import sys
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, replace
 from pathlib import Path
-from typing import TYPE_CHECKING, Self, final
+from typing import TYPE_CHECKING, Never, Self, final
 from uuid import uuid4
 
 from monitor_controller.codec import StateCodecError
@@ -389,8 +389,8 @@ class ActiveComposition:
     plan_store: AtomicPlanStore
     store: AtomicStateStore
     audit: RotatingAuditLog
-    # Recovery's authority verdict, carried rather than raised: a controller
-    # denied authority must still start, or the desktop has no manager at all.
+    # Recovery's authority verdict is checked before the event loop starts.
+    # Denial exits non-zero so systemd retries without exposing the dispatcher.
     recovery: RecoveryResult | None = None
     # Retained so run_active() can release the store's directory descriptors.
     transactions: TransactionStore | None = None
@@ -814,6 +814,22 @@ def build_active_composition(
     )
 
 
+def _refuse_dispatch_authority(detail: str) -> Never:
+    msg = f"refusing dispatch authority: {detail}"
+    raise ActiveStartupError(msg)
+
+
+def _release_active_resources(composition: ActiveComposition) -> None:
+    """Release resources opened while composing the active controller."""
+    composition.planner.close()
+    if composition.transactions is not None:
+        composition.transactions.close()
+    if composition.generation_fence is not None:
+        # No authority means no fresh fence: any surviving finalizer must
+        # refuse its boundary rather than trust the last published value.
+        composition.generation_fence.withdraw()
+
+
 async def run_active(
     composition: ActiveComposition,
     monitor: UeventMonitor | None = None,
@@ -827,13 +843,7 @@ async def run_active(
     producer = DrmUeventMonitor() if monitor is None else monitor
 
     def close_retained_resources() -> None:
-        composition.planner.close()
-        if composition.transactions is not None:
-            composition.transactions.close()
-        if composition.generation_fence is not None:
-            # No authority means no fresh fence: any surviving finalizer must
-            # refuse its boundary rather than trust the last published value.
-            composition.generation_fence.withdraw()
+        _release_active_resources(composition)
 
     extra_producers = (
         ()
@@ -917,15 +927,9 @@ def main() -> int:
             composition = build_active_composition(paths)
             recovery = composition.recovery
             if recovery is not None and not recovery.authority_allowed:
-                # Deliberately not fatal. Recovery denies authority when it
-                # cannot account for the worker namespace; the controller then
-                # starts into RECOVERING and dispatches nothing until a fresh
-                # observation resolves it. Exiting instead would leave the
-                # desktop with no manager at all, which is strictly worse.
-                _JOURNAL.warning(
-                    "starting without dispatch authority: "
-                    + ("; ".join(recovery.reasons) or "recovery denied authority")
-                )
+                detail = "; ".join(recovery.reasons) or "recovery denied authority"
+                _release_active_resources(composition)
+                _refuse_dispatch_authority(detail)
             asyncio.run(run_active(composition))
     except KeyboardInterrupt:
         return 0

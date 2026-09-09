@@ -12,7 +12,7 @@ import asyncio
 import fcntl
 import os
 from pathlib import Path
-from types import SimpleNamespace
+from types import SimpleNamespace, TracebackType
 from typing import Self
 from uuid import UUID
 
@@ -50,7 +50,7 @@ from monitor_controller.runtime.dispatcher import (
     WorkerCompletion,
 )
 from monitor_controller.runtime.persistence import AtomicStateStore, StateNamespace
-from monitor_controller.runtime.recovery import WorkerNamespaceSnapshot
+from monitor_controller.runtime.recovery import RecoveryResult, WorkerNamespaceSnapshot
 from monitor_controller.runtime.transactions import TransactionStore
 from monitor_controller.workers.finalize import FileSystemdFinalizationFence
 
@@ -58,6 +58,7 @@ _STOP_MARKER = "stop here"
 _UNAUTHORIZED_BUILD = "composition built without authorisation"
 _STUB_REACHED = "the non-starting wrapper must refuse before delegating"
 _INJECTED_FAILURE = "injected monitor failure"
+_CONTROLLER_RAN_WITHOUT_AUTHORITY = "controller ran without dispatch authority"
 _CURRENT_SESSION = GraphicalSessionId("3")
 
 
@@ -76,7 +77,12 @@ class _NullLock:
         """Acquire nothing."""
         return self
 
-    def __exit__(self, *_exc: object) -> None:
+    def __exit__(
+        self,
+        _exc_type: type[BaseException] | None,
+        _exc_value: BaseException | None,
+        _traceback: TracebackType | None,
+    ) -> None:
         """Release nothing."""
 
 
@@ -335,6 +341,11 @@ class TestUnitConflictContract:
         assert "monitor_controller.active" in " ".join(exec_start)
         assert "monitor_controller.shadow" not in " ".join(exec_start)
 
+    def test_authority_denial_gets_a_bounded_automatic_retry(self) -> None:
+        """A transient scan failure should retry without a busy restart loop."""
+        assert _directives(ACTIVE_UNIT, "Restart") == {"on-failure"}
+        assert _directives(ACTIVE_UNIT, "RestartSec") == {"5s"}
+
     def test_controller_restart_preserves_worker_transaction_evidence(self) -> None:
         """Session rebinding must not erase results before recovery scans them."""
         assert _directives(
@@ -467,6 +478,50 @@ class TestActiveEntryPoint:
 
         assert main() == 1
         assert composed == ["built"], "main() must build the live composition"
+
+    def test_denied_recovery_releases_resources_without_running(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """An ambiguous worker namespace must never expose the dispatcher."""
+        monkeypatch.setenv("MONITOR_CONTROLLER_NAMESPACE", "active")
+        monkeypatch.setenv(
+            CUTOVER_AUTHORIZATION_VARIABLE,
+            CUTOVER_AUTHORIZATION_VALUE,
+        )
+        boot, instance, display = _identity()
+        recovery = RecoveryResult(
+            state=State(
+                boot_id=boot,
+                controller_instance=instance,
+                display_identity=display,
+            ),
+            authority_allowed=False,
+            requires_fresh_observation=True,
+            reasons=("worker namespace scan failed",),
+        )
+        released: list[str] = []
+        composition = SimpleNamespace(
+            recovery=recovery,
+            planner=SimpleNamespace(close=lambda: released.append("planner")),
+            transactions=SimpleNamespace(close=lambda: released.append("transactions")),
+            generation_fence=SimpleNamespace(withdraw=lambda: released.append("fence")),
+        )
+
+        def _build(*_args: object, **_kwargs: object) -> object:
+            return composition
+
+        async def _must_not_run(*_args: object, **_kwargs: object) -> None:
+            raise AssertionError(_CONTROLLER_RAN_WITHOUT_AUTHORITY)
+
+        monkeypatch.setattr(active, "build_active_composition", _build)
+        monkeypatch.setattr(active, "ActiveAuthorityLock", _NullLock)
+        monkeypatch.setattr(active, "run_active", _must_not_run)
+
+        assert main() == 1
+        assert released == ["planner", "transactions", "fence"]
+        assert "refusing dispatch authority" in capsys.readouterr().err
 
     def test_unauthorized_start_never_builds_the_composition(
         self,
@@ -604,12 +659,11 @@ class TestLoadActiveState:
         self,
         tmp_path: Path,
     ) -> None:
-        """A first run has no state, so it must observe before dispatching.
+        """A clean first run may observe but baseline-adopts before acting.
 
-        Recovery reports "authoritative state is missing" and withholds
-        authority until a fresh observation arrives. That is deliberate: with
-        no record of what was last applied, dispatching immediately could fight
-        a display the controller has never looked at.
+        An empty worker scan proves no older mutator can race this controller.
+        Baseline adoption then prevents desktop work until the first exact
+        observation records what is already active.
         """
         boot, instance, display = _identity()
         store = _active_store(tmp_path)
@@ -624,7 +678,7 @@ class TestLoadActiveState:
             scanner=scanner,
         )
 
-        assert not result.authority_allowed
+        assert result.authority_allowed
         assert result.requires_fresh_observation
         assert result.state.boot_id == boot
         assert result.state.display_identity == display
