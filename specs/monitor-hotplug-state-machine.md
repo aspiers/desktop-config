@@ -3,6 +3,7 @@
 ## Status: PROPOSED
 
 ## Problem Statement
+
 `bin/monitor-watcher` currently reacts to a DRM event, tries to make the
 display state valid, and then runs `bin/setup-monitor` synchronously.
 
@@ -17,6 +18,7 @@ This has three problems:
    blind to newer monitor changes.
 
 ## Goals
+
 - Make layout detection report whether the current state is ready,
   partial, or erroneous.
 - Do not start `setup-monitor` until the topology is both ready and
@@ -29,6 +31,7 @@ This has three problems:
 ## Proposal
 
 ### 1. `get-layout --state`
+
 Extend `bin/get-layout` with a machine-readable state mode.
 
 Output format:
@@ -38,11 +41,13 @@ Output format:
 ```
 
 Statuses:
+
 - `ready`: `<value>` is the layout file path
 - `wait`: `<value>` is a human-readable reason
 - `error`: `<value>` is a human-readable reason
 
 For `celtic`, initial rules should include:
+
 - laptop only: `ready`
 - single generic external monitor: `ready`
 - BenQ present and total monitor count is 2: `wait`
@@ -50,10 +55,12 @@ For `celtic`, initial rules should include:
   `celtic+BenQ+Dell`
 
 ### 2. Settled Ready State In `monitor-watcher`
+
 After a DRM event, `monitor-watcher` should poll until it sees a settled
 ready state.
 
 Each probe should:
+
 - load the X display environment
 - run `xrandr --auto`
 - clear and repopulate display cache
@@ -66,19 +73,23 @@ layout and monitor MD5 have remained unchanged for a short settle
 window.
 
 ### 3. Supervised Background `setup-monitor`
+
 `monitor-watcher` should start `setup-monitor` in the background, keep
 watching monitor state while it runs, and remember:
+
 - expected layout
 - expected MD5
 - child PID
 
 If a different settled ready state appears while a child is running:
+
 - request termination of the stale child
 - wait briefly for it to exit cooperatively
 - kill as a last resort if it does not exit
 - launch a fresh child for the newest settled state
 
 ### 4. Cooperative Stale Checks In `setup-monitor`
+
 `setup-monitor` should accept:
 
 ```text
@@ -88,6 +99,7 @@ If a different settled ready state appears while a child is running:
 ```
 
 It should validate expected state at safe checkpoints, including:
+
 - after initial layout selection
 - after `setup_xrandr`
 - after cache refresh
@@ -98,6 +110,7 @@ If the expected state no longer matches live state, it should exit with
 a dedicated stale exit code.
 
 ### 5. Termination Policy
+
 - Normal stale handling: cooperative exit at checkpoints
 - Escalation path: `monitor-watcher` sends `TERM` to the child
 - Final fallback: `monitor-watcher` kills the stale child process group
@@ -105,6 +118,7 @@ a dedicated stale exit code.
 The hard-kill path exists for stuck runs, not as the normal mechanism.
 
 ## Why This Approach
+
 - It keeps the existing host-specific logic in the existing codebase.
 - It makes partial topologies explicit instead of inferring them from
   failures.
@@ -113,11 +127,13 @@ The hard-kill path exists for stuck runs, not as the normal mechanism.
   in the middle of a phase.
 
 ## Files To Modify
+
 - `bin/get-layout`
 - `bin/monitor-watcher`
 - `bin/setup-monitor`
 
 ## Validation
+
 - laptop-only event should not trigger unnecessary reconfiguration
 - single external monitor should settle and configure normally
 - BenQ-then-Dell dock sequence should wait for the 3-monitor layout
