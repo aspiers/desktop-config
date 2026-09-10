@@ -209,8 +209,20 @@ below. Work is NOT complete until they are completed.
 Use the `beads-solo` skill for Beads setup and maintainer policy in this
 repository. Use the `beads` skill for the standard Beads workflow.
 
-This repository opts into the Beads **team-maintainer** profile for issue
-management and commits. Unless a current user or orchestrator instruction
-says otherwise, agents may manage issues and make atomic commits as work
-progresses. They must not push Git branches or sync or push Dolt state
-unless explicitly requested.
+This repository opts into the Beads **team-maintainer** profile.
+
+**Commit as you go - this is mandatory, not permission.** You MUST commit
+each logical change as soon as it is complete and verified. Do NOT end a
+turn leaving work you authored uncommitted, and do NOT ask whether to
+commit; the answer is already yes. Reporting a change as finished while it
+sits uncommitted in the working tree is an incomplete handoff.
+
+Committing is authorised. **Pushing is not.** Never push Git branches, and
+never sync or push Dolt state, unless explicitly requested. See "Landing
+the Plane" above: that section governs pushing only, and its "do NOT push
+automatically" rule must never be read as a reason to withhold a commit.
+
+Managing Beads issues (create, update, close) is likewise expected as work
+progresses, not something to ask about.
+
+A current user or orchestrator instruction saying otherwise still wins.
