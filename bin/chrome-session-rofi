@@ -27,13 +27,38 @@ tabs=$(chrome-session-tabs --rofi)
 
 # If the initial query already narrows to a single match, skip rofi and
 # focus directly. Otherwise show rofi for interactive selection.
+#
+# This pre-check must match exactly what rofi itself would match, or a query
+# narrowing to one tab still stops for an Enter. Rofi tokenizes the filter on
+# whitespace and requires every token to match, so without `-no-tokenize` we
+# must apply the tokens conjunctively rather than as one contiguous regex.
 if [ -n "$initial_query" ]; then
     # Rofi prefixes each title with window metadata ending in ` -~- `.
     # Translate a title anchor to that delimiter, and keep regex spaces intact.
     if [[ $rofi_filter == ^* ]]; then
         rofi_filter=" -~- ${rofi_filter#^}"
     fi
-    matches=$(printf '%s\n' "$tabs" | grep -iE -- "$rofi_filter" || true)
+
+    matches="$tabs"
+    if [ ${#rofi_matching_args[@]} -gt 0 ]; then
+        matches=$(printf '%s\n' "$matches" | grep -iE -- "$rofi_filter" || true)
+    else
+        # Tokenize as rofi does, but keep the ` -~- ` title anchor attached to
+        # the first token: split apart, it would degrade to a bare `-~-` that
+        # every line contains, letting later tokens match the window name or
+        # URL that the anchor exists to exclude. Tokenize the original query,
+        # since $rofi_filter already carries the rewritten anchor.
+        first_token=1
+        for token in ${initial_query#^}; do
+            if [ "$first_token" = 1 ] && [[ $initial_query == ^* ]]; then
+                token=" -~- $token"
+            fi
+            first_token=0
+            matches=$(printf '%s\n' "$matches" | grep -iE -- "$token" || true)
+            [ -n "$matches" ] || break
+        done
+    fi
+
     match_count=$(printf '%s\n' "$matches" | grep -c . || true)
     if [ "$match_count" = "1" ]; then
         exec chrome-session-tabs --focus-rofi-line "$matches"
