@@ -1,13 +1,8 @@
 #!/usr/bin/env python3
 #
-# N.B. screen numbers from libdpy and layouts are numbered counting
-# from 0 and going left to right by X coordinate.
-#
-# Debug by:
-# - running ~/lib/libdpy.py
-# - making sure screens list in layout matches
-#   left-to-right order
-# - running ~/lib/liblayout.py $layout_name
+# Screen numbers are zero-based and ordered by X coordinate.
+# Geometry and placeholder expansion come from the monitor controller's
+# canonical desktop layout module via desktop_layout.
 
 import argparse
 import json
@@ -19,10 +14,14 @@ import sys
 import time
 import yaml
 
-sys.path.append(os.getenv('HOME') + '/lib')
+repo_lib = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'lib'
+)
+sys.path.insert(0, os.getenv('HOME') + '/lib')
+sys.path.append(repo_lib)
 
+import desktop_layout
 import libdpy
-import liblayout
 
 
 MAGIC_CMDS = {
@@ -190,7 +189,7 @@ def define_place_rhs(layout_params):
     # no separate head, so it becomes the full-height third column of the
     # primary screen.  Either way the window is made sticky, matching how the
     # RHS display was used before.  Detection: the primary screen advertises a
-    # non-zero col3 iff the layout is 3-column (see liblayout col3_* geometry).
+    # non-zero col3 iff the canonical layout geometry is 3-column.
     # On a plain single-screen layout (no secondary, no col3) there is no RHS,
     # so <place_RHS> is deliberately left undefined.
     primary = next(
@@ -248,14 +247,14 @@ def main():
             subprocess.call(['wmctrl', '-ia', active_win_id])
         return 0
 
-    layout_file = liblayout.get_layout_file(args.layout, args.dir)
-    layout_params, layout = liblayout.get_layout_params(layout_file)
+    layout_file = desktop_layout.get_layout_file(args.layout, args.dir)
+    layout_params, layout = desktop_layout.get_layout_params(layout_file)
     window_cmds = layout['windows']
 
     init_magic_cmds(layout_params)
 
     if args.sublayout:
-        sublayout_file = liblayout.get_sublayout_file()
+        sublayout_file = desktop_layout.get_sublayout_file()
         with open(sublayout_file) as sf:
             sublayouts = yaml.safe_load(sf)
             apply_sublayout(sublayout_file, sublayouts, args)

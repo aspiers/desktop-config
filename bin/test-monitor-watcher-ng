@@ -800,6 +800,7 @@ test_postswitch_deferral_records_profile_only () {
     pending=$tmp/pending
 
     output=$(AUTORANDR_CURRENT_PROFILE=samsung \
+        MONITOR_CONTROLLER_POSTSWITCH_POLICY=legacy \
         MONITOR_WATCHER_NG_DEFER_POSTSWITCH=1 \
         MONITOR_WATCHER_NG_PENDING_PROFILE_FILE="$pending" \
         bash "$postswitch" 2>&1) &&

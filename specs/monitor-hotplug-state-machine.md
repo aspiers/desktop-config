@@ -59,7 +59,7 @@ Each probe should:
 - clear and repopulate display cache
 - read monitor MD5
 - call `get-layout --state`
-- validate ready layouts with `liblayout.py --check-screen-counts`
+- validate ready layouts with `desktop_layout.py --check-screen-counts`
 
 The watcher should only treat a state as actionable when the same ready
 layout and monitor MD5 have remained unchanged for a short settle

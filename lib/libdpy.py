@@ -5,7 +5,7 @@
 #
 # Note that this code has NO awareness of layouts, including
 # assignments, such as which screen will actually be used as the
-# primary screen.  That needs to be handled in liblayout.
+# primary screen.  The canonical desktop layout resolver handles that.
 
 from __future__ import annotations
 
@@ -145,8 +145,8 @@ class XrandrJsonCache(DisplayDataCache):
             screen["num"] = i
             screen["right"] = screen["x_offset"] + screen["width"]
 
-        # Note: There's a difference between "primary" as listed by xrandr
-        # and a primary assignment in liblayout.  If the wrong (or no)
+        # Note: There's a difference between "primary" as listed by XRandR
+        # and the canonical layout's primary assignment.  If the wrong (or no)
         # screen is configured as primary at the xrandr level, then it
         # could be auto-detected by comparing these two.
 

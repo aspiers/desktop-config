@@ -21,24 +21,21 @@ The system is primarily composed of three Python modules/scripts and user-define
         *   Caching results from external commands (`xrandr`, `inxi`) to improve performance and reduce system calls.
     *   **Key Abstraction:** `libdpy.py` is **strictly about the current physical/logical state of the displays as reported by the system**. It has NO KNOWLEDGE of user-defined layouts, window management concepts, or specific application configurations. It serves as the ground truth for what the display hardware is currently doing. This clean separation is vital.
 
-2.  **`[lib/liblayout.py](mdc:lib/liblayout.py)` (Layout Python Library):**
-    *   **Purpose:** Parses user-defined layout configuration files (YAML), merges this configuration with the runtime screen information obtained from `[lib/libdpy.py](mdc:lib/libdpy.py)`, and calculates various derived geometric properties needed for window placement.
+2.  **`monitor_controller.desktop.layout` with `[lib/desktop_layout.py](mdc:lib/desktop_layout.py)` (Layout Resolver):**
+    *   **Purpose:** The monitor controller module is the sole parser, geometry calculator, and placeholder expander for user-defined YAML layouts. `desktop_layout.py` adapts live `libdpy.py` screen data for interactive and rollback scripts.
     *   **Responsibilities:**
-        *   Reading and parsing YAML layout files from `~/.fluxbox/layouts/` (or a specified directory).
-        *   Handling `<INCLUDE ...>` directives within layout files for modularity.
-        *   Validating consistency between the number of screens detected by `libdpy.py` and the number of screens defined in the layout file.
-        *   Merging layout-specific parameters (e.g., margins, panel height, assignments like "primary", "secondary", "left", "right", relative screen positioning) onto the raw screen data from `libdpy.py`.
-        *   Calculating "active" workspace areas on each screen by accounting for margins and panels.
-        *   Computing dimensions and positions for predefined layout zones (e.g., single centered window, two columns, two rows) based on percentages and fixed values defined in the layout.
-        *   Providing functions to get adjacent screens based on layout definitions (e.g., screen to the 'left' or 'right' of current).
-    *   **Interaction:** Acts as the crucial bridge between the hardware-agnostic layout definitions and the concrete, current state of the display hardware.
+        *   Reading bounded layout files and recursive `<INCLUDE ...>` directives.
+        *   Validating layout screens against an immutable display snapshot.
+        *   Resolving margins, active areas, predefined zones, assignments, and Fluxbox window actions.
+        *   Providing the live scripts with adjacent-screen lookup and count-only validation without duplicating geometry policy.
+    *   **Interaction:** The controller planner calls the pure resolver directly. Interactive scripts call the live adapter, which captures XRandR screens and delegates to the same resolver.
 
 3.  **`[bin/desktop-layout](mdc:bin/desktop-layout)` (Fluxbox Layout Applicator):**
     *   **Purpose:** The main executable script that a user runs to apply a specific window layout to their Fluxbox session.
     *   **Responsibilities:**
         *   Parsing command-line arguments (e.g., layout name, sublayout name, dump mode).
         *   Retrieving the active window ID before applying changes, to re-focus it afterward.
-        *   Utilizing `[lib/liblayout.py](mdc:lib/liblayout.py)` to load and process the specified layout file and obtain the embellished screen parameters.
+        *   Utilizing `[lib/desktop_layout.py](mdc:lib/desktop_layout.py)` to capture live screens and invoke the canonical layout resolver.
         *   Initializing "magic commands" (e.g., `<s0_width>`, `<s_primary_height_pc>`) based on the processed layout parameters. These magic commands are placeholders used in the layout's command definitions.
         *   Iterating through the `windows` section of the layout configuration.
         *   For each window definition, expanding any magic commands in the matcher and the Fluxbox commands.
@@ -57,7 +54,7 @@ The system is primarily composed of three Python modules/scripts and user-define
 
 *   **Separation of Concerns:**
     *   `[lib/libdpy.py](mdc:lib/libdpy.py)` is purely for discovering and reporting current display state. It knows nothing about layouts.
-    *   `[lib/liblayout.py](mdc:lib/liblayout.py)` is for interpreting layout *definitions* and combining them with current display state. It knows how to calculate positions based on these two sources.
+    *   `monitor_controller.desktop.layout` owns layout interpretation and geometry. `[lib/desktop_layout.py](mdc:lib/desktop_layout.py)` only adapts live display state for standalone scripts.
     *   `[bin/desktop-layout](mdc:bin/desktop-layout)` is for *acting* on the combined information by sending commands to Fluxbox.
 *   **Maintain a Clean Abstraction Layer:** It is critical that `[lib/libdpy.py](mdc:lib/libdpy.py)` remains independent of any layout-specific logic or user configuration. Changes to layout strategies or Fluxbox commands should not necessitate changes in `[lib/libdpy.py](mdc:lib/libdpy.py)` unless the underlying system commands for display information change.
 *   **Modularity:** Layout files can include other files, promoting reuse of common configurations.

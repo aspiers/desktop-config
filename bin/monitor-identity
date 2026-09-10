@@ -38,8 +38,8 @@ def monitor_identity(use_cache=True):
     repeatedly during a blank/unblank cycle in which nothing was unplugged.
 
     It is also unnecessary.  The layout files are percentage-based
-    (col1_width_pc_of_active and friends) and liblayout resolves them against
-    live xrandr geometry when the layout is applied, so the same layout file
+    (col1_width_pc_of_active and friends) and the canonical desktop layout
+    module resolves them against live XRandR geometry, so the same layout file
     is correct at 3440x1440 and at 5120x2160.  What picks the layout is which
     monitors are attached, and that is precisely what this fingerprint covers.
     """

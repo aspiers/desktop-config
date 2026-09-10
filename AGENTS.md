@@ -74,7 +74,8 @@ mr stow
 ### Core Libraries
 
 - **`lib/libdpy.py`** - Display/monitor detection with caching (~/.cache/libdpy/)
-- **`lib/liblayout.py`** - YAML layout file parsing and window positioning
+- **`.local/lib/monitor-controller/monitor_controller/desktop/layout.py`** - canonical YAML layout parsing and window geometry
+- **`lib/desktop_layout.py`** - live `libdpy` adapter for interactive and rollback scripts
 - **`lib/libfonts.sh`** - Font configuration management
 - **`lib/libproc.sh`** - Process management utilities
 

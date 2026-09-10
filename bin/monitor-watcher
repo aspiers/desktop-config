@@ -245,7 +245,7 @@ validate_layout_path() {
     local layout_path="$1"
     local validation
 
-    if validation=$( ~/lib/liblayout.py --check-screen-counts "$layout_path" 2>&1 ); then
+    if validation=$( ~/lib/desktop_layout.py --check-screen-counts "$layout_path" 2>&1 ); then
         echo "Layout $layout_path validated" >&2
         return 0
     fi

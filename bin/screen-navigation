@@ -7,10 +7,14 @@ import subprocess
 import sys
 import time
 
-sys.path.append(os.getenv('HOME') + '/lib')
+repo_lib = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'lib'
+)
+sys.path.insert(0, os.getenv('HOME') + '/lib')
+sys.path.append(repo_lib)
 
+import desktop_layout
 import libdpy
-import liblayout
 
 def get_active_window_geometry():
     """Return (window_id, x, y, width, height) for the active window."""
@@ -245,7 +249,9 @@ def main():
 
     if args.head is not None:
         try:
-            target_screen = liblayout.get_screen_by_position(args.head, layout_file, use_cache=args.use_xrandr_cache)
+            target_screen = desktop_layout.get_screen_by_position(
+                args.head, layout_file, use_cache=args.use_xrandr_cache
+            )
         except Exception as e:
             sys.stderr.write(f"Error: {str(e)}\n")
             sys.exit(1)
@@ -283,7 +289,7 @@ def main():
             debug_navigation_reference(
                 reference_source, current_x, args.use_xrandr_cache
             )
-        adjacent_screen = liblayout.get_adjacent_screen(
+        adjacent_screen = desktop_layout.get_adjacent_screen(
             args.direction, layout_file,
             use_cache=args.use_xrandr_cache,
             current_x=current_x,

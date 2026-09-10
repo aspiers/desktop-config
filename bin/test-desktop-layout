@@ -13,6 +13,45 @@ from pathlib import Path
 repo = Path(sys.argv[1])
 module = runpy.run_path(repo / "bin/desktop-layout")
 combine = module["combine_commands"]
+adapter = module["desktop_layout"]
+
+original_screens = adapter.libdpy.get_xrandr_screen_geometries
+try:
+    adapter.libdpy.get_xrandr_screen_geometries = lambda use_cache=False: [{}]
+    screens, layout = adapter.get_layout_params(
+        ".fluxbox/layouts/celtic.yaml", screens_only=True
+    )
+    assert screens == []
+    assert layout["screens"] == 1
+
+    adapter.libdpy.get_xrandr_screen_geometries = lambda use_cache=False: [
+        {
+            "name": "eDP",
+            "width": 2880,
+            "height": 1920,
+            "x_offset": 0,
+            "y_offset": 0,
+            "x_mm": 285,
+            "y_mm": 190,
+            "primary": False,
+        },
+        {
+            "name": "DisplayPort-1",
+            "width": 5120,
+            "height": 2160,
+            "x_offset": 2880,
+            "y_offset": 0,
+            "x_mm": 930,
+            "y_mm": 400,
+            "primary": True,
+        },
+    ]
+    screens, _ = adapter.get_layout_params(
+        repo / ".fluxbox/layouts/celtic+ultrawide.yaml"
+    )
+    assert screens[0]["right"] == "external"
+finally:
+    adapter.libdpy.get_xrandr_screen_geometries = original_screens
 
 assert combine(["MoveTo 1 2"]) == "MoveTo 1 2"
 assert combine(["MoveTo 1 2", "ResizeTo 3 4"]) == (
@@ -32,7 +71,7 @@ output = subprocess.check_output(
     text=True,
 )
 map_lines = [line for line in output.splitlines() if line.startswith("   Map ")]
-assert len(map_lines) == 21, len(map_lines)
+assert len(map_lines) == 23, len(map_lines)
 assert not any("MacroCmd {MacroCmd" in line for line in map_lines)
 print("ok - desktop-layout batches each matcher's commands into one flat MacroCmd")
 PY
