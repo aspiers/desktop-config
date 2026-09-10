@@ -100,3 +100,5 @@ nohup\.out
 \.agents/skills/beads
 \.claude/skills/beads
 \.perles
+
+^/docs
