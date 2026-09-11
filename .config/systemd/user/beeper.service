@@ -1,13 +1,16 @@
 [Unit]
 Description=Beeper messaging client
 
-# graphical-session.target rather than a window-manager specific target:
-# every desktop environment raises it (gnome-session.target and
-# plasma-workspace.target bind to it, as does fluxbox-session.target here),
-# so Beeper follows whichever desktop is in use rather than being tied to
-# fluxbox.  Same reasoning as keyboard-watcher.service.
-PartOf=graphical-session.target
-After=graphical-session.target
+# Beeper is a desktop application, but it is not tied to any particular
+# window manager.
+# adam-session.target is the personal abstraction that follows whichever
+# desktop is in use, so no personal unit names a window manager. Unlike
+# graphical-session.target it genuinely deactivates at logout: that target
+# is BoundBy= the per-session targets (BindsTo= propagates stop downward,
+# never upward) and stays "needed" because D-Bus-activated members restart
+# themselves mid-logout. Verified 2026-09-11 -- see dc-m6n.
+PartOf=adam-session.target
+After=adam-session.target
 
 [Service]
 SyslogIdentifier=beeper
@@ -39,4 +42,4 @@ StandardOutput=journal
 StandardError=journal
 
 [Install]
-WantedBy=graphical-session.target
+WantedBy=adam-session.target

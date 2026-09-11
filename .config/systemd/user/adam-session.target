@@ -1,0 +1,28 @@
+[Unit]
+Description=Adam's personal per-session services
+Documentation=man:systemd.special(7)
+
+# The abstraction every personal per-session service binds to, so that no
+# personal unit ever names a window manager or desktop environment.
+#
+# Dependency direction is deliberate: this target depends on the environment
+# target, never the reverse. Switching desktop or WM means editing the two
+# lines below and nothing else.
+#
+# It must NOT bind to graphical-session.target. That target has
+# StopWhenUnneeded=yes but structurally cannot deactivate here:
+#   - it is BoundBy= the per-session targets, and BindsTo= propagates stop
+#     downward from the bound-to unit, never upward, so a per-session target
+#     stopping cannot stop it;
+#   - it stays "needed" regardless, because D-Bus-activated members such as
+#     xdg-desktop-portal.service restart themselves mid-logout.
+# Verified 2026-09-11 across a real logout/login: fluxbox-session.target
+# cycled (15:59:12 stop, 15:59:24 start) while graphical-session.target
+# stayed active from 2026-09-09 with an empty ActiveExitTimestamp. Any unit
+# left on graphical-session.target therefore never restarts with the session
+# -- see dc-m6n and dc-see.
+BindsTo=fluxbox-session.target
+After=fluxbox-session.target
+
+[Install]
+WantedBy=fluxbox-session.target

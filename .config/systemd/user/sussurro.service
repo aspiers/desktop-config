@@ -1,12 +1,16 @@
 [Unit]
 Description=Sussurro dictation daemon
 
-# graphical-session.target rather than a window-manager specific target:
 # sussurro puts up a tray icon and an overlay, so it needs a graphical
-# session, but it is not tied to fluxbox. Every desktop raises this target.
-# Same reasoning as keyboard-watcher.service.
-PartOf=graphical-session.target
-After=graphical-session.target
+# session, but it is not tied to any particular window manager.
+# adam-session.target is the personal abstraction that follows whichever
+# desktop is in use, so no personal unit names a window manager. Unlike
+# graphical-session.target it genuinely deactivates at logout: that target
+# is BoundBy= the per-session targets (BindsTo= propagates stop downward,
+# never upward) and stays "needed" because D-Bus-activated members restart
+# themselves mid-logout. Verified 2026-09-11 -- see dc-m6n.
+PartOf=adam-session.target
+After=adam-session.target
 
 # sussurro and Epicenter both grab super+8 and super+9 as global hotkeys.
 # X allows only one client per grab, so whichever starts second dies with
@@ -37,4 +41,4 @@ StandardOutput=journal
 StandardError=journal
 
 [Install]
-WantedBy=graphical-session.target
+WantedBy=adam-session.target
