@@ -1,0 +1,10 @@
+# alt-shift-layer: declare the alt+shift composite layer so that
+# keyd-application-mapper can bind into it from app.conf. `keyd bind`
+# only succeeds for keyboards whose config already defines the layer,
+# so every keyboard config includes this. Empty by design: with no
+# bindings, alt+shift chords fall through unchanged.
+[alt+shift]
+
+# prevent any lines after an include of this file from
+# being accidentally put in the alt+shift layer
+[main]
