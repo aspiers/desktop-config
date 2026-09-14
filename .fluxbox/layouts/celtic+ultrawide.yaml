@@ -45,6 +45,8 @@ windows:
 
   <INCLUDE common/editor-windows>
 
+  <INCLUDE common/orca>
+
   <INCLUDE common/toucan>
 
   <INCLUDE common/side-projects>

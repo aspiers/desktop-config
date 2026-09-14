@@ -71,7 +71,8 @@ output = subprocess.check_output(
     text=True,
 )
 map_lines = [line for line in output.splitlines() if line.startswith("   Map ")]
-assert len(map_lines) == 23, len(map_lines)
+assert len(map_lines) == 24, len(map_lines)
 assert not any("MacroCmd {MacroCmd" in line for line in map_lines)
+assert sum("{Matches (Name=orca)}" in line for line in map_lines) == 1
 print("ok - desktop-layout batches each matcher's commands into one flat MacroCmd")
 PY

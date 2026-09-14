@@ -77,6 +77,11 @@
   [FocusNewWindow]	{yes}
   [Position]	(TOP)	{0 0}
 [end]
+[app] (name=orca)
+  [Head]	{1}
+  [Dimensions]	{100% 98%}
+  [Position]	(UPPERLEFT)	{0 0}
+[end]
 # Keep the dedicated agent-browser profile on the laptop display.
 [app] (name=google-chrome.*agent-browser-data.*)
   [Sticky]	{yes}

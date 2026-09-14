@@ -11,6 +11,8 @@ windows:
 
   <INCLUDE common/editor-windows>
 
+  <INCLUDE common/orca>
+
   <INCLUDE common/terminal-windows>
 
   <INCLUDE common/top-term-windows-primary>
