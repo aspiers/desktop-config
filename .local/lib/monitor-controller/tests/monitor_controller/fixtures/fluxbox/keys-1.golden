@@ -319,7 +319,7 @@ Shift Mod4 r :Exec chrome-session-tabs 'app.reclaim.ai'
 Control Mod1 Mod4 n :Exec fluxbox-focus-or-launch --toggle 'node' top-term --geometry 100x25 node
 
 #Mod4 e :MacroCmd {Exec wmctrl -x -a emacs} {Delay {Exec focus-active-window} 300000}
-Mod4 e  :Exec fluxbox-focus-window 'NextWindow (Class=Emacs) (FocusHidden=no) (Minimized=no)'
+Mod4 e :If {Matches (Class=Emacs)} {Minimize} {Exec fluxbox-focus-window 'NextWindow (Class=Emacs) (Minimized=yes|no)'}
 Shift Mod4 e :Exec chrome-session-rofi 'https://linear.app/ '
 
 Mod4 apostrophe :MacroCmd {Exec wmctrl -x -a beeper} {Delay {Exec focus-active-window} 300000}
@@ -335,7 +335,7 @@ Control Mod4 g :Exec fluxbox-focus-window 'NextWindow (Title=Google Meet.*) (Foc
 Mod4 h :Exec chrome-session-rofi 'https://github.com/ '
 Control Mod4 h :Exec chrome-session-rofi --no-tokenize '^octobox( \([0-9]+\))? \| '
 # bead-me-up-scotty
-Control Mod4 b :Exec chrome-session-rofi 'http://localhost:19847/'
+Control Mod4 b :Exec chrome-session-rofi 'http://localhost:19847/ '
 
 Control Mod4 2 :Exec switch-emacs-eval '(as-find-personal-todo)'
 Control Mod4 5 :Exec switch-emacs-eval '(as-find-Toucan-todo)'

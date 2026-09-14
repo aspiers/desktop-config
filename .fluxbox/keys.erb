@@ -400,7 +400,7 @@ Shift Mod4 r :Exec chrome-session-tabs 'app.reclaim.ai'
 Control Mod1 Mod4 n :Exec fluxbox-focus-or-launch --toggle 'node' top-term --geometry 100x25 node
 
 #Mod4 e :MacroCmd {Exec wmctrl -x -a emacs} {<%= focus_active %>}
-Mod4 e  <%= next_unhidden "(Class=Emacs)" %>
+Mod4 e :If {Matches (Class=Emacs)} {Minimize} {Exec fluxbox-focus-window 'NextWindow (Class=Emacs) (Minimized=yes|no)'}
 Shift Mod4 e :Exec chrome-session-rofi 'https://linear.app/ '
 
 Mod4 apostrophe :MacroCmd {Exec wmctrl -x -a beeper} {<%= focus_active %>}
