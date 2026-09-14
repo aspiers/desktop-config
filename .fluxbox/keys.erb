@@ -383,14 +383,7 @@ Shift Mod4 b :MacroCmd {NextWindow (Name=brave-browser|google-chrome|chromium) (
 <% end %>
 Mod4 Tab :Exec chrome-session-rofi
 
-# Cleanest but can't find both Cursor and Code:
-#Mod4 c :MacroCmd {Exec wmctrl -x -a 'Code'} {<%= focus_active %>}
-
-# Can't handle iconified windows:
-#Mod4 c :Exec fluxbox-focus-or-launch -c 'Cursor|Code' cursor
-
-# Hacky but best results:
-Mod4 c <%= next_unhidden "(Class=Cursor|Code)" %>
+Mod4 c :If {Matches (Name=orca)} {Minimize} {Exec fluxbox-focus-window 'NextWindow (Name=orca) (Minimized=yes|no)'}
 
 Shift Mod4 c :Exec chrome-session-tabs 'calendar.google.com/calendar/u/0'
 Control Mod4 c :Exec chrome-session-tabs 'calendar.google.com/calendar/u/1'
