@@ -6,6 +6,10 @@ repo_root=${0:A:h:h}
 tmp_dir=$(mktemp -d)
 trap 'rm -rf "$tmp_dir"' EXIT
 FLUXBOX_DESKTOP_UNIT_FILE="$tmp_dir/fluxbox-desktop-unit"
+FLUXBOX_DESKTOP_LOCK_FILE="$tmp_dir/fluxbox-desktop.lock"
+FLUXBOX_HEALTH_CHECK="$tmp_dir/fluxbox-health-check"
+print '#!/bin/sh\nexit 0' > "$FLUXBOX_HEALTH_CHECK"
+chmod +x "$FLUXBOX_HEALTH_CHECK"
 FLUXBOX_RESTART_LIB_ONLY=1 source "$repo_root/bin/fluxbox-restart"
 
 failures=0
@@ -30,6 +34,26 @@ assert_equal () {
         fail "$description (expected '$expected', got '$actual')"
     fi
 }
+
+lock_for_display () {
+    DISPLAY="$1" XDG_RUNTIME_DIR="$tmp_dir/runtime" \
+        FLUXBOX_RESTART_LIB_ONLY=1 zsh -c \
+        'source "$1/bin/fluxbox-restart"; print -r -- "$FLUXBOX_DESKTOP_LOCK_FILE"' \
+        zsh "$repo_root"
+}
+assert_equal "display aliases share the Fluxbox mutation lock" \
+    "$(lock_for_display :0)" "$(lock_for_display :0.0)"
+
+mkdir -p "$tmp_dir/runtime"
+print 'fluxbox-123.service' > "$tmp_dir/runtime/fluxbox-desktop-unit._0.0"
+legacy_record=$(
+    DISPLAY=:0.0 XDG_RUNTIME_DIR="$tmp_dir/runtime" \
+        FLUXBOX_RESTART_LIB_ONLY=1 zsh -c \
+        'source "$1/bin/fluxbox-restart"; read_recorded_fluxbox_unit' \
+        zsh "$repo_root"
+)
+assert_equal "reads a pre-canonicalization display unit record" \
+    'fluxbox-123.service' "$legacy_record"
 
 if require_fluxbox_shell "$tmp_dir/missing-shell" 2>/dev/null; then
     fail "rejects a missing Fluxbox command shell"
@@ -114,6 +138,112 @@ else
     assert_equal "desktop PID must match the recorded unit MainPID" 2 "$?"
 fi
 
+# A crashed transient unit remains loaded with no MainPID. That exact record is
+# sufficient only while no Fluxbox process survived the crash.
+mock_recorded_unit_property () {
+    print "LoadState=${mock_load_state:-loaded}"
+    print "ActiveState=${mock_active_state:-failed}"
+    print "Job=${mock_job:-}"
+    print "MainPID=${mock_main_pid:-0}"
+    print "Transient=${mock_transient:-yes}"
+    print "FragmentPath=${mock_fragment:-${XDG_RUNTIME_DIR:-/run/user/$UID}/systemd/transient/fluxbox-123.service}"
+    print "Environment=${mock_environment:-SHELL=$fluxbox_shell}"
+    print "KillMode=${mock_kill_mode:-process}"
+    print "ExecStart=${mock_exec_start:-{ path=/usr/bin/fluxbox ; argv[]=/usr/bin/fluxbox -log $HOME/.log/fluxbox.log ; ignore_errors=no ; }}"
+}
+systemctl () { mock_recorded_unit_property "$@"; }
+pgrep () { return 1; }
+assert_equal "accepts the stopped exact transient unit after a crash" \
+    'fluxbox-123.service' "$(find_recoverable_recorded_fluxbox_unit "$fluxbox_shell")"
+
+mock_active_state=active
+if find_recoverable_recorded_fluxbox_unit "$fluxbox_shell" >/dev/null; then
+    fail "rejects a record whose unit is still active without its main process"
+else
+    pass "rejects a record whose unit is still active without its main process"
+fi
+unset mock_active_state
+
+mock_job='42/start'
+if find_recoverable_recorded_fluxbox_unit "$fluxbox_shell" >/dev/null; then
+    fail "rejects a recorded unit with a queued systemd job"
+else
+    pass "rejects a recorded unit with a queued systemd job"
+fi
+unset mock_job
+
+mock_load_state=not-found
+if find_recoverable_recorded_fluxbox_unit "$fluxbox_shell" >/dev/null; then
+    fail "rejects a stale record for an unknown unit"
+else
+    pass "rejects a stale record for an unknown unit"
+fi
+unset mock_load_state
+
+mock_main_pid=4567
+if find_recoverable_recorded_fluxbox_unit "$fluxbox_shell" >/dev/null; then
+    fail "rejects an inactive recorded unit which still has a MainPID"
+else
+    pass "rejects an inactive recorded unit which still has a MainPID"
+fi
+unset mock_main_pid
+
+mock_transient=no
+if find_recoverable_recorded_fluxbox_unit "$fluxbox_shell" >/dev/null; then
+    fail "rejects a non-transient recorded unit"
+else
+    pass "rejects a non-transient recorded unit"
+fi
+unset mock_transient
+
+mock_fragment=/tmp/fluxbox-123.service
+if find_recoverable_recorded_fluxbox_unit "$fluxbox_shell" >/dev/null; then
+    fail "rejects a recorded unit outside the user runtime directory"
+else
+    pass "rejects a recorded unit outside the user runtime directory"
+fi
+unset mock_fragment
+
+mock_environment='SHELL=/bin/zsh'
+if find_recoverable_recorded_fluxbox_unit "$fluxbox_shell" >/dev/null; then
+    fail "rejects a recorded unit with the wrong Fluxbox command shell"
+else
+    pass "rejects a recorded unit with the wrong Fluxbox command shell"
+fi
+unset mock_environment
+
+mock_kill_mode=control-group
+if find_recoverable_recorded_fluxbox_unit "$fluxbox_shell" >/dev/null; then
+    fail "rejects a recorded unit which could kill Fluxbox children"
+else
+    pass "rejects a recorded unit which could kill Fluxbox children"
+fi
+unset mock_kill_mode
+
+mock_exec_start='{ path=/usr/bin/false ; argv[]=/usr/bin/false ; }'
+if find_recoverable_recorded_fluxbox_unit "$fluxbox_shell" >/dev/null; then
+    fail "rejects a recorded unit with an unexpected command"
+else
+    pass "rejects a recorded unit with an unexpected command"
+fi
+unset mock_exec_start
+
+pgrep () { print 4567; }
+if find_recoverable_recorded_fluxbox_unit "$fluxbox_shell" >/dev/null 2>&1; then
+    fail "rejects recovery while any Fluxbox process survives"
+else
+    pass "rejects recovery while any Fluxbox process survives"
+fi
+for pgrep_error in 2 3 127; do
+    pgrep () { return "$pgrep_error"; }
+    if find_recoverable_recorded_fluxbox_unit "$fluxbox_shell" >/dev/null 2>&1; then
+        fail "rejects recovery when pgrep exits $pgrep_error"
+    else
+        pass "rejects recovery when pgrep exits $pgrep_error"
+    fi
+done
+pgrep () { return 1; }
+
 # Polling rechecks the condition after every sleep and caps the final interval
 # to the remaining timeout. A unit which exits after one second therefore
 # succeeds at the 1.4s poll instead of being misreported as a timeout.
@@ -186,7 +316,7 @@ if (
     find_recorded_fluxbox_unit () { print fluxbox-999.service; }
     ensure_fluxbox_stopped () { touch "$stop_marker"; }
     systemd-run () { touch "$start_marker"; }
-    main --require-recorded-unit
+    main --require-recorded-unit --expected-xrandr-state expected-state
 ); then
     fail "supervised recovery rejects a recorded-unit ownership mismatch"
 elif [ -e "$stop_marker" ] || [ -e "$start_marker" ]; then
@@ -201,8 +331,9 @@ if (
     find_desktop_fluxbox_unit () { return 1; }
     find_recorded_fluxbox_unit () { return 1; }
     desktop_is_fluxbox () { return 1; }
+    find_recoverable_recorded_fluxbox_unit () { return 1; }
     systemd-run () { touch "$start_marker"; }
-    main --require-recorded-unit
+    main --require-recorded-unit --expected-xrandr-state expected-state
 ); then
     fail "supervised recovery rejects an unavailable recorded unit"
 elif [ -e "$start_marker" ]; then
@@ -211,9 +342,107 @@ else
     pass "supervised recovery rejects an unavailable recorded unit"
 fi
 
+rm -f "$start_marker"
+if (
+    SSH_CONNECTION=
+    no_xfwm=1
+    require_fluxbox_shell () { return 0; }
+    find_desktop_fluxbox_unit () { return 1; }
+    desktop_is_fluxbox () { return 1; }
+    find_recorded_fluxbox_unit () { return 1; }
+    is_running () {
+        [ "$1" != fluxbox ] || { print 4567; return 0; }
+        return 1
+    }
+    systemd-run () { touch "$start_marker"; }
+    main
+); then
+    fail "new-unit launch rejects a surviving Fluxbox process"
+elif [ -e "$start_marker" ]; then
+    fail "new-unit launch started a second Fluxbox process"
+else
+    pass "new-unit launch rejects a surviving Fluxbox process"
+fi
+
+rm -f "$start_marker" "$stop_marker"
+if (
+    SSH_CONNECTION=
+    no_xfwm=1
+    require_fluxbox_shell () { return 0; }
+    find_desktop_fluxbox_unit () { return 1; }
+    desktop_is_fluxbox () { return 1; }
+    find_recorded_fluxbox_unit () { return 1; }
+    is_running () { return 1; }
+    systemd-run () { touch "$start_marker"; }
+    ensure_unit_started () { return 0; }
+    record_desktop_fluxbox_unit () { return 1; }
+    systemctl () {
+        [ "$2" = stop ] || return 1
+        touch "$stop_marker"
+    }
+    main
+); then
+    fail "record failure stops the new unrecorded Fluxbox unit"
+elif [ ! -e "$start_marker" ] || [ ! -e "$stop_marker" ]; then
+    fail "record failure left the new Fluxbox unit running"
+else
+    pass "record failure stops the new unrecorded Fluxbox unit"
+fi
+
+rm -f "$start_marker"
+if (
+    SSH_CONNECTION=
+    no_xfwm=1
+    require_fluxbox_shell () { return 0; }
+    find_desktop_fluxbox_unit () { return 1; }
+    desktop_is_fluxbox () { return 1; }
+    find_recorded_fluxbox_unit () { return 1; }
+    is_running () { return 1; }
+    systemctl () { return 0; }
+    systemd-run () { return 1; }
+    ensure_unit_started () { touch "$start_marker"; return 0; }
+    main
+); then
+    fail "propagates a failed new-unit launch"
+elif [ -e "$start_marker" ]; then
+    fail "waited for a unit whose launch command failed"
+else
+    pass "propagates a failed new-unit launch"
+fi
+
+record_marker=$tmp_dir/recovered-unit-record
+rm -f "$start_marker" "$record_marker"
+if (
+    SSH_CONNECTION=
+    no_xfwm=1
+    require_fluxbox_shell () { return 0; }
+    find_desktop_fluxbox_unit () {
+        [ -e "$record_marker" ] || return 1
+        cat "$record_marker"
+    }
+    desktop_is_fluxbox () { return 1; }
+    find_recorded_fluxbox_unit () { return 1; }
+    find_recoverable_recorded_fluxbox_unit () { print fluxbox-123.service; }
+    is_running () { return 1; }
+    systemd-run () { touch "$start_marker"; }
+    ensure_unit_started () { return 0; }
+    record_desktop_fluxbox_unit () { print "$1" > "$record_marker"; }
+    dismiss_panel_plugin_dialogs () { return 0; }
+    sleep () { return 0; }
+    main --require-recorded-unit --expected-xrandr-state expected-state
+); then
+    if [ -e "$start_marker" ] && [ -s "$record_marker" ]; then
+        pass "supervised recovery recreates and proves a crashed Fluxbox unit"
+    else
+        fail "supervised recovery reported success without a recorded replacement"
+    fi
+else
+    fail "supervised recovery recreates and proves a crashed Fluxbox unit"
+fi
+
 if [ "$failures" -ne 0 ]; then
     print -u2 "$failures test(s) failed"
     exit 1
 fi
 
-print "1..19"
+print "1..39"

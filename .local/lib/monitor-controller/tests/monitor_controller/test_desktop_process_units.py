@@ -170,6 +170,35 @@ def test_persistent_process_units_and_finalizer_have_separate_ownership() -> Non
     assert "ppid=%s" in tray_diag
 
 
+def test_fluxbox_launchers_share_safe_restart_contract() -> None:
+    restart = (_REPOSITORY / "bin" / "fluxbox-restart").read_text(encoding="utf-8")
+    health_check = (_REPOSITORY / "bin" / "fluxbox-health-check").read_text(
+        encoding="utf-8"
+    )
+    session_launcher = (
+        _REPOSITORY / ".xsession-progs.d/person-adam.spiers/01-window-manager"
+    ).read_text(encoding="utf-8")
+
+    assert "fluxbox-desktop.$FLUXBOX_DISPLAY_KEY.lock" in restart
+    assert "fluxbox-desktop.$display_key.lock" in health_check
+    assert "fluxbox-desktop.$display_key.lock" in session_launcher
+    assert 'flock -w "$FLUXBOX_DESKTOP_LOCK_WAIT_SECONDS" 8' in restart
+    assert 'flock -w "${FLUXBOX_DESKTOP_LOCK_WAIT_SECONDS:-30}" 8' in health_check
+    assert "flock -w 30 8" in session_launcher
+    assert "${FLUXBOX_CANONICAL_DISPLAY%.0}" in restart
+    assert "${canonical_display%.0}" in health_check
+    assert "${canonical_display%.0}" in session_launcher
+    assert '-E "SHELL=$fluxbox_shell"' in restart
+    assert '-E "SHELL=$fluxbox_shell"' in session_launcher
+    assert "require_no_fluxbox_process || exit 1" in restart
+    assert "pgrep -x fluxbox" in session_launcher
+    assert "exec 8>&- 9>&-" in health_check
+    assert "exec 8>&-; xfwm4" in restart
+    assert "exec 8>&-; xfdesktop" in session_launcher
+    assert 'systemctl --user stop "$unit"' in restart
+    assert 'systemctl --user stop "$unrecorded_fluxbox_unit"' in session_launcher
+
+
 def test_panel_debug_service_owns_panel_but_not_its_log_pipeline() -> None:
     panel_unit = (_UNITS / "xfce4-panel-debug.service").read_text(encoding="utf-8")
     log_unit = (_UNITS / "xfce4-panel-debug-log.service").read_text(encoding="utf-8")

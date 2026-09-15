@@ -145,7 +145,9 @@ class RestartFluxboxInPlace:
 
 @dataclass(frozen=True, slots=True)
 class RestartFluxbox:
-    """Request full transient-service-owned Fluxbox recovery."""
+    """Run full supervised recovery and prove exact replacement readiness."""
+
+    expected_xrandr_state: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -426,6 +428,8 @@ class SubprocessFinalizeCommands:
                     str(self._leaf_root / "run-with-local-X-display"),
                     str(self._leaf_root / "fluxbox-restart"),
                     "--require-recorded-unit",
+                    "--expected-xrandr-state",
+                    operation.expected_xrandr_state,
                 )
             )
         if isinstance(operation, WaitForFluxbox):
@@ -795,7 +799,7 @@ def _reconcile_fluxbox(
             startup.request.profile,
             fallback_reason,
         )
-        restarted = commands.apply(RestartFluxbox())
+        restarted = commands.apply(RestartFluxbox(expected_state))
         _raise_if_cancelled(startup, cancellation)
         revalidate()
         failure = _command_failure(restarted, "recover_fluxbox")
@@ -806,16 +810,6 @@ def _reconcile_fluxbox(
                 failure=failure,
             )
 
-        ready = commands.apply(WaitForFluxbox(expected_state))
-        _raise_if_cancelled(startup, cancellation)
-        revalidate()
-        failure = _command_failure(ready, "replacement Fluxbox readiness")
-        if failure is not None:
-            return _FluxboxReconciliation(
-                restart_panel=False,
-                excluded_panel_pids=initial_panel.observed_pids,
-                failure=failure,
-            )
     else:
         _JOURNAL.info(
             "FLUXBOX_HEALTH_DECISION action=%s profile=%s result=restart "

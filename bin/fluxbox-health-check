@@ -171,8 +171,10 @@ restart_in_place() {
     umask 077
     : > "$event_log" || return "$RESTART_UNCONFIRMED"
     : > "$error_log" || return "$RESTART_UNCONFIRMED"
-    /usr/bin/stdbuf -oL xev -root -event property \
-        > "$event_log" 2> "$error_log" &
+    (
+        exec 8>&- 9>&-
+        exec /usr/bin/stdbuf -oL xev -root -event property
+    ) > "$event_log" 2> "$error_log" &
     watcher_pid=$!
     trap 'stop_restart_watcher "$watcher_pid" "$event_log" "$error_log" "$arm_property"' EXIT
 
@@ -248,6 +250,7 @@ main() {
     local expected_state=${2:-}
     local runtime=${XDG_RUNTIME_DIR:-/run/user/$UID}
     local lock_dir="$runtime/monitor-controller/active"
+    local canonical_display display_key desktop_lock
     local deadline
     local status
     local wait_seconds=${FLUXBOX_HEALTH_WAIT_SECONDS:-10}
@@ -268,6 +271,19 @@ main() {
     esac
 
     mkdir -p "$lock_dir" || return "$XRANDR_UNAVAILABLE"
+    if [ "$mode" = restart ]; then
+        # Every path needing both locks takes the desktop lock first. Full
+        # recovery holds this lock while invoking wait mode below.
+        canonical_display=${DISPLAY:-unknown}
+        canonical_display=${canonical_display%.0}
+        display_key=$(printf '%s' "$canonical_display" | tr -c 'A-Za-z0-9_.-' '_')
+        desktop_lock="$runtime/fluxbox-desktop.$display_key.lock"
+        exec 8>"$desktop_lock" || return "$FLUXBOX_UNRESPONSIVE"
+        flock -w "${FLUXBOX_DESKTOP_LOCK_WAIT_SECONDS:-30}" 8 || {
+            echo "FLUXBOX_RESTART result=unhealthy reason=mutation_lock_timeout"
+            return "$FLUXBOX_UNRESPONSIVE"
+        }
+    fi
     exec 9>"$lock_dir/fluxbox-health.lock" || return "$XRANDR_UNAVAILABLE"
     flock -w 2 9 || {
         echo "FLUXBOX_HEALTH result=unhealthy reason=probe_lock_timeout"

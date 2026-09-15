@@ -1,5 +1,30 @@
 #!/bin/bash
 
+# Serialize every Fluxbox launcher with bin/fluxbox-restart. This prevents a
+# session startup and failed-restart recovery from both passing their ownership
+# checks before either process has acquired the WM selection.
+canonical_display=${DISPLAY:-unknown}
+canonical_display=${canonical_display%.0}
+display_key=$(printf '%s' "$canonical_display" | tr -c 'A-Za-z0-9_.-' '_')
+fluxbox_lock="${XDG_RUNTIME_DIR:-/run/user/$UID}/fluxbox-desktop.$display_key.lock"
+mkdir -p "$(dirname "$fluxbox_lock")" || exit 1
+exec 8>"$fluxbox_lock" || exit 1
+if ! flock -w 30 8; then
+    echo >&2 "Timed out acquiring desktop Fluxbox mutation lock"
+    exit 1
+fi
+
+unrecorded_fluxbox_unit=
+cleanup_unrecorded_fluxbox_unit() {
+    [ -n "$unrecorded_fluxbox_unit" ] || return 0
+    echo >&2 "Stopping unrecorded desktop Fluxbox unit $unrecorded_fluxbox_unit"
+    systemctl --user stop "$unrecorded_fluxbox_unit" ||
+        echo >&2 "Failed to stop unrecorded desktop Fluxbox unit $unrecorded_fluxbox_unit"
+    if systemctl --user is-active --quiet "$unrecorded_fluxbox_unit"; then
+        echo >&2 "Unrecorded desktop Fluxbox unit remains active: $unrecorded_fluxbox_unit"
+    fi
+}
+
 if pgrep xfwm4; then
     echo "Found xfwm4; trying to replace with fluxbox"
     if pkill xfwm4; then
@@ -15,17 +40,33 @@ if pgrep xfwm4; then
         # in this unit's cgroup -- alive when the unit is stopped. The
         # default control-group mode killed Chrome on every layout change,
         # since each one restarts the window manager.
-        fluxbox_unit="fluxbox-$$.service"
+        fluxbox_shell=$HOME/bin/fluxbox-shell
+        if [ ! -x "$fluxbox_shell" ]; then
+            echo >&2 "Fluxbox command shell is missing or not executable: $fluxbox_shell"
+            exit 1
+        fi
+        if fluxbox_pids=$(pgrep -x fluxbox); then
+            echo >&2 "Refusing to start a second Fluxbox process: $fluxbox_pids"
+            exit 1
+        elif [ "$?" -ne 1 ]; then
+            echo >&2 "Could not prove that no Fluxbox process survives"
+            exit 1
+        fi
+        fluxbox_unit="fluxbox-$(date +%s%N)$$.service"
+        unrecorded_fluxbox_unit=$fluxbox_unit
+        trap cleanup_unrecorded_fluxbox_unit EXIT
+        trap 'exit 1' HUP INT TERM
         if systemd-run --user --unit="${fluxbox_unit%.service}" \
             -p StandardOutput=journal -p StandardError=journal \
             -p KillMode=process \
+            -E "SHELL=$fluxbox_shell" \
             fluxbox -log ~/.log/fluxbox.log; then
-            display_key=$(printf '%s' "${DISPLAY:-unknown}" | tr -c 'A-Za-z0-9_.-' '_')
             unit_file="${XDG_RUNTIME_DIR:-/run/user/$UID}/fluxbox-desktop-unit.$display_key"
             unit_file_tmp="$unit_file.$$"
             if printf '%s\n' "$fluxbox_unit" > "$unit_file_tmp" &&
                 mv -f "$unit_file_tmp" "$unit_file"; then
-                :
+                unrecorded_fluxbox_unit=
+                trap - EXIT HUP INT TERM
             else
                 echo >&2 "Failed to record desktop Fluxbox unit $fluxbox_unit"
                 exit 1
@@ -36,11 +77,12 @@ if pgrep xfwm4; then
         fi
 
         # Stop xfdesktop grabbing mouse clicks away from fluxbox
-        xfdesktop -Q &
+        ( exec 8>&-; xfdesktop -Q ) &
     else
         echo >&2 "Failed to kill xfwm4"
     fi
 fi
+flock -u 8
 
 # See also 50-keyboard
 

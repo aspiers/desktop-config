@@ -134,7 +134,6 @@ _EXPECTED_FULL_FALLBACK_OPERATIONS: Final = (
     ApplyKeyboardIntent,
     RestartFluxboxInPlace,
     RestartFluxbox,
-    WaitForFluxbox,
     ApplyWindowLayout,
     RestartNmApplet,
     CaptureTrayDiagnostics,
@@ -153,7 +152,6 @@ _EXPECTED_FULL_AND_PANEL_FALLBACK_OPERATIONS: Final = (
     ApplyKeyboardIntent,
     RestartFluxboxInPlace,
     RestartFluxbox,
-    WaitForFluxbox,
     RestartXfcePanel,
     ApplyWindowLayout,
     RestartNmApplet,
@@ -251,7 +249,8 @@ class _FakeCommands:
                 timed_out=self.in_place_restart_timed_out,
             )
         if isinstance(operation, RestartFluxbox):
-            return FinalizeCommandResult(self.fluxbox_restart_status)
+            status = self.fluxbox_restart_status or self.fluxbox_readiness_status
+            return FinalizeCommandResult(status)
         if isinstance(operation, WaitForFluxbox):
             return FinalizeCommandResult(self.fluxbox_readiness_status)
         if isinstance(operation, RestartXfcePanel):
@@ -720,7 +719,7 @@ def test_post_fluxbox_panel_timeout_selects_panel_repair(
         (
             {"in_place_restart_status": 13, "fluxbox_readiness_status": 11},
             11,
-            _EXPECTED_FULL_FALLBACK_OPERATIONS[:5],
+            _EXPECTED_FULL_FALLBACK_OPERATIONS[:4],
         ),
         (
             {"post_reconfigure_panel_ready": False, "panel_restart_status": 12},
@@ -1117,7 +1116,7 @@ def test_production_adapter_uses_only_exact_leaves_and_separate_units(
             6: CaptureTrayDiagnostics(_FINALIZE_ACTION),
         }[action.sequence - 1]
         assert commands.apply(operation).exit_status == 0
-    assert commands.apply(RestartFluxbox()).exit_status == 0
+    assert commands.apply(RestartFluxbox(_EXPECTED_FLUXBOX_STATE)).exit_status == 0
     assert commands.apply(WaitForFluxbox(_EXPECTED_FLUXBOX_STATE)).exit_status == 0
 
     joined = "\0".join(
@@ -1128,10 +1127,13 @@ def test_production_adapter_uses_only_exact_leaves_and_separate_units(
     assert "get-layout" not in joined
     assert "fluxbox-restart" in joined
     assert any(
-        call[-2:]
+        call[-5:]
         == (
+            str(_REPO / "bin" / "run-with-local-X-display"),
             str(_REPO / "bin" / "fluxbox-restart"),
             "--require-recorded-unit",
+            "--expected-xrandr-state",
+            _EXPECTED_FLUXBOX_STATE,
         )
         for call, _environment in capture.calls
     )

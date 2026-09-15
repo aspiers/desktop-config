@@ -429,6 +429,25 @@ test_real_fluxbox_restart_preserves_pid_and_proves_incarnation() (
         grep -q 'FLUXBOX_RESTART result=healthy mode=in-place' <<< "$output"
 )
 
+test_restart_uses_canonical_mutation_lock() (
+    local root output status
+
+    root=$(mktemp -d)
+    trap 'rm -rf "$root"' EXIT
+    mkdir -p "$root/runtime"
+    exec 8>"$root/runtime/fluxbox-desktop._77.lock"
+    flock -n 8
+    set +e
+    output=$(XDG_RUNTIME_DIR="$root/runtime" DISPLAY=:77.0 \
+        FLUXBOX_DESKTOP_LOCK_WAIT_SECONDS=0 \
+        "$check" restart "$expected_state")
+    status=$?
+    set -e
+
+    [ "$status" -eq 11 ] &&
+        grep -q 'reason=mutation_lock_timeout' <<< "$output"
+)
+
 test_probe_lock_serializes_command_exchange() (
     local root first second
 
@@ -481,6 +500,7 @@ run_test 'watcher stderr cannot satisfy restart proof' test_watcher_stderr_canno
 run_test 'interruption cleans restart watcher' test_interruption_cleans_restart_watcher
 run_test 'wait returns failure at its deadline' test_wait_returns_final_failure_at_deadline
 run_test 'real Fluxbox restart preserves PID and proves incarnation' test_real_fluxbox_restart_preserves_pid_and_proves_incarnation
+run_test 'display aliases share the Fluxbox mutation lock' test_restart_uses_canonical_mutation_lock
 run_test 'probe lock serializes command exchange' test_probe_lock_serializes_command_exchange
 
 if [ "$failures" -ne 0 ]; then
