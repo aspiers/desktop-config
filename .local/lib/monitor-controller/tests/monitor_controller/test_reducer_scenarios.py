@@ -22,6 +22,7 @@ from monitor_controller.model import (
     ApplicationDispatched,
     ApplicationFinished,
     ControllerPhase,
+    ControllerStarted,
     DispatchRejected,
     EdidEvidence,
     EdidIntegrity,
@@ -880,6 +881,18 @@ def test_late_finalizer_success_cannot_supersede_timeout_or_commit_profile() -> 
     )
     assert after_observation.state.phase is ControllerPhase.FINALIZE_FAILED
     assert after_observation.state.desktop_finalized_profile == "celtic"
+
+    restarted = reduce(
+        after_observation.state,
+        ControllerStarted(
+            EventMetadata(deadline_ms + 4, state.boot_id),
+            state.controller_instance,
+        ),
+    )
+    assert restarted.state.phase is ControllerPhase.DISCOVER_FAST
+    assert restarted.state.finalization is None
+    assert restarted.state.desktop_finalized_profile == "celtic"
+    assert any(isinstance(effect, RequestObservation) for effect in restarted.effects)
 
 
 def test_first_unplug_sample_clears_failed_probe_before_discovery() -> None:

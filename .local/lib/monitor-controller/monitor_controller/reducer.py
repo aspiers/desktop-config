@@ -2126,6 +2126,24 @@ def _controller_started(state: State, event: ControllerStarted) -> Decision:
             *discard_effects,
             RequestObservation(WakeReason.STARTUP),
         )
+    if (
+        state.phase is ControllerPhase.FINALIZE_FAILED
+        and state.finalization is not None
+    ):
+        # A controller service restart is an explicit, bounded operator retry.
+        # Re-observation must still prove the same live inputs before a fresh
+        # finalization action can be admitted.
+        state = replace(
+            state,
+            phase=ControllerPhase.DISCOVER_FAST,
+            finalization=None,
+            verify_since_ms=None,
+        )
+        return _schedule(
+            state,
+            event.metadata.processed_at_ms,
+            RequestObservation(WakeReason.STARTUP),
+        )
     if state.phase is ControllerPhase.VERIFYING:
         state = replace(state, verify_since_ms=None)
     if state.phase is ControllerPhase.PROBING and state.probe is not None:
