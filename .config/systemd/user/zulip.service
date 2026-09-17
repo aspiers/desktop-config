@@ -1,0 +1,28 @@
+[Unit]
+Description=Zulip chat client
+
+# Same shape as beeper.service, which documents the reasoning: bind to
+# adam-session.target (not graphical-session.target, which never
+# deactivates at logout), and run the FUSE AppImage directly from the
+# manager so NoNewPrivileges stays unset, via run-with-local-X-display for
+# the X/DBus environment.
+PartOf=adam-session.target
+After=adam-session.target
+
+[Service]
+SyslogIdentifier=zulip
+
+# Same glob as bin/zulip, so a Zulip upgrade needs changing in both places.
+ExecStart=/bin/bash -c 'exec ${HOME}/bin/run-with-local-X-display "$(echo ${HOME}/software/comms/Zulip-5.*-x86_64.AppImage)"'
+
+Restart=no
+
+# Electron leaves a tree of renderer and zygote processes behind.
+KillMode=control-group
+TimeoutStopSec=20s
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=adam-session.target
