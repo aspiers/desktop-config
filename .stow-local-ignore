@@ -63,6 +63,7 @@ COPYING
 \.mypy_cache
 \.pytest_cache
 \.ruff_cache
+\.safe-rm
 \.env
 \.env\..*
 \.cursor
