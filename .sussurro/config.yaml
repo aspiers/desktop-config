@@ -41,3 +41,4 @@ injection:
 workflow:
   delivery:
     clipboard_only: true
+    backend: 'clipboard-only'
