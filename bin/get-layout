@@ -30,11 +30,41 @@ def fatal(msg):
     sys.stderr.write(f"ERROR: {msg}\n")
     sys.exit(1)
 
-def active_controller_layout():
-    """Return the finalized layout path from the active monitor-controller.
+# Phases in which the finalization record's profile has already passed xrandr
+# verification, so the displays are on it even if desktop chores after the
+# relayout (panel, nm-applet) are still running or have failed.
+CONTROLLER_FINALIZE_PHASES = frozenset(
+    ("finalize_pending", "finalizing", "finalize_stopping", "finalize_failed")
+)
 
-    Returns None whenever the controller state is absent, unreadable, or not
-    finalized, so every legacy environment falls through unchanged.
+
+def controller_profile(state):
+    """Return the profile the displays are verified to be on, or None.
+
+    Desktop chores such as restarting the panel or nm-applet must never hold
+    get-layout back, so a finalization target counts from the moment xrandr
+    verification admits it, not only once finalization completes.  During
+    discovery, probing or applying the topology is in flux, so defer to the
+    legacy probe instead.
+    """
+    finalization = state.get("finalization")
+    if isinstance(finalization, dict):
+        if state.get("phase") not in CONTROLLER_FINALIZE_PHASES:
+            return None
+        profile = finalization.get("profile")
+    else:
+        profile = state.get("desktop_finalized_profile")
+    if isinstance(profile, str) and profile:
+        return profile
+    return None
+
+
+def active_controller_layout():
+    """Return the current layout path from the active monitor-controller.
+
+    Returns None whenever the controller state is absent, unreadable, or
+    does not name a verified profile, so every legacy environment falls
+    through unchanged.
     """
     state_home = os.environ.get(
         "XDG_STATE_HOME", os.path.expanduser("~/.local/state")
@@ -45,16 +75,8 @@ def active_controller_layout():
     try:
         with open(state_path) as f:
             state = json.load(f)
-        profile = state.get("desktop_finalized_profile")
-        if not isinstance(profile, str) or not profile:
-            return None
-        # A finalization for another profile, whether in flight or failed,
-        # means the displays have already moved on from the finalized one;
-        # trusting it reported celtic while the ultrawide was attached.
-        finalization = state.get("finalization")
-        if isinstance(finalization, dict) and finalization.get(
-            "profile", profile
-        ) != profile:
+        profile = controller_profile(state)
+        if profile is None:
             return None
         profile_dir = os.path.expanduser(f"~/.config/autorandr/{profile}")
         layout = profile
