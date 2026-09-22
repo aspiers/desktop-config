@@ -48,6 +48,14 @@ def active_controller_layout():
         profile = state.get("desktop_finalized_profile")
         if not isinstance(profile, str) or not profile:
             return None
+        # A finalization for another profile, whether in flight or failed,
+        # means the displays have already moved on from the finalized one;
+        # trusting it reported celtic while the ultrawide was attached.
+        finalization = state.get("finalization")
+        if isinstance(finalization, dict) and finalization.get(
+            "profile", profile
+        ) != profile:
+            return None
         profile_dir = os.path.expanduser(f"~/.config/autorandr/{profile}")
         layout = profile
         layout_path = os.path.join(profile_dir, "layout")

@@ -1,0 +1,87 @@
+#!/usr/bin/python3
+"""Exercise active_controller_layout() against persisted controller states,
+including a failed finalization that left a stale finalized profile."""
+
+import importlib.machinery
+import importlib.util
+import json
+import os
+import sys
+import tempfile
+
+sys.path.append(os.path.join(os.getenv('HOME'), 'lib'))
+
+GET_LAYOUT_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), 'get-layout')
+
+
+def load_get_layout():
+    spec = importlib.util.spec_from_loader(
+        "get_layout",
+        importlib.machinery.SourceFileLoader("get_layout", GET_LAYOUT_PATH))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def run_case(get_layout, root, state):
+    state_dir = os.path.join(root, "state", "monitor-controller", "active")
+    os.makedirs(state_dir, exist_ok=True)
+    with open(os.path.join(state_dir, "state.json"), "w") as f:
+        json.dump(state, f)
+    return get_layout.active_controller_layout()
+
+
+def main():
+    get_layout = load_get_layout()
+    failures = 0
+    with tempfile.TemporaryDirectory() as root:
+        os.environ["HOME"] = root
+        os.environ["XDG_STATE_HOME"] = os.path.join(root, "state")
+        layouts = os.path.join(root, ".fluxbox", "layouts")
+        os.makedirs(layouts)
+        for name in ("celtic", "celtic+ultrawide"):
+            open(os.path.join(layouts, f"{name}.yaml"), "w").close()
+        profile_dir = os.path.join(
+            root, ".config", "autorandr", "celtic+Samsung-Odyssey-G75F")
+        os.makedirs(profile_dir)
+        with open(os.path.join(profile_dir, "layout"), "w") as f:
+            f.write("celtic+ultrawide\n")
+        celtic = os.path.join(layouts, "celtic.yaml")
+        ultrawide = os.path.join(layouts, "celtic+ultrawide.yaml")
+
+        cases = [
+            ("finalized, no finalization record",
+             {"desktop_finalized_profile": "celtic"}, celtic),
+            ("finalized, matching completed finalization",
+             {"desktop_finalized_profile": "celtic",
+              "finalization": {"profile": "celtic",
+                               "lifecycle": "completed"}}, celtic),
+            ("finalized via autorandr layout mapping",
+             {"desktop_finalized_profile": "celtic+Samsung-Odyssey-G75F",
+              "finalization": {"profile": "celtic+Samsung-Odyssey-G75F",
+                               "lifecycle": "completed"}}, ultrawide),
+            ("stale: finalization for other profile failed (observed 19:42)",
+             {"desktop_finalized_profile": "celtic",
+              "finalization": {"profile": "celtic+Samsung-Odyssey-G75F",
+                               "lifecycle": "failed"}}, None),
+            ("stale: finalization for other profile in flight",
+             {"desktop_finalized_profile": "celtic",
+              "finalization": {"profile": "celtic+Samsung-Odyssey-G75F",
+                               "lifecycle": "dispatched"}}, None),
+            ("never finalized",
+             {"desktop_finalized_profile": None}, None),
+        ]
+        for description, state, expected in cases:
+            got = run_case(get_layout, root, state)
+            ok = got == expected
+            failures += not ok
+            print(f"{'PASS' if ok else 'FAIL'}: {description}"
+                  + ("" if ok else f" (expected {expected}, got {got})"))
+
+    print(f"\n{len(cases) - failures}/{len(cases)} passed")
+    sys.exit(1 if failures else 0)
+
+
+if __name__ == "__main__":
+    main()
