@@ -41,6 +41,7 @@ from monitor_controller.workers.apply import run_apply_worker
 from monitor_controller.workers.common import WorkerStartupError
 from monitor_controller.workers.finalize import (
     run_finalize_worker,
+    run_nm_applet_retry,
     run_tray_diagnostics,
 )
 from monitor_controller.workers.prepare import run_prepare_worker
@@ -142,6 +143,7 @@ def _parser() -> argparse.ArgumentParser:
     diagnostics.add_argument("--action-id", required=True)
     diagnostics.add_argument("--tray-diag", required=True, type=Path)
     diagnostics.add_argument("--output-root", required=True, type=Path)
+    workers.add_parser("nm-applet-retry", help=argparse.SUPPRESS)
     return parser
 
 
@@ -339,6 +341,8 @@ def main(argv: Sequence[str] | None = None) -> int:  # noqa: C901, PLR0911
                     tray_diag=args.tray_diag,
                     output_root=args.output_root,
                 )
+            if args.internal_command == "nm-applet-retry":
+                return run_nm_applet_retry()
             common = {
                 "transaction_root": args.transaction_root,
                 "action_id_text": args.action_id,

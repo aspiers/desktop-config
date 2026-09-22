@@ -88,6 +88,10 @@ _JOURNAL = service_logger("monitor_controller.journal")
 
 FINALIZE_COMMAND_TIMEOUT_SECONDS: Final = 120.0
 TRAY_TIMEOUT_EXIT_STATUS: Final = 69
+NM_APPLET_RETRY_UNIT: Final = "monitor-nm-applet-retry.service"
+# Long enough to outlast xfce4-panel respawning a crashed systray wrapper,
+# which took 31s on 2026-09-22 against the finalizer's 25s tray wait.
+NM_APPLET_RETRY_TRAY_TIMEOUT_SECONDS: Final = 120.0
 PANEL_TIMEOUT_EXIT_STATUS: Final = 70
 _XRANDR_QUERY = ("xrandr", "--query")
 _XRANDR_PROPERTIES = ("xrandr", "--props")
@@ -170,6 +174,11 @@ class RestartNmApplet:
 
 
 @dataclass(frozen=True, slots=True)
+class ScheduleNmAppletRetry:
+    """Hand the nm-applet restart to a unit that outlives the finalizer."""
+
+
+@dataclass(frozen=True, slots=True)
 class CaptureTrayDiagnostics:
     """Start diagnostics in a separate bounded user unit."""
 
@@ -185,6 +194,7 @@ type FinalizeOperation = (
     | WaitForFluxbox
     | RestartXfcePanel
     | RestartNmApplet
+    | ScheduleNmAppletRetry
     | CaptureTrayDiagnostics
 )
 
@@ -450,6 +460,10 @@ class SubprocessFinalizeCommands:
             return self._run(("systemctl", "--user", "start", unit))
         if isinstance(operation, RestartNmApplet):
             return self._run(("systemctl", "--user", "restart", "nm-applet.service"))
+        if isinstance(operation, ScheduleNmAppletRetry):
+            return self._run(
+                ("systemctl", "--user", "start", "--no-block", NM_APPLET_RETRY_UNIT)
+            )
         instance = escape_unit_instance(operation.action_id.value)
         unit = f"monitor-tray-diagnostics@{instance}.service"
         return self._run(("systemctl", "--user", "start", "--no-block", unit))
@@ -890,7 +904,7 @@ def execute_finalization(  # noqa: C901, PLR0913, PLR0915
     def topology_reader(_request: TransactionRequest) -> CurrentTopology:
         return boundary()
 
-    def implementation(  # noqa: C901, PLR0911, PLR0912, PLR0915
+    def implementation(  # noqa: C901, PLR0912, PLR0915
         _request: TransactionRequest,
     ) -> WorkerExecution:
         nonlocal guarded_bundle
@@ -967,11 +981,22 @@ def execute_finalization(  # noqa: C901, PLR0913, PLR0915
                 try:
                     commands.wait_for_stable_tray()
                 except TrayReadinessError as error:
-                    return WorkerExecution(
-                        ActionLifecycle.FAILED,
-                        TRAY_TIMEOUT_EXIT_STATUS,
-                        f"stable tray readiness failed: {error}",
+                    # The displays and windows are already on the new layout;
+                    # a tray that is slow to come back (e.g. a crashed systray
+                    # wrapper awaiting respawn) must not fail finalization.
+                    _JOURNAL.warning(
+                        f"stable tray readiness failed: {error}; "
+                        f"deferring nm-applet restart to {NM_APPLET_RETRY_UNIT}"
                     )
+                    boundary()
+                    _raise_if_cancelled(startup, cancellation)
+                    scheduled = commands.apply(ScheduleNmAppletRetry())
+                    if scheduled.exit_status != 0:
+                        _JOURNAL.warning(
+                            f"cannot start {NM_APPLET_RETRY_UNIT}: "
+                            f"exit {scheduled.exit_status}"
+                        )
+                    continue
                 # Waiting is deliberately read-only. Re-prove every authority
                 # immediately before the applet service restart.
                 boundary()
@@ -1224,5 +1249,27 @@ def run_tray_diagnostics(  # noqa: PLR0913
         (str(tray_diag), str(output)),
         environment=_finalize_environment(os.environ, Path.home(), tray_diag.parent),
         timeout_seconds=timeout_seconds,
+    )
+    return result.exit_status
+
+
+def run_nm_applet_retry(
+    *,
+    tray_timeout_seconds: float = NM_APPLET_RETRY_TRAY_TIMEOUT_SECONDS,
+) -> int:
+    """Restart nm-applet once the tray settles, outside any finalization."""
+    try:
+        stable = wait_for_stable_tray(
+            TrayProbe().sample, timeout_seconds=tray_timeout_seconds
+        )
+    except TrayReadinessError as error:
+        _JOURNAL.warning(f"nm-applet retry abandoned: {error}")
+        return TRAY_TIMEOUT_EXIT_STATUS
+    _JOURNAL.info(
+        f"tray settled (owner={stable.state.selection_owner:#x}); restarting nm-applet"
+    )
+    result = SubprocessFinalizeLeafRunner().run(
+        ("systemctl", "--user", "restart", "nm-applet.service"),
+        environment=dict(os.environ),
     )
     return result.exit_status

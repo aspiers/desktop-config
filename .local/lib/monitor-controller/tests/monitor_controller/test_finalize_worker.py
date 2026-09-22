@@ -36,6 +36,7 @@ from monitor_controller.desktop.tray import (
     StableTray,
     TrayReadinessError,
     TrayState,
+    wait_for_stable_tray,
 )
 from monitor_controller.model import (
     ActionId,
@@ -69,6 +70,7 @@ from monitor_controller.runtime.transactions import (
     TransactionStore,
 )
 from monitor_controller.shadow import ShadowDesktopContextSource, load_saved_profiles
+from monitor_controller.workers import finalize as finalize_module
 from monitor_controller.workers.common import (
     CANCELLED_EXIT_STATUS,
     STALE_EXIT_STATUS,
@@ -94,9 +96,11 @@ from monitor_controller.workers.finalize import (
     RestartFluxboxInPlace,
     RestartNmApplet,
     RestartXfcePanel,
+    ScheduleNmAppletRetry,
     SubprocessFinalizeCommands,
     WaitForFluxbox,
     execute_finalization,
+    run_nm_applet_retry,
 )
 
 _REPO = next(
@@ -945,18 +949,79 @@ def test_identity_contradiction_between_actions_stops_before_next_mutation(
     assert "identity" in store.read_result(_FINALIZE_ACTION).detail
 
 
-def test_missing_stable_tray_blocks_nm_applet_and_diagnostics(
+def test_missing_stable_tray_defers_nm_applet_without_failing_finalization(
     tmp_path: Path,
 ) -> None:
+    # A systray wrapper crash left no tray for 31s after the 19:42 restart;
+    # the layout was already applied, so only the applet restart may wait.
     tree = RootedSysfsReader(_sysfs_tree(tmp_path / "sysfs"))
     commands = _FakeCommands(tray_ready=False)
     startup, store, plan_store, _bundle = _startup(tmp_path, tree, commands)
 
-    assert _execute(startup, plan_store, tree, commands, _Fence()) == 69
-    assert tuple(type(item) for item in commands.operations) == _EXPECTED_OPERATIONS[:4]
-    result = store.read_result(_FINALIZE_ACTION)
-    assert result.outcome is ActionLifecycle.FAILED
-    assert "stable tray readiness" in result.detail
+    assert _execute(startup, plan_store, tree, commands, _Fence()) == 0
+    assert tuple(type(item) for item in commands.operations) == (
+        *_EXPECTED_OPERATIONS[:4],
+        ScheduleNmAppletRetry,
+        CaptureTrayDiagnostics,
+    )
+    assert store.read_result(_FINALIZE_ACTION).outcome is ActionLifecycle.COMPLETED
+
+
+class _RetryTrayProbe:
+    def __init__(self, state: TrayState) -> None:
+        self.state = state
+
+    def sample(self) -> TrayState:
+        return self.state
+
+
+class _RetryRunner:
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, ...]] = []
+
+    def run(
+        self,
+        arguments: tuple[str, ...],
+        *,
+        environment: Mapping[str, str],
+    ) -> FinalizeCommandResult:
+        del environment
+        self.calls.append(arguments)
+        return FinalizeCommandResult(0)
+
+
+def _fast_tray_wait(
+    sample: Callable[[], TrayState], *, timeout_seconds: float
+) -> StableTray:
+    return wait_for_stable_tray(
+        sample, timeout_seconds=timeout_seconds, interval_seconds=0.001
+    )
+
+
+@pytest.mark.parametrize(
+    ("state", "expected_status", "expected_calls"),
+    [
+        (
+            TrayState(0x1234, (99,)),
+            0,
+            [("systemctl", "--user", "restart", "nm-applet.service")],
+        ),
+        (TrayState(0x1234, ()), 69, []),
+    ],
+)
+def test_nm_applet_retry_restarts_only_once_tray_settles(
+    monkeypatch: pytest.MonkeyPatch,
+    state: TrayState,
+    expected_status: int,
+    expected_calls: list[tuple[str, ...]],
+) -> None:
+    runner = _RetryRunner()
+    monkeypatch.setattr(finalize_module, "TrayProbe", lambda: _RetryTrayProbe(state))
+    monkeypatch.setattr(finalize_module, "SubprocessFinalizeLeafRunner", lambda: runner)
+    monkeypatch.setattr(finalize_module, "wait_for_stable_tray", _fast_tray_wait)
+
+    assert run_nm_applet_retry(tray_timeout_seconds=1.0) == expected_status
+    assert runner.calls == expected_calls
 
 
 def test_durable_cancel_arriving_during_atomic_restart_is_reported_after_step(
@@ -1117,6 +1182,7 @@ def test_production_adapter_uses_only_exact_leaves_and_separate_units(
         }[action.sequence - 1]
         assert commands.apply(operation).exit_status == 0
     assert commands.apply(RestartFluxbox(_EXPECTED_FLUXBOX_STATE)).exit_status == 0
+    assert commands.apply(ScheduleNmAppletRetry()).exit_status == 0
     assert commands.apply(WaitForFluxbox(_EXPECTED_FLUXBOX_STATE)).exit_status == 0
 
     joined = "\0".join(
@@ -1163,6 +1229,7 @@ def test_production_adapter_uses_only_exact_leaves_and_separate_units(
     assert "\\x2d" in escaped_instance
     assert f"monitor-panel-restart@{escaped_instance}.service" in joined
     assert "nm-applet.service" in joined
+    assert "monitor-nm-applet-retry.service" in joined
     assert f"monitor-tray-diagnostics@{escaped_instance}.service" in joined
     assert capture.window_payload is not None
     assert (tmp_path / "home" / ".fluxbox" / "keys").is_file()
