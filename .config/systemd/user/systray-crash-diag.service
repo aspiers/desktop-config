@@ -1,0 +1,13 @@
+[Unit]
+Description=Capture context for new xfce4-panel systray wrapper coredumps
+
+[Service]
+SyslogIdentifier=systray-crash-diag
+Type=oneshot
+ExecStart=%h/bin/systray-crash-diag capture
+# gdb symbolization of a core can take a while on first run.
+TimeoutStartSec=10min
+Nice=15
+IOSchedulingClass=idle
+StandardOutput=journal
+StandardError=journal

@@ -1,0 +1,167 @@
+#!/usr/bin/env python3
+"""Capture context for each new xfce4-panel systray wrapper coredump.
+
+Runs from systray-crash-diag.timer.  For every wrapper-2.0 core not yet seen
+it stores, under ~/.log/systray-crash/<time>-pid<N>/:
+
+    context.log   user journal from 20s before to 5s after the crash
+    coredump.txt  coredumpctl info
+    bt.txt        gdb backtrace (symbolized when debuginfo matches)
+    tags          the trigger classes observed in the preceding journal
+
+and appends one line to summary.tsv.  The point is to learn what precedes
+each crash from normal use instead of asking for reproductions (dc-qtz).
+
+`status` lists which trigger classes have and have not yet been observed.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import shutil
+import subprocess
+import sys
+from datetime import datetime, timedelta
+from pathlib import Path
+
+WRAPPER = "/usr/libexec/xfce4/panel/wrapper-2.0"
+LOG_ROOT = Path.home() / ".log" / "systray-crash"
+STATE = LOG_ROOT / ".last-core-time"
+SUMMARY = LOG_ROOT / "summary.tsv"
+KEEP = 40
+BEFORE = timedelta(seconds=20)
+AFTER = timedelta(seconds=5)
+
+# Journal patterns that identify what was happening just before the crash.
+# "Outstanding" scenarios in `status` are the tags never yet observed.
+TAG_PATTERNS: dict[str, re.Pattern[str]] = {
+    "fluxbox-restart": re.compile(r"FLUXBOX_HEALTH_DECISION .*result=restart"),
+    "panel-restart": re.compile(r"monitor-panel-restart|PANEL_HEALTH_DECISION .*result=restart"),
+    "randr-change": re.compile(r"DRM change hint|external topology now"),
+    "nm-applet-restart": re.compile(r"Started NetworkManager desktop tray applet"),
+    "prior-wrapper-crash": re.compile(r"systray-\d+: child exited with status"),
+}
+
+
+def run(cmd: list[str], timeout: int = 60) -> str:
+    try:
+        return subprocess.run(
+            cmd, capture_output=True, text=True, timeout=timeout, check=False
+        ).stdout
+    except (OSError, subprocess.TimeoutExpired) as error:
+        return f"<{cmd[0]} failed: {error}>\n"
+
+
+def list_cores() -> list[dict]:
+    out = run(["coredumpctl", "list", WRAPPER, "--json=short", "--no-pager"])
+    try:
+        return json.loads(out) if out.strip() else []
+    except json.JSONDecodeError:
+        return []
+
+
+def journal_window(when: datetime) -> str:
+    fmt = "%Y-%m-%d %H:%M:%S"
+    return run(
+        [
+            "journalctl", "--user", "--no-pager", "-o", "short-iso",
+            "--since", (when - BEFORE).strftime(fmt),
+            "--until", (when + AFTER).strftime(fmt),
+        ]
+    )
+
+
+def backtrace(pid: int) -> str:
+    gdb_args = "-batch -ex 'set pagination off' -ex 'thread apply 1 bt 25'"
+    return run(
+        ["coredumpctl", "debug", str(pid), "--debugger=gdb", "-A", gdb_args],
+        timeout=300,
+    )
+
+
+def tags_for(context: str, crash_time: datetime) -> list[str]:
+    # Only lines strictly before the crash second can be a trigger; the panel
+    # logs the crash itself ("child exited") in that same second or later.
+    cutoff = crash_time.strftime("%Y-%m-%dT%H:%M:%S")
+    before = "\n".join(
+        line for line in context.splitlines() if line[:19] < cutoff
+    )
+    return [tag for tag, rx in TAG_PATTERNS.items() if rx.search(before)]
+
+
+def top_frame(bt: str) -> str:
+    frames = [line for line in bt.splitlines() if re.match(r"#\d+ ", line)]
+    return frames[0].strip() if frames else "?"
+
+
+def capture_core(core: dict) -> None:
+    pid = int(core["pid"])
+    when = datetime.fromtimestamp(int(core["time"]) / 1_000_000)
+    out = LOG_ROOT / f"{when.strftime('%Y%m%dT%H%M%S')}-pid{pid}"
+    out.mkdir(parents=True, exist_ok=True)
+
+    context = journal_window(when)
+    (out / "context.log").write_text(context)
+    (out / "coredump.txt").write_text(
+        run(["coredumpctl", "info", str(pid), "--no-pager"])
+    )
+    bt = backtrace(pid)
+    (out / "bt.txt").write_text(bt)
+    tags = tags_for(context, when) or ["none"]
+    (out / "tags").write_text("\n".join(tags) + "\n")
+
+    with SUMMARY.open("a") as f:
+        f.write(f"{when.isoformat()}\t{pid}\t{','.join(tags)}\t{top_frame(bt)}\n")
+    print(f"captured {out.name}: tags={','.join(tags)}")
+
+
+def prune() -> None:
+    dirs = sorted(p for p in LOG_ROOT.iterdir() if p.is_dir())
+    for old in dirs[:-KEEP]:
+        shutil.rmtree(old, ignore_errors=True)
+
+
+def capture() -> int:
+    LOG_ROOT.mkdir(parents=True, exist_ok=True)
+    last = int(STATE.read_text()) if STATE.exists() else 0
+    new = [c for c in list_cores() if int(c["time"]) > last]
+    for core in new:
+        try:
+            capture_core(core)
+        except Exception as error:  # noqa: BLE001 - one bad core must not stop the rest
+            print(f"pid {core.get('pid')}: {error}", file=sys.stderr)
+        STATE.write_text(str(core["time"]))
+    prune()
+    return 0
+
+
+def status() -> int:
+    if not SUMMARY.exists():
+        print("no systray wrapper crashes captured yet")
+        return 0
+    rows = [line.split("\t") for line in SUMMARY.read_text().splitlines() if line]
+    seen: dict[str, int] = {}
+    for row in rows:
+        for tag in row[2].split(","):
+            seen[tag] = seen.get(tag, 0) + 1
+    print(f"{len(rows)} crashes captured in {LOG_ROOT}")
+    for tag, count in sorted(seen.items(), key=lambda kv: -kv[1]):
+        print(f"  {count:3d}  {tag}")
+    outstanding = [t for t in TAG_PATTERNS if t not in seen]
+    print("scenarios not yet observed before a crash: " + (", ".join(outstanding) or "none"))
+    symbolized = sum(1 for r in rows if "??" not in r[3] and r[3] != "?")
+    print(f"backtraces with a symbolized top frame: {symbolized}/{len(rows)}")
+    return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    parser.add_argument("command", nargs="?", default="capture", choices=["capture", "status"])
+    args = parser.parse_args()
+    return capture() if args.command == "capture" else status()
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,10 @@
+[Unit]
+Description=Periodically capture context for new systray wrapper coredumps (dc-qtz)
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=5min
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target
