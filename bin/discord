@@ -1,4 +1,8 @@
 #!/bin/bash
 
 # https://www.reddit.com/r/openSUSE/comments/ptqlfu/psa_vscode_and_some_nonpatched_electron/
-~/software/comms/discord/discord --disable-gpu-sandbox "$@" >~/.log/discord.log 2>&1 &
+#
+# exec rather than background: fluxbox-focus-or-launch starts this as a
+# transient systemd service, which kills its whole cgroup as soon as the
+# main process exits.
+exec ~/software/comms/discord/discord --disable-gpu-sandbox "$@" >~/.log/discord.log 2>&1
