@@ -53,8 +53,10 @@ esac
 geometry_width=${geometry%%x*}
 geometry_height=${geometry#*x}
 
-# --title fixes the OS window title, giving Fluxbox a stable identifier.
+# --title fixes the OS window title, giving Fluxbox a stable identifier;
+# --name keeps these windows out of the generic kitty terminal rule.
 kitty \
+    --name top-term \
     --override "font_size=$kitty_font_size" \
     --override "initial_window_width=${geometry_width}c" \
     --override "initial_window_height=${geometry_height}c" \

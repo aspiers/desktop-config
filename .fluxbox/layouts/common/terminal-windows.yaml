@@ -1,4 +1,4 @@
-- - (Name=(gnome|xfce4)-terminal-.*|kitty)
+- - (Name=(gnome|xfce4)-terminal-.*|kitty|top-term)
   - MacroCmd {<s_primary_SetHead>} {MoveTo <s_primary_col1_left> <s_primary_row1_top>} {ResizeTo <s_primary_col1_width> <s_primary_active_height>}
 
 - - (Name=kitty) (Title=mutt:\ .*)
