@@ -1,0 +1,94 @@
+#!/usr/bin/env python3
+"""Log every change of ownership of the X system-tray selection.
+
+xfce4-panel's systray wrapper segfaults whenever another client takes
+_NET_SYSTEM_TRAY_S0 away from it (dc-qtz: SelectionClear handled inside its
+own GDK event filter destroys the window being filtered).  This watcher
+records who takes the selection, and when, so the thief can be identified
+from normal use.  Each line in ~/.log/tray-selection.log is:
+
+    <iso time> <event> owner=<xid> pid=<pid> comm=<comm> class=<WM_CLASS>
+
+The log is rotated when it exceeds 1 MiB.  Runs from
+tray-selection-watcher.service.
+"""
+
+from __future__ import annotations
+
+import os
+import sys
+from datetime import datetime
+from pathlib import Path
+
+from Xlib import X, display
+from Xlib.ext import xfixes
+
+SELECTION = os.environ.get("TRAY_SELECTION_ATOM", "_NET_SYSTEM_TRAY_S0")
+LOG = Path.home() / ".log" / "tray-selection.log"
+LOG_LIMIT = 1 << 20
+
+EVENT_NAMES = {
+    xfixes.XFixesSetSelectionOwnerNotify: "set-owner",
+    xfixes.XFixesSelectionWindowDestroyNotify: "owner-window-destroyed",
+    xfixes.XFixesSelectionClientCloseNotify: "owner-client-closed",
+}
+
+
+def window_identity(dpy: display.Display, xid: int) -> str:
+    if not xid:
+        return "owner=none"
+    try:
+        win = dpy.create_resource_object("window", xid)
+        pid_prop = win.get_full_property(dpy.intern_atom("_NET_WM_PID"), X.AnyPropertyType)
+        pid = int(pid_prop.value[0]) if pid_prop and pid_prop.value else None
+        wm_class = win.get_wm_class()
+    except Exception:  # noqa: BLE001 - window may already be gone
+        return f"owner={xid:#x} pid=? comm=? class=?"
+    comm = "?"
+    if pid:
+        try:
+            comm = Path(f"/proc/{pid}/comm").read_text().strip()
+        except OSError:
+            pass
+    cls = ".".join(wm_class) if wm_class else "?"
+    return f"owner={xid:#x} pid={pid} comm={comm} class={cls}"
+
+
+def log(line: str) -> None:
+    LOG.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        if LOG.exists() and LOG.stat().st_size > LOG_LIMIT:
+            LOG.replace(LOG.with_suffix(".log.1"))
+    except OSError:
+        pass
+    with LOG.open("a") as f:
+        f.write(f"{datetime.now().isoformat(timespec='seconds')} {line}\n")
+    print(line, flush=True)
+
+
+def main() -> int:
+    dpy = display.Display(os.environ.get("DISPLAY"))
+    if not dpy.has_extension("XFIXES"):
+        print("XFIXES extension unavailable", file=sys.stderr)
+        return 1
+    dpy.xfixes_query_version()
+    root = dpy.screen().root
+    selection = dpy.intern_atom(SELECTION)
+    mask = (
+        xfixes.XFixesSetSelectionOwnerNotifyMask
+        | xfixes.XFixesSelectionWindowDestroyNotifyMask
+        | xfixes.XFixesSelectionClientCloseNotifyMask
+    )
+    dpy.xfixes_select_selection_input(root, selection, mask)
+    log(f"watching {SELECTION}: {window_identity(dpy, dpy.get_selection_owner(selection).id if dpy.get_selection_owner(selection) else 0)}")
+    while True:
+        ev = dpy.next_event()
+        if getattr(ev, "sub_code", None) not in EVENT_NAMES:
+            continue
+        owner = getattr(ev, "owner", None)
+        xid = owner.id if owner else 0
+        log(f"{EVENT_NAMES[ev.sub_code]} {window_identity(dpy, xid)}")
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,17 @@
+[Unit]
+Description=Log ownership changes of the X system-tray selection (dc-qtz)
+# Needs DISPLAY, which only exists once fluxbox-session.target is up.
+PartOf=fluxbox-session.target
+After=fluxbox-session.target
+
+[Service]
+SyslogIdentifier=tray-selection-watcher
+ExecStart=%h/bin/tray-selection-watcher
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=fluxbox-session.target
