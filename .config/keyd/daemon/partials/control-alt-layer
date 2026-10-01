@@ -1,0 +1,11 @@
+# control-alt-layer: declare the control+alt composite layer so that
+# keyd-application-mapper can bind into it from app.conf (e.g. C-M-o for
+# the Orca token picker). Like alt-shift-layer, `keyd bind` only succeeds
+# for keyboards whose config already defines the layer, so every keyboard
+# config includes this. Empty by design: with no bindings, control+alt
+# chords fall through unchanged.
+[control+alt]
+
+# prevent any lines after an include of this file from
+# being accidentally put in the control+alt layer
+[main]
