@@ -370,7 +370,8 @@ Mod4 minus :Exec warpd --normal
 Mod4 x <%= next_unhidden "(Class=(Xfce4|Gnome)-terminal|kitty) (Head=1) (workspace=0)" %>
 Control Mod4 x :Exec rmx-window
 
-Mod4 a :Exec chrome-session-rofi 't3.chat|poe.com|chat.deepseek.com|claude.ai|chatgpt.com|gemini.google.com'
+#Mod4 a :Exec chrome-session-rofi 't3.chat|poe.com|chat.deepseek.com|claude.ai|chatgpt.com|gemini.google.com'
+Mod4 a :Exec fluxbox-focus-window 'NextWindow (Class=Chatgpt|Claude) (Minimized=yes|no)'
 #Mod4 a :Exec fluxbox-focus-or-launch --toggle AI true
 
 Shift Mod4 a :Exec fluxbox-focus-or-launch -c anytype anytype
