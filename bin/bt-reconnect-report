@@ -1,0 +1,255 @@
+#!/usr/bin/env python3
+"""Time each Bluetooth LE reconnect recorded by bt-trace (dc-t4i).
+
+For every successful LE connection in ~/.log/bt-trace/ this prints how long
+each stage took, so a slow reconnect can be pinned on the right party:
+
+  resume->scan   laptop: scanning restarted after the system resumed
+  ->adv          mouse:  first advertisement the laptop heard
+  adv->create    laptop: host asked the controller to connect
+  create->conn   radio:  link established
+  conn->input    laptop: GATT/HID setup until the kernel input device exists
+
+A large '->adv' means the mouse was not advertising (or the controller was
+not hearing it); a large gap anywhere after that is on the laptop.
+
+It also reports which scenarios still lack evidence, since the events arrive
+on their own during normal use rather than on demand.
+"""
+
+from __future__ import annotations
+
+import argparse
+import re
+import subprocess
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta
+from pathlib import Path
+
+TRACE_DIR = Path.home() / ".log" / "bt-trace"
+TS_RE = re.compile(r"(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d\.\d+)\s*$")
+ADDR_RE = re.compile(r"([0-9A-F]{2}(?::[0-9A-F]{2}){5})")
+# A reconnect only counts as "after resume" if the resume was this recent.
+RESUME_WINDOW = timedelta(minutes=5)
+WANTED_PER_SCENARIO = 3
+
+
+@dataclass
+class Block:
+    ts: datetime
+    header: str
+    body: list[str] = field(default_factory=list)
+
+    def field(self, name: str) -> str | None:
+        prefix = name + ":"
+        for line in self.body:
+            stripped = line.strip()
+            if stripped.startswith(prefix):
+                return stripped[len(prefix):].strip()
+        return None
+
+    def handle(self) -> str:
+        # Newer btmon appends the peer address to handle lines.
+        return (self.field("Handle") or "").split(" ")[0]
+
+    def address(self, name: str = "Peer address") -> str | None:
+        value = self.field(name)
+        match = ADDR_RE.search(value or "")
+        return match.group(1) if match else None
+
+    @property
+    def subevent(self) -> str:
+        return self.body[0].strip() if self.body else ""
+
+
+@dataclass
+class Reconnect:
+    address: str
+    name: str
+    connected: datetime
+    disconnected: datetime | None = None
+    disconnect_reason: str | None = None
+    resumed: datetime | None = None
+    scan_enabled: datetime | None = None
+    first_adv: datetime | None = None
+    create: datetime | None = None
+    input_ready: datetime | None = None
+
+    @property
+    def scenario(self) -> str:
+        return "after-resume" if self.resumed else "no-resume"
+
+
+def read_blocks(paths: list[Path]) -> list[Block]:
+    blocks: list[Block] = []
+    for path in paths:
+        for line in path.read_text(errors="replace").splitlines():
+            if line[:1] in (" ", "\t"):
+                if blocks:
+                    blocks[-1].body.append(line)
+                continue
+            match = TS_RE.search(line)
+            if match:
+                ts = datetime.strptime(match.group(1), "%Y-%m-%d %H:%M:%S.%f")
+                blocks.append(Block(ts, line))
+    blocks.sort(key=lambda b: b.ts)
+    return blocks
+
+
+def journal_lines(since: datetime, pattern: str, kernel: bool = True) -> list[tuple[datetime, str]]:
+    cmd = ["journalctl", "--no-pager", "-o", "short-iso-precise",
+           "--since", since.strftime("%Y-%m-%d %H:%M:%S"), "--grep", pattern]
+    if kernel:
+        cmd.insert(1, "-k")
+    out = subprocess.run(cmd, capture_output=True, text=True).stdout
+    result = []
+    for line in out.splitlines():
+        stamp, _, rest = line.partition(" ")
+        try:
+            ts = datetime.fromisoformat(stamp).replace(tzinfo=None)
+        except ValueError:
+            continue
+        result.append((ts, rest))
+    return result
+
+
+def device_names() -> dict[str, str]:
+    out = subprocess.run(["bluetoothctl", "devices"], capture_output=True, text=True).stdout
+    names = {}
+    for line in out.splitlines():
+        parts = line.split(" ", 2)
+        if len(parts) == 3 and parts[0] == "Device":
+            names[parts[1]] = parts[2]
+    return names
+
+
+def is_conn_complete(block: Block) -> bool:
+    return "LE Meta Event" in block.header and "Connection Complete" in block.subevent
+
+
+def is_adv_report(block: Block) -> bool:
+    return "LE Meta Event" in block.header and "Advertising Report" in block.subevent
+
+
+def is_scan_enable(block: Block) -> bool:
+    if "Scan Enable" not in block.header or not block.header.startswith("<"):
+        return False
+    return any("Enabled" in line for line in block.body)
+
+
+def is_create_connection(block: Block) -> bool:
+    return block.header.startswith("<") and "Create Connection" in block.header \
+        and "Cancel" not in block.header
+
+
+def last_before(times: list[datetime], limit: datetime, floor: datetime | None) -> datetime | None:
+    found = None
+    for ts in times:
+        if ts > limit:
+            break
+        if floor is None or ts >= floor:
+            found = ts
+    return found
+
+
+def first_after(times: list[datetime], floor: datetime | None, limit: datetime) -> datetime | None:
+    for ts in times:
+        if ts > limit:
+            return None
+        if floor is None or ts >= floor:
+            return ts
+    return None
+
+
+def build(blocks: list[Block], names: dict[str, str], since: datetime) -> list[Reconnect]:
+    resumes = [ts for ts, _ in journal_lines(since, "PM: suspend exit")]
+    inputs = journal_lines(since, r"^input: .* as /devices/virtual/misc/uhid/")
+    scans = [b.ts for b in blocks if is_scan_enable(b)]
+
+    handle_addr: dict[str, str] = {}
+    last_disconnect: dict[str, tuple[datetime, str | None]] = {}
+    adverts: dict[str, list[datetime]] = {}
+    creates: list[datetime] = []
+    reconnects: list[Reconnect] = []
+
+    for block in blocks:
+        if is_adv_report(block):
+            for line in block.body:
+                if line.strip().startswith("Address:"):
+                    match = ADDR_RE.search(line)
+                    if match:
+                        adverts.setdefault(match.group(1), []).append(block.ts)
+        elif is_create_connection(block):
+            creates.append(block.ts)
+        elif "Disconnect Complete" in block.header:
+            addr = handle_addr.pop(block.handle(), None)
+            if addr:
+                last_disconnect[addr] = (block.ts, block.field("Reason"))
+        elif is_conn_complete(block) and (block.field("Status") or "").startswith("Success"):
+            addr = block.address()
+            if not addr:
+                continue
+            handle_addr[block.handle()] = addr
+            if addr not in last_disconnect:
+                # The trace started mid-connection: nothing to time against.
+                continue
+            rc = Reconnect(addr, names.get(addr, "?"), block.ts)
+            rc.disconnected, rc.disconnect_reason = last_disconnect.pop(addr)
+            resumed = last_before(resumes, rc.connected, rc.disconnected)
+            if resumed and rc.connected - resumed <= RESUME_WINDOW:
+                rc.resumed = resumed
+            start = rc.resumed or rc.disconnected
+            rc.scan_enabled = first_after(scans, start, rc.connected)
+            rc.first_adv = first_after(adverts.get(addr, []), start, rc.connected)
+            rc.create = last_before(creates, rc.connected, start)
+            for ts, text in inputs:
+                if ts >= rc.connected and rc.name in text:
+                    if ts - rc.connected < timedelta(seconds=60):
+                        rc.input_ready = ts
+                    break
+            reconnects.append(rc)
+    return reconnects
+
+
+def gap(start: datetime | None, end: datetime | None) -> str:
+    if start is None or end is None:
+        return "-"
+    return f"{(end - start).total_seconds():.1f}s"
+
+
+def report(reconnects: list[Reconnect], show_all: bool) -> None:
+    rows = [r for r in reconnects if show_all or "MX" in r.name or "LIFT" in r.name]
+    print(f"{'connected':19} {'device':14} {'scenario':12} {'resume->scan':>12} "
+          f"{'->adv':>7} {'adv->create':>11} {'create->conn':>12} {'conn->input':>11}  "
+          "disconnect reason")
+    for r in rows:
+        origin = r.resumed or r.disconnected
+        print(f"{r.connected:%Y-%m-%d %H:%M:%S} {r.name[:14]:14} {r.scenario:12} "
+              f"{gap(r.resumed, r.scan_enabled):>12} {gap(origin, r.first_adv):>7} "
+              f"{gap(r.first_adv, r.create):>11} {gap(r.create, r.connected):>12} "
+              f"{gap(r.connected, r.input_ready):>11}  {r.disconnect_reason or '-'}")
+
+    print()
+    for scenario in ("after-resume", "no-resume"):
+        seen = sum(1 for r in rows if r.scenario == scenario)
+        status = "done" if seen >= WANTED_PER_SCENARIO else "OUTSTANDING"
+        print(f"{scenario:12} {seen}/{WANTED_PER_SCENARIO} captured  {status}")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    parser.add_argument("--dir", type=Path, default=TRACE_DIR)
+    parser.add_argument("--all", action="store_true", help="include non-mouse devices")
+    args = parser.parse_args()
+
+    paths = sorted(args.dir.glob("*.log"))
+    if not paths:
+        raise SystemExit(f"no traces in {args.dir}; is bt-trace.service running?")
+    blocks = read_blocks(paths)
+    if not blocks:
+        raise SystemExit("traces contain no timestamped events yet")
+    report(build(blocks, device_names(), blocks[0].ts), args.all)
+
+
+if __name__ == "__main__":
+    main()
