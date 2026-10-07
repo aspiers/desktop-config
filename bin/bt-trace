@@ -33,6 +33,29 @@ hci_stream() {
     fi
 }
 
+# Log the controller's USB runtime-PM transitions to usb-YYYYMMDD.log.
+# btmon cannot show these, yet an advert that sits in a runtime-suspended
+# controller looks exactly like a mouse that was late to advertise.  A
+# separate file, because lines interleaved into the btmon stream could land
+# mid-block and change which data lines the filter keeps.
+watch_usb_pm() {
+    local dev state last=
+    while sleep 1; do
+        dev=$(grep -lx 0e8d /sys/bus/usb/devices/*/idVendor 2>/dev/null | head -n1) || true
+        state=$(cat "${dev%/idVendor}/power/runtime_status" 2>/dev/null) || state=absent
+        [ -n "$dev" ] || state=absent
+        [ "$state" = "$last" ] && continue
+        printf '= bt-trace: USB controller runtime %s  %(%Y-%m-%d %H:%M:%S)T.%s\n' \
+            "$state" -1 "$(date +%6N)" >> "$dir/usb-$(date +%Y%m%d).log"
+        last=$state
+    done
+}
+
+if [ "${1:-}" != --stdin ]; then
+    watch_usb_pm &
+    trap 'kill $! 2>/dev/null' EXIT
+fi
+
 hci_stream "$@" |
     gawk -v dir="$dir" -v keep_days="$keep_days" -v max_bytes="$max_bytes" '
         function open_day(   day) {

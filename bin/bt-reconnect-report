@@ -9,6 +9,9 @@ each stage took, so a slow reconnect can be pinned on the right party:
   adv->create    laptop: host asked the controller to connect
   create->conn   radio:  link established
   conn->input    laptop: GATT/HID setup until the kernel input device exists
+  usb-susp       how long the controller sat USB runtime-suspended between
+                 resume (or disconnect) and connection; if ->adv is large
+                 and so is this, USB autosuspend is the suspect, not the mouse
 
 A large '->adv' means the mouse was not advertising (or the controller was
 not hearing it); a large gap anywhere after that is on the laptop.
@@ -74,6 +77,7 @@ class Reconnect:
     first_adv: datetime | None = None
     create: datetime | None = None
     input_ready: datetime | None = None
+    usb_suspended: timedelta | None = None
 
     @property
     def scenario(self) -> str:
@@ -161,10 +165,33 @@ def first_after(times: list[datetime], floor: datetime | None, limit: datetime) 
     return None
 
 
+USB_RE = re.compile(r"^= bt-trace: USB controller runtime (\S+)")
+
+
+def suspended_time(transitions: list[tuple[datetime, str]],
+                   start: datetime, end: datetime) -> timedelta | None:
+    if not transitions or transitions[0][0] > start:
+        return None  # state at start unknown
+    total = timedelta()
+    state, since = transitions[0][1], start
+    for ts, new in transitions[1:]:
+        if ts >= end:
+            break
+        if ts > start:
+            if state == "suspended":
+                total += ts - since
+            since = ts
+        state = new
+    if state == "suspended":
+        total += end - since
+    return total
+
+
 def build(blocks: list[Block], names: dict[str, str], since: datetime) -> list[Reconnect]:
     resumes = [ts for ts, _ in journal_lines(since, "PM: suspend exit")]
     inputs = journal_lines(since, r"^input: .* as /devices/virtual/misc/uhid/")
     scans = [b.ts for b in blocks if is_scan_enable(b)]
+    usb = [(b.ts, m.group(1)) for b in blocks if (m := USB_RE.match(b.header))]
 
     handle_addr: dict[str, str] = {}
     last_disconnect: dict[str, tuple[datetime, str | None]] = {}
@@ -207,6 +234,7 @@ def build(blocks: list[Block], names: dict[str, str], since: datetime) -> list[R
                     if ts - rc.connected < timedelta(seconds=60):
                         rc.input_ready = ts
                     break
+            rc.usb_suspended = suspended_time(usb, start, rc.connected)
             reconnects.append(rc)
     return reconnects
 
@@ -217,17 +245,22 @@ def gap(start: datetime | None, end: datetime | None) -> str:
     return f"{(end - start).total_seconds():.1f}s"
 
 
+def fmt(delta: timedelta | None) -> str:
+    return "-" if delta is None else f"{delta.total_seconds():.1f}s"
+
+
 def report(reconnects: list[Reconnect], show_all: bool) -> None:
     rows = [r for r in reconnects if show_all or "MX" in r.name or "LIFT" in r.name]
     print(f"{'connected':19} {'device':14} {'scenario':12} {'resume->scan':>12} "
-          f"{'->adv':>7} {'adv->create':>11} {'create->conn':>12} {'conn->input':>11}  "
+          f"{'->adv':>7} {'adv->create':>11} {'create->conn':>12} {'conn->input':>11} {'usb-susp':>8}  "
           "disconnect reason")
     for r in rows:
         origin = r.resumed or r.disconnected
         print(f"{r.connected:%Y-%m-%d %H:%M:%S} {r.name[:14]:14} {r.scenario:12} "
               f"{gap(r.resumed, r.scan_enabled):>12} {gap(origin, r.first_adv):>7} "
               f"{gap(r.first_adv, r.create):>11} {gap(r.create, r.connected):>12} "
-              f"{gap(r.connected, r.input_ready):>11}  {r.disconnect_reason or '-'}")
+              f"{gap(r.connected, r.input_ready):>11} "
+              f"{fmt(r.usb_suspended):>8}  {r.disconnect_reason or '-'}")
 
     print()
     for scenario in ("after-resume", "no-resume"):
