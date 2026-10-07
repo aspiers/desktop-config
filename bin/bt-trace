@@ -7,6 +7,7 @@
 # Only HCI command/event, MGMT and note blocks are kept.  ACL, SCO and ISO
 # data blocks are dropped before reaching disk, because they carry HID
 # reports: keystrokes from Bluetooth keyboards must never be logged.
+# Pairing keys printed in command/event blocks are redacted.
 #
 # One file per day; files older than $keep_days are pruned, and a day's
 # file stops growing at $max_bytes, so the log cannot fill the disk even
@@ -18,7 +19,9 @@ dir=${BT_TRACE_DIR:-$HOME/.log/bt-trace}
 keep_days=${BT_TRACE_KEEP_DAYS:-14}
 max_bytes=${BT_TRACE_MAX_BYTES:-$((50 * 1024 * 1024))}
 
+umask 077
 mkdir -p "$dir"
+chmod 700 "$dir"
 
 hci_stream() {
     # --stdin filters already-captured btmon -T text, for testing.
@@ -87,6 +90,12 @@ hci_stream "$@" |
             if (capped) next
             # -C pads headers out to the timestamp column.
             if ($0 ~ /^[^ \t]/) gsub(/ {3,}/, "  ")
+            # HCI and MGMT print pairing keys in clear ("LE Start
+            # Encryption" carries the long term key).  Redact any key
+            # field, and any bare 128-bit value in case one is labelled
+            # differently.
+            else if ($0 ~ /[Kk]ey[^:]*: / || $0 ~ /[0-9a-fA-F]{32}/)
+                sub(/: .*/, ": [redacted]")
             if (written + length($0) + 1 > max_bytes) {
                 print "= bt-trace: daily size cap reached, dropping until midnight" >> out
                 fflush(out)
