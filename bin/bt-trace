@@ -1,0 +1,77 @@
+#!/bin/bash
+#
+# bt-trace - record Bluetooth HCI commands and events to ~/.log/bt-trace/
+# so slow reconnects (dc-t4i) can be timed from history rather than
+# reproduced on demand.  Read the results with bt-reconnect-report.
+#
+# Only HCI command/event, MGMT and note blocks are kept.  ACL, SCO and ISO
+# data blocks are dropped before reaching disk, because they carry HID
+# reports: keystrokes from Bluetooth keyboards must never be logged.
+#
+# One file per day; files older than $keep_days are pruned, and a day's
+# file stops growing at $max_bytes, so the log cannot fill the disk even
+# if something starts a noisy discovery scan.
+
+set -euo pipefail
+
+dir=${BT_TRACE_DIR:-$HOME/.log/bt-trace}
+keep_days=${BT_TRACE_KEEP_DAYS:-14}
+max_bytes=${BT_TRACE_MAX_BYTES:-$((50 * 1024 * 1024))}
+
+mkdir -p "$dir"
+
+hci_stream() {
+    # --stdin filters already-captured btmon -T text, for testing.
+    if [ "${1:-}" = --stdin ]; then
+        cat
+    else
+        # btmon needs CAP_NET_RAW for the HCI monitor channel.  stdbuf stops
+        # it block-buffering into the pipe, which would delay and, on a
+        # kill, lose the last events.  Without -C it assumes 80 columns
+        # when piped and truncates event names ("Connect Co..").
+        sudo -n stdbuf -oL btmon -T -M -P -C 250 -c never
+    fi
+}
+
+hci_stream "$@" |
+    gawk -v dir="$dir" -v keep_days="$keep_days" -v max_bytes="$max_bytes" '
+        function open_day(   day) {
+            day = strftime("%Y%m%d")
+            if (day == current) return
+            if (out) close(out)
+            current = day
+            out = dir "/" day ".log"
+            # Count what earlier runs wrote today, so restarts cannot
+            # each start afresh under the cap.
+            written = 0
+            size_cmd = "stat -c %s \"" out "\" 2>/dev/null"
+            size_cmd | getline written
+            close(size_cmd)
+            capped = 0
+            system("find \"" dir "\" -maxdepth 1 -name \"*.log\" -mtime +" keep_days " -delete")
+        }
+
+        # Block headers are unindented (MGMT ones carry a "process[pid]: "
+        # prefix); continuation lines are indented and inherit the decision
+        # made for their header.  Anything unrecognised is dropped.
+        /^[^ \t]/ {
+            keep = ($0 !~ /ACL|SCO|ISO Data/ &&
+                    $0 ~ /^[<>] HCI (Command|Event)|^([^ ]+: )?@ MGMT|^= /)
+        }
+
+        keep {
+            open_day()
+            if (capped) next
+            # -C pads headers out to the timestamp column.
+            if ($0 ~ /^[^ \t]/) gsub(/ {3,}/, "  ")
+            if (written + length($0) + 1 > max_bytes) {
+                print "= bt-trace: daily size cap reached, dropping until midnight" >> out
+                fflush(out)
+                capped = 1
+                next
+            }
+            print >> out
+            fflush(out)
+            written += length($0) + 1
+        }
+    '

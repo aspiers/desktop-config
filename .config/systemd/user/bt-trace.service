@@ -1,0 +1,15 @@
+[Unit]
+Description=Record Bluetooth HCI events for diagnosing slow reconnects (dc-t4i)
+
+[Service]
+SyslogIdentifier=bt-trace
+ExecStart=/bin/sh -c ${HOME}/bin/bt-trace
+# No NoNewPrivileges=true: btmon is started through sudo.
+Restart=always
+# A failing sudo or missing btmon must not spin; nothing else depends on
+# this trace, so a slow retry costs nothing.
+RestartSec=60
+Nice=10
+
+[Install]
+WantedBy=default.target
