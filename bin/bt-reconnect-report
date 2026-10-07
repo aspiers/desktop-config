@@ -9,6 +9,9 @@ each stage took, so a slow reconnect can be pinned on the right party:
   adv->create    laptop: host asked the controller to connect
   create->conn   radio:  link established
   conn->input    laptop: GATT/HID setup until the kernel input device exists
+  hidpp    HID++-sized (19-byte) requests the laptop sent between link-up
+                 and the input device; the kernel waits 5s for each reply, so
+                 several here means the mouse's replies are not arriving
   usb-susp       how long the controller sat USB runtime-suspended between
                  resume (or disconnect) and connection; if ->adv is large
                  and so is this, USB autosuspend is the suspect, not the mouse
@@ -78,6 +81,7 @@ class Reconnect:
     create: datetime | None = None
     input_ready: datetime | None = None
     usb_suspended: timedelta | None = None
+    hidpp_requests: int = 0
 
     @property
     def scenario(self) -> str:
@@ -165,6 +169,7 @@ def first_after(times: list[datetime], floor: datetime | None, limit: datetime) 
     return None
 
 
+HIDPP_LEN_RE = re.compile(r"#\d+: len 26 ")
 USB_RE = re.compile(r"^= bt-trace: USB controller runtime (\S+)")
 
 
@@ -192,6 +197,10 @@ def build(blocks: list[Block], names: dict[str, str], since: datetime) -> list[R
     inputs = journal_lines(since, r"^input: .* as /devices/virtual/misc/uhid/")
     scans = [b.ts for b in blocks if is_scan_enable(b)]
     usb = [(b.ts, m.group(1)) for b in blocks if (m := USB_RE.match(b.header))]
+    # A 26-byte ACL packet is ATT write header plus a 19-byte HID++ long
+    # report; only the completion events survive bt-trace's filter.
+    hidpp_sent = [b.ts for b in blocks if "Number of Completed Packets" in b.header
+                  and any(HIDPP_LEN_RE.search(line) for line in b.body)]
 
     handle_addr: dict[str, str] = {}
     last_disconnect: dict[str, tuple[datetime, str | None]] = {}
@@ -211,6 +220,12 @@ def build(blocks: list[Block], names: dict[str, str], since: datetime) -> list[R
         elif "Disconnect Complete" in block.header:
             addr = handle_addr.pop(block.handle(), None)
             if addr:
+                last_disconnect[addr] = (block.ts, block.field("Reason"))
+        elif "MGMT Event: Device Disconnected" in block.header:
+            # Carries the address, so it works when the trace began
+            # mid-connection and the handle was never seen.
+            addr = block.address("LE Address") or block.address("BR/EDR Address")
+            if addr and addr not in last_disconnect:
                 last_disconnect[addr] = (block.ts, block.field("Reason"))
         elif is_conn_complete(block) and (block.field("Status") or "").startswith("Success"):
             addr = block.address()
@@ -235,6 +250,9 @@ def build(blocks: list[Block], names: dict[str, str], since: datetime) -> list[R
                         rc.input_ready = ts
                     break
             rc.usb_suspended = suspended_time(usb, start, rc.connected)
+            rc.hidpp_requests = sum(
+                1 for ts in hidpp_sent
+                if rc.connected <= ts <= (rc.input_ready or rc.connected + timedelta(seconds=60)))
             reconnects.append(rc)
     return reconnects
 
@@ -252,7 +270,7 @@ def fmt(delta: timedelta | None) -> str:
 def report(reconnects: list[Reconnect], show_all: bool) -> None:
     rows = [r for r in reconnects if show_all or "MX" in r.name or "LIFT" in r.name]
     print(f"{'connected':19} {'device':14} {'scenario':12} {'resume->scan':>12} "
-          f"{'->adv':>7} {'adv->create':>11} {'create->conn':>12} {'conn->input':>11} {'usb-susp':>8}  "
+          f"{'->adv':>7} {'adv->create':>11} {'create->conn':>12} {'conn->input':>11} {'hidpp':>5} {'usb-susp':>8}  "
           "disconnect reason")
     for r in rows:
         origin = r.resumed or r.disconnected
@@ -260,7 +278,7 @@ def report(reconnects: list[Reconnect], show_all: bool) -> None:
               f"{gap(r.resumed, r.scan_enabled):>12} {gap(origin, r.first_adv):>7} "
               f"{gap(r.first_adv, r.create):>11} {gap(r.create, r.connected):>12} "
               f"{gap(r.connected, r.input_ready):>11} "
-              f"{fmt(r.usb_suspended):>8}  {r.disconnect_reason or '-'}")
+              f"{r.hidpp_requests:>5} {fmt(r.usb_suspended):>8}  {r.disconnect_reason or '-'}")
 
     print()
     for scenario in ("after-resume", "no-resume"):
