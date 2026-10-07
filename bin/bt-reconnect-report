@@ -14,6 +14,11 @@ each stage took, so a slow reconnect can be pinned on the right party:
                  several here means the mouse's replies are not arriving
   hidpp-rx 19-byte notifications received in the same span, i.e. HID++
                  replies (needs the ATT metadata bt-trace keeps for mice)
+  to-kern  of those, how many bluetoothd passed to the kernel (uhid)
+  to-drv   how many reached the Logitech driver
+  drops    HID core refusals of any input report, with the error codes
+  t/o      driver requests that timed out after 5s
+                 (these four need bt-trace's kernel probes)
   usb-susp       how long the controller sat USB runtime-suspended between
                  resume (or disconnect) and connection; if ->adv is large
                  and so is this, USB autosuspend is the suspect, not the mouse
@@ -85,6 +90,10 @@ class Reconnect:
     usb_suspended: timedelta | None = None
     hidpp_requests: int = 0
     hidpp_replies: int = 0
+    to_kernel: int | None = None
+    to_driver: int | None = None
+    drops: list[str] = field(default_factory=list)
+    timeouts: int | None = None
 
     @property
     def scenario(self) -> str:
@@ -174,6 +183,8 @@ def first_after(times: list[datetime], floor: datetime | None, limit: datetime) 
 
 HIDPP_LEN_RE = re.compile(r"#\d+: len 26 ")
 USB_RE = re.compile(r"^= bt-trace: USB controller runtime (\S+)")
+HID_RE = re.compile(r"^= bt-hid: (\S+) (.*?)  \d{4}-")
+ETIMEDOUT = "-110"
 
 
 def suspended_time(transitions: list[tuple[datetime, str]],
@@ -203,6 +214,9 @@ def build(blocks: list[Block], names: dict[str, str], since: datetime) -> list[R
                 and any("Notification" in line for line in b.body)
                 and any("Data[19]" in line for line in b.body)]
     usb = [(b.ts, m.group(1)) for b in blocks if (m := USB_RE.match(b.header))]
+    hid = [(b.ts, m.group(1), dict(kv.split("=", 1) for kv in m.group(2).split()))
+           for b in blocks if (m := HID_RE.match(b.header))]
+    hid_start = hid[0][0] if hid else None
     # A 26-byte ACL packet is ATT write header plus a 19-byte HID++ long
     # report; only the completion events survive bt-trace's filter.
     hidpp_sent = [b.ts for b in blocks if "Number of Completed Packets" in b.header
@@ -259,6 +273,14 @@ def build(blocks: list[Block], names: dict[str, str], since: datetime) -> list[R
             until = rc.input_ready or rc.connected + timedelta(seconds=60)
             rc.hidpp_requests = sum(1 for ts in hidpp_sent if rc.connected <= ts <= until)
             rc.hidpp_replies = sum(1 for ts in hidpp_rx if rc.connected <= ts <= until)
+            if hid_start and hid_start <= rc.connected:
+                span = [(ev, args) for ts, ev, args in hid if rc.connected <= ts <= until]
+                rc.to_kernel = sum(1 for ev, a in span if ev == "uhid_write"
+                                   and a.get("type") == "12" and a.get("size") == "20")
+                rc.to_driver = sum(1 for ev, _ in span if ev == "hidpp_rx")
+                rc.drops = [a["ret"] for ev, a in span if ev == "hid_input_ret"]
+                rc.timeouts = sum(1 for ev, a in span if ev == "hidpp_sync_ret"
+                                  and a.get("ret") == ETIMEDOUT)
             reconnects.append(rc)
     return reconnects
 
@@ -269,6 +291,19 @@ def gap(start: datetime | None, end: datetime | None) -> str:
     return f"{(end - start).total_seconds():.1f}s"
 
 
+def num(value: int | None) -> str:
+    return "-" if value is None else str(value)
+
+
+def drops(r: Reconnect) -> str:
+    if r.to_kernel is None:
+        return "-"
+    if not r.drops:
+        return "0"
+    codes = sorted(set(r.drops))
+    return f"{len(r.drops)}({','.join(codes)})"
+
+
 def fmt(delta: timedelta | None) -> str:
     return "-" if delta is None else f"{delta.total_seconds():.1f}s"
 
@@ -276,7 +311,8 @@ def fmt(delta: timedelta | None) -> str:
 def report(reconnects: list[Reconnect], show_all: bool) -> None:
     rows = [r for r in reconnects if show_all or "MX" in r.name or "LIFT" in r.name]
     print(f"{'connected':19} {'device':14} {'scenario':12} {'resume->scan':>12} "
-          f"{'->adv':>7} {'adv->create':>11} {'create->conn':>12} {'conn->input':>11} {'hidpp':>5} {'hidpp-rx':>8} {'usb-susp':>8}  "
+          f"{'->adv':>7} {'adv->create':>11} {'create->conn':>12} {'conn->input':>11} {'hidpp':>5} {'hidpp-rx':>8} "
+          f"{'to-kern':>7} {'to-drv':>6} {'drops':>9} {'t/o':>3} {'usb-susp':>8}  "
           "disconnect reason")
     for r in rows:
         origin = r.resumed or r.disconnected
@@ -284,7 +320,9 @@ def report(reconnects: list[Reconnect], show_all: bool) -> None:
               f"{gap(r.resumed, r.scan_enabled):>12} {gap(origin, r.first_adv):>7} "
               f"{gap(r.first_adv, r.create):>11} {gap(r.create, r.connected):>12} "
               f"{gap(r.connected, r.input_ready):>11} "
-              f"{r.hidpp_requests:>5} {r.hidpp_replies:>8} {fmt(r.usb_suspended):>8}  {r.disconnect_reason or '-'}")
+              f"{r.hidpp_requests:>5} {r.hidpp_replies:>8} "
+              f"{num(r.to_kernel):>7} {num(r.to_driver):>6} {drops(r):>9} {num(r.timeouts):>3} "
+              f"{fmt(r.usb_suspended):>8}  {r.disconnect_reason or '-'}")
 
     print()
     for scenario in ("after-resume", "no-resume"):

@@ -4,6 +4,9 @@ Description=Record Bluetooth HCI events for diagnosing slow reconnects (dc-t4i)
 [Service]
 SyslogIdentifier=bt-trace
 ExecStart=/bin/sh -c ${HOME}/bin/bt-trace
+# Stopping kills the script before its own cleanup can call sudo, so
+# disable the kernel probes from here.
+ExecStopPost=/bin/sh -c '${HOME}/bin/bt-trace --teardown'
 # No NoNewPrivileges=true: btmon is started through sudo.
 Restart=always
 # A failing sudo or missing btmon must not spin; nothing else depends on

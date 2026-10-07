@@ -16,6 +16,10 @@
 # HID++ queries sent during driver probe get any reply, without recording
 # what the mouse reports.
 #
+# btmon stops at bluetoothd, so kernel probes (watch_hid) follow an HID++
+# reply on from there into the Logitech driver, logging only event types,
+# sizes, device numbers and return codes.
+
 # One file per day; files older than $keep_days are pruned, and a day's
 # file stops growing at $max_bytes, so the log cannot fill the disk even
 # if something starts a noisy discovery scan.
@@ -62,6 +66,123 @@ watch_usb_pm() {
     done
 }
 
+tracefs=/sys/kernel/tracing
+instance=$tracefs/instances/bt-trace
+
+# "name definition|filter".  uhid_write is bluetoothd handing an input
+# report to the kernel (type 12 = UHID_INPUT2), hid_input the HID core
+# receiving it, hidpp_rx the Logitech driver; hidpp_sync is the driver's
+# own request, whose return is -110 when it gave up after 5s.  Size 20 is
+# an HID++ long report with its ID, so the filters keep mouse movement out.
+# shellcheck disable=SC2016  # $arg2 and $retval are tracefs syntax
+hid_probes=(
+    'uhid_write uhid_char_write type=+u0($arg2):u32 size=+u4($arg2):u16|type != 12 || size == 20'
+    'uhid_event uhid_queue_event id=uhid->hid->id event=event'
+    'hid_input __hid_input_report id=hid->id size=size|size == 20'
+    'hid_input_ret __hid_input_report%return ret=$retval:s32|ret != 0'
+    'hidpp_rx hidpp_raw_event id=hdev->id size=size|size == 20'
+    'hidpp_sync hidpp_send_message_sync id=hidpp->hid_dev->id'
+    'hidpp_sync_ret hidpp_send_message_sync%return ret=$retval:s32'
+)
+
+root_write() {
+    printf '%s\n' "$2" | sudo -n tee -a "$1" >/dev/null
+}
+
+hid_probe_teardown() {
+    local ev
+    if sudo -n test -d "$instance"; then
+        root_write "$instance/tracing_on" 0
+        sudo -n rmdir "$instance"
+    fi
+    for ev in $(sudo -n grep -o 'bttrace/[a-z_]*' "$tracefs/dynamic_events"); do
+        root_write "$tracefs/dynamic_events" "-:$ev"
+    done
+}
+
+hid_probe_setup() {
+    local probe def name
+    hid_probe_teardown
+    sudo -n mkdir "$instance" || return 1
+    # A private instance, so other tracing users are unaffected; boot
+    # clock, so the wall-clock offset survives suspend; and a small
+    # buffer, since the filters leave little to hold.
+    root_write "$instance/trace_clock" boot
+    root_write "$instance/buffer_size_kb" 64
+    for probe in "${hid_probes[@]}"; do
+        def=${probe%%|*}
+        name=${def%% *}
+        if ! root_write "$tracefs/dynamic_events" "f:bttrace/$name ${def#* }"; then
+            echo "bt-trace: cannot probe $name; continuing without it" >&2
+            continue
+        fi
+        [[ $probe == *'|'* ]] && root_write "$instance/events/bttrace/$name/filter" "${probe#*|}"
+        root_write "$instance/events/bttrace/$name/enable" 1
+    done
+}
+
+# Trace timestamps use the boot clock; a marker carrying the wall-clock
+# time lets the filter convert them, and repeating it tracks NTP steps.
+hid_stream() {
+    while root_write "$instance/trace_marker" "bt-trace sync $EPOCHREALTIME"; do
+        sleep 300
+    done &
+    sudo -n cat "$instance/trace_pipe"
+}
+
+watch_hid() {
+    hid_probe_setup || { echo "bt-trace: kernel probes unavailable" >&2; return 0; }
+    hid_stream | gawk -v dir="$dir" -v prefix=hid- -v keep_days="$keep_days" \
+        -v max_bytes="$max_bytes" "$awk_log_lib"'
+        match($0, /([0-9]+\.[0-9]+): ([a-z_]+): (.*)$/, m) {
+            if (m[2] == "tracing_mark_write") {
+                if (match(m[3], /bt-trace sync ([0-9.]+)/, s)) offset = s[1] - m[1]
+                next
+            }
+            if (offset == "") next
+            rest = m[3]
+            sub(/^\([^)]*\) ?/, "", rest)
+            w = m[1] + offset
+            emit(sprintf("= bt-hid: %s %s  %s.%06d", m[2], rest,
+                         strftime("%Y-%m-%d %H:%M:%S", int(w)), (w - int(w)) * 1000000))
+        }
+    '
+}
+
+# Shared by both log writers: one file per day per $prefix, pruned after
+# $keep_days and capped at $max_bytes.
+awk_log_lib='
+    function open_day(   day, size_cmd) {
+        day = strftime("%Y%m%d")
+        if (day == current) return
+        if (out) close(out)
+        current = day
+        out = dir "/" prefix day ".log"
+        # Count what earlier runs wrote today, so restarts cannot
+        # each start afresh under the cap.
+        written = 0
+        size_cmd = "stat -c %s \"" out "\" 2>/dev/null"
+        size_cmd | getline written
+        close(size_cmd)
+        capped = 0
+        system("find \"" dir "\" -maxdepth 1 -name \"*.log\" -mtime +" keep_days " -delete")
+    }
+
+    function emit(line) {
+        open_day()
+        if (capped) return
+        if (written + length(line) + 1 > max_bytes) {
+            print "= bt-trace: daily size cap reached, dropping until midnight" >> out
+            fflush(out)
+            capped = 1
+            return
+        }
+        print line >> out
+        fflush(out)
+        written += length(line) + 1
+    }
+'
+
 # Paired devices BlueZ classes as mice, read at start: a mouse paired
 # later is covered from the next restart.
 paired_mice() {
@@ -73,37 +194,30 @@ paired_mice() {
     done
 }
 
-if [ "${1:-}" = --stdin ]; then
+if [ "${1:-}" = --teardown ]; then
+    hid_probe_teardown
+    exit
+elif [ "${1:-}" = --stdin ]; then
     mice=${BT_TRACE_MICE:-}
 else
     mice=$(paired_mice)
     echo "ATT metadata window for mice: ${mice:-none found}" >&2
     watch_usb_pm &
-    trap 'kill $! 2>/dev/null' EXIT
+    watchers=$!
+    watch_hid &
+    watchers+=" $!"
+    # Without a TERM trap bash skips the EXIT trap when systemd stops it,
+    # leaving the probes enabled.
+    trap 'exit 143' TERM INT
+    trap 'kill $watchers 2>/dev/null; hid_probe_teardown' EXIT
 fi
 
 hci_stream "$@" |
-    gawk -v dir="$dir" -v keep_days="$keep_days" -v max_bytes="$max_bytes" \
-         -v mice="$mice" -v mouse_window="$mouse_window" '
+    gawk -v dir="$dir" -v prefix= -v keep_days="$keep_days" -v max_bytes="$max_bytes" \
+         -v mice="$mice" -v mouse_window="$mouse_window" "$awk_log_lib"'
         BEGIN {
             n = split(mice, list, " ")
             for (i = 1; i <= n; i++) is_mouse[list[i]] = 1
-        }
-
-        function open_day(   day) {
-            day = strftime("%Y%m%d")
-            if (day == current) return
-            if (out) close(out)
-            current = day
-            out = dir "/" day ".log"
-            # Count what earlier runs wrote today, so restarts cannot
-            # each start afresh under the cap.
-            written = 0
-            size_cmd = "stat -c %s \"" out "\" 2>/dev/null"
-            size_cmd | getline written
-            close(size_cmd)
-            capped = 0
-            system("find \"" dir "\" -maxdepth 1 -name \"*.log\" -mtime +" keep_days " -delete")
         }
 
         # Block headers are unindented (MGMT ones carry a "process[pid]: "
@@ -145,8 +259,6 @@ hci_stream "$@" |
         }
 
         keep {
-            open_day()
-            if (capped) next
             # -C pads headers out to the timestamp column.
             if ($0 ~ /^[^ \t]/) gsub(/ {3,}/, "  ")
             # HCI and MGMT print pairing keys in clear ("LE Start
@@ -155,14 +267,6 @@ hci_stream "$@" |
             # differently.
             else if ($0 ~ /[Kk]ey[^:]*: / || $0 ~ /[0-9a-fA-F]{32}/)
                 sub(/: .*/, ": [redacted]")
-            if (written + length($0) + 1 > max_bytes) {
-                print "= bt-trace: daily size cap reached, dropping until midnight" >> out
-                fflush(out)
-                capped = 1
-                next
-            }
-            print >> out
-            fflush(out)
-            written += length($0) + 1
+            emit($0)
         }
     '
