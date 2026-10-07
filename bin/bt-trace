@@ -4,10 +4,17 @@
 # so slow reconnects (dc-t4i) can be timed from history rather than
 # reproduced on demand.  Read the results with bt-reconnect-report.
 #
-# Only HCI command/event, MGMT and note blocks are kept.  ACL, SCO and ISO
-# data blocks are dropped before reaching disk, because they carry HID
-# reports: keystrokes from Bluetooth keyboards must never be logged.
+# Only HCI command/event, MGMT and note blocks are kept in full.  ACL, SCO
+# and ISO data blocks are dropped before reaching disk, because they carry
+# HID reports: keystrokes from Bluetooth keyboards must never be logged.
 # Pairing keys printed in command/event blocks are redacted.
+#
+# The one exception: for $mouse_window seconds after a paired mouse
+# connects, ACL blocks on that mouse's link only are kept as ATT metadata
+# (opcode, attribute handle, error, value length), with every value
+# stripped except notification-enable (CCC) writes.  That shows whether
+# HID++ queries sent during driver probe get any reply, without recording
+# what the mouse reports.
 #
 # One file per day; files older than $keep_days are pruned, and a day's
 # file stops growing at $max_bytes, so the log cannot fill the disk even
@@ -18,6 +25,7 @@ set -euo pipefail
 dir=${BT_TRACE_DIR:-$HOME/.log/bt-trace}
 keep_days=${BT_TRACE_KEEP_DAYS:-14}
 max_bytes=${BT_TRACE_MAX_BYTES:-$((50 * 1024 * 1024))}
+mouse_window=${BT_TRACE_MOUSE_WINDOW:-60}
 
 umask 077
 mkdir -p "$dir"
@@ -54,13 +62,34 @@ watch_usb_pm() {
     done
 }
 
-if [ "${1:-}" != --stdin ]; then
+# Paired devices BlueZ classes as mice, read at start: a mouse paired
+# later is covered from the next restart.
+paired_mice() {
+    local addr
+    for addr in $(bluetoothctl devices Paired 2>/dev/null | awk '{print $2}'); do
+        if bluetoothctl info "$addr" 2>/dev/null | grep -q 'Icon: input-mouse'; then
+            printf '%s ' "$addr"
+        fi
+    done
+}
+
+if [ "${1:-}" = --stdin ]; then
+    mice=${BT_TRACE_MICE:-}
+else
+    mice=$(paired_mice)
+    echo "ATT metadata window for mice: ${mice:-none found}" >&2
     watch_usb_pm &
     trap 'kill $! 2>/dev/null' EXIT
 fi
 
 hci_stream "$@" |
-    gawk -v dir="$dir" -v keep_days="$keep_days" -v max_bytes="$max_bytes" '
+    gawk -v dir="$dir" -v keep_days="$keep_days" -v max_bytes="$max_bytes" \
+         -v mice="$mice" -v mouse_window="$mouse_window" '
+        BEGIN {
+            n = split(mice, list, " ")
+            for (i = 1; i <= n; i++) is_mouse[list[i]] = 1
+        }
+
         function open_day(   day) {
             day = strftime("%Y%m%d")
             if (day == current) return
@@ -81,8 +110,38 @@ hci_stream "$@" |
         # prefix); continuation lines are indented and inherit the decision
         # made for their header.  Anything unrecognised is dropped.
         /^[^ \t]/ {
-            keep = ($0 !~ /ACL|SCO|ISO Data/ &&
-                    $0 ~ /^[<>] HCI (Command|Event)|^([^ ]+: )?@ MGMT|^= /)
+            acl = 0
+            ccc = 0
+            conn_event = ($0 ~ /LE Meta Event/)
+            disc_event = ($0 ~ /Disconnect Complete/)
+            if ($0 ~ /^[<>] ACL Data/) {
+                acl = match($0, /Handle ([0-9]+)/, h) &&
+                      (h[1] in mouse_until) && systime() < mouse_until[h[1]]
+                keep = acl
+            } else {
+                keep = ($0 !~ /SCO|ISO Data/ &&
+                        $0 ~ /^[<>] HCI (Command|Event)|^([^ ]+: )?@ MGMT|^= /)
+            }
+        }
+
+        # Open a mouse link window: Handle precedes Peer address in
+        # LE (Enhanced) Connection Complete.
+        conn_event && /^[ \t]+Handle: [0-9]+/ { conn_handle = $2 }
+        conn_event && /^[ \t]+Peer address: / && ($3 in is_mouse) {
+            mouse_until[conn_handle] = systime() + mouse_window
+        }
+
+        # Handles are reused, so close the window when the link goes.
+        disc_event && /^[ \t]+Handle: [0-9]+/ { delete mouse_until[$2] }
+
+        # Mouse ACL: keep a whitelist of metadata lines only.
+        acl && /^[ \t]/ {
+            if ($0 ~ /Client Characteristic Configuration/) ccc = 1
+            if ($0 ~ /Data(\[[0-9]+\])?: /) {
+                if (!ccc) sub(/: .*/, "")
+            } else if ($0 !~ /ATT: |L2CAP: |Handle: 0x|Error: /) {
+                next
+            }
         }
 
         keep {
