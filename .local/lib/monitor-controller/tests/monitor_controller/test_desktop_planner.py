@@ -94,6 +94,7 @@ from monitor_controller.runtime.dispatcher import NullDispatcher
 from monitor_controller.shadow import ShadowDesktopContextSource, load_saved_profiles
 
 if TYPE_CHECKING:
+    from monitor_controller.desktop.planner import DesktopPlanningInputs
     from monitor_controller.observer.autorandr import SavedAutorandrProfile
 
 _REPO = next(
@@ -891,6 +892,60 @@ def test_transient_missing_planning_input_is_retryable(tmp_path: Path) -> None:
             template.input_key.layout,
         )
     subject.close()
+
+
+def _capture_hashes(
+    root: Path, template: RequestPlan, inputs: DesktopPlanningInputs
+) -> object:
+    subject = FilesystemDesktopPlanningInputSource(
+        root=root, display=inputs.display, context=inputs.context
+    )
+    try:
+        return subject.capture_planning_configuration(
+            template.profile, template.input_key.layout
+        ).configuration_hashes
+    finally:
+        subject.close()
+
+
+def test_symlinked_planning_inputs_are_captured_by_content(tmp_path: Path) -> None:
+    """Linked configuration is ordinary in a stow tree (`dc-nyl3`).
+
+    A symlinked overlay used to fail every observation. Every consumed file is
+    linked here, to targets outside the root, through a linked directory too.
+    """
+    source, template = _celtic()
+    original_inputs = source.load(template)
+    plain = tmp_path / "plain"
+    linked = tmp_path / "linked"
+    targets = tmp_path / "targets"
+    _materialize_snapshot(plain, original_inputs.configuration)
+    _materialize_snapshot(linked, original_inputs.configuration)
+    _materialize_snapshot(targets, original_inputs.configuration)
+    for item in original_inputs.configuration.inputs:
+        if item.content is None or InputRole.CONTEXT in item.roles:
+            continue
+        (linked / item.path).unlink()
+        (linked / item.path).symlink_to(targets / item.path)
+    common = linked / ".fluxbox" / "layouts" / "common"
+    shutil.rmtree(common)
+    common.symlink_to(targets / ".fluxbox" / "layouts" / "common")
+
+    assert _capture_hashes(linked, template, original_inputs) == _capture_hashes(
+        plain, template, original_inputs
+    )
+
+
+def test_dangling_symlinked_planning_input_counts_as_missing(tmp_path: Path) -> None:
+    source, template = _celtic()
+    original_inputs = source.load(template)
+    _materialize_snapshot(tmp_path, original_inputs.configuration)
+    keys = tmp_path / ".fluxbox" / "keys.erb"
+    keys.unlink()
+    keys.symlink_to(tmp_path / "nowhere")
+
+    with pytest.raises(PlanningInputsChangedError, match="does not exist"):
+        _capture_hashes(tmp_path, template, original_inputs)
 
 
 def test_every_consumed_real_configuration_changes_its_semantic_intent(

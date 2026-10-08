@@ -556,6 +556,34 @@ def test_saved_profile_loader_uses_only_explicit_profile_root(tmp_path: Path) ->
     assert profiles[0].configuration_hashes
 
 
+def test_symlinked_profiles_are_isolated_as_regular_copies(tmp_path: Path) -> None:
+    """Linked profile directories and files are ordinary config (`dc-nyl3`)."""
+    fixture = Path(__file__).parent / "fixtures" / "autorandr" / "profiles" / "celtic"
+    elsewhere = tmp_path / "elsewhere"
+    shutil.copytree(fixture, elsewhere / "celtic")
+    shutil.copytree(fixture, elsewhere / "linked-files")
+    source = tmp_path / "autorandr"
+    source.mkdir()
+    (source / "celtic").symlink_to(elsewhere / "celtic")
+    linked_files = source / "linked-files"
+    linked_files.mkdir()
+    for name in ("config", "setup"):
+        (linked_files / name).symlink_to(elsewhere / "linked-files" / name)
+    isolation = tmp_path / "isolation"
+
+    profiles = prepare_isolated_autorandr_namespace(source, isolation)
+
+    assert tuple(item.name for item in profiles) == ("celtic", "linked-files")
+    plain = tmp_path / "plain"
+    shutil.copytree(fixture, plain / "celtic")
+    assert (
+        profiles[0].configuration_hashes
+        == load_saved_profiles(plain)[0].configuration_hashes
+    )
+    copies = isolation / "config" / "autorandr"
+    assert not any(path.is_symlink() for path in copies.rglob("*"))
+
+
 def test_isolated_autorandr_preserves_inherited_xauthority_exactly(
     tmp_path: Path,
 ) -> None:

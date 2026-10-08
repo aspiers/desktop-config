@@ -3,11 +3,9 @@
 
 Both composition roots read a handful of tiny text files at startup: the
 desktop theme, autorandr settings, saved profile fragments. A plain
-``Path.read_text()`` on those is wrong in three ways that only show up when
+``Path.read_text()`` on those is wrong in two ways that only show up when
 something is unusual:
 
-* it follows symlinks, so the file that is read need not be the file that was
-  named;
 * it happily opens a device node or a FIFO, and reading a FIFO blocks the
   controller forever at startup; and
 * it is unbounded, so a file that should hold ``dark`` can hold a gigabyte.
@@ -16,6 +14,12 @@ None of this is a privilege boundary — every path involved is under the user's
 own ``$HOME``, and anyone who can rewrite these files can do worse directly.
 It is about a controller that starts predictably or not at all, rather than
 one that hangs on a FIFO with no message.
+
+Symlinks are followed (`dc-nyl3`). Configuration in a stow-managed dotfiles
+tree is routinely shared by linking one file to another, and a file reached
+through a link is no less trustworthy than one written in place: whoever can
+create the link can write the content directly. Only the target's type and
+size matter, and those are checked on the opened descriptor.
 
 The reader lives here rather than in either composition root because both need
 it, and a copy in each is how the two drifted apart in the first place: the
@@ -42,6 +46,20 @@ if TYPE_CHECKING:
 # is a backstop against pathological input rather than a considered capacity.
 MAX_CONFIGURATION_BYTES: int = 1 << 20
 
+# Flags for reading user configuration, which may be reached through symlinks.
+# Unlike DIRECTORY_OPEN_FLAGS and FILE_READ_FLAGS below, these omit O_NOFOLLOW:
+# that protects state the controller writes itself, not configuration it reads.
+CONFIGURATION_DIRECTORY_OPEN_FLAGS: int = (
+    os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_DIRECTORY", 0)
+)
+# O_NONBLOCK matters for a FIFO, possibly reached through a link: without it
+# open() blocks until a writer appears, so the regular-file check that follows
+# never runs and the controller hangs with no message. It has no effect on a
+# regular file, which is the only kind accepted anyway.
+CONFIGURATION_FILE_READ_FLAGS: int = (
+    os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NONBLOCK", 0)
+)
+
 
 def read_bounded_text(
     path: Path,
@@ -60,20 +78,13 @@ def read_bounded_text(
     startup error, and callers catch those rather than a shared type, so the
     class is injected instead of fixed here.
 
-    Refuses, in order: a symlink at the final component (``O_NOFOLLOW``),
-    anything that is not a regular file, more than *max_bytes* of content, and
-    anything that is not valid UTF-8.
+    Follows symlinks, then refuses, in order: anything that is not a regular
+    file, more than *max_bytes* of content, and anything that is not valid
+    UTF-8.
     """
     descriptor: int | None = None
     try:
-        # O_NONBLOCK matters for the FIFO case specifically: without it the
-        # open() itself blocks until a writer appears, so the regular-file
-        # check below never runs and startup hangs with no message. It has no
-        # effect on a regular file, which is the only kind accepted anyway.
-        descriptor = os.open(
-            path,
-            os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW | os.O_NONBLOCK,
-        )
+        descriptor = os.open(path, CONFIGURATION_FILE_READ_FLAGS)
         if not stat.S_ISREG(os.fstat(descriptor).st_mode):
             msg = f"{reference} is not a regular file: {path}"
             raise error(msg)
@@ -84,9 +95,8 @@ def read_bounded_text(
             # and a larger one is detectable without reading all of it.
             raw = stream.read(max_bytes + 1)
     except OSError as os_error:
-        # Covers the O_NOFOLLOW refusal (ELOOP) as well as absence and
-        # permissions, all of which mean the same thing to a caller: this file
-        # cannot be trusted to say what it should.
+        # Absence, a dangling link and permissions all mean the same thing to
+        # a caller: this file cannot be trusted to say what it should.
         msg = f"cannot read {reference}: {path}"
         raise error(msg) from os_error
     finally:

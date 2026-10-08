@@ -25,7 +25,7 @@ from monitor_controller.safeio import (
     read_bounded_text,
     read_reference_dpi,
 )
-from monitor_controller.shadow import ShadowPaths, ShadowStartupError, shadow_theme
+from monitor_controller.shadow import ShadowPaths, shadow_theme
 
 
 class _ProbeError(RuntimeError):
@@ -52,17 +52,36 @@ class TestReadBoundedText:
         path.write_text("dark\n", encoding="utf-8")
         assert read_bounded_text(path, "desktop:theme", _ProbeError) == "dark\n"
 
-    def test_it_refuses_a_symlink(self, tmp_path: Path) -> None:
-        """The file read must be the file named.
+    def test_it_follows_a_symlink(self, tmp_path: Path) -> None:
+        """Linking one configuration file to another is ordinary (`dc-nyl3`).
 
-        Without `O_NOFOLLOW` the reader silently follows the link and returns
-        content from somewhere else entirely.
+        A linked file is no less trusted than one written in place, so the
+        reader returns the target's content.
         """
         (tmp_path / "elsewhere").write_text("light", encoding="utf-8")
         link = tmp_path / "theme"
         link.symlink_to(tmp_path / "elsewhere")
 
+        assert read_bounded_text(link, "desktop:theme", _ProbeError) == "light"
+
+    def test_it_refuses_a_dangling_symlink(self, tmp_path: Path) -> None:
+        """A link to nothing is as unreadable as a missing file."""
+        link = tmp_path / "theme"
+        link.symlink_to(tmp_path / "nowhere")
+
         with pytest.raises(_ProbeError, match="cannot read desktop:theme"):
+            read_bounded_text(link, "desktop:theme", _ProbeError)
+
+    def test_it_refuses_a_symlinked_fifo_rather_than_blocking(
+        self, tmp_path: Path
+    ) -> None:
+        """Following links must not reopen the FIFO hang."""
+        fifo = tmp_path / "pipe"
+        os.mkfifo(fifo)
+        link = tmp_path / "theme"
+        link.symlink_to(fifo)
+
+        with pytest.raises(_ProbeError, match="not a regular file"):
             read_bounded_text(link, "desktop:theme", _ProbeError)
 
     def test_it_refuses_a_directory(self, tmp_path: Path) -> None:
@@ -166,18 +185,14 @@ class TestActiveTheme:
         paths.config_home.mkdir(parents=True)
         assert active_theme(paths) == "dark"
 
-    def test_it_refuses_a_symlinked_theme(self, tmp_path: Path) -> None:
-        """The regression: the authoritative controller followed symlinks.
-
-        This assertion fails against the version shipped in `a6599ff`.
-        """
+    def test_it_follows_a_symlinked_theme(self, tmp_path: Path) -> None:
+        """A linked theme file is read through the link (`dc-nyl3`)."""
         paths = _paths(tmp_path)
         paths.config_home.mkdir(parents=True)
         (tmp_path / "elsewhere").write_text("light", encoding="utf-8")
         (paths.config_home / "theme").symlink_to(tmp_path / "elsewhere")
 
-        with pytest.raises(ActiveStartupError, match="cannot read desktop:theme"):
-            active_theme(paths)
+        assert active_theme(paths) == "light"
 
     def test_it_refuses_an_unrecognised_theme(self, tmp_path: Path) -> None:
         """Only two values are meaningful downstream."""
@@ -213,13 +228,13 @@ def test_both_composition_roots_read_the_theme_identically(tmp_path: Path) -> No
     (config_home / "theme").unlink()
     assert active_theme(active) == shadow_theme(shadow) == "dark"
 
-    # A symlink must be refused by both, not just by shadow.
+    # Both follow a symlink, and both treat a dangling one as absent.
     (tmp_path / "elsewhere").write_text("light", encoding="utf-8")
     (config_home / "theme").symlink_to(tmp_path / "elsewhere")
-    with pytest.raises(ActiveStartupError):
-        active_theme(active)
-    with pytest.raises(ShadowStartupError):
-        shadow_theme(shadow)
+    assert active_theme(active) == shadow_theme(shadow) == "light"
+
+    (tmp_path / "elsewhere").unlink()
+    assert active_theme(active) == shadow_theme(shadow) == "dark"
 
 
 class TestReadReferenceDpi:

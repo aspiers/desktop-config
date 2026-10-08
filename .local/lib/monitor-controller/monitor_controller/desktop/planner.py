@@ -30,10 +30,10 @@ from monitor_controller.observer.autorandr import parse_saved_profile
 from monitor_controller.observer.evidence import TextCommandEvidence
 from monitor_controller.observer.snapshot import PlanningConfigurationCapture
 from monitor_controller.safeio import (
-    DIRECTORY_OPEN_FLAGS as _DIRECTORY_OPEN_FLAGS,
+    CONFIGURATION_DIRECTORY_OPEN_FLAGS as _DIRECTORY_OPEN_FLAGS,
 )
 from monitor_controller.safeio import (
-    FILE_READ_FLAGS as _FILE_READ_FLAGS,
+    CONFIGURATION_FILE_READ_FLAGS as _FILE_READ_FLAGS,
 )
 from monitor_controller.safeio import SHA256_VALUE
 from monitor_controller.safeio import (

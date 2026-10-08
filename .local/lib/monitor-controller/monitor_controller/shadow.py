@@ -610,13 +610,9 @@ def isolated_autorandr_environment(
 def load_saved_profiles(root: Path) -> tuple[SavedAutorandrProfile, ...]:
     """Strictly load current autorandr config/setup/layout files."""
     try:
-        candidates = tuple(
-            sorted(
-                path
-                for path in root.iterdir()
-                if path.is_dir() and not path.is_symlink()
-            )
-        )
+        # is_dir() follows symlinks, so a linked profile directory counts, as
+        # it does for autorandr itself (dc-nyl3).
+        candidates = tuple(sorted(path for path in root.iterdir() if path.is_dir()))
     except OSError as error:
         msg = f"cannot enumerate saved autorandr profiles under {root}"
         raise ShadowStartupError(msg) from error
