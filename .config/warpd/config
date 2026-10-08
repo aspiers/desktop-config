@@ -9,6 +9,7 @@ down: k
 
 hint_exit: q
 hint_chars: abcdefghijklmnoprstuvwxyz
+hint2_chars: uiojklm,.
 # transparency doesn't work properly:
 # https://github.com/rvaiya/warpd/issues/143
 hint_bgcolor: #1c1c1edd
