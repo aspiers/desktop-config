@@ -83,7 +83,10 @@
   [Position]	(UPPERLEFT)	{0 0}
 [end]
 # Keep the dedicated agent-browser profile on the laptop display.
+# FocusProtection needs the backport in home:aspiers:branches:X11:windowmanagers
+# fluxbox: agent clicks and tab switches must never take focus from the user.
 [app] (name=google-chrome.*agent-browser-data.*)
+  [FocusProtection]	{Deny, Refuse}
   [Sticky]	{yes}
   [Head]	{2}
   [Position]	(UPPERLEFT)	{0 0}
