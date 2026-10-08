@@ -253,6 +253,59 @@ def test_planning_manifest_refresh_does_not_change_profile_identity(
         subject.observe()
 
 
+def test_unreadable_planning_input_does_not_fail_the_observation(
+    tmp_path: Path,
+) -> None:
+    """One profile's broken desktop config must not blind the controller.
+
+    A symlinked overlay once failed every observation for minutes (dc-ss34).
+    The profile stays eligible without planning hashes, so it is still
+    applied and planning reports the failure for that profile alone.
+    """
+
+    @dataclass
+    class PlanningConfigurations:
+        profile_hashes: tuple[ConfigurationContentHash, ...]
+        error: Exception | None
+
+        def capture_planning_configuration(
+            self,
+            profile: str,
+            layout: str,
+        ) -> PlanningConfigurationCapture:
+            del profile, layout
+            if self.error is not None:
+                raise self.error
+            return PlanningConfigurationCapture(
+                (ConfigurationContentHash(".fluxbox/keys.erb", "fixed"),),
+                self.profile_hashes,
+            )
+
+    root, commands, profiles = load_manifest(tmp_path, "exact-aoc")
+    for error in (ValueError("cannot safely open"), PermissionError("denied")):
+        planning = PlanningConfigurations(profiles[0].configuration_hashes, error)
+        subject = CanonicalSnapshotCoordinator(
+            drm_tree=RootedSysfsReader(root),
+            command_runner=_FixtureRunner(commands),
+            profiles=StaticSavedProfiles(profiles),
+            boot_id_source=_FakeBoot(),
+            clock=_FakeClock(),
+            event_generation_source=_FakeGeneration(),
+            planning_configuration_source=planning,
+        )
+
+        broken = subject.observe()
+        planning.error = None
+        fixed = subject.observe()
+
+        assert broken.valid
+        assert broken.exact_profile == "celtic+AOC-U28G2G6B"
+        assert broken.eligible_profiles[0].planning_configuration_hashes == ()
+        assert fixed.eligible_profiles[0].planning_configuration_hashes == (
+            ConfigurationContentHash(".fluxbox/keys.erb", "fixed"),
+        )
+
+
 def test_observation_key_is_derived_from_exact_x_geometry(tmp_path: Path) -> None:
     root, commands, profiles = load_manifest(tmp_path, "exact-aoc")
     baseline = coordinator(

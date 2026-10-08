@@ -119,7 +119,10 @@ class PlanningConfigurationSource(Protocol):
         profile: str,
         layout: str,
     ) -> PlanningConfigurationCapture:
-        """Return one immutable full manifest and profile identity subset."""
+        """Return one immutable full manifest and profile identity subset.
+
+        Raises OSError or ValueError when the configuration is unavailable.
+        """
         ...
 
 
@@ -442,10 +445,20 @@ class CanonicalSnapshotCoordinator:
             return facts
         enriched: list[ProfileMatch] = []
         for profile in facts.eligible:
-            capture = source.capture_planning_configuration(
-                profile.profile,
-                profile.layout,
-            )
+            try:
+                capture = source.capture_planning_configuration(
+                    profile.profile,
+                    profile.layout,
+                )
+            except (OSError, ValueError):
+                # One profile's unreadable desktop configuration must not blind
+                # the controller to every topology (dc-ss34). Without planning
+                # hashes the profile is still applied, and desktop planning,
+                # which recaptures the same files, reports the failure for
+                # this profile alone. Fixing the file changes the next capture
+                # and so the planning key, which retries planning.
+                enriched.append(profile)
+                continue
             if capture.profile_configuration_hashes != profile.configuration_hashes:
                 msg = (
                     "saved profile changed between identity and planning capture: "

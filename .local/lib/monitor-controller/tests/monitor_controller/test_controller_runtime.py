@@ -999,6 +999,7 @@ def test_changed_planning_inputs_trigger_fresh_observation_and_retry(
 
 def test_corrected_manifest_replaces_a_nonretryable_failed_plan(
     tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     async def exercise() -> None:
         planner = _Planner(DesktopPlanningError("invalid desktop configuration"))
@@ -1036,6 +1037,12 @@ def test_corrected_manifest_replaces_a_nonretryable_failed_plan(
         await controller.close()
 
     asyncio.run(exercise())
+    journal = capsys.readouterr().err
+    assert (
+        "desktop planning failing: dock: DesktopPlanningError: "
+        "invalid desktop configuration"
+    ) in journal
+    assert "desktop planning recovered" in journal
 
 
 def test_planner_cannot_change_the_exact_admitted_configuration_key(
@@ -1278,6 +1285,55 @@ def test_observation_timeout_is_explicit_and_rearms_authoritative_timer(
         await controller.close()
 
     asyncio.run(exercise())
+
+
+class _FailingObserver(_Observer):
+    def __init__(self, failures: int) -> None:
+        super().__init__()
+        self.failures = failures
+
+    async def observe(self) -> CanonicalObservation:
+        if self.failures:
+            self.failures -= 1
+            self.calls += 1
+            msg = "cannot safely open configuration '.fluxbox/overlay'"
+            raise ValueError(msg)
+        return await super().observe()
+
+
+def test_repeated_observation_failure_is_journaled_once_then_recovery(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Failures retry every second; the journal must show them, but once.
+
+    They reached only the audit log, so a controller unable to observe
+    anything looked idle in the journal (dc-ss34).
+    """
+
+    async def exercise() -> None:
+        observer = _FailingObserver(failures=3)
+        controller, _store, _observer, _planner, _dispatcher, _clock = _controller(
+            tmp_path,
+            state=replace(_state(), next_timer_ms=0),
+            observer=observer,
+        )
+
+        for _ in range(4):
+            deadline = controller.state.next_timer_ms
+            assert deadline is not None
+            await controller.consume(
+                TimerFired(EventMetadata(deadline, _BOOT), deadline)
+            )
+
+        assert observer.failures == 0
+        assert controller.state.latest_observation is not None
+        await controller.close()
+
+    asyncio.run(exercise())
+    journal = capsys.readouterr().err
+    assert journal.count("observation failing: ValueError: cannot safely open") == 1
+    assert journal.count("observation recovered") == 1
 
 
 def test_discard_plan_timeout_is_bounded_with_timer_already_armed(

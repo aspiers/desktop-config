@@ -163,6 +163,7 @@ class SerializedController:
         self._worker_started_ms: dict[ActionId, int] = {}
         self._event_worker_duration_ms: dict[int, int] = {}
         self._pending_boot_observation: tuple[CanonicalObservation, int] | None = None
+        self._journaled_failures: dict[str, str] = {}
         self._fence_depth = 0
         self._started = False
 
@@ -396,6 +397,18 @@ class SerializedController:
     def _journal(message: str) -> None:
         _JOURNAL.info(message)
 
+    def _journal_failure(self, boundary: str, detail: str) -> None:
+        # Failures retry every second, so journal each distinct one once.
+        # Before this they reached only the audit log, and a controller unable
+        # to observe anything looked idle in the journal (dc-ss34).
+        if self._journaled_failures.get(boundary) != detail:
+            self._journaled_failures[boundary] = detail
+            _JOURNAL.warning(f"{boundary} failing: {detail}")
+
+    def _journal_recovery(self, boundary: str) -> None:
+        if self._journaled_failures.pop(boundary, None) is not None:
+            _JOURNAL.info(f"{boundary} recovered")
+
     @staticmethod
     def _external_topology(state: State) -> tuple[object, ...] | None:
         observation = state.latest_observation
@@ -552,6 +565,7 @@ class SerializedController:
                     observation_started_ms, self._clock.monotonic_ms()
                 )
                 reason = _bounded_reason("observation", _exception_detail(error))
+                self._journal_failure("observation", _exception_detail(error))
                 self._audit.append_runtime_failure(
                     boundary="observation",
                     detail=reason,
@@ -571,6 +585,7 @@ class SerializedController:
                 observation_started_ms, self._clock.monotonic_ms()
             )
             observation_duration_ms = observation_finished_ms - observation_started_ms
+            self._journal_recovery("observation")
         else:
             observation, observation_duration_ms = pending
             observation_finished_ms = self._clock.monotonic_ms()
@@ -625,6 +640,7 @@ class SerializedController:
                 timeout=self._planning_timeout_seconds,
             )
             _validate_plan_completion(request, completed)
+            self._journal_recovery("desktop planning")
             event: Event = PlanCompleted(
                 EventMetadata(self._clock.monotonic_ms(), boot_id),
                 request.action_id,
@@ -632,11 +648,15 @@ class SerializedController:
                 completed.plan_hash,
             )
         except Exception as error:  # noqa: BLE001 - explicit adapter trust boundary
+            detail = _exception_detail(error)
+            self._journal_failure(
+                "desktop planning", f"{request.input_key.profile}: {detail}"
+            )
             event = PlanFailed(
                 EventMetadata(self._clock.monotonic_ms(), boot_id),
                 request.action_id,
                 request.input_key,
-                _exception_detail(error),
+                detail,
                 retryable=isinstance(error, PlanningInputsChangedError),
             )
         finally:
