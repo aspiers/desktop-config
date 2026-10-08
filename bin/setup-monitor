@@ -229,6 +229,9 @@ setup_xrandr() {
                 --output "${screen_0_name}" --pos 0x0 --scale 1 --size "$celtic_size" --auto \
                 --output "${screen_1_name}" --pos "${celtic_width}x0" --scale 1 --primary --auto
             ;;
+        BenQ+celtic)
+            # The celtic+BenQ-BL3200 autorandr profile owns this arrangement.
+            ;;
         celtic+BenQ+Dell)
             xrandr \
                 --output "${screen_0_name}" --pos 0x0 --scale 1 --size "$celtic_size" --auto \

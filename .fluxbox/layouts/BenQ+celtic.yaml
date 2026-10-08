@@ -1,0 +1,52 @@
+dpi: 84
+
+# Mirror image of celtic+BenQ: the BenQ sits on the left.  Screens pair
+# with outputs left to right, so the order below must match the physical
+# arrangement saved in the celtic+BenQ-BL3200 autorandr profile.
+screens:
+  -
+    <INCLUDE screens/BenQ>
+    right: celtic
+  -
+    # fluxbox treats primary as head 1, and the BenQ is primary.
+    head: 2
+    <INCLUDE screens/celtic-auxiliary>
+    assignment: secondary
+    left: BenQ
+
+windows:
+
+  <INCLUDE common/monitoring-full-width>
+
+  <INCLUDE common/terminal-windows>
+
+  <INCLUDE common/top-term-windows-secondary>
+
+  <INCLUDE common/editor-windows>
+
+  <INCLUDE common/orca>
+
+  <INCLUDE common/toucan>
+
+  <INCLUDE common/side-projects>
+
+  - - (Name=brave-browser|google-chrome|chromium) (Title=.*(personal$|Panther))
+    - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 5}
+
+  <INCLUDE common/browser-multi>
+
+  <INCLUDE common/firefox>
+
+  <INCLUDE common/notion>
+
+  <INCLUDE common/gitk>
+
+  <INCLUDE common/communication>
+
+  <INCLUDE common/kraken>
+
+  <INCLUDE common/lm-studio>
+
+  <INCLUDE common/system-tools-secondary>
+
+  <INCLUDE common/chrysalis-multi>
