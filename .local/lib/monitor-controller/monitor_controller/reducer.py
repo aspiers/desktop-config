@@ -34,6 +34,7 @@ from .model import (
     Decision,
     DiscardPlan,
     DispatchRejected,
+    DisplayPower,
     DrmHintReceived,
     EdidIntegrity,
     Effect,
@@ -94,6 +95,9 @@ UNKNOWN_STABILITY_MS = 10_000
 UNPLUG_STABILITY_MS = 1_000
 UNPLUG_REQUIRED_SAMPLES = 2
 HEALTH_POLL_MS = 60_000
+# The runtime wakes the reducer as soon as DPMS reports the screens on; this
+# tick only bounds a missed wake without polling all night.
+DISPLAY_ASLEEP_POLL_MS = 300_000
 OBSERVATION_FAILURE_RETRY_MS = 1_000
 PROBE_WORKER_TIMEOUT_MS = 30_000
 APPLICATION_WORKER_TIMEOUT_MS = 120_000
@@ -410,6 +414,17 @@ def _enter_wait(state: State, now_ms: int) -> Decision:
             backoff_index=min(index + 1, len(SLOW_DELAYS_MS) - 1),
         )
     return _schedule(state, now_ms + delay)
+
+
+def _defer_while_asleep(state: State, now_ms: int) -> Decision:
+    """Hold new display work while the user has blanked the screens.
+
+    Probing or applying lights the output. At bedtime the Samsung drops its
+    link minutes after DPMS standby and returns switched off, so re-applying
+    it woke the screen in the middle of the night (dc-sv3q).
+    """
+    state = replace(_clear_proof(state), phase=ControllerPhase.WAIT_SLOW)
+    return _schedule(state, now_ms + DISPLAY_ASLEEP_POLL_MS)
 
 
 def _admit_probe(state: State, observation: CanonicalObservation) -> Decision:
@@ -969,8 +984,11 @@ def _classify_observation(state: State, observation: CanonicalObservation) -> De
             return _schedule(state, now_ms + HEALTH_POLL_MS)
         state = replace(state, phase=ControllerPhase.DISCOVER_FAST, finalization=None)
 
+    asleep = observation.display_power is DisplayPower.ASLEEP
     if observation.probe_candidate is not None:
         state = replace(state, unknown_key=None, unknown_since_ms=None)
+        if asleep:
+            return _defer_while_asleep(state, now_ms)
         return _admit_probe(state, observation)
 
     target = _unique_target(observation)
@@ -1000,6 +1018,8 @@ def _classify_observation(state: State, observation: CanonicalObservation) -> De
         return _start_verification(state, observation, target)
     if target is not None:
         state = replace(state, unknown_key=None, unknown_since_ms=None)
+        if asleep:
+            return _defer_while_asleep(state, now_ms)
         return _admit_application(state, observation, target)
 
     external_outputs = set(observation.kernel_external_outputs) | set(

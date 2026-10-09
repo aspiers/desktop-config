@@ -19,11 +19,14 @@ from monitor_controller.model import (
     ActionKind,
     ActionLifecycle,
     ActionTombstone,
+    ActivateProbe,
     ApplicationDispatched,
     ApplicationFinished,
+    ApplyProfile,
     ControllerPhase,
     ControllerStarted,
     DispatchRejected,
+    DisplayPower,
     EdidEvidence,
     EdidIntegrity,
     EventGeneration,
@@ -46,7 +49,7 @@ from monitor_controller.model import (
     WorkerTimedOut,
     WorkerUnit,
 )
-from monitor_controller.reducer import reduce
+from monitor_controller.reducer import DISPLAY_ASLEEP_POLL_MS, reduce
 from monitor_controller.runtime.persistence import StateNamespace
 from monitor_controller.runtime.recovery import (
     VerifiedWorkerResult,
@@ -1195,3 +1198,50 @@ def test_scenario_corpus_is_comprehensive_and_explicit() -> None:
     assert all(step.expected_effect_counts for step in steps)
     steps = (step for scenario in _SCENARIOS for step in scenario.steps)
     assert all(step.expected_state for step in steps)
+
+
+def _first_admission(effect_type: type) -> tuple[State, ObservationCompleted]:
+    """Return the state and observation event that first admit `effect_type`."""
+    for scenario in _SCENARIOS:
+        state = initial_state(scenario.initial)
+        for step in scenario.steps:
+            event = event_from_data(step.event_data, state)
+            decision = reduce(state, event)
+            if isinstance(event, ObservationCompleted) and any(
+                isinstance(effect, effect_type) for effect in decision.effects
+            ):
+                return state, event
+            state = decision.state
+    pytest.fail(f"no scenario admits {effect_type.__name__} from an observation")
+
+
+@pytest.mark.parametrize("effect_type", [ApplyProfile, ActivateProbe])
+def test_blanked_screens_defer_lighting_work_until_they_wake(
+    effect_type: type,
+) -> None:
+    """Re-applying the Samsung during a bedtime blank lit it at night (dc-sv3q)."""
+    state, awake_event = _first_admission(effect_type)
+    asleep = replace(awake_event.observation, display_power=DisplayPower.ASLEEP)
+    now_ms = asleep.observed_at_ms
+
+    deferred = reduce(state, replace(awake_event, observation=asleep))
+
+    assert not any(
+        isinstance(effect, ApplyProfile | ActivateProbe) for effect in deferred.effects
+    )
+    assert deferred.state.phase is ControllerPhase.WAIT_SLOW
+    assert deferred.state.next_timer_ms == now_ms + DISPLAY_ASLEEP_POLL_MS
+
+    awake = replace(
+        awake_event.observation,
+        observed_at_ms=now_ms + 1_000,
+        observation_generation=ObservationGeneration(
+            asleep.observation_generation.value + 1
+        ),
+    )
+    woken = reduce(
+        deferred.state,
+        ObservationCompleted(EventMetadata(now_ms + 1_000, state.boot_id), awake),
+    )
+
+    assert any(isinstance(effect, effect_type) for effect in woken.effects)

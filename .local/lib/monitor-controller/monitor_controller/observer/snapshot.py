@@ -24,6 +24,7 @@ from ..model import (  # noqa: TID252
     CanonicalObservation,
     ConfigurationContentHash,
     ConnectorIdentityEvidence,
+    DisplayPower,
     EdidEvidence,
     EventGeneration,
     Fingerprint,
@@ -51,6 +52,7 @@ from .autorandr import (
     resolve_output_mapping,
     sample_autorandr,
 )
+from .dpms import parse_display_power
 from .drm import (
     ConnectorKind,
     ConnectorStatus,
@@ -182,6 +184,7 @@ class ObserverCommands:
     )
     autorandr_detected: tuple[str, ...] = ("autorandr", "--match-edid", "--detected")
     autorandr_current: tuple[str, ...] = ("autorandr", "--match-edid", "--current")
+    dpms_query: tuple[str, ...] = ("xset", "q")
 
 
 class _CommandXrandrSource(XrandrEvidenceSource):
@@ -337,6 +340,13 @@ class CanonicalSnapshotCoordinator:
             command_timeout_seconds,
             autorandr_environment,
         )
+        self._dpms_request = CommandRequest(
+            commands.dpms_query,
+            RawEvidenceSource.DPMS,
+            "command:xset q",
+            command_timeout_seconds,
+        )
+        self._command_runner = command_runner
 
     def observe(self) -> CanonicalObservation:
         """Sample both fences, reject tears, and return normalized evidence."""
@@ -346,6 +356,7 @@ class CanonicalSnapshotCoordinator:
         profiles = self._normalized_profiles()
         xrandr = sample_xrandr(self._xrandr_source)
         autorandr = sample_autorandr(self._autorandr_source)
+        display_power = self.display_power()
         end_drm = sample_drm(self._drm_tree)
         end_generation = self._event_generation_source.current_generation()
         observed_at_ms = self._clock.monotonic_ms()
@@ -408,6 +419,7 @@ class CanonicalSnapshotCoordinator:
             ),
             invalidity_reason=reason,
             raw_evidence=facts.raw_evidence,
+            display_power=display_power,
         )
         with self._planning_capture_lock:
             self._planning_captures[observation.observation_key] = (
@@ -417,6 +429,10 @@ class CanonicalSnapshotCoordinator:
                 oldest = next(iter(self._planning_captures))
                 del self._planning_captures[oldest]
         return observation
+
+    def display_power(self) -> DisplayPower:
+        """Sample DPMS alone; cheap enough to poll while the screens sleep."""
+        return parse_display_power(self._command_runner.run(self._dpms_request))
 
     def planning_capture(self, key: ObservationKey) -> CanonicalPlanningCapture:
         """Return retained display evidence for one admitted observation key."""

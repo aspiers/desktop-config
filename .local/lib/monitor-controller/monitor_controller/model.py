@@ -190,6 +190,19 @@ class RawEvidenceSource(StrEnum):
     XRANDR_PROPERTIES = "xrandr_properties"
     AUTORANDR_FINGERPRINT = "autorandr_fingerprint"
     AUTORANDR_PROFILES = "autorandr_profiles"
+    DPMS = "dpms"
+
+
+class DisplayPower(StrEnum):
+    """Whether the screens are awake, as DPMS reports it.
+
+    The user blanks every screen at bedtime with DPMS standby. Lighting a
+    display then is a visible failure, so the reducer defers admitting work
+    while the screens are asleep (dc-sv3q).
+    """
+
+    ON = "on"
+    ASLEEP = "asleep"
 
 
 class ActionKind(StrEnum):
@@ -679,6 +692,9 @@ class CanonicalObservation:
     validity: ObservationValidity
     invalidity_reason: ObservationInvalidityReason | None
     raw_evidence: tuple[RawEvidenceReference, ...]
+    display_power: DisplayPower = dataclass_field(
+        default=DisplayPower.ON, metadata={"codec_optional": True}
+    )
 
     def __post_init__(self) -> None:
         _require_nonnegative(self.observed_at_ms, "observation sample time")

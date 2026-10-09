@@ -181,6 +181,11 @@ The two phases doing the most work are worth knowing by name:
   EDID is not yet readable is not absent, it is *not ready*, and those are
   different.
 
+`WAIT_SLOW` also holds any display change while the screens are blanked
+(DPMS standby, as `blank-all-screens` sets at bedtime). Applying a profile
+lights the monitor, so the controller waits until the screens wake and then
+re-observes within about two seconds.
+
 ### The workers
 
 The controller dispatches work as systemd template units rather than

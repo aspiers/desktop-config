@@ -73,6 +73,7 @@ from monitor_controller.runtime.controller import (
     ObservationAdapter,
     SerializedController,
 )
+from monitor_controller.runtime.display_wake import DisplayWakeMonitor
 from monitor_controller.runtime.journal import service_logger
 from monitor_controller.runtime.persistence import AtomicStateStore, StateNamespace
 from monitor_controller.runtime.recovery import (
@@ -409,6 +410,8 @@ class ActiveComposition:
     # Wakes the controller when the postswitch hook reports a manual
     # `autorandr` change made outside the controller's own dispatch.
     postswitch_monitor: PostswitchNotificationMonitor | None = None
+    # Wakes the controller when screens blanked at bedtime come back on.
+    display_wake_monitor: DisplayWakeMonitor | None = None
 
 
 class NonStartingDispatcher:
@@ -812,11 +815,16 @@ def build_active_composition(
             ),
         ),
     )
+    controller = composition.controller
     return replace(
         composition,
         recovery=recovery,
         transactions=transactions,
         postswitch_monitor=postswitch_monitor,
+        display_wake_monitor=DisplayWakeMonitor(
+            latest_observation=lambda: controller.state.latest_observation,
+            display_power=coordinator.display_power,
+        ),
     )
 
 
@@ -851,10 +859,13 @@ async def run_active(
     def close_retained_resources() -> None:
         _release_active_resources(composition)
 
-    extra_producers = (
-        ()
-        if composition.postswitch_monitor is None
-        else (("postswitch", composition.postswitch_monitor),)
+    extra_producers = tuple(
+        (suffix, extra)
+        for suffix, extra in (
+            ("postswitch", composition.postswitch_monitor),
+            ("display-wake", composition.display_wake_monitor),
+        )
+        if extra is not None
     )
     await run_controller_with_producer(
         composition.controller,

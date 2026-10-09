@@ -268,6 +268,12 @@ transition:
    --load TARGET`; never use unrestricted `--change` during discovery. Action
    admission and dispatch acknowledgement are distinct so a queued event cannot
    erase an action before it executes or mark an unexecuted action complete.
+   Neither a probe nor an application is admitted while DPMS reports the
+   screens asleep: both light the output, and the Samsung G75F drops its link
+   minutes after a bedtime blank, so re-applying it woke the screen at night
+   (`dc-sv3q`). The runtime requests a fresh observation as soon as DPMS
+   reports the screens on; a five-minute tick bounds a missed wake. Unreadable
+   DPMS evidence counts as awake, so deferral can never strand a display.
 4. **No duplicate probe or application for unchanged evidence.** Probe each
    `(physical_epoch, base_identity_profile, observation_key)` and apply each
    `(physical_epoch, target, observation_key)` at most once — except that once
@@ -346,6 +352,7 @@ prevents action until re-probed.
 | `WAIT_SLOW` | Same unresolved observation | Increase capped backoff | `WAIT_SLOW` |
 | `WAIT_SLOW` | Capped tick; eligible target's attempt key already attempted | Re-admit one bounded application (`dc-v0r`) | `APPLY_PENDING` |
 | `WAIT_SLOW` | Evidence changes | Reset fast backoff, retain epoch/candidate as valid | `DISCOVER_FAST` |
+| `DISCOVER_FAST` or `WAIT_SLOW` | A probe or application is due but DPMS reports the screens asleep | Defer without recording an attempt; re-observe on wake (`dc-sv3q`) | `WAIT_SLOW` |
 | `WAIT_SLOW` | A unique probe candidate appears | Admit safe activation | `PROBE_PENDING` |
 | `WAIT_SLOW` | Candidate becomes eligible but is not exact/current | Persist durable application admission | `APPLY_PENDING` |
 | `WAIT_SLOW` | Candidate is already exact/current/active | Start continuous proof | `VERIFYING` |

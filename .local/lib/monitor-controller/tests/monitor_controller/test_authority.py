@@ -1045,6 +1045,7 @@ class TestRunActive:
                 transactions=transactions,
                 generation_fence=None,
                 postswitch_monitor=None,
+                display_wake_monitor=None,
             )
 
             with pytest.raises(RuntimeError, match="injected monitor failure"):
@@ -1089,6 +1090,7 @@ class TestRunActive:
                 transactions=None,
                 generation_fence=None,
                 postswitch_monitor=None,
+                display_wake_monitor=None,
             )
             with pytest.raises(ActiveStartupError, match="exited unexpectedly"):
                 await run_active(composition, IdleMonitor())  # type: ignore[arg-type]
@@ -1121,6 +1123,7 @@ class TestRunActive:
                 transactions=None,
                 generation_fence=None,
                 postswitch_monitor=postswitch,
+                display_wake_monitor=None,
             )
 
             class IdleMonitor:

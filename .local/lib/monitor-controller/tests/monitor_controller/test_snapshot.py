@@ -17,6 +17,7 @@ import pytest
 from monitor_controller.model import (
     BootId,
     ConfigurationContentHash,
+    DisplayPower,
     EventGeneration,
     ObservationInvalidityReason,
     ProfileScope,
@@ -174,6 +175,7 @@ def load_manifest(
         key: FIXTURES / value
         for key, value in cast("dict[str, str]", data["commands"]).items()
     }
+    command_paths.setdefault("xset q", FIXTURES / "xset" / "awake.txt")
     profiles = tuple(load_profile(item) for item in cast("list[str]", data["profiles"]))
     return root, command_paths, profiles
 
@@ -356,6 +358,7 @@ def test_exact_profile_requires_complete_current_unique_mapping(tmp_path: Path) 
         ("autorandr", "--match-edid", "--fingerprint"),
         ("autorandr", "--match-edid", "--detected"),
         ("autorandr", "--match-edid", "--current"),
+        ("xset", "q"),
     ]
     assert all(request.timeout_seconds == 5 for request in runner.requests)
 
@@ -594,7 +597,8 @@ def test_autorandr_commands_always_receive_the_explicit_isolated_environment(
     ).observe()
 
     xrandr_requests = runner.requests[:2]
-    autorandr_requests = runner.requests[2:]
+    autorandr_requests = runner.requests[2:5]
+    assert all(request.environment is None for request in runner.requests[5:])
     assert all(request.environment is None for request in xrandr_requests)
     assert all(
         dict(request.environment or ()) == isolated for request in autorandr_requests
@@ -748,3 +752,22 @@ def test_renamed_connector_still_resolves_to_an_exact_profile(
     mapping = observation.eligible_profiles[0].mapping
     saved, live = mapping[0].saved_output, mapping[0].live_output
     assert saved != live, "fixture must exercise a renamed connector"
+
+
+def test_observation_records_blanked_screens_without_changing_its_key(
+    tmp_path: Path,
+) -> None:
+    root, commands, profiles = load_manifest(tmp_path, "exact-aoc")
+    awake = coordinator(
+        RootedSysfsReader(root), _FixtureRunner(commands), profiles
+    ).observe()
+    commands["xset q"] = FIXTURES / "xset" / "standby.txt"
+    asleep = coordinator(
+        RootedSysfsReader(root), _FixtureRunner(commands), profiles
+    ).observe()
+
+    assert awake.display_power is DisplayPower.ON
+    assert asleep.display_power is DisplayPower.ASLEEP
+    # Blanking is not a topology change: keying on it would re-verify and
+    # re-finalize the desktop every time the screens sleep or wake.
+    assert asleep.observation_key == awake.observation_key
