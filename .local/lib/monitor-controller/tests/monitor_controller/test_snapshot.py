@@ -754,6 +754,41 @@ def test_renamed_connector_still_resolves_to_an_exact_profile(
     assert saved != live, "fixture must exercise a renamed connector"
 
 
+@pytest.mark.parametrize(
+    ("edp_flag", "aoc_flag"),
+    [("", ""), (" primary", "")],
+    ids=["no-primary", "primary-on-wrong-output"],
+)
+def test_exact_profile_requires_the_saved_primary(
+    tmp_path: Path, edp_flag: str, aoc_flag: str
+) -> None:
+    """A stale primary must make the controller re-apply, not plan (dc-5gfd).
+
+    autorandr --current ignores the primary, so without this a layout whose
+    primary was left on an unplugged output counted as already applied and
+    desktop planning failed forever for want of a primary.
+    """
+    root, commands, profiles = load_manifest(tmp_path, "exact-aoc")
+    for name in ("xrandr --query", "xrandr --props"):
+        text = commands[name].read_text(encoding="utf-8")
+        text = text.replace("eDP connected", f"eDP connected{edp_flag}")
+        text = text.replace(
+            "DisplayPort-7 connected primary", f"DisplayPort-7 connected{aoc_flag}"
+        )
+        commands[name] = tmp_path / name.replace(" ", "_")
+        commands[name].write_text(text, encoding="utf-8")
+
+    observation = coordinator(
+        RootedSysfsReader(root), _FixtureRunner(commands), profiles
+    ).observe()
+
+    assert observation.valid
+    assert observation.exact_profile is None
+    assert [item.profile for item in observation.eligible_profiles] == [
+        "celtic+AOC-U28G2G6B"
+    ]
+
+
 def test_observation_records_blanked_screens_without_changing_its_key(
     tmp_path: Path,
 ) -> None:

@@ -553,6 +553,10 @@ def _derive_facts(
         edid,
         base_matches,
     )
+    if exact is not None and not _primary_matches_saved_config(
+        _profile_by_name(profiles, exact), eligible[0], connected_x
+    ):
+        exact = None
     probe = _probe_candidate(
         profiles,
         eligible,
@@ -901,6 +905,28 @@ def _geometry_matches_saved_config(  # noqa: PLR0911 - one closed comparison
         if position != f"{live.geometry.x}x{live.geometry.y}":
             return False
     return True
+
+
+def _primary_matches_saved_config(
+    profile: SavedAutorandrProfile,
+    match: ProfileMatch,
+    connected_x: tuple[XrandrOutput, ...],
+) -> bool:
+    """Prove X's primary is the saved one, which autorandr --current ignores.
+
+    xfsettingsd re-asserts a stale primary onto an unplugged output, leaving
+    no live primary; counting that layout as applied made desktop planning
+    fail forever, where re-applying the profile restores the primary (dc-5gfd).
+    """
+    live_by_saved = {item.saved_output: item.live_output for item in match.mapping}
+    saved = {
+        live_by_saved.get(item.output)
+        for item in profile.config
+        if item.active and item.primary
+    }
+    if not saved:
+        return True
+    return saved == {item.name for item in connected_x if item.primary}
 
 
 def _resolve_probe_mapping(  # probe edges also admit base-EDID matches
