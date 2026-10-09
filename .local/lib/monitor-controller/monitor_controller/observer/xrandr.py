@@ -303,16 +303,18 @@ def parse_xrandr_query(  # noqa: C901, PLR0912, PLR0915
                 )
                 primary = re.search(r"(?<!\S)primary(?!\S)", rest) is not None
                 width_mm, height_mm = _parse_physical_size(rest, line_number, collector)
-                if connection is not XConnectionState.CONNECTED and (
-                    geometry is not None or primary
-                ):
-                    collector.add(
-                        ParseIssueCode.INCONSISTENT,
-                        "non-connected output carries active or primary facts",
-                        line_number,
-                    )
-                    geometry = None
+                if connection is not XConnectionState.CONNECTED:
+                    # X leaves the primary pointer on an unplugged output until a
+                    # client names another, so a stale flag is not torn evidence;
+                    # rejecting it froze the controller for good (dc-96jy).
                     primary = False
+                    if geometry is not None:
+                        collector.add(
+                            ParseIssueCode.INCONSISTENT,
+                            "non-connected output carries active facts",
+                            line_number,
+                        )
+                        geometry = None
                 outputs.append(
                     XrandrOutput(
                         name,
@@ -421,16 +423,18 @@ def parse_xrandr_properties(  # noqa: C901, PLR0912, PLR0915
                 )
                 primary = re.search(r"(?<!\S)primary(?!\S)", rest) is not None
                 width_mm, height_mm = _parse_physical_size(rest, line_number, collector)
-                if connection is not XConnectionState.CONNECTED and (
-                    geometry is not None or primary
-                ):
-                    collector.add(
-                        ParseIssueCode.INCONSISTENT,
-                        "non-connected properties output carries active facts",
-                        line_number,
-                    )
-                    geometry = None
+                if connection is not XConnectionState.CONNECTED:
+                    # X leaves the primary pointer on an unplugged output until a
+                    # client names another, so a stale flag is not torn evidence;
+                    # rejecting it froze the controller for good (dc-96jy).
                     primary = False
+                    if geometry is not None:
+                        collector.add(
+                            ParseIssueCode.INCONSISTENT,
+                            "non-connected properties output carries active facts",
+                            line_number,
+                        )
+                        geometry = None
                 outputs.append(
                     XrandrPropertyOutput(
                         name=name,

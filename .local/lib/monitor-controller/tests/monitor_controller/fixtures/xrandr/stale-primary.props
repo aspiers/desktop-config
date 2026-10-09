@@ -1,0 +1,13 @@
+Screen 0: minimum 320 x 200, current 2880 x 1920, maximum 16384 x 16384
+eDP connected 2880x1920+0+0 (normal left inverted right x axis y axis) 285mm x 190mm
+	CONNECTOR_ID: 438
+   2880x1920    120.00*+  60.00 +
+   1920x1080    120.00
+DisplayPort-0 disconnected (normal left inverted right x axis y axis)
+	CONNECTOR_ID: 446
+DisplayPort-1 connected (normal left inverted right x axis y axis)
+	CONNECTOR_ID: 453
+   3440x1440     59.97 + 179.97
+   5120x2160    120.00   119.88    60.00    59.94
+DisplayPort-2 disconnected primary (normal left inverted right x axis y axis)
+	CONNECTOR_ID: 459

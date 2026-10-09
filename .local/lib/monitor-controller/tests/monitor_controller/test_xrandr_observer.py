@@ -442,3 +442,33 @@ def test_properties_reject_malformed_mode_but_ignore_tab_continuation() -> None:
     assert tuple(item.code for item in parsed.issues) == (
         ParseIssueCode.MALFORMED_LINE,
     )
+
+
+def test_stale_primary_on_a_disconnected_output_is_not_torn_evidence() -> None:
+    # Captured 2026-10-08 after the BenQ on DisplayPort-2 was unplugged: X kept
+    # the primary pointer on its empty output, which froze the controller
+    # (dc-96jy).
+    snapshot = sample_xrandr(
+        InjectedXrandr("stale-primary.query", "stale-primary.props", [])
+    )
+
+    assert snapshot.valid
+    assert snapshot.connected_outputs == ("DisplayPort-1", "eDP")
+    assert snapshot.active_outputs == ("eDP",)
+    assert snapshot.primary_output is None
+
+
+def test_geometry_on_a_disconnected_output_is_still_inconsistent() -> None:
+    parsed = parse_xrandr_query(
+        TextCommandEvidence(
+            RawEvidenceSource.XRANDR_QUERY,
+            "injected:disconnected-geometry",
+            "DP-1 disconnected primary 1920x1080+0+0 "
+            "(normal left inverted right x axis y axis)\n",
+        )
+    )
+
+    assert not parsed.valid
+    assert {item.code for item in parsed.issues} == {ParseIssueCode.INCONSISTENT}
+    assert parsed.outputs[0].geometry is None
+    assert not parsed.outputs[0].primary
