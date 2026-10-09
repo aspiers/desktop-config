@@ -307,6 +307,7 @@ class XMonitor():
 
     def run(self):
         import Xlib
+        import Xlib.error
 
         last_active_class = ""
         last_active_title = ""
@@ -398,8 +399,15 @@ class XMonitor():
                         last_active_title = title
 
                         self.on_window_change(cls, title)
-                except:
+                except Xlib.error.XError:
+                    # Windows routinely vanish between being listed and
+                    # queried, so X protocol errors are expected races.
                     pass
+                # Anything else may have escaped from inside python-xlib's
+                # send_and_recv, leaving its recv_active flag set; every later
+                # reply() then busy-loops at 100% CPU because the default
+                # locks are no-ops.  Let it propagate so the process exits
+                # and systemd's Restart=on-failure reconnects from scratch.
 
 
 # :(
