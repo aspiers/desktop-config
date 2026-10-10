@@ -34,9 +34,12 @@ from monitor_controller.desktop.plan_codec import (
 )
 from monitor_controller.desktop.tray import (
     StableTray,
+    StatusNotifierProbe,
+    StatusNotifierState,
     TrayProbe,
     TrayReadinessError,
     wait_for_stable_tray,
+    wait_for_status_notifier_item,
 )
 from monitor_controller.model import (
     ActionId,
@@ -235,6 +238,10 @@ class FinalizeCommands(XrandrEvidenceSource, Protocol):
         """Wait read-only for selection-owner and wrapper stability."""
         ...
 
+    def wait_for_nm_applet_item(self) -> StatusNotifierState:
+        """Wait read-only for nm-applet's item on the current panel's watcher."""
+        ...
+
 
 class FinalizationFence(Protocol):
     """Fresh cross-process event and systemd mutator exclusion guard."""
@@ -341,6 +348,7 @@ class SubprocessFinalizeCommands:
         reader: CommandRunner | None = None,
         leaf_runner: FinalizeLeafRunner | None = None,
         tray_probe: TrayProbe | None = None,
+        status_notifier_probe: StatusNotifierProbe | None = None,
         panel_probe: PanelProbe | None = None,
         base_environment: Mapping[str, str] | None = None,
         keyboard_probe: KeyboardConnectionProbe | None = None,
@@ -366,6 +374,11 @@ class SubprocessFinalizeCommands:
         display = self._environment.get("DISPLAY")
         self._tray_probe = (
             TrayProbe(display=display) if tray_probe is None else tray_probe
+        )
+        self._status_notifier_probe = (
+            StatusNotifierProbe(environment=self._environment)
+            if status_notifier_probe is None
+            else status_notifier_probe
         )
         self._panel_probe = (
             PanelProbe(display=display) if panel_probe is None else panel_probe
@@ -498,6 +511,10 @@ class SubprocessFinalizeCommands:
     def wait_for_stable_tray(self) -> StableTray:
         """Wait for both proven tray signals; absence is a hard finalization error."""
         return wait_for_stable_tray(self._tray_probe.sample)
+
+    def wait_for_nm_applet_item(self) -> StatusNotifierState:
+        """Bounded read-only wait; an absent item is returned, not raised."""
+        return wait_for_status_notifier_item(self._status_notifier_probe.sample)
 
     def _run(self, arguments: tuple[str, ...]) -> FinalizeCommandResult:
         return self._leaf_runner.run(arguments, environment=self._environment)
@@ -978,24 +995,32 @@ def execute_finalization(  # noqa: C901, PLR0913, PLR0915
                 boundary()
                 continue
             if action.kind is PlannedActionKind.RESTART_NM_APPLET:
-                try:
-                    commands.wait_for_stable_tray()
-                except TrayReadinessError as error:
-                    # The displays and windows are already on the new layout;
-                    # a tray that is slow to come back (e.g. a crashed systray
-                    # wrapper awaiting respawn) must not fail finalization.
-                    _JOURNAL.warning(
-                        f"stable tray readiness failed: {error}; "
-                        f"deferring nm-applet restart to {NM_APPLET_RETRY_UNIT}"
-                    )
-                    boundary()
-                    _raise_if_cancelled(startup, cancellation)
-                    scheduled = commands.apply(ScheduleNmAppletRetry())
-                    if scheduled.exit_status != 0:
-                        _JOURNAL.warning(
-                            f"cannot start {NM_APPLET_RETRY_UNIT}: "
-                            f"exit {scheduled.exit_status}"
-                        )
+                # A restarted panel replaces its systray wrapper, which hosts
+                # the StatusNotifier watcher, and the outgoing one can still
+                # answer for a few seconds. Only the stable-tray proof says
+                # which wrapper is final, so take it before judging the item.
+                tray_proven = restart_panel
+                if restart_panel and not _stable_tray_or_defer_applet(
+                    startup, commands, cancellation, boundary
+                ):
+                    continue
+                item = _nm_applet_item(commands)
+                _raise_if_cancelled(startup, cancellation)
+                boundary()
+                _JOURNAL.info(
+                    "NM_APPLET_DECISION action=%s profile=%s result=%s "
+                    "panel_restarted=%s %s",
+                    startup.request.action_id.value,
+                    startup.request.profile,
+                    "skip" if item is not None and item.current else "restart",
+                    "yes" if restart_panel else "no",
+                    "probe=failed" if item is None else item.describe(),
+                )
+                if item is not None and item.current:
+                    continue
+                if not tray_proven and not _stable_tray_or_defer_applet(
+                    startup, commands, cancellation, boundary
+                ):
                     continue
                 # Waiting is deliberately read-only. Re-prove every authority
                 # immediately before the applet service restart.
@@ -1031,6 +1056,47 @@ def execute_finalization(  # noqa: C901, PLR0913, PLR0915
         topology_reader=topology_reader,
         implementation=implementation,
     )
+
+
+def _nm_applet_item(commands: FinalizeCommands) -> StatusNotifierState | None:
+    """Return nm-applet's StatusNotifier evidence, or None if it cannot be read.
+
+    Skipping the restart is an optimisation, so no probe failure may fail
+    finalization; it only sends the step down the restart path.
+    """
+    try:
+        return commands.wait_for_nm_applet_item()
+    except Exception as error:  # noqa: BLE001 - any probe failure means restart
+        _JOURNAL.warning(f"nm-applet StatusNotifier probe failed: {error}")
+        return None
+
+
+def _stable_tray_or_defer_applet(
+    startup: WorkerStartup,
+    commands: FinalizeCommands,
+    cancellation: DeferredCancellation,
+    boundary: Callable[[], CurrentTopology],
+) -> bool:
+    """Wait for a stable tray; on timeout hand the applet to the retry unit."""
+    try:
+        commands.wait_for_stable_tray()
+    except TrayReadinessError as error:
+        # The displays and windows are already on the new layout; a tray that
+        # is slow to come back (e.g. a crashed systray wrapper awaiting
+        # respawn) must not fail finalization.
+        _JOURNAL.warning(
+            f"stable tray readiness failed: {error}; "
+            f"deferring nm-applet restart to {NM_APPLET_RETRY_UNIT}"
+        )
+        boundary()
+        _raise_if_cancelled(startup, cancellation)
+        scheduled = commands.apply(ScheduleNmAppletRetry())
+        if scheduled.exit_status != 0:
+            _JOURNAL.warning(
+                f"cannot start {NM_APPLET_RETRY_UNIT}: exit {scheduled.exit_status}"
+            )
+        return False
+    return True
 
 
 def _validate_boundary(

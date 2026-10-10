@@ -401,9 +401,16 @@ main () {
     xfce4-panel -r
     assert_expected_state
 
+    # The panel was just restarted, so only a settled tray says which systray
+    # wrapper (and so which StatusNotifier watcher) is final.
     wait_for_stable_tray
-    systemctl --user restart nm-applet.service
-    timing_mark "panel and system tray settled; nm-applet service restarted"
+    if wait_for_nm_applet_item; then
+        echo "nm-applet StatusNotifier item registered; not restarting it"
+        timing_mark "panel and system tray settled; nm-applet item registered"
+    else
+        systemctl --user restart nm-applet.service
+        timing_mark "panel and system tray settled; nm-applet service restarted"
+    fi
 
     capture_tray_diag
     capture_shadow_trace
@@ -477,6 +484,42 @@ systray_wrapper_pids() {
         [ "$(ps -o comm= -p "$ppid" 2>/dev/null)" = "xfce4-panel" ] || continue
         echo "$pid"
     done | sort | tr '\n' ','
+}
+
+# nm-applet runs with --indicator, so it is a StatusNotifier item rather than
+# an XEMBED tray icon. The panel's systray plugin is the StatusNotifier watcher,
+# and an item has no XEMBED dock to get wrong. Succeed when the watcher belongs
+# to a systray wrapper of the CURRENT panel and lists nm-applet's item. Right
+# after a panel restart the outgoing wrapper can still pass, so call this only
+# once wait_for_stable_tray has returned.
+nm_applet_item_current() {
+    local watcher_pid items
+
+    watcher_pid=$(busctl --user call org.freedesktop.DBus /org/freedesktop/DBus \
+        org.freedesktop.DBus GetConnectionUnixProcessID s \
+        org.kde.StatusNotifierWatcher 2>/dev/null | awk '{print $2}')
+    [ -n "$watcher_pid" ] || return 1
+    case ",$(systray_wrapper_pids)" in
+        *",$watcher_pid,"*) ;;
+        *) return 1 ;;
+    esac
+    items=$(busctl --user get-property org.kde.StatusNotifierWatcher \
+        /StatusNotifierWatcher org.kde.StatusNotifierWatcher \
+        RegisteredStatusNotifierItems 2>/dev/null)
+    case "$items" in
+        *'/nm_applet"'*) return 0 ;;
+    esac
+    return 1
+}
+
+wait_for_nm_applet_item() {
+    local deadline=$((SECONDS + 5))
+
+    while [ "$SECONDS" -lt "$deadline" ]; do
+        nm_applet_item_current && return 0
+        sleep 0.5
+    done
+    return 1
 }
 
 wait_for_stable_tray() {

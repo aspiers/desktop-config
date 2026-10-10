@@ -14,10 +14,14 @@ from uuid import uuid4
 
 import pytest
 
+from monitor_controller.desktop import tray as tray_module
 from monitor_controller.desktop.tray import (
+    StatusNotifierProbe,
+    StatusNotifierState,
     TrayState,
     systray_wrapper_pids,
     wait_for_stable_tray,
+    wait_for_status_notifier_item,
 )
 
 _REPOSITORY = Path(__file__).parents[5]
@@ -54,6 +58,164 @@ def test_tray_readiness_requires_unchanged_selection_and_live_wrapper() -> None:
 
     assert stable.state == TrayState(0x11, (2,))
     assert stable.stable_samples == 3
+
+
+def _sni(watcher: int | None, *, registered: bool) -> StatusNotifierState:
+    return StatusNotifierState(
+        watcher_pid=watcher, nm_applet_registered=registered, wrapper_pids=(200,)
+    )
+
+
+def _one_wrapper(_proc_root: Path) -> tuple[int, ...]:
+    return (200,)
+
+
+class _FakeClock:
+    def __init__(self) -> None:
+        self.now = 0.0
+
+    def monotonic(self) -> float:
+        return self.now
+
+    def sleep(self, seconds: float) -> None:
+        self.now += seconds
+
+
+def test_status_notifier_item_is_current_only_on_a_live_panel_wrapper() -> None:
+    assert _sni(200, registered=True).current
+    # A watcher hosted by an orphaned or replaced wrapper is about to vanish.
+    assert not _sni(300, registered=True).current
+    assert not _sni(None, registered=True).current
+    assert not _sni(200, registered=False).current
+
+
+def test_status_notifier_wait_returns_once_item_registers_on_new_watcher() -> None:
+    states = iter(
+        (
+            _sni(300, registered=True),
+            _sni(None, registered=False),
+            _sni(200, registered=False),
+            _sni(200, registered=True),
+            _sni(200, registered=True),
+        )
+    )
+    clock = _FakeClock()
+
+    state = wait_for_status_notifier_item(
+        lambda: next(states),
+        timeout_seconds=5,
+        interval_seconds=0.5,
+        monotonic=clock.monotonic,
+        sleep=clock.sleep,
+    )
+
+    assert state == _sni(200, registered=True)
+    assert clock.now == pytest.approx(2.0)
+
+
+def test_status_notifier_wait_returns_latest_absent_state_at_deadline() -> None:
+    clock = _FakeClock()
+    absent = _sni(200, registered=False)
+
+    state = wait_for_status_notifier_item(
+        lambda: absent,
+        timeout_seconds=2,
+        interval_seconds=0.5,
+        monotonic=clock.monotonic,
+        sleep=clock.sleep,
+    )
+
+    assert state == absent
+    assert clock.now == pytest.approx(2.0)
+
+
+def test_status_notifier_probe_parses_busctl_json(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    replies = {
+        "call": '{"type":"u","data":[200]}',
+        "get-property": (
+            '{"type":"as","data":[":1.9/StatusNotifierItem",'
+            '":1.42/org/ayatana/NotificationItem/nm_applet"]}'
+        ),
+    }
+    calls: list[tuple[str, ...]] = []
+
+    def run(arguments: tuple[str, ...], **_kwargs: object) -> object:
+        calls.append(arguments)
+        return subprocess.CompletedProcess(arguments, 0, replies[arguments[3]], "")
+
+    monkeypatch.setattr(tray_module.subprocess, "run", run)
+    monkeypatch.setattr(tray_module, "systray_wrapper_pids", _one_wrapper)
+
+    state = StatusNotifierProbe(environment={}, proc_root=tmp_path).sample()
+
+    assert state == _sni(200, registered=True)
+    assert all(call[:3] == ("busctl", "--user", "--json=short") for call in calls)
+
+
+def test_status_notifier_probe_treats_bus_failure_as_absent(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    def run(arguments: tuple[str, ...], **_kwargs: object) -> object:
+        return subprocess.CompletedProcess(arguments, 1, "", "no such name")
+
+    monkeypatch.setattr(tray_module.subprocess, "run", run)
+    monkeypatch.setattr(tray_module, "systray_wrapper_pids", _one_wrapper)
+
+    state = StatusNotifierProbe(environment={}, proc_root=tmp_path).sample()
+
+    assert state == _sni(None, registered=False)
+    assert not state.current
+
+
+@pytest.mark.parametrize(
+    ("returncode", "pid_reply", "items_reply"),
+    [
+        (0, "not json", '{"type":"as","data":[]}'),
+        (0, '["not","a","dict"]', '{"type":"as","data":[]}'),
+        (0, '{"type":"u","data":[200,201]}', '{"type":"as","data":[]}'),
+        (0, '{"type":"u","data":[true]}', '{"type":"as","data":[]}'),
+        (0, '{"type":"u","data":[200]}', '{"type":"as","data":[":1.9/Item"]}'),
+        (1, '{"type":"u","data":[200]}', '{"type":"as","data":[]}'),
+    ],
+)
+def test_status_notifier_probe_rejects_malformed_evidence(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    returncode: int,
+    pid_reply: str,
+    items_reply: str,
+) -> None:
+    replies = {"call": pid_reply, "get-property": items_reply}
+
+    def run(arguments: tuple[str, ...], **_kwargs: object) -> object:
+        return subprocess.CompletedProcess(
+            arguments, returncode, replies[arguments[3]], ""
+        )
+
+    monkeypatch.setattr(tray_module.subprocess, "run", run)
+    monkeypatch.setattr(tray_module, "systray_wrapper_pids", _one_wrapper)
+
+    assert not StatusNotifierProbe(environment={}, proc_root=tmp_path).sample().current
+
+
+@pytest.mark.parametrize(
+    "error", [OSError("no busctl"), subprocess.TimeoutExpired("busctl", 3.0)]
+)
+def test_status_notifier_probe_survives_busctl_failure(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, error: Exception
+) -> None:
+    def run(arguments: tuple[str, ...], **_kwargs: object) -> object:
+        del arguments
+        raise error
+
+    monkeypatch.setattr(tray_module.subprocess, "run", run)
+    monkeypatch.setattr(tray_module, "systray_wrapper_pids", _one_wrapper)
+
+    state = StatusNotifierProbe(environment={}, proc_root=tmp_path).sample()
+
+    assert state == _sni(None, registered=False)
 
 
 def test_systray_wrappers_must_be_parented_by_a_live_panel(tmp_path: Path) -> None:
@@ -157,10 +319,13 @@ def test_persistent_process_units_and_finalizer_have_separate_ownership() -> Non
     assert "TimeoutStartSec=30s" in panel
     assert "systemd-run --user" in restart
     assert "-p KillMode=process" in restart
+    # The tray must settle before the item check, or the outgoing systray
+    # wrapper can vouch for nm-applet just before it disappears.
     assert (
         "    wait_for_stable_tray\n"
-        "    systemctl --user restart nm-applet.service\n" in setup_monitor
+        "    if wait_for_nm_applet_item; then\n" in setup_monitor
     )
+    assert "        systemctl --user restart nm-applet.service\n" in setup_monitor
     assert "xfce4-panel-debug-ensure >/dev/null 2>&1 || true" in setup_monitor
     assert "pkill nm-applet" not in setup_monitor
     assert "nohup nm-applet" not in setup_monitor

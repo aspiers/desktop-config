@@ -34,6 +34,7 @@ from monitor_controller.desktop.planner import (
 )
 from monitor_controller.desktop.tray import (
     StableTray,
+    StatusNotifierState,
     TrayReadinessError,
     TrayState,
     wait_for_stable_tray,
@@ -187,6 +188,8 @@ class _FakeCommands:
         *,
         on_apply: Callable[[int, FinalizeOperation], None] | None = None,
         tray_ready: bool = True,
+        nm_applet_item_current: bool = False,
+        nm_applet_probe_error: bool = False,
         panel_healthy: bool = True,
         initial_panel_observed_pids: tuple[int, ...] = (2394373,),
         replacement_panel_ready: bool = True,
@@ -205,6 +208,8 @@ class _FakeCommands:
         self.properties_text = (_XRANDR / "samsung.props").read_text(encoding="utf-8")
         self.on_apply = on_apply
         self.tray_ready = tray_ready
+        self.nm_applet_item_current = nm_applet_item_current
+        self.nm_applet_probe_error = nm_applet_probe_error
         self.panel_healthy = panel_healthy
         self.initial_panel_observed_pids = initial_panel_observed_pids
         self.replacement_panel_ready = replacement_panel_ready
@@ -226,6 +231,7 @@ class _FakeCommands:
         self.exact_panel_exclusions: list[tuple[int, ...]] = []
         self.panel_process_checks = 0
         self.tray_waits = 0
+        self.nm_applet_item_waits = 0
 
     def query(self) -> TextCommandEvidence:
         self.read_calls.append(("xrandr", "--query"))
@@ -338,6 +344,17 @@ class _FakeCommands:
             message = "injected missing tray selection or wrapper"
             raise TrayReadinessError(message)
         return StableTray(TrayState(0x1234, (99,)), 6)
+
+    def wait_for_nm_applet_item(self) -> StatusNotifierState:
+        self.nm_applet_item_waits += 1
+        if self.nm_applet_probe_error:
+            message = "injected StatusNotifier probe bug"
+            raise RuntimeError(message)
+        return StatusNotifierState(
+            watcher_pid=99,
+            nm_applet_registered=self.nm_applet_item_current,
+            wrapper_pids=(99,),
+        )
 
 
 class _Fence:
@@ -947,6 +964,105 @@ def test_identity_contradiction_between_actions_stops_before_next_mutation(
     assert _execute(startup, plan_store, tree, commands, _Fence()) == STALE_EXIT_STATUS
     assert len(commands.operations) == 1
     assert "identity" in store.read_result(_FINALIZE_ACTION).detail
+
+
+def test_registered_nm_applet_item_skips_tray_wait_and_applet_restart(
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    # nm-applet --indicator re-registers with a new watcher on its own, so a
+    # registered item on the live panel's systray needs no restart.
+    tree = RootedSysfsReader(_sysfs_tree(tmp_path / "sysfs"))
+    commands = _FakeCommands(nm_applet_item_current=True)
+    startup, store, plan_store, _bundle = _startup(tmp_path, tree, commands)
+
+    assert _execute(startup, plan_store, tree, commands, _Fence()) == 0
+    assert tuple(type(item) for item in commands.operations) == (
+        *_EXPECTED_OPERATIONS[:4],
+        CaptureTrayDiagnostics,
+    )
+    assert commands.nm_applet_item_waits == 1
+    assert commands.tray_waits == 0
+    assert "NM_APPLET_DECISION" in caplog.text
+    assert (
+        "result=skip panel_restarted=no watcher=99 wrappers=99 nm_applet_item=yes"
+        in caplog.text
+    )
+    assert store.read_result(_FINALIZE_ACTION).outcome is ActionLifecycle.COMPLETED
+
+
+def test_missing_nm_applet_item_falls_back_to_tray_wait_and_restart(
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    tree = RootedSysfsReader(_sysfs_tree(tmp_path / "sysfs"))
+    commands = _FakeCommands(nm_applet_item_current=False)
+    startup, _store, plan_store, _bundle = _startup(tmp_path, tree, commands)
+
+    assert _execute(startup, plan_store, tree, commands, _Fence()) == 0
+    assert tuple(type(item) for item in commands.operations) == _EXPECTED_OPERATIONS
+    assert commands.tray_waits == 1
+    assert (
+        "result=restart panel_restarted=no watcher=99 wrappers=99 nm_applet_item=no"
+        in caplog.text
+    )
+
+
+def test_restarted_panel_proves_stable_tray_before_skipping_applet_restart(
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    # The outgoing systray wrapper can still list the item right after a
+    # panel restart, so the stable-tray proof must come first.
+    tree = RootedSysfsReader(_sysfs_tree(tmp_path / "sysfs"))
+    commands = _FakeCommands(
+        panel_healthy=False,
+        post_reconfigure_panel_ready=False,
+        nm_applet_item_current=True,
+    )
+    startup, _store, plan_store, _bundle = _startup(tmp_path, tree, commands)
+
+    assert _execute(startup, plan_store, tree, commands, _Fence()) == 0
+    operation_types = tuple(type(item) for item in commands.operations)
+    assert RestartXfcePanel in operation_types
+    assert RestartNmApplet not in operation_types
+    assert commands.tray_waits == 1
+    assert commands.nm_applet_item_waits == 1
+    assert "result=skip panel_restarted=yes" in caplog.text
+
+
+def test_restarted_panel_without_stable_tray_defers_applet_unprobed(
+    tmp_path: Path,
+) -> None:
+    tree = RootedSysfsReader(_sysfs_tree(tmp_path / "sysfs"))
+    commands = _FakeCommands(
+        panel_healthy=False,
+        post_reconfigure_panel_ready=False,
+        nm_applet_item_current=True,
+        tray_ready=False,
+    )
+    startup, _store, plan_store, _bundle = _startup(tmp_path, tree, commands)
+
+    assert _execute(startup, plan_store, tree, commands, _Fence()) == 0
+    operation_types = tuple(type(item) for item in commands.operations)
+    assert ScheduleNmAppletRetry in operation_types
+    assert RestartNmApplet not in operation_types
+    assert commands.nm_applet_item_waits == 0
+
+
+def test_failing_status_notifier_probe_falls_back_to_applet_restart(
+    tmp_path: Path,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    tree = RootedSysfsReader(_sysfs_tree(tmp_path / "sysfs"))
+    commands = _FakeCommands(nm_applet_probe_error=True)
+    startup, store, plan_store, _bundle = _startup(tmp_path, tree, commands)
+
+    assert _execute(startup, plan_store, tree, commands, _Fence()) == 0
+    assert tuple(type(item) for item in commands.operations) == _EXPECTED_OPERATIONS
+    assert "injected StatusNotifier probe bug" in caplog.text
+    assert "result=restart panel_restarted=no probe=failed" in caplog.text
+    assert store.read_result(_FINALIZE_ACTION).outcome is ActionLifecycle.COMPLETED
 
 
 def test_missing_stable_tray_defers_nm_applet_without_failing_finalization(

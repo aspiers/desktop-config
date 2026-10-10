@@ -4,16 +4,22 @@
 from __future__ import annotations
 
 import ctypes
+import json
 import os
+import subprocess
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Final
+from typing import Final, cast
 
 _TRAY_SELECTION: Final = b"_NET_SYSTEM_TRAY_S0"
 _SYSTRAY_MARKERS: Final = (b"xfce4/panel/wrapper-2.0", b"libsystray")
 _PANEL_COMM: Final = "xfce4-panel"
+_SNI_WATCHER: Final = "org.kde.StatusNotifierWatcher"
+# libayatana-appindicator registers nm-applet --indicator as
+# "<bus name>/org/ayatana/NotificationItem/nm_applet".
+_NM_APPLET_ITEM_SUFFIX: Final = "/nm_applet"
 
 
 class TrayReadinessError(RuntimeError):
@@ -159,6 +165,160 @@ def wait_for_stable_tray(  # noqa: PLR0913
     wrappers = ",".join(str(item) for item in latest.wrapper_pids) or "none"
     raise TrayReadinessError(
         f"system tray did not stabilize: owner={owner} wrappers={wrappers}"
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class StatusNotifierState:
+    """Which process hosts StatusNotifier items, and whether nm-applet's is one."""
+
+    watcher_pid: int | None
+    nm_applet_registered: bool
+    wrapper_pids: tuple[int, ...]
+
+    @property
+    def current(self) -> bool:
+        """Return whether a live panel's systray wrapper hosts nm-applet's item.
+
+        A StatusNotifier item has no XEMBED dock to get wrong, so a registered
+        item on the final wrapper means nm-applet needs no restart. Right
+        after a panel restart the outgoing wrapper can still pass this test;
+        callers must first prove the tray stable.
+        """
+        return (
+            self.nm_applet_registered
+            and self.watcher_pid is not None
+            and self.watcher_pid in self.wrapper_pids
+        )
+
+    def describe(self) -> str:
+        """Return journal-safe key=value evidence."""
+        watcher = "none" if self.watcher_pid is None else str(self.watcher_pid)
+        wrappers = ",".join(str(item) for item in self.wrapper_pids) or "none"
+        registered = "yes" if self.nm_applet_registered else "no"
+        return f"watcher={watcher} wrappers={wrappers} nm_applet_item={registered}"
+
+
+class StatusNotifierProbe:
+    """Read-only bounded ``busctl`` probe of the session StatusNotifier watcher."""
+
+    def __init__(
+        self,
+        *,
+        environment: Mapping[str, str],
+        proc_root: Path = Path("/proc"),
+        timeout_seconds: float = 3.0,
+    ) -> None:
+        """Bind the session-bus environment, procfs root and per-call timeout."""
+        self._environment = dict(environment)
+        self._proc_root = proc_root
+        self._timeout_seconds = timeout_seconds
+
+    def sample(self) -> StatusNotifierState:
+        """Sample the watcher owner PID, nm-applet registration and wrappers."""
+        pid = self._busctl_data(
+            "call",
+            "org.freedesktop.DBus",
+            "/org/freedesktop/DBus",
+            "org.freedesktop.DBus",
+            "GetConnectionUnixProcessID",
+            "s",
+            _SNI_WATCHER,
+        )
+        items = self._busctl_data(
+            "get-property",
+            _SNI_WATCHER,
+            "/StatusNotifierWatcher",
+            _SNI_WATCHER,
+            "RegisteredStatusNotifierItems",
+        )
+        try:
+            wrappers = systray_wrapper_pids(self._proc_root)
+        except TrayReadinessError:
+            wrappers = ()
+        return StatusNotifierState(
+            watcher_pid=_single_pid(pid),
+            nm_applet_registered=_has_nm_applet_item(items),
+            wrapper_pids=wrappers,
+        )
+
+    def _busctl_data(self, *arguments: str) -> object:
+        try:
+            completed = subprocess.run(  # noqa: S603 - fixed argv, no shell
+                ("busctl", "--user", "--json=short", *arguments),  # noqa: S607
+                capture_output=True,
+                text=True,
+                timeout=self._timeout_seconds,
+                check=False,
+                env=self._environment,
+                start_new_session=True,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            return None
+        if completed.returncode != 0:
+            return None
+        try:
+            decoded: object = json.loads(completed.stdout)
+        except json.JSONDecodeError:
+            return None
+        if not isinstance(decoded, dict):
+            return None
+        return cast("dict[str, object]", decoded).get("data")
+
+
+def wait_for_status_notifier_item(  # noqa: PLR0913
+    sample: Callable[[], StatusNotifierState],
+    *,
+    timeout_seconds: float = 5.0,
+    interval_seconds: float = 0.5,
+    required_stable_samples: int = 1,
+    monotonic: Callable[[], float] = time.monotonic,
+    sleep: Callable[[float], None] = time.sleep,
+) -> StatusNotifierState:
+    """Return the first state that stays current, or the latest one at timeout.
+
+    Unlike the tray wait this never raises: a missing item is an answer (the
+    caller restarts nm-applet), not a failure.
+    """
+    if timeout_seconds <= 0 or interval_seconds <= 0:
+        raise ValueError("StatusNotifier wait timeout and interval must be positive")
+    if required_stable_samples <= 0:
+        raise ValueError("StatusNotifier wait stable-sample count must be positive")
+    deadline = monotonic() + timeout_seconds
+    previous: StatusNotifierState | None = None
+    stable = 0
+    latest = sample()
+    while True:
+        if latest.current:
+            stable = stable + 1 if latest == previous else 0
+            if stable >= required_stable_samples:
+                return latest
+        else:
+            stable = 0
+        if monotonic() >= deadline:
+            return latest
+        previous = latest
+        sleep(interval_seconds)
+        latest = sample()
+
+
+def _single_pid(data: object) -> int | None:
+    if not isinstance(data, list):
+        return None
+    values = cast("list[object]", data)
+    if len(values) == 1:
+        value = values[0]
+        if isinstance(value, int) and not isinstance(value, bool) and value > 0:
+            return value
+    return None
+
+
+def _has_nm_applet_item(data: object) -> bool:
+    if not isinstance(data, list):
+        return False
+    return any(
+        isinstance(item, str) and item.endswith(_NM_APPLET_ITEM_SUFFIX)
+        for item in cast("list[object]", data)
     )
 
 
