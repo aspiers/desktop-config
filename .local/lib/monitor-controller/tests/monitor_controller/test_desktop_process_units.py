@@ -292,6 +292,60 @@ def test_ly_exact_payload_mode_never_discovers_layout(tmp_path: Path) -> None:
     ]
 
 
+def test_ly_payload_mode_captures_window_state_and_keeps_exit_status(
+    tmp_path: Path,
+) -> None:
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    fakes = {
+        "desktop-layout": "echo 'Map {MoveTo 0 0} {Matches (Name=x)}'\nexit 3\n",
+        "ps": "[ \"$2\" = etimes= ] && echo ' 30' || echo ' 4242 30'\n",
+        "xrandr": "echo 'Monitors: 1'\n",
+        "wmctrl": "echo '0x01 0 99 10 20 300 400 kitty.kitty celtic term'\n",
+        "systemd-run": 'printf \'%s\\n\' "$@" > "$LY_TEST_LOG"\n',
+    }
+    for name, body in fakes.items():
+        fake = fake_bin / name
+        fake.write_text(f"#!/bin/sh\n{body}", encoding="utf-8")
+        fake.chmod(0o700)
+    shutil.copy(_REPOSITORY / "bin" / "window-layout-capture", fake_bin)
+    captures = tmp_path / "captures"
+    log = tmp_path / "systemd-run-arguments"
+    payload = tmp_path / "actions.json"
+    payload.write_text("[]", encoding="utf-8")
+    environment = os.environ.copy()
+    environment.update(
+        {
+            "LY_TEST_LOG": str(log),
+            "PATH": f"{fake_bin}:/usr/bin:/bin",
+            "WINDOW_LAYOUT_CAPTURE_DIR": str(captures),
+            "ZDOTDIR": str(tmp_path / "missing-zdotdir"),
+        }
+    )
+
+    completed = subprocess.run(  # noqa: S603
+        (str(_REPOSITORY / "bin" / "ly"), "--resolved-actions", str(payload)),
+        check=False,
+        capture_output=True,
+        env=environment,
+        text=True,
+        timeout=10,
+    )
+
+    assert completed.returncode == 3
+    (capture,) = captures.glob("*.fresh-fluxbox.txt")
+    text = capture.read_text(encoding="utf-8")
+    assert text.startswith("fluxbox_age_seconds=30 tag=fresh-fluxbox\n")
+    assert text.index("=== before ") < text.index("Map {MoveTo 0 0}")
+    assert text.index("Map {MoveTo 0 0}") < text.index("=== after ")
+    assert text.count("kitty.kitty celtic term") == 2
+    assert log.read_text(encoding="utf-8").splitlines()[-3:] == [
+        "snapshot",
+        "after+5s",
+        str(capture),
+    ]
+
+
 def test_persistent_process_units_and_finalizer_have_separate_ownership() -> None:
     finalizer = (_UNITS / "monitor-finalize@.service").read_text(encoding="utf-8")
     applet = (_UNITS / "nm-applet.service").read_text(encoding="utf-8")

@@ -1,0 +1,104 @@
+#!/bin/bash
+
+# Record what the monitor controller's window placement actually did, so a
+# relayout that reports success while leaving windows unmoved or on the wrong
+# head (dc-yhr0) can be diagnosed from the next natural dock or undock.
+#
+#   window-layout-capture start              print a new capture file path
+#   window-layout-capture snapshot LABEL F   append window state to F
+#   window-layout-capture later F            snapshot F again in 5s, detached
+#   window-layout-capture status             report outstanding scenarios
+#
+# Every capture step is best effort: callers ignore failures so a broken
+# capture can never fail or delay the relayout it observes.
+
+set -u
+umask 077
+
+readonly CAPTURE_DIR=${WINDOW_LAYOUT_CAPTURE_DIR:-$HOME/.log/window-layout}
+readonly KEEP=100
+# A Fluxbox younger than this was started from scratch by full recovery
+# (fluxbox-restart) during this relayout, rather than restarted in place.
+readonly FRESH_FLUXBOX_SECONDS=120
+
+fluxbox_age() {
+    ps -o etimes= -C fluxbox 2>/dev/null | awk 'NR == 1 { print $1 + 0 }'
+}
+
+prune() {
+    local stale
+
+    stale=$(
+        find "$CAPTURE_DIR" -maxdepth 1 -name '*.txt' -printf '%T@ %p\n' |
+            sort -rn | tail -n +"$KEEP" | cut -d' ' -f2-
+    ) || return 1
+    while IFS= read -r file; do
+        [ -z "$file" ] || rm -f -- "$file" || return 1
+    done <<< "$stale"
+}
+
+start() {
+    local age tag file
+
+    mkdir -p "$CAPTURE_DIR" || return 1
+    # Enforce retention before writing; skip the capture if that fails.
+    prune || return 1
+    age=$(fluxbox_age)
+    if [ -n "$age" ] && [ "$age" -lt "$FRESH_FLUXBOX_SECONDS" ]; then
+        tag='fresh-fluxbox'
+    else
+        tag=inplace
+    fi
+    file="$CAPTURE_DIR/$(date +%Y%m%d-%H%M%S).$$.$tag.txt"
+    printf 'fluxbox_age_seconds=%s tag=%s\n' "${age:-none}" "$tag" > "$file" ||
+        return 1
+    printf '%s\n' "$file"
+}
+
+snapshot() {
+    local label=$1 file=$2
+
+    [ -f "$file" ] || return 1
+    {
+        printf '\n=== %s %s ===\n' "$label" "$(date +%T.%N)"
+        printf -- '--- fluxbox pid, age ---\n'
+        ps -o pid=,etimes= -C fluxbox
+        printf -- '--- monitors ---\n'
+        xrandr --listmonitors
+        printf -- '--- windows: id desktop pid x y w h class host title ---\n'
+        wmctrl -lGpx
+    } >> "$file" 2>&1
+}
+
+later() {
+    local file=$1
+
+    # The finalize unit kills leftover processes when it exits, so the
+    # delayed snapshot must run outside its cgroup.
+    systemd-run --user --quiet --collect --on-active=5s \
+        --setenv=DISPLAY="${DISPLAY:-}" \
+        --setenv=XAUTHORITY="${XAUTHORITY:-}" \
+        "$(readlink -f "$0")" snapshot after+5s "$file"
+}
+
+status() {
+    local fresh inplace
+
+    fresh=$(find "$CAPTURE_DIR" -maxdepth 1 -name '*.fresh-fluxbox.txt' 2>/dev/null | wc -l)
+    inplace=$(find "$CAPTURE_DIR" -maxdepth 1 -name '*.inplace.txt' 2>/dev/null | wc -l)
+    printf 'relayouts after full Fluxbox recovery: %s\n' "$fresh"
+    printf 'relayouts after in-place restart:      %s\n' "$inplace"
+    [ "$fresh" -gt 0 ] || echo "outstanding: a relayout after full Fluxbox recovery"
+    [ "$inplace" -gt 0 ] || echo "outstanding: a relayout after in-place restart"
+}
+
+case "${1:-}" in
+    start) [ "$#" -eq 1 ] && start ;;
+    snapshot) [ "$#" -eq 3 ] && snapshot "$2" "$3" ;;
+    later) [ "$#" -eq 2 ] && later "$2" ;;
+    status) [ "$#" -eq 1 ] && status ;;
+    *)
+        echo "Usage: window-layout-capture start|snapshot LABEL FILE|later FILE|status" >&2
+        exit 64
+        ;;
+esac

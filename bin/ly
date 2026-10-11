@@ -11,7 +11,15 @@ if [ "${1:-}" = --resolved-actions ]; then
         echo "Usage: ly [--debug] --resolved-actions FILE" >&2
         exit 2
     }
-    exec desktop-layout --resolved-actions "$2"
+    # The controller discards leaf output and fluxbox-remote exits 0 whether
+    # or not Fluxbox acted, so keep our own record of each placement (dc-yhr0).
+    capture=$(window-layout-capture start 2>/dev/null) || capture=/dev/null
+    window-layout-capture snapshot before "$capture" 2>/dev/null
+    desktop-layout --resolved-actions "$2" 2>&1 | tee -a "$capture"
+    status=${PIPESTATUS[0]}
+    window-layout-capture snapshot after "$capture" 2>/dev/null
+    window-layout-capture later "$capture" 2>/dev/null
+    exit "$status"
 fi
 
 # Legacy interactive callers retain layout discovery. The monitor controller
