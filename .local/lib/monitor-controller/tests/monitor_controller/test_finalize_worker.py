@@ -419,7 +419,7 @@ def _plan(
     source = FilesystemDesktopPlanningInputSource(
         root=_REPO,
         display=display,
-        context=ShadowDesktopContextSource(host_name="celtic", theme="dark"),
+        context=ShadowDesktopContextSource(host_name="celtic"),
     )
     profile = next(
         item

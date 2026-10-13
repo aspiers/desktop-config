@@ -108,16 +108,15 @@ def _joined_bytes(*parts: bytes) -> bytes:
     return b"".join(parts)
 
 
-def _case(  # noqa: PLR0913
+def _case(
     *,
     sequence: int,
     profile: str,
     layout: str,
     external: str | None,
     external_size: tuple[int, int, int, int] | None,
-    theme: str = "dark",
 ) -> tuple[FilesystemDesktopPlanningInputSource, RequestPlan]:
-    observation_key = ObservationKey(f"real-{layout}-{theme}")
+    observation_key = ObservationKey(f"real-{layout}")
     if external is None:
         connected = ("eDP",)
         external_outputs: tuple[str, ...] = ()
@@ -183,7 +182,7 @@ def _case(  # noqa: PLR0913
     source = FilesystemDesktopPlanningInputSource(
         root=_REPO,
         display=display,
-        context=ShadowDesktopContextSource(host_name="celtic", theme=theme),
+        context=ShadowDesktopContextSource(host_name="celtic"),
     )
     captured_profile = next(
         item
@@ -323,7 +322,6 @@ def test_real_saved_edids_drive_model_and_complete_plan(  # noqa: PLR0913, PLR09
     assert captured.configuration.one(InputRole.AUTORANDR_SETUP).content_hash in (
         plan.dpi.policy_hashes
     )
-    assert plan.terminal.theme == "dark"
     assert plan.emacs.expression == "monitor-controller-apply-font-height"
     assert plan.fluxbox.monitor_count == len(plan.guards.display_screens)
     assert plan.keyboard.disposition is KeyboardDisposition.DISCONNECT_ADVANTAGE_360
@@ -357,7 +355,6 @@ def test_real_saved_edids_drive_model_and_complete_plan(  # noqa: PLR0913, PLR09
         "artifacts/fluxbox/sublayouts.yaml",
         "artifacts/layout/expanded.yaml",
         "artifacts/layout/window-actions.json",
-        "artifacts/terminal/kitty-theme.conf",
     }
     if (_REPO / ".config" / "autorandr" / profile / "layout").exists():
         expected_artifacts.add("artifacts/autorandr/layout")
@@ -750,7 +747,7 @@ def test_identical_inputs_have_identical_canonical_bytes_and_hash() -> None:
     second = build_desktop_plan(source.load(request))
 
     assert first == second
-    assert first.plan.schema_version == PLAN_SCHEMA_VERSION == 4
+    assert first.plan.schema_version == PLAN_SCHEMA_VERSION == 5
     assert encode_plan(first.plan) == encode_plan(second.plan)
     assert hash_plan_bundle(first) == hash_plan_bundle(second)
     assert decode_plan(encode_plan(first.plan)) == first.plan
@@ -807,11 +804,7 @@ def _semantic_projection(desktop: DesktopPlan, roles: tuple[InputRole, ...]) -> 
         values.append(desktop.panels)
     if InputRole.DPI_POLICY in role_set:
         values.append(desktop.dpi)
-    if role_set & {
-        InputRole.FONT_POLICY,
-        InputRole.TERMINAL_POLICY,
-        InputRole.KITTY_THEME,
-    }:
+    if role_set & {InputRole.FONT_POLICY, InputRole.TERMINAL_POLICY}:
         values.append(desktop.terminal)
     if role_set & {
         InputRole.FLUXBOX_TEMPLATE,
@@ -994,23 +987,9 @@ def test_every_consumed_real_configuration_changes_its_semantic_intent(
         changed_source.close()
 
 
-def test_theme_changes_are_full_manifest_keyed_and_bad_geometry_fails_closed() -> None:
+def test_bad_geometry_fails_closed() -> None:
     source, request = _celtic()
     baseline_inputs = source.load(request)
-    baseline = build_desktop_plan(baseline_inputs)
-    light_source, light_request = _case(
-        sequence=1,
-        profile="celtic",
-        layout="celtic",
-        external=None,
-        external_size=None,
-        theme="light",
-    )
-    light_inputs = light_source.load(light_request)
-    light = build_desktop_plan(light_inputs)
-    assert light_inputs.request.input_key != baseline_inputs.request.input_key
-    assert light.plan.terminal.gnome_profile == "Bright"
-    assert hash_plan_bundle(light) != hash_plan_bundle(baseline)
 
     display = replace(
         baseline_inputs.display,

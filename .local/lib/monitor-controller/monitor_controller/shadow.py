@@ -18,7 +18,6 @@ from monitor_controller.codec import StateCodecError
 from monitor_controller.composition import (
     NamespaceAuthorityLock,
     desktop_configuration_root,
-    desktop_theme,
     require_namespace,
     resolve_xdg_paths,
     run_controller_with_producer,
@@ -366,7 +365,6 @@ class ShadowDesktopContextSource:
     """Personal host policy captured without shell or mutable display queries."""
 
     host_name: str
-    theme: str
     reference_dpi: int = DEFAULT_REFERENCE_DPI
 
     def context_for(
@@ -381,7 +379,6 @@ class ShadowDesktopContextSource:
         return DesktopContext(
             host_name=self.host_name,
             is_laptop=self.host_name == "celtic",
-            theme=self.theme,
             reference_dpi=self.reference_dpi,
             primary_monitor_output=primary.output,
             primary_monitor_model=primary.model,
@@ -725,16 +722,6 @@ def load_shadow_state(
     return replace(persisted, controller_instance=controller_instance)
 
 
-def shadow_theme(paths: ShadowPaths) -> str:
-    """Read the desktop theme, defaulting to dark when unset.
-
-    Public so a test can assert it agrees with
-    :func:`monitor_controller.active.active_theme`. The two are the same
-    function written twice, and drifted apart once already (`dc-t53`).
-    """
-    return desktop_theme(paths.config_home, ShadowStartupError)
-
-
 def _desktop_configuration_root(paths: ShadowPaths) -> Path:
     return desktop_configuration_root(
         paths.desktop_configuration_root, ShadowStartupError
@@ -774,7 +761,6 @@ def build_shadow_composition(
         display=display_bridge,
         context=ShadowDesktopContextSource(
             host_name=socket.gethostname().split(".", maxsplit=1)[0],
-            theme=shadow_theme(paths),
             # Read once here, not during planning: planning must be
             # reproducible, and set-layout-dpi moves this value mid-relayout.
             reference_dpi=read_reference_dpi(),

@@ -78,7 +78,7 @@ from .plan_codec import (
     PlannedActionKind,
     PlannedTopology,
     ResolvedVariable,
-    TerminalThemeIntent,
+    TerminalFontIntent,
     TransitionGuards,
     WindowLayoutIntent,
     with_artifacts,
@@ -155,7 +155,6 @@ class InputRole(StrEnum):
     DPI_POLICY = "dpi_policy"
     FONT_POLICY = "font_policy"
     TERMINAL_POLICY = "terminal_policy"
-    KITTY_THEME = "kitty_theme"
     FLUXBOX_TEMPLATE = "fluxbox_template"
     FLUXBOX_GENERATOR = "fluxbox_generator"
     KEYBOARD_POLICY = "keyboard_policy"
@@ -208,7 +207,6 @@ class DesktopContext:
 
     host_name: str
     is_laptop: bool
-    theme: str
     reference_dpi: int
     primary_monitor_output: str
     primary_monitor_model: str
@@ -220,7 +218,6 @@ class DesktopContext:
     def __post_init__(self) -> None:
         for value, field in (
             (self.host_name, "desktop host name"),
-            (self.theme, "desktop theme"),
             (self.primary_monitor_output, "primary monitor output"),
             (self.primary_monitor_model, "primary monitor model"),
         ):
@@ -232,8 +229,6 @@ class DesktopContext:
             raise DesktopPlanningError("primary monitor identity hash is malformed")
         if _EDID_MODEL_KEY.fullmatch(self.primary_monitor_edid_model) is None:
             raise DesktopPlanningError("primary monitor EDID model key is malformed")
-        if self.theme not in {"dark", "light"}:
-            raise DesktopPlanningError("desktop theme must be dark or light")
         if self.reference_dpi <= 0 or self.emacs_font_height <= 0:
             raise DesktopPlanningError("desktop DPI/font height must be positive")
 
@@ -630,10 +625,6 @@ class FilesystemDesktopPlanningInputSource:
                 self._required(InputRole.TERMINAL_POLICY, "bin/gnome-terminal-profile"),
                 self._required(InputRole.TERMINAL_POLICY, "bin/xfce4-terminal-config"),
                 self._required(InputRole.TERMINAL_POLICY, "bin/kitty-theme-config"),
-                self._required(
-                    InputRole.KITTY_THEME,
-                    f".config/kitty/{context.theme}-theme.conf",
-                ),
                 self._required(InputRole.FLUXBOX_TEMPLATE, ".fluxbox/keys.erb"),
                 self._required(InputRole.FLUXBOX_GENERATOR, "bin/fluxbox-gen-config"),
                 self._required(
@@ -915,7 +906,6 @@ def encode_desktop_context(context: DesktopContext) -> bytes:
             "primary_monitor_model": context.primary_monitor_model,
             "primary_monitor_output": context.primary_monitor_output,
             "reference_dpi": context.reference_dpi,
-            "theme": context.theme,
         },
         allow_nan=False,
         ensure_ascii=True,
@@ -998,7 +988,7 @@ def build_desktop_plan(  # noqa: PLR0915
     ui_scale = _ui_scale(resolved, inputs)
     panels = _panel_intents(inputs, ui_scale)
     dpi = _dpi_intent(inputs, resolved)
-    terminal, kitty_artifact = _terminal_intent(inputs, _font_scale(resolved, ui_scale))
+    terminal = _terminal_intent(inputs, _font_scale(resolved, ui_scale))
     emacs = EmacsFontIntent(
         expression="monitor-controller-apply-font-height",
         font_height=inputs.context.emacs_font_height,
@@ -1098,7 +1088,6 @@ def build_desktop_plan(  # noqa: PLR0915
     fluxbox_refs = (rendered_keys_artifact.relative_path,)
     prepare_refs = {
         PlannedActionKind.INSTALL_FLUXBOX_OVERLAY: (overlay_artifact.relative_path,),
-        PlannedActionKind.CONFIGURE_TERMINALS: (kitty_artifact.relative_path,),
         PlannedActionKind.GENERATE_FLUXBOX_CONFIGURATION: fluxbox_refs,
     }
     finalize_refs = {
@@ -1125,7 +1114,6 @@ def build_desktop_plan(  # noqa: PLR0915
         sublayouts_artifact,
         resolved_sublayouts_artifact,
         rendered_keys_artifact,
-        kitty_artifact,
     )
     manifest = tuple(
         PlanArtifactManifestEntry(item.relative_path, item.sha256)
@@ -1443,7 +1431,7 @@ def _dpi_intent(inputs: DesktopPlanningInputs, resolved: ResolvedLayout) -> DpiI
 
 def _terminal_intent(
     inputs: DesktopPlanningInputs, scale: Decimal
-) -> tuple[TerminalThemeIntent, PlanArtifact]:
+) -> TerminalFontIntent:
     host = inputs.context.host_name
     if host == "celtic":
         medium_size = _rounded(Decimal(14) * scale)
@@ -1453,26 +1441,13 @@ def _terminal_intent(
         raise DesktopPlanningError(
             f"terminal font policy does not support host {host!r}"
         )
-    kitty = inputs.configuration.one(InputRole.KITTY_THEME)
-    kitty_content = _required_content(kitty)
-    artifact = PlanArtifact("artifacts/terminal/kitty-theme.conf", kitty_content)
-    theme = inputs.context.theme
-    return (
-        TerminalThemeIntent(
-            theme=theme,
-            gnome_profile="Bright" if theme == "light" else "Dark",
-            xfce_theme=theme,
-            medium_font_name="SauceCodePro Nerd Font",
-            medium_font_size=medium_size,
-            kitty_theme_artifact=artifact.relative_path,
-            kitty_theme_sha256=artifact.sha256,
-            policy_hashes=inputs.configuration.hashes_for(
-                InputRole.TERMINAL_POLICY,
-                InputRole.FONT_POLICY,
-                InputRole.KITTY_THEME,
-            ),
+    return TerminalFontIntent(
+        medium_font_name="SauceCodePro Nerd Font",
+        medium_font_size=medium_size,
+        policy_hashes=inputs.configuration.hashes_for(
+            InputRole.TERMINAL_POLICY,
+            InputRole.FONT_POLICY,
         ),
-        artifact,
     )
 
 

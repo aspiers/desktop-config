@@ -95,11 +95,9 @@ set_font_size() {
 
 set_theme() {
     local theme="$1"
-    local theme_file="${2:-}"
-    local exact_font_size="${3:-}"
-    if [[ -z "$theme_file" ]]; then
-        theme_file=$(get_theme_file "$theme") || return 1
-    fi
+    local exact_font_size="${2:-}"
+    local theme_file
+    theme_file=$(get_theme_file "$theme") || return 1
 
     if [[ ! -f "$theme_file" ]]; then
         echo >&2 "Theme file not found: $theme_file"
@@ -128,11 +126,11 @@ set_theme() {
 
 main() {
     if [[ "${1:-}" == --exact ]]; then
-        [[ "$#" -eq 4 && -n "$2" && -n "$3" && "$4" =~ ^[1-9][0-9]*$ ]] || {
-            echo >&2 "Usage: $0 --exact THEME THEME_FILE FONT_SIZE"
+        [[ "$#" -eq 3 && -n "$2" && "$3" =~ ^[1-9][0-9]*$ ]] || {
+            echo >&2 "Usage: $0 --exact THEME FONT_SIZE"
             return 2
         }
-        set_theme "$2" "$3" "$4"
+        set_theme "$2" "$3"
     elif [[ -z "${1:-}" ]]; then
         show_current
     elif [[ "$#" -eq 1 ]]; then

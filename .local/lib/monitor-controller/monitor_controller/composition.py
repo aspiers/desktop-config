@@ -5,7 +5,7 @@ The two roots are deliberately separate programs — supplying a real
 dispatcher is the entire difference between observing and acting, and the
 spec forbids reducing that to a boolean. What they share here is the
 mode-independent plumbing: XDG resolution, the authority-lock protocol, the
-theme and configuration-root readers, and the two-task run loop. These were
+configuration-root reader, and the two-task run loop. These were
 previously near-verbatim copies whose only differences were the word
 shadow/active and the exception class, and nothing pinned them together, so
 they drifted (`dc-t53`, `dc-gab`). Each function takes the caller's
@@ -22,8 +22,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from types import TracebackType
 from typing import Protocol, Self
-
-from monitor_controller.safeio import read_bounded_text
 
 _DIRECTORY_MODE = 0o700
 _LOCK_MODE = 0o600
@@ -91,17 +89,6 @@ def require_namespace(
     """Refuse to run under a unit file that launched the wrong composition root."""
     if environ.get("MONITOR_CONTROLLER_NAMESPACE") != namespace:
         raise error(f"MONITOR_CONTROLLER_NAMESPACE must be exactly {namespace!r}")
-
-
-def desktop_theme(config_home: Path, error: type[Exception]) -> str:
-    """Read the desktop theme with the guarded reader, defaulting to dark."""
-    path = config_home / "theme"
-    if not path.exists():
-        return "dark"
-    value = read_bounded_text(path, "desktop:theme", error).strip()
-    if value not in {"dark", "light"}:
-        raise error("desktop theme must be exactly dark or light")
-    return value
 
 
 def desktop_configuration_root(path: Path, error: type[Exception]) -> Path:

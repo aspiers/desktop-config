@@ -18,29 +18,17 @@ from pathlib import Path
 
 import pytest
 
-from monitor_controller.active import ActivePaths, ActiveStartupError, active_theme
+from monitor_controller.active import ActiveStartupError
 from monitor_controller.safeio import (
     DEFAULT_REFERENCE_DPI,
     MAX_CONFIGURATION_BYTES,
     read_bounded_text,
     read_reference_dpi,
 )
-from monitor_controller.shadow import ShadowPaths, shadow_theme
 
 
 class _ProbeError(RuntimeError):
     """Stand-in for a composition root's startup error."""
-
-
-def _paths(root: Path) -> ActivePaths:
-    """Build active paths rooted entirely inside a temporary directory."""
-    return ActivePaths(
-        data_home=root / "data",
-        state_home=root / "state",
-        runtime_dir=root / "runtime",
-        config_home=root / "config",
-        desktop_configuration_root=root / "desktop-config",
-    )
 
 
 class TestReadBoundedText:
@@ -167,74 +155,6 @@ class TestReadBoundedText:
             with pytest.raises(_ProbeError):
                 read_bounded_text(directory, "probe", _ProbeError)
         assert len(list(open_descriptors.iterdir())) <= before
-
-
-class TestActiveTheme:
-    """The authoritative controller's own use of the reader."""
-
-    def test_it_reads_the_configured_theme(self, tmp_path: Path) -> None:
-        """The ordinary case."""
-        paths = _paths(tmp_path)
-        paths.config_home.mkdir(parents=True)
-        (paths.config_home / "theme").write_text("light\n", encoding="utf-8")
-        assert active_theme(paths) == "light"
-
-    def test_absent_theme_defaults_to_dark(self, tmp_path: Path) -> None:
-        """A missing file is normal, not an error."""
-        paths = _paths(tmp_path)
-        paths.config_home.mkdir(parents=True)
-        assert active_theme(paths) == "dark"
-
-    def test_it_follows_a_symlinked_theme(self, tmp_path: Path) -> None:
-        """A linked theme file is read through the link (`dc-nyl3`)."""
-        paths = _paths(tmp_path)
-        paths.config_home.mkdir(parents=True)
-        (tmp_path / "elsewhere").write_text("light", encoding="utf-8")
-        (paths.config_home / "theme").symlink_to(tmp_path / "elsewhere")
-
-        assert active_theme(paths) == "light"
-
-    def test_it_refuses_an_unrecognised_theme(self, tmp_path: Path) -> None:
-        """Only two values are meaningful downstream."""
-        paths = _paths(tmp_path)
-        paths.config_home.mkdir(parents=True)
-        (paths.config_home / "theme").write_text("mauve", encoding="utf-8")
-        with pytest.raises(ActiveStartupError, match="dark or light"):
-            active_theme(paths)
-
-
-def test_both_composition_roots_read_the_theme_identically(tmp_path: Path) -> None:
-    """The two must not drift apart again.
-
-    `dc-t53` was exactly this: the same function written twice, one copy
-    guarded and one not, with nothing comparing them. Asserting agreement is
-    what stops a future edit to one going unnoticed.
-    """
-    config_home = tmp_path / "config"
-    config_home.mkdir(parents=True)
-    active = _paths(tmp_path)
-    shadow = ShadowPaths(
-        data_home=tmp_path / "data",
-        state_home=tmp_path / "state",
-        runtime_dir=tmp_path / "runtime",
-        config_home=config_home,
-        desktop_configuration_root=tmp_path / "desktop-config",
-    )
-
-    for value in ("dark", "light"):
-        (config_home / "theme").write_text(value, encoding="utf-8")
-        assert active_theme(active) == shadow_theme(shadow) == value
-
-    (config_home / "theme").unlink()
-    assert active_theme(active) == shadow_theme(shadow) == "dark"
-
-    # Both follow a symlink, and both treat a dangling one as absent.
-    (tmp_path / "elsewhere").write_text("light", encoding="utf-8")
-    (config_home / "theme").symlink_to(tmp_path / "elsewhere")
-    assert active_theme(active) == shadow_theme(shadow) == "light"
-
-    (tmp_path / "elsewhere").unlink()
-    assert active_theme(active) == shadow_theme(shadow) == "dark"
 
 
 class TestReadReferenceDpi:

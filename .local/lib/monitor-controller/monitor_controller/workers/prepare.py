@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import contextlib
 import json
 import os
 import tempfile
@@ -19,7 +18,7 @@ from monitor_controller.desktop.plan_codec import (
     EmacsFontIntent,
     PanelIntent,
     PlannedActionKind,
-    TerminalThemeIntent,
+    TerminalFontIntent,
     hash_plan_bundle,
 )
 from monitor_controller.desktop.planner import ConfigurationInput, InputRole
@@ -114,10 +113,9 @@ class SetXfceDpi:
 
 @dataclass(frozen=True, slots=True)
 class ConfigureTerminals:
-    """Apply exact terminal font/theme values and staged kitty bytes."""
+    """Apply the exact terminal font size; the leaves apply the live theme."""
 
-    intent: TerminalThemeIntent
-    kitty_theme: bytes
+    intent: TerminalFontIntent
     leaves: tuple[PrepareLeafBinding, ...]
 
 
@@ -291,24 +289,16 @@ class SubprocessPrepareCommands:
                     environment=environment,
                 )
             if isinstance(operation, ConfigureTerminals):
-                theme_path = self._private_temporary_file(operation.kitty_theme)
-                try:
-                    intent = operation.intent
-                    return self._leaf_runner.run(
-                        (
-                            str(staged / "setup-terminals"),
-                            "--exact",
-                            intent.theme,
-                            intent.gnome_profile,
-                            intent.xfce_theme,
-                            intent.medium_font_name,
-                            str(intent.medium_font_size),
-                            str(theme_path),
-                        ),
-                        environment=environment,
-                    )
-                finally:
-                    theme_path.unlink(missing_ok=True)
+                intent = operation.intent
+                return self._leaf_runner.run(
+                    (
+                        str(staged / "setup-terminals"),
+                        "--exact",
+                        intent.medium_font_name,
+                        str(intent.medium_font_size),
+                    ),
+                    environment=environment,
+                )
             helper = staged / "monitor-controller-emacs-fonts.el"
             expression = (
                 f"(progn (load-file {json.dumps(str(helper))}) "
@@ -363,24 +353,6 @@ class SubprocessPrepareCommands:
                     _stale(f"captured preparation helper changed: {name}")
                 _atomic_replace(staged / name, content, mode=0o700)
             yield staged
-
-    def _private_temporary_file(self, content: bytes) -> Path:
-        self._work_root.mkdir(mode=0o700, parents=True, exist_ok=True)
-        self._work_root.chmod(0o700)
-        descriptor, name = tempfile.mkstemp(prefix="kitty-theme-", dir=self._work_root)
-        path = Path(name)
-        try:
-            os.fchmod(descriptor, 0o600)
-            with os.fdopen(descriptor, "wb", closefd=True) as stream:
-                stream.write(content)
-                stream.flush()
-                os.fsync(stream.fileno())
-        except BaseException:
-            with contextlib.suppress(OSError):
-                os.close(descriptor)
-            path.unlink(missing_ok=True)
-            raise
-        return path
 
 
 def run_prepare_worker(  # noqa: PLR0913
@@ -584,7 +556,6 @@ def _operation(  # noqa: PLR0911 - closed six-action typed dispatch
     if kind is PlannedActionKind.CONFIGURE_TERMINALS:
         return ConfigureTerminals(
             plan.terminal,
-            artifacts[plan.terminal.kitty_theme_artifact],
             _leaf_bindings(
                 plan.terminal.policy_hashes,
                 tuple(

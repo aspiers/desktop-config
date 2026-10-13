@@ -41,7 +41,6 @@ from monitor_controller.codec import StateCodecError
 from monitor_controller.composition import (
     NamespaceAuthorityLock,
     desktop_configuration_root,
-    desktop_theme,
     require_namespace,
     resolve_xdg_paths,
     run_controller_with_producer,
@@ -649,17 +648,6 @@ def load_active_state(  # noqa: PLR0913
     )
 
 
-def active_theme(paths: ActivePaths) -> str:
-    """Read the desktop theme, defaulting to dark when unset.
-
-    Uses the guarded reader rather than `Path.read_text()`. An earlier version
-    of this function did not, which left the *authoritative* controller
-    reading a startup file less carefully than the non-authoritative one
-    (`dc-t53`).
-    """
-    return desktop_theme(paths.config_home, ActiveStartupError)
-
-
 def _desktop_configuration_root(paths: ActivePaths) -> Path:
     """Resolve the desktop configuration tree, refusing anything unusable."""
     return desktop_configuration_root(
@@ -741,7 +729,6 @@ def build_active_composition(
         display=display_bridge,
         context=ShadowDesktopContextSource(
             host_name=socket.gethostname().split(".", maxsplit=1)[0],
-            theme=active_theme(paths),
             # Read once here, not during planning: planning must be
             # reproducible, and set-layout-dpi moves this value mid-relayout.
             reference_dpi=read_reference_dpi(),

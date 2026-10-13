@@ -464,7 +464,7 @@ Apply repeatable configuration which a newer transaction can safely supersede:
 - install the selected Fluxbox overlay;
 - update panel properties;
 - apply layout DPI;
-- configure terminal fonts and themes;
+- configure terminal fonts (the terminal leaves apply the live theme);
 - reload Emacs fonts; and
 - generate Fluxbox configuration.
 

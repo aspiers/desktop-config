@@ -60,7 +60,7 @@ from .layout import DisplayScreenSnapshot, ResolvedLayout  # noqa: TC001
 # Version 3 predates independent layout font scaling. It is intentionally
 # rejected because its resolved layout lacks font_scale; deploy this schema
 # change only while no older plan is in flight.
-PLAN_SCHEMA_VERSION: Final = 4
+PLAN_SCHEMA_VERSION: Final = 5
 MAX_PLAN_BYTES: Final = 1024 * 1024
 MAX_PLAN_ARTIFACT_BYTES: Final = 512 * 1024
 MAX_PLAN_ARTIFACT_TOTAL_BYTES: Final = 2 * 1024 * 1024
@@ -121,7 +121,7 @@ class PlannedActionKind(StrEnum):
     INSTALL_FLUXBOX_OVERLAY = "install_fluxbox_overlay"
     SET_PANEL_PROPERTIES = "set_panel_properties"
     SET_XFCE_DPI = "set_xfce_dpi"
-    CONFIGURE_TERMINALS = "configure_terminal_fonts_and_theme"
+    CONFIGURE_TERMINALS = "configure_terminal_fonts"
     RELOAD_EMACS_FONTS = "reload_emacs_fonts"
     GENERATE_FLUXBOX_CONFIGURATION = "generate_fluxbox_configuration"
     APPLY_FLUXBOX_CONFIGURATION = "apply_fluxbox_configuration"
@@ -313,38 +313,24 @@ class DpiIntent:
 
 
 @dataclass(frozen=True, slots=True)
-class TerminalThemeIntent:
-    """Repeatable terminal font and colour intent from captured policies."""
+class TerminalFontIntent:
+    """Repeatable terminal font intent from captured policies.
 
-    theme: str
-    gnome_profile: str
-    xfce_theme: str
+    Colours are deliberately absent: set-colour-theme owns the theme, and the
+    terminal leaves read it live. A theme captured here went stale whenever
+    the user switched theme after controller start (dc-cf9h).
+    """
+
     medium_font_name: str
     medium_font_size: int
-    kitty_theme_artifact: str
-    kitty_theme_sha256: str
     policy_hashes: tuple[ConfigurationContentHash, ...]
 
     def __post_init__(self) -> None:
-        for value, field in (
-            (self.theme, "terminal theme"),
-            (self.gnome_profile, "GNOME terminal profile"),
-            (self.xfce_theme, "XFCE terminal theme"),
-            (self.medium_font_name, "terminal font name"),
-        ):
-            _text(value, field)
-        expected_profile = {"dark": "Dark", "light": "Bright"}.get(self.theme)
-        if (
-            expected_profile is None
-            or self.gnome_profile != expected_profile
-            or self.xfce_theme != self.theme
-            or self.medium_font_name != _TERMINAL_FONT_NAME
-        ):
+        _text(self.medium_font_name, "terminal font name")
+        if self.medium_font_name != _TERMINAL_FONT_NAME:
             raise PlanCodecError("terminal intent is outside the closed vocabulary")
         if self.medium_font_size <= 0:
             raise PlanCodecError("terminal font size must be positive")
-        _artifact_path(self.kitty_theme_artifact)
-        _sha256(self.kitty_theme_sha256, "kitty theme hash")
         _configuration_hashes(self.policy_hashes, "terminal policy hashes")
 
 
@@ -503,7 +489,7 @@ class DesktopPlan:
     overlay: OverlayIntent
     panels: tuple[PanelIntent, ...]
     dpi: DpiIntent
-    terminal: TerminalThemeIntent
+    terminal: TerminalFontIntent
     emacs: EmacsFontIntent
     fluxbox: FluxboxGenerationIntent
     keyboard: KeyboardIntent
@@ -531,7 +517,6 @@ class DesktopPlan:
             self.autorandr.config_artifact: "artifacts/autorandr/config",
             self.autorandr.setup_artifact: "artifacts/autorandr/setup",
             self.overlay.artifact_path: "artifacts/fluxbox/overlay",
-            self.terminal.kitty_theme_artifact: ("artifacts/terminal/kitty-theme.conf"),
             self.fluxbox.template_artifact: "artifacts/fluxbox/keys.erb",
             self.fluxbox.generator_artifact: "artifacts/fluxbox/generator-policy",
             self.fluxbox.sublayouts_artifact: "artifacts/fluxbox/sublayouts.yaml",
@@ -553,7 +538,6 @@ class DesktopPlan:
             (self.autorandr.config_artifact, self.autorandr.config_sha256),
             (self.autorandr.setup_artifact, self.autorandr.setup_sha256),
             (self.overlay.artifact_path, self.overlay.content_sha256),
-            (self.terminal.kitty_theme_artifact, self.terminal.kitty_theme_sha256),
             (self.fluxbox.template_artifact, self.fluxbox.template_sha256),
             (self.fluxbox.generator_artifact, self.fluxbox.generator_sha256),
             (self.fluxbox.sublayouts_artifact, self.fluxbox.sublayouts_sha256),
@@ -585,7 +569,6 @@ class DesktopPlan:
             self.autorandr.config_artifact: self.autorandr.config_sha256,
             self.autorandr.setup_artifact: self.autorandr.setup_sha256,
             self.overlay.artifact_path: self.overlay.content_sha256,
-            self.terminal.kitty_theme_artifact: self.terminal.kitty_theme_sha256,
             self.fluxbox.template_artifact: self.fluxbox.template_sha256,
             self.fluxbox.generator_artifact: self.fluxbox.generator_sha256,
             self.fluxbox.sublayouts_artifact: self.fluxbox.sublayouts_sha256,
@@ -611,9 +594,6 @@ class DesktopPlan:
         }
         expected_refs = {
             PlannedActionKind.INSTALL_FLUXBOX_OVERLAY: (self.overlay.artifact_path,),
-            PlannedActionKind.CONFIGURE_TERMINALS: (
-                self.terminal.kitty_theme_artifact,
-            ),
             PlannedActionKind.GENERATE_FLUXBOX_CONFIGURATION: (
                 self.fluxbox.rendered_keys_artifact,
             ),

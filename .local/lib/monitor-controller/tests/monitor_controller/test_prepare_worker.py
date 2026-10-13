@@ -217,7 +217,7 @@ def _plan(
     source = FilesystemDesktopPlanningInputSource(
         root=_REPO,
         display=display,
-        context=ShadowDesktopContextSource(host_name="celtic", theme="dark"),
+        context=ShadowDesktopContextSource(host_name="celtic"),
     )
     profile = next(
         item
@@ -680,6 +680,13 @@ def test_production_adapter_captures_only_allowed_exact_leaves_in_temp_home(
         "setup-terminals",
         "emacsclient",
     )
+    # Only the font crosses the boundary; the leaf reads the live theme so a
+    # theme switch after controller start is not reverted (dc-cf9h).
+    assert capture.calls[2][0][1:] == (
+        "--exact",
+        "SauceCodePro Nerd Font",
+        str(terminal_operation.intent.medium_font_size),
+    )
     joined = "\0".join(argument for call in capture.calls for argument in call[0])
     for forbidden in (
         "setup-monitor",
@@ -817,6 +824,11 @@ def _primitive_environment(
     fake_bin.mkdir(parents=True)
     home = tmp_path / "home"
     (home / ".config" / "kitty").mkdir(parents=True)
+    # Stow links kitty.conf into the repo; kitty-theme-config finds the theme
+    # files through that link.
+    (home / ".config" / "kitty" / "kitty.conf").symlink_to(
+        _REPO / ".config" / "kitty" / "kitty.conf"
+    )
     log = tmp_path / "primitive.log"
     xauthority = tmp_path / "Xauthority"
     xauthority.write_bytes(b"x")
@@ -931,6 +943,9 @@ def test_real_exact_leaves_use_only_fake_primitives_and_temp_home(
     names = {line.split(maxsplit=1)[0] for line in lines}
     assert {"xfconf-query", "dconf", "busctl", "cp", "emacsclient"} <= names
     assert (home / ".config" / "gnome-terminal-profile").read_text() == "Dark\n"
+    assert (home / ".config" / "kitty" / "current-theme.conf").read_bytes() == (
+        _REPO / ".config" / "kitty" / "dark-theme.conf"
+    ).read_bytes()
     assert not malicious_config.exists()
     assert not python_escape.exists()
     assert not shell_escape.exists()
@@ -1154,18 +1169,14 @@ def test_shell_exact_leaf_regressions_and_fluxbox_generation_split(
         check=False,
         env=environment,
     )
-    theme = tmp_path / "theme.conf"
-    theme.write_text("foreground #fff\n", encoding="utf-8")
+    config_home = Path(environment["HOME"]) / ".config"
+    (config_home / "theme").write_text("light\n", encoding="utf-8")
     terminals = subprocess.run(  # noqa: S603
         (
             str(_REPO / "bin" / "setup-terminals"),
             "--exact",
-            "dark",
-            "Dark",
-            "dark",
             "SauceCodePro Nerd Font",
             "14",
-            str(theme),
         ),
         check=False,
         env=environment,
@@ -1175,10 +1186,13 @@ def test_shell_exact_leaf_regressions_and_fluxbox_generation_split(
     assert exact_calls.count("xfconf-query ") == 4
     assert "set-xfce4-dpi 139" in exact_calls
     assert "gnome-terminal-config --exact-font SauceCodePro Nerd Font 14" in exact_calls
+    # The theme comes from ~/.config/theme at run time, not from the plan.
+    assert "gnome-terminal-profile --exact Bright" in exact_calls
+    assert (config_home / "gnome-terminal-profile").read_text() == "Bright\n"
     assert (
-        "xfce4-terminal-config --exact-font SauceCodePro Nerd Font 14 dark"
+        "xfce4-terminal-config --exact-font SauceCodePro Nerd Font 14 light"
         in exact_calls
     )
-    assert f"kitty-theme-config --exact dark {theme} 14" in exact_calls
+    assert "kitty-theme-config --exact light 14" in exact_calls
     for forbidden in ("libdpy", "get-layout", "fluxbox-remote Reconfigure"):
         assert forbidden not in exact_calls
