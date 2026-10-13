@@ -67,11 +67,15 @@ if [[ -z "$theme" ]]; then
     theme=$(cat "$HOME/.config/theme" 2>/dev/null || echo "dark")
 fi
 
-if [[ "$theme" == "light" ]]; then
-    gnome_terminal_profile="Bright"
-else
-    gnome_terminal_profile="Dark"
-fi
+# set-colour-theme passes profile names (Bright/Dark), not theme names.
+case "$theme" in
+    light|Light|Bright)
+        gnome_terminal_profile="Bright"
+        ;;
+    *)
+        gnome_terminal_profile="Dark"
+        ;;
+esac
 
 echo "Running gnome-terminal-config ..."
 gnome-terminal-config
