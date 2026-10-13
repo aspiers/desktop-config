@@ -220,18 +220,31 @@ hci_stream "$@" |
             for (i = 1; i <= n; i++) is_mouse[list[i]] = 1
         }
 
+        function in_mouse_window(handle) {
+            return (handle in mouse_until) && systime() < mouse_until[handle]
+        }
+
         # Block headers are unindented (MGMT ones carry a "process[pid]: "
         # prefix); continuation lines are indented and inherit the decision
         # made for their header.  Anything unrecognised is dropped.
         /^[^ \t]/ {
             acl = 0
             ccc = 0
+            nocp = 0
             conn_event = ($0 ~ /LE Meta Event/)
             disc_event = ($0 ~ /Disconnect Complete/)
             if ($0 ~ /^[<>] ACL Data/) {
-                acl = match($0, /Handle ([0-9]+)/, h) &&
-                      (h[1] in mouse_until) && systime() < mouse_until[h[1]]
+                acl = match($0, /Handle ([0-9]+)/, h) && in_mouse_window(h[1])
                 keep = acl
+            } else if ($0 ~ /Number of Completed Packets/) {
+                # Audio streaming acknowledges ~75 packets a second, which
+                # filled the daily cap by mid-afternoon.  Only mouse links
+                # matter, and the handle comes later, so hold the block.
+                nocp = 1
+                held = $0
+                gsub(/ {3,}/, "  ", held)
+                keep = 0
+                next
             } else {
                 keep = ($0 !~ /SCO|ISO Data/ &&
                         $0 ~ /^[<>] HCI (Command|Event)|^([^ ]+: )?@ MGMT|^= /)
@@ -243,6 +256,19 @@ hci_stream "$@" |
         conn_event && /^[ \t]+Handle: [0-9]+/ { conn_handle = $2 }
         conn_event && /^[ \t]+Peer address: / && ($3 in is_mouse) {
             mouse_until[conn_handle] = systime() + mouse_window
+        }
+
+        # Judged on the first handle only; monitoring a mouse alongside
+        # audio would rarely put both in one event.
+        nocp && /^[ \t]/ {
+            if (!match($0, /Handle: ([0-9]+)/, h)) {
+                held = held "\n" $0
+                next
+            }
+            nocp = 0
+            if (!in_mouse_window(h[1])) next
+            emit(held)
+            keep = 1
         }
 
         # Handles are reused, so close the window when the link goes.
