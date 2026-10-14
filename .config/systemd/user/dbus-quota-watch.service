@@ -1,0 +1,15 @@
+[Unit]
+Description=Alert the moment the user D-Bus broker reports quota exhaustion (dc-uu11)
+
+[Service]
+SyslogIdentifier=dbus-quota-watch
+ExecStart=%h/bin/dbus-quota-diag watch
+Restart=always
+RestartSec=10
+Nice=15
+StandardOutput=journal
+StandardError=journal
+SyslogLevelPrefix=yes
+
+[Install]
+WantedBy=default.target

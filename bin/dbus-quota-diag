@@ -1,36 +1,56 @@
 #!/usr/bin/env python3
-"""Sample the user D-Bus broker's per-user quota usage.
+"""Watch the user D-Bus broker's per-user quota so exhaustion is caught early.
 
 On 2026-10-14 the session bus exhausted UID 1000's 'bytes' quota at suspend,
 disconnected long-lived peers and took the whole X session down (dc-uu11).
 The bus that filled up died with the session, so nothing showed which peer
-was growing.  Runs from dbus-quota-diag.timer and appends one line per sample
-to ~/.log/dbus-quota/samples.tsv:
+was growing.
+
+`sample` (dbus-quota-diag.timer, every 10 minutes) appends one line to
+~/.log/dbus-quota/samples.tsv:
 
     time  boot  used_bytes  quota_bytes  connections  max_peer_id  top_peers
 
 top_peers lists the five peers holding the most bytes against the quota, as
-comm:pid:bytes.  Usage above WARN_FRACTION of the quota is also logged to the
-journal at warning priority, before it can take the session down.
+comm:pid:bytes.  The first time each boot that usage crosses an ALERT_LEVELS
+fraction, it alerts.
 
-`status` compares the first and latest sample of this boot and names the
-peers that grew, or says the build-up has not been observed yet.
+`watch` (dbus-quota-watch.service) follows the broker's journal and alerts
+the moment it reports a peer exceeding a quota.
+
+An alert saves a full per-peer snapshot under ~/.log/dbus-quota/snapshots/,
+sends a critical desktop notification and comments on the bead, so the
+evidence reaches the bead without anyone watching for it.
+
+`status` summarises growth this boot, alerts so far, and whether a build-up
+has been observed yet.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 
 LOG_ROOT = Path.home() / ".log" / "dbus-quota"
 SAMPLES = LOG_ROOT / "samples.tsv"
+SNAPSHOTS = LOG_ROOT / "snapshots"
+ALERTED = LOG_ROOT / "alerted.tsv"
 KEEP_LINES = 6000  # about six weeks at one sample per 10 minutes
-WARN_FRACTION = 0.25
+KEEP_SNAPSHOTS = 30
+# Normal use is under 1 % (1.6 MB of 276 MB on 2026-10-14).
+ALERT_LEVELS = (0.10, 0.25, 0.50)
+WATCH_COOLDOWN_SECONDS = 600
 TOP = 5
+BEAD = "dc-uu11"
+REPO = Path(__file__).resolve().parents[1]
+STATS_KEYS = ("MatchBytes", "IncomingBytes", "OutgoingBytes",
+              "ActivationRequestBytes")
 
 
 def bus_stats() -> dict:
@@ -43,63 +63,142 @@ def bus_stats() -> dict:
     return json.loads(out)["data"][0]
 
 
-def user_bytes(stats: dict, uid: int) -> tuple[int, int]:
+def user_bytes(stats: dict) -> tuple[int, int]:
     """Return (used, quota) bytes; the broker reports (remaining, quota)."""
-    for entry_uid, limits, _ in stats["org.bus1.DBus.Debug.Stats.UserAccounting"]["data"]:
-        if entry_uid == uid:
+    for uid, limits, _ in stats["org.bus1.DBus.Debug.Stats.UserAccounting"]["data"]:
+        if uid == os.getuid():
             for name, remaining, quota in limits:
                 if name == "Bytes":
                     return quota - remaining, quota
-    raise LookupError(f"no Bytes accounting for UID {uid}")
+    raise LookupError(f"no Bytes accounting for UID {os.getuid()}")
 
 
-def comm(pid: int | None) -> str:
+def proc_text(pid: int | None, name: str) -> str:
     try:
-        return Path(f"/proc/{pid}/comm").read_text().strip()
+        return (Path(f"/proc/{pid}/{name}").read_bytes()
+                .replace(b"\0", b" ").decode(errors="replace").strip())
     except OSError:
         return "?"
 
 
-def peer_bytes(stats: dict) -> list[tuple[int, str, int | None]]:
+def peers(stats: dict) -> list[dict]:
     rows = []
     for name, ident, acct in stats["org.bus1.DBus.Debug.Stats.PeerAccounting"]["data"]:
-        held = sum(acct.get(key, 0) for key in
-                   ("MatchBytes", "IncomingBytes", "OutgoingBytes",
-                    "ActivationRequestBytes"))
-        rows.append((held, name, ident.get("ProcessID", {}).get("data")))
-    return sorted(rows, reverse=True)
+        pid = ident.get("ProcessID", {}).get("data")
+        rows.append({
+            "name": name, "pid": pid, "comm": proc_text(pid, "comm"),
+            "held": sum(acct.get(key, 0) for key in STATS_KEYS), **acct,
+        })
+    return sorted(rows, key=lambda row: row["held"], reverse=True)
+
+
+def top_text(rows: list[dict]) -> str:
+    return ",".join(f"{r['comm']}:{r['pid']}:{r['held']}" for r in rows[:TOP])
 
 
 def boot_id() -> str:
     return Path("/proc/sys/kernel/random/boot_id").read_text().strip()
 
 
+def run_quietly(cmd: list[str], **kwargs) -> None:
+    """Run a side channel of an alert; its failure must not stop the others."""
+    try:
+        subprocess.run(cmd, timeout=60, check=True, capture_output=True,
+                       **kwargs)
+    except (OSError, subprocess.SubprocessError) as error:
+        print(f"{cmd[0]} failed: {error}", file=sys.stderr)
+
+
+def snapshot(reason: str) -> tuple[Path, str]:
+    """Save every peer's accounting with its command line."""
+    try:
+        stats = bus_stats()
+        used, quota = user_bytes(stats)
+        rows = peers(stats)
+        for row in rows[:20]:
+            row["cmdline"] = proc_text(row["pid"], "cmdline")
+        record = {"reason": reason, "used": used, "quota": quota,
+                  "stats": stats, "peers": rows}
+        summary = (f"{used / quota:.1%} of {quota // 2**20} MiB used; "
+                   f"top {top_text(rows)}")
+    except (OSError, subprocess.SubprocessError, LookupError, ValueError,
+            KeyError) as error:
+        record = {"reason": reason, "error": str(error)}
+        summary = f"stats unavailable: {error}"
+    SNAPSHOTS.mkdir(parents=True, exist_ok=True)
+    path = SNAPSHOTS / f"{datetime.now():%Y%m%d-%H%M%S-%f}.json"
+    path.write_text(json.dumps(record, indent=1))
+    for old in sorted(SNAPSHOTS.glob("*.json"))[:-KEEP_SNAPSHOTS]:
+        old.unlink()
+    return path, summary
+
+
+def alert(reason: str) -> None:
+    path, summary = snapshot(reason)
+    print(f"<2>ALERT {reason}: {summary}; snapshot {path}")
+    run_quietly(["notify-send", "-u", "critical", "-a", "dbus-quota-diag",
+                 "User D-Bus quota at risk",
+                 f"{reason}\n{summary}\nThe session ends if it fills up."])
+    run_quietly(["bd", "comments", "add", BEAD,
+                 f"## Automatic alert: {reason}\n\n{summary}\n\n"
+                 f"Snapshot: `{path}` (every peer's accounting and command "
+                 f"line). Growth this boot: `dbus-quota-diag status`."],
+                cwd=REPO)
+    with ALERTED.open("a") as log:
+        log.write(f"{datetime.now().isoformat(timespec='seconds')}\t"
+                  f"{boot_id()}\t{reason}\t{path}\n")
+
+
+def alerted_levels() -> set[str]:
+    if not ALERTED.exists():
+        return set()
+    boot = boot_id()
+    return {line.split("\t")[2] for line in ALERTED.read_text().splitlines()
+            if line.count("\t") >= 3 and line.split("\t")[1] == boot}
+
+
 def sample() -> int:
     stats = bus_stats()
-    used, quota = user_bytes(stats, int(subprocess.check_output(["id", "-u"])))
-    peers = peer_bytes(stats)
-    max_id = max(int(name.rsplit(".", 1)[1]) for _, name, _ in peers)
-    top = ",".join(f"{comm(pid)}:{pid}:{held}" for held, _, pid in peers[:TOP])
+    used, quota = user_bytes(stats)
+    rows = peers(stats)
+    max_id = max(int(row["name"].rsplit(".", 1)[1]) for row in rows)
     line = "\t".join([
         datetime.now().isoformat(timespec="seconds"), boot_id(), str(used),
-        str(quota), str(stats["ActiveConnections"]["data"]), str(max_id), top,
+        str(quota), str(stats["ActiveConnections"]["data"]), str(max_id),
+        top_text(rows),
     ])
     LOG_ROOT.mkdir(parents=True, exist_ok=True)
     lines = SAMPLES.read_text().splitlines() if SAMPLES.exists() else []
     SAMPLES.write_text("\n".join((lines + [line])[-KEEP_LINES:]) + "\n")
-    if used > quota * WARN_FRACTION:
-        print(f"<4>user bus holds {used} of {quota} quota bytes; top: {top}")
+    crossed = [level for level in ALERT_LEVELS if used > quota * level]
+    if crossed:
+        reason = f"usage passed {crossed[-1]:.0%} of the quota"
+        if reason not in alerted_levels():
+            alert(reason)
     return 0
 
 
+def watch(command: list[str]) -> int:
+    """Alert on each quota report from the broker, at most once per cooldown."""
+    last = 0.0
+    with subprocess.Popen(command, stdout=subprocess.PIPE, text=True) as follow:
+        for line in follow.stdout:
+            if "exceeded its" in line and "quota" in line:
+                if time.monotonic() - last > WATCH_COOLDOWN_SECONDS:
+                    last = time.monotonic()
+                    alert(f"broker reported: {line.strip()}")
+    print("journal follower exited; restarting via systemd", file=sys.stderr)
+    return 1
+
+
 def parse(line: str) -> dict:
-    when, boot, used, quota, conns, max_id, top = line.split("\t")
-    peers = {}
+    when, boot, used, quota, _, max_id, top = line.split("\t")
+    peers_held = {}
     for item in filter(None, top.split(",")):
         name, pid, held = item.rsplit(":", 2)
-        peers[f"{name}:{pid}"] = int(held)
+        peers_held[f"{name}:{pid}"] = int(held)
     return {"when": when, "boot": boot, "used": int(used),
-            "quota": int(quota), "max_id": int(max_id), "peers": peers}
+            "quota": int(quota), "max_id": int(max_id), "peers": peers_held}
 
 
 def status() -> int:
@@ -111,26 +210,32 @@ def status() -> int:
     first, last = current[0], current[-1]
     print(f"Samples this boot: {len(current)} ({first['when']} to {last['when']})")
     print(f"Quota used: {last['used']} of {last['quota']} bytes "
-          f"({100 * last['used'] / last['quota']:.2f}%), "
+          f"({last['used'] / last['quota']:.2%}), "
           f"{last['used'] - first['used']:+d} since first sample")
     grown = sorted(((held - first["peers"].get(peer, 0), peer)
                     for peer, held in last["peers"].items()), reverse=True)
     for delta, peer in grown:
         print(f"  {peer}: {last['peers'][peer]} bytes ({delta:+d})")
+    alerts = ALERTED.read_text().splitlines() if ALERTED.exists() else []
+    print(f"Alerts so far: {len(alerts)}")
+    for entry in alerts[-5:]:
+        print(f"  {entry}")
     peak = max(row["used"] / row["quota"] for row in rows)
-    print("Outstanding: a build-up past "
-          f"{WARN_FRACTION:.0%} of the quota (peak so far {peak:.2%})"
-          if peak <= WARN_FRACTION else
-          f"Observed: usage passed {WARN_FRACTION:.0%} of the quota")
+    print(f"Observed: a build-up past {ALERT_LEVELS[0]:.0%}" if alerts else
+          f"Outstanding: a build-up past {ALERT_LEVELS[0]:.0%} of the quota "
+          f"(peak so far {peak:.2%})")
     return 0
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("command", choices=["sample", "status"])
+    parser.add_argument("command", choices=["sample", "watch", "status"])
     args = parser.parse_args()
     if args.command == "status":
         return status()
+    if args.command == "watch":
+        return watch(["journalctl", "--user", "--follow", "--lines=0",
+                      "--output=cat", "--unit=dbus-broker.service"])
     try:
         return sample()
     except (OSError, subprocess.SubprocessError, LookupError, ValueError,
