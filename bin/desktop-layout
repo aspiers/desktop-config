@@ -22,6 +22,7 @@ sys.path.append(repo_lib)
 import desktop_layout
 import fluxbox_remote
 import libdpy
+import window_placement
 
 
 MAGIC_CMDS = {
@@ -57,9 +58,19 @@ def combine_commands(cmds):
     return 'MacroCmd %s' % ' '.join(parts)
 
 
-# Commands Fluxbox never read; reported at exit so a partial layout cannot
-# pass as success (dc-yhr0).
+# Commands Fluxbox never read, rules that needed repeating, and windows
+# still misplaced; all reported at exit so a partial layout can neither pass
+# as success nor be quietly repaired (dc-yhr0).
 UNREAD_COMMANDS = []
+REPAIRED_RULES = []
+MISPLACED = []
+HEADS = None
+
+
+def log(line):
+    # Leaf output is discarded by the controller, so keep a journal copy.
+    sys.stderr.write(line + "\n")
+    subprocess.call(['logger', '-t', 'desktop-layout', line])
 
 
 def send_command(cmd):
@@ -67,7 +78,39 @@ def send_command(cmd):
         fluxbox_remote.send(cmd)
     except fluxbox_remote.CommandNotConsumed as error:
         UNREAD_COMMANDS.append(cmd)
-        sys.stderr.write("FLUXBOX_COMMAND_UNREAD %s: %s\n" % (error, cmd))
+        log("FLUXBOX_COMMAND_UNREAD %s: %s" % (error, cmd))
+
+
+def place_rule(matcher, map_cmd, cmds):
+    global HEADS
+    if HEADS is None:
+        HEADS = window_placement.monitor_heads()
+    try:
+        outcome = window_placement.apply_rule(matcher, map_cmd, cmds, HEADS)
+    except fluxbox_remote.CommandNotConsumed as error:
+        UNREAD_COMMANDS.append(map_cmd)
+        log("FLUXBOX_COMMAND_UNREAD %s: %s" % (error, map_cmd))
+        return
+    if outcome.repairs:
+        REPAIRED_RULES.append(matcher)
+        log("WINDOW_LAYOUT_REPAIRED attempts=%d rule=%s" % (outcome.repairs, matcher))
+    for problem in outcome.problems:
+        MISPLACED.append(problem)
+        log("WINDOW_LAYOUT_MISPLACED rule=%s: %s" % (matcher, problem))
+
+
+def report_placement():
+    """Make every repair and failure visible, then return the exit status."""
+    if not (UNREAD_COMMANDS or REPAIRED_RULES or MISPLACED):
+        return 0
+    summary = ("window layout: %d rule(s) repaired, %d window problem(s), "
+               "%d command(s) unread" % (len(REPAIRED_RULES), len(MISPLACED),
+                                          len(UNREAD_COMMANDS)))
+    log("WINDOW_LAYOUT_SUMMARY %s" % summary)
+    subprocess.call(['notify-send', '-u', 'critical' if MISPLACED or UNREAD_COMMANDS
+                     else 'normal', 'Window layout', summary
+                     + '\nSee journalctl -t desktop-layout and ~/.log/window-layout/'])
+    return 1 if MISPLACED or UNREAD_COMMANDS else 0
 
 
 def exec_window_cmds(window_cmds, args):
@@ -79,7 +122,7 @@ def exec_window_cmds(window_cmds, args):
         map_cmd = "Map {%s} {Matches %s}" % (combined, matcher)
         print("   %s" % map_cmd)
         if not args.dump:
-            send_command(map_cmd)
+            place_rule(matcher, map_cmd, expanded)
         print()
 
 
@@ -89,7 +132,7 @@ def exec_resolved_actions(actions, args):
         print(action['matcher'])
         print("   %s" % action['map_command'])
         if not args.dump:
-            send_command(action['map_command'])
+            place_rule(action['matcher'], action['map_command'], action['commands'])
         print()
 
 
@@ -252,7 +295,7 @@ def main():
         exec_resolved_actions(actions, args)
         if active_win_id:
             subprocess.call(['wmctrl', '-ia', active_win_id])
-        return 1 if UNREAD_COMMANDS else 0
+        return report_placement()
 
     layout_file = desktop_layout.get_layout_file(args.layout, args.dir)
     layout_params, layout = desktop_layout.get_layout_params(layout_file)
@@ -271,7 +314,7 @@ def main():
 
     if active_win_id:
         subprocess.call(['wmctrl', '-ia', active_win_id])
-    return 1 if UNREAD_COMMANDS else 0
+    return report_placement()
 
 
 if __name__ == "__main__":

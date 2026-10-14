@@ -1,7 +1,9 @@
 #!/bin/bash
 
 # Prove lib/fluxbox_remote.py delivers every command to a Fluxbox that keeps
-# stalling, where bare fluxbox-remote loses all but the last (dc-yhr0).
+# stalling, where bare fluxbox-remote loses all but the last, and that
+# lib/window_placement.py detects and repairs a rule whose command was lost
+# (dc-yhr0).
 # Runs a private Xvfb and Fluxbox with a temporary HOME, so the live session
 # and its ~/.fluxbox/lastwallpaper are never touched.
 
@@ -84,6 +86,52 @@ finally:
 time.sleep(0.5)
 moved = [i for i in range(1, 6) if x_of(f'w{i}') >= 400 + i * 30]
 print(f'moved {len(moved)}/5: {moved}')
-sys.exit(0 if len(moved) == 5 else 1)
+assert len(moved) == 5, 'a command was lost'
+print('ok - every command reached a stalling Fluxbox')
+
+import window_placement as wp
+
+assert wp.top_level_commands('MacroCmd {SetHead 2} {If {Matches (Stuck=no)} {Stick}}') == [
+    'SetHead 2', 'If {Matches (Stuck=no)} {Stick}']
+assert wp.expectation(['MacroCmd {SetHead 1} {SendToWorkspace 3}', wp.STICK]) == (
+    wp.Expectation(head=1, workspace=3, stuck=True))
+heads = [(0, 0, 1000, 800), (1000, 0, 500, 800)]
+state = wp.WindowState(1, 1100, 10, 100, 100, 'w')
+assert wp.head_of(state, heads) == 2
+assert wp.problems(1, state, wp.Expectation(head=2, workspace=2), heads) == []
+assert len(wp.problems(1, state, wp.Expectation(head=1, workspace=3, stuck=True), heads)) == 3
+assert wp.problems(1, None, wp.Expectation(head=1), heads) == []
+print('ok - rule expectations and checks')
+
+w1 = int(subprocess.check_output(
+    ['xdotool', 'search', '--classname', '^w1$'], text=True).split()[0])
+assert fluxbox_remote.matching_windows('(Name=w1)') == [w1]
+assert fluxbox_remote.matching_windows('(Name=nothing-matches)') == []
+print('ok - Fluxbox reports which windows a pattern matches')
+
+heads = wp.monitor_heads()
+rule = 'Map {MacroCmd {SendToWorkspace 2} {MoveTo 100 100}} {Matches (Name=w2)}'
+commands = ['SendToWorkspace 2', 'MoveTo 100 100']
+outcome = wp.apply_rule('(Name=w2)', rule, commands, heads)
+assert outcome == wp.RuleOutcome('(Name=w2)', 1, 0, ()), outcome
+
+# Lose the rule's first send, as a busy Fluxbox used to.
+real_send, dropped = fluxbox_remote.send, []
+def lossy_send(command, timeout=fluxbox_remote.TIMEOUT_SECONDS):
+    if command.startswith('Map') and not dropped:
+        dropped.append(command)
+        return
+    real_send(command, timeout)
+fluxbox_remote.send = lossy_send
+rule = 'Map {MacroCmd {SendToWorkspace 3} {MoveTo 200 200}} {Matches (Name=w3)}'
+outcome = wp.apply_rule('(Name=w3)', rule, ['SendToWorkspace 3', 'MoveTo 200 200'], heads)
+assert dropped and outcome.repairs == 1 and not outcome.problems, outcome
+# A move-only rule has no head or workspace to check: only repeating it
+# shows the first send was lost.
+dropped.clear()
+rule = 'Map {MoveTo 300 300} {Matches (Name=w4)}'
+outcome = wp.apply_rule('(Name=w4)', rule, ['MoveTo 300 300'], heads)
+fluxbox_remote.send = real_send
+assert dropped and outcome.repairs == 1 and not outcome.problems, outcome
+print('ok - a lost rule is detected and repaired, and counted as a repair')
 PY
-echo "ok - every command reached a stalling Fluxbox"

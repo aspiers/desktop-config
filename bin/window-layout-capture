@@ -90,6 +90,10 @@ status() {
     printf 'relayouts after in-place restart:      %s\n' "$inplace"
     [ "$fresh" -gt 0 ] || echo "outstanding: a relayout after full Fluxbox recovery"
     [ "$inplace" -gt 0 ] || echo "outstanding: a relayout after in-place restart"
+    # Each of these is a bug to root-cause, even when the repair worked.
+    for tag in WINDOW_LAYOUT_REPAIRED WINDOW_LAYOUT_MISPLACED FLUXBOX_COMMAND_UNREAD; do
+        printf '%-26s %s\n' "$tag:" "$(cat "$CAPTURE_DIR"/*.txt 2>/dev/null | grep -c "^$tag")"
+    done
 }
 
 case "${1:-}" in
