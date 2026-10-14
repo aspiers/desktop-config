@@ -202,6 +202,7 @@ class _FakeCommands:
         fluxbox_restart_status: int = 0,
         fluxbox_readiness_status: int = 0,
         panel_restart_status: int = 0,
+        window_layout_status: int = 0,
         on_panel_read: Callable[[str], None] | None = None,
     ) -> None:
         self.query_text = (_XRANDR / "samsung.query").read_text(encoding="utf-8")
@@ -223,6 +224,7 @@ class _FakeCommands:
         self.fluxbox_restart_status = fluxbox_restart_status
         self.fluxbox_readiness_status = fluxbox_readiness_status
         self.panel_restart_status = panel_restart_status
+        self.window_layout_status = window_layout_status
         self.read_calls: list[tuple[str, ...]] = []
         self.operations: list[FinalizeOperation] = []
         self.panel_checks = 0
@@ -265,6 +267,8 @@ class _FakeCommands:
             return FinalizeCommandResult(self.fluxbox_readiness_status)
         if isinstance(operation, RestartXfcePanel):
             return FinalizeCommandResult(self.panel_restart_status)
+        if isinstance(operation, ApplyWindowLayout):
+            return FinalizeCommandResult(self.window_layout_status)
         return FinalizeCommandResult(0)
 
     def check_panel_health(
@@ -771,6 +775,19 @@ def test_recovery_failure_stops_before_later_mutations(
     assert tuple(type(item) for item in commands.operations) == expected_operations
     assert ApplyWindowLayout not in expected_operations
     assert store.read_result(_FINALIZE_ACTION).outcome is not ActionLifecycle.COMPLETED
+
+
+def test_window_layout_failure_runs_later_steps_then_fails(tmp_path: Path) -> None:
+    tree = RootedSysfsReader(_sysfs_tree(tmp_path / "sysfs"))
+    commands = _FakeCommands(window_layout_status=1)
+    startup, store, plan_store, _bundle = _startup(tmp_path, tree, commands)
+
+    assert _execute(startup, plan_store, tree, commands, _Fence()) == 1
+    operations = [type(item) for item in commands.operations]
+    assert operations.index(ApplyWindowLayout) < operations.index(
+        CaptureTrayDiagnostics
+    )
+    assert store.read_result(_FINALIZE_ACTION).outcome is ActionLifecycle.FAILED
 
 
 @pytest.mark.parametrize(

@@ -921,7 +921,7 @@ def execute_finalization(  # noqa: C901, PLR0913, PLR0915
     def topology_reader(_request: TransactionRequest) -> CurrentTopology:
         return boundary()
 
-    def implementation(  # noqa: C901, PLR0912, PLR0915
+    def implementation(  # noqa: C901, PLR0911, PLR0912, PLR0915
         _request: TransactionRequest,
     ) -> WorkerExecution:
         nonlocal guarded_bundle
@@ -930,6 +930,9 @@ def execute_finalization(  # noqa: C901, PLR0913, PLR0915
             _stale("staged plan was not validated before finalization")
         restart_panel = False
         excluded_panel_pids: tuple[int, ...] = ()
+        # A misplaced window must not stop the tray and applet steps that
+        # follow it, but the relayout still has to end failed (dc-yhr0.3).
+        window_layout_failure: WorkerExecution | None = None
         for index, action in enumerate(bundle.plan.finalize_actions):
             if index:
                 boundary()
@@ -1035,8 +1038,21 @@ def execute_finalization(  # noqa: C901, PLR0913, PLR0915
             # wins only after the bounded command has returned.
             _raise_if_cancelled(startup, cancellation)
             failure = _command_failure(result, action.kind.value)
-            if failure is not None:
+            if failure is not None and action.kind is (
+                PlannedActionKind.APPLY_WINDOW_LAYOUT
+            ):
+                _JOURNAL.warning(
+                    "WINDOW_LAYOUT_DECISION action=%s profile=%s result=failed "
+                    "reason=%s; continuing with later steps",
+                    startup.request.action_id.value,
+                    startup.request.profile,
+                    failure.detail,
+                )
+                window_layout_failure = failure
+            elif failure is not None:
                 return failure
+        if window_layout_failure is not None:
+            return window_layout_failure
         request = startup.request
         transition = request.transition_id
         plan_hash = request.plan_hash
