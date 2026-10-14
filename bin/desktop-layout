@@ -11,7 +11,6 @@ import subprocess
 import os
 import os.path
 import sys
-import time
 import yaml
 
 repo_lib = os.path.join(
@@ -21,6 +20,7 @@ sys.path.insert(0, os.getenv('HOME') + '/lib')
 sys.path.append(repo_lib)
 
 import desktop_layout
+import fluxbox_remote
 import libdpy
 
 
@@ -40,10 +40,10 @@ def expand_magic(cmd):
 def combine_commands(cmds):
     """Combine commands into one flat Fluxbox MacroCmd.
 
-    Fluxbox needs a short pause between remote layout operations for reliable
-    window matching.  Sending every command for the same matcher separately
-    paid that pause repeatedly.  Flatten existing MacroCmd bodies rather than
-    nesting them, preserving command order in one Map operation.
+    Each remote command waits for Fluxbox to read it, so one Map per matcher
+    costs one round trip instead of one per command.  Flatten existing
+    MacroCmd bodies rather than nesting them, preserving command order in one
+    Map operation.
     """
     if len(cmds) == 1:
         return cmds[0]
@@ -57,6 +57,19 @@ def combine_commands(cmds):
     return 'MacroCmd %s' % ' '.join(parts)
 
 
+# Commands Fluxbox never read; reported at exit so a partial layout cannot
+# pass as success (dc-yhr0).
+UNREAD_COMMANDS = []
+
+
+def send_command(cmd):
+    try:
+        fluxbox_remote.send(cmd)
+    except fluxbox_remote.CommandNotConsumed as error:
+        UNREAD_COMMANDS.append(cmd)
+        sys.stderr.write("FLUXBOX_COMMAND_UNREAD %s: %s\n" % (error, cmd))
+
+
 def exec_window_cmds(window_cmds, args):
     for matcher, *cmds in window_cmds:
         matcher = expand_magic(matcher)
@@ -66,11 +79,7 @@ def exec_window_cmds(window_cmds, args):
         map_cmd = "Map {%s} {Matches %s}" % (combined, matcher)
         print("   %s" % map_cmd)
         if not args.dump:
-            subprocess.check_call(['fluxbox-remote', map_cmd])
-            # A 10ms delay was unreliable (ca44f65); retain the proven 100ms
-            # pacing between matchers while avoiding duplicate waits within
-            # one matcher's now-atomic command sequence.
-            time.sleep(0.1)
+            send_command(map_cmd)
         print()
 
 
@@ -80,8 +89,7 @@ def exec_resolved_actions(actions, args):
         print(action['matcher'])
         print("   %s" % action['map_command'])
         if not args.dump:
-            subprocess.check_call(['fluxbox-remote', action['map_command']])
-            time.sleep(0.1)
+            send_command(action['map_command'])
         print()
 
 
@@ -113,8 +121,7 @@ def exec_cmds(cmds, args):
         expanded = expand_magic(cmd)
         print("   %s" % expanded)
         if not args.dump:
-            subprocess.check_call(['fluxbox-remote', expanded])
-            time.sleep(0.1)
+            send_command(expanded)
 
     print()
 
@@ -245,7 +252,7 @@ def main():
         exec_resolved_actions(actions, args)
         if active_win_id:
             subprocess.call(['wmctrl', '-ia', active_win_id])
-        return 0
+        return 1 if UNREAD_COMMANDS else 0
 
     layout_file = desktop_layout.get_layout_file(args.layout, args.dir)
     layout_params, layout = desktop_layout.get_layout_params(layout_file)
@@ -264,7 +271,7 @@ def main():
 
     if active_win_id:
         subprocess.call(['wmctrl', '-ia', active_win_id])
-    return 0
+    return 1 if UNREAD_COMMANDS else 0
 
 
 if __name__ == "__main__":

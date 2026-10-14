@@ -1,0 +1,89 @@
+#!/bin/bash
+
+# Prove lib/fluxbox_remote.py delivers every command to a Fluxbox that keeps
+# stalling, where bare fluxbox-remote loses all but the last (dc-yhr0).
+# Runs a private Xvfb and Fluxbox with a temporary HOME, so the live session
+# and its ~/.fluxbox/lastwallpaper are never touched.
+
+set -eu
+
+repo=$(cd "$(dirname "$0")/.." && pwd)
+work=$(mktemp -d "${TMPDIR:-/tmp}/test-fluxbox-remote.XXXXXX")
+display=:$((200 + RANDOM % 500))
+pids=()
+
+cleanup() {
+    kill -CONT "${pids[@]}" 2>/dev/null || true
+    kill "${pids[@]}" 2>/dev/null || true
+    rm -r -- "$work"
+}
+trap cleanup EXIT
+
+export HOME=$work DISPLAY=$display
+unset XAUTHORITY
+mkdir -p "$HOME/.fluxbox"
+printf 'session.screen0.allowRemoteActions: true\n' > "$HOME/.fluxbox/init"
+
+Xvfb "$display" -nolisten tcp -screen 0 1600x1200x24 >/dev/null 2>&1 &
+pids+=($!)
+for _ in $(seq 50); do xdpyinfo >/dev/null 2>&1 && break; sleep 0.1; done
+fluxbox -rc "$HOME/.fluxbox/init" -log "$work/fluxbox.log" 2>/dev/null &
+fluxbox_pid=$!
+pids+=("$fluxbox_pid")
+for i in 1 2 3 4 5; do
+    xlogo -name "w$i" -geometry 50x50+0+0 &
+    pids+=($!)
+done
+for _ in $(seq 50); do
+    [ "$(xdotool search --classname '^w[0-9]$' 2>/dev/null | wc -l)" -eq 5 ] && break
+    sleep 0.1
+done
+
+python3 - "$repo/lib" "$fluxbox_pid" <<'PY'
+import os
+import signal
+import subprocess
+import sys
+import threading
+import time
+
+sys.path.insert(0, sys.argv[1])
+import fluxbox_remote
+
+fluxbox = int(sys.argv[2])
+done = threading.Event()
+
+
+def stall():
+    # Pause Fluxbox for longer than the old 100ms pacing, over and over.
+    while not done.is_set():
+        os.kill(fluxbox, signal.SIGSTOP)
+        time.sleep(0.3)
+        os.kill(fluxbox, signal.SIGCONT)
+        time.sleep(0.02)
+
+
+def x_of(name):
+    window = subprocess.check_output(
+        ['xdotool', 'search', '--classname', f'^{name}$'], text=True).split()[0]
+    info = subprocess.check_output(['xwininfo', '-id', window], text=True)
+    return int(info.split('Absolute upper-left X:')[1].split()[0])
+
+
+staller = threading.Thread(target=stall)
+staller.start()
+try:
+    for i in range(1, 6):
+        fluxbox_remote.send(
+            f'Map {{MoveTo {400 + i * 30} 300}} {{Matches (Name=w{i})}}')
+finally:
+    done.set()
+    staller.join()
+    os.kill(fluxbox, signal.SIGCONT)
+
+time.sleep(0.5)
+moved = [i for i in range(1, 6) if x_of(f'w{i}') >= 400 + i * 30]
+print(f'moved {len(moved)}/5: {moved}')
+sys.exit(0 if len(moved) == 5 else 1)
+PY
+echo "ok - every command reached a stalling Fluxbox"
