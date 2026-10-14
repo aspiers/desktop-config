@@ -36,6 +36,7 @@ from monitor_controller.runtime.commands import (
     CommandRequest,
     CommandRunner,
 )
+from monitor_controller.runtime.journal import service_logger
 from monitor_controller.runtime.transactions import (
     BoundRecordKind,
     TransactionProtocolError,
@@ -68,6 +69,7 @@ from monitor_controller.workers.desktop_guard import (
 )
 
 PREPARE_COMMAND_TIMEOUT_SECONDS: Final = 90.0
+_JOURNAL = service_logger("monitor_controller.journal")
 _XRANDR_QUERY = ("xrandr", "--query")
 _XRANDR_PROPERTIES = ("xrandr", "--props")
 _PREPARATION_PAYLOAD_FIELDS: Final = frozenset(
@@ -299,15 +301,35 @@ class SubprocessPrepareCommands:
                     ),
                     environment=environment,
                 )
-            helper = staged / "monitor-controller-emacs-fonts.el"
-            expression = (
-                f"(progn (load-file {json.dumps(str(helper))}) "
-                f"({operation.intent.expression} {operation.intent.font_height}))"
-            )
-            return self._leaf_runner.run(
-                ("emacsclient", "-e", expression),
-                environment=environment,
-            )
+            return self._reload_emacs_fonts(staged, operation.intent, environment)
+
+    def _reload_emacs_fonts(
+        self,
+        staged: Path,
+        intent: EmacsFontIntent,
+        environment: Mapping[str, str],
+    ) -> PrepareCommandResult:
+        helper = staged / "monitor-controller-emacs-fonts.el"
+        expression = (
+            f"(progn (load-file {json.dumps(str(helper))}) "
+            f"({intent.expression} {intent.font_height}))"
+        )
+        result = self._leaf_runner.run(
+            ("emacsclient", "-e", expression),
+            environment=environment,
+        )
+        if result.exit_status == 0:
+            return result
+        # Font reload is cosmetic, and legacy setup-monitor only warned.
+        # Failing here aborted every relayout while the Emacs server was
+        # unreachable (dc-roqe).
+        outcome = (
+            "timed out"
+            if result.timed_out
+            else f"exited with status {result.exit_status}"
+        )
+        _JOURNAL.warning(f"Emacs font reload skipped: emacsclient {outcome}")
+        return PrepareCommandResult(0)
 
     def _environment(self, staged: Path) -> dict[str, str]:
         runtime = f"/run/user/{os.getuid()}"

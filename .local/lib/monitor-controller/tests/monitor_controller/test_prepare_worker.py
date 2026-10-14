@@ -964,6 +964,61 @@ def test_real_exact_leaves_use_only_fake_primitives_and_temp_home(
         assert forbidden not in nested_output.casefold()
 
 
+class _FailingLeafRunner(_CaptureLeafRunner):
+    def __init__(self, failing: str, result: PrepareCommandResult) -> None:
+        super().__init__()
+        self._failing = failing
+        self._result = result
+
+    def run(
+        self,
+        arguments: tuple[str, ...],
+        *,
+        environment: Mapping[str, str],
+        input_bytes: bytes | None = None,
+        timeout_seconds: float = 90.0,
+    ) -> PrepareCommandResult:
+        super().run(
+            arguments,
+            environment=environment,
+            input_bytes=input_bytes,
+            timeout_seconds=timeout_seconds,
+        )
+        if Path(arguments[0]).name == self._failing:
+            return self._result
+        return PrepareCommandResult(0)
+
+
+@pytest.mark.parametrize(
+    "result",
+    [PrepareCommandResult(1), PrepareCommandResult(124, timed_out=True)],
+)
+def test_unreachable_emacs_server_does_not_abort_preparation(
+    tmp_path: Path, result: PrepareCommandResult
+) -> None:
+    """An Emacs font reload failure is cosmetic and must not abort (dc-roqe)."""
+    operations = _planned_operations(tmp_path / "plan")
+    emacs = next(item for item in operations if isinstance(item, ReloadEmacsFonts))
+    terminals = next(
+        item for item in operations if isinstance(item, ConfigureTerminals)
+    )
+    xauthority = tmp_path / "Xauthority"
+    xauthority.write_bytes(b"x")
+
+    def commands(failing: str) -> SubprocessPrepareCommands:
+        return SubprocessPrepareCommands(
+            home_root=tmp_path / "home",
+            leaf_root=_REPO / "bin",
+            work_root=tmp_path / "work",
+            leaf_runner=_FailingLeafRunner(failing, result),
+            base_environment={"DISPLAY": ":7", "XAUTHORITY": str(xauthority)},
+        )
+
+    assert commands("emacsclient").apply(emacs) == PrepareCommandResult(0)
+    # Other leaves still fail closed.
+    assert commands("setup-terminals").apply(terminals) == result
+
+
 def test_changed_leaf_stales_before_any_subprocess_mutation(tmp_path: Path) -> None:
     operations = _planned_operations(tmp_path / "plan")
     panel = operations[1]
