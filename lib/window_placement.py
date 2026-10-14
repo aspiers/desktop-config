@@ -11,6 +11,7 @@ hide: every repair is a bug still to be root-caused.
 
 import re
 import subprocess
+import time
 from dataclasses import dataclass, field
 
 import fluxbox_remote
@@ -18,6 +19,10 @@ import fluxbox_remote
 STICK = 'If {Matches (Stuck=no)} {Stick}'
 UNSTICK = 'If {Matches (Stuck=yes)} {Stick}'
 ATTEMPTS = 3
+# Clients such as Emacs snap to their own size increments just after a
+# resize, so wait for geometry to stop changing before judging it.
+SETTLE_POLL_SECONDS = 0.03
+SETTLE_TIMEOUT_SECONDS = 1.0
 
 
 @dataclass(frozen=True)
@@ -44,6 +49,8 @@ class RuleOutcome:
     windows: int
     repairs: int
     problems: tuple[str, ...]
+    # What the first attempt found when a repair was needed, for diagnosis.
+    repaired: tuple[str, ...] = ()
 
 
 def top_level_commands(command: str) -> list[str]:
@@ -131,22 +138,46 @@ def problems(window: int, state: WindowState | None, expected: Expectation,
     return found
 
 
+def settled_states(windows: list[int]) -> dict[int, WindowState]:
+    """Window states once the given windows stop changing, or at the timeout."""
+    deadline = time.monotonic() + SETTLE_TIMEOUT_SECONDS
+    previous = window_states()
+    while True:
+        time.sleep(SETTLE_POLL_SECONDS)
+        current = window_states()
+        settled = all(previous.get(w) == current.get(w) for w in windows)
+        if settled or time.monotonic() >= deadline:
+            return current
+        previous = current
+
+
 def apply_rule(matcher: str, map_command: str, commands: list[str],
                heads: list[tuple[int, int, int, int]]) -> RuleOutcome:
     # Ask before applying: the rule may move windows out of its own pattern.
     windows = fluxbox_remote.matching_windows(matcher)
     expected = expectation(commands)
     fluxbox_remote.send(map_command)
+    if not windows:
+        return RuleOutcome(matcher, 0, 0, ())
+    first: list[str] = []
     found: list[str] = []
     for attempt in range(ATTEMPTS):
-        before = window_states()
+        before = settled_states(windows)
         found = [p for w in windows for p in problems(w, before.get(w), expected, heads)]
         # Repeating the rule must change nothing if it fully took effect.
         fluxbox_remote.send(map_command)
-        after = window_states()
-        found += ['0x%08x %r moved when the rule was repeated' % (w, after[w].title)
+        after = settled_states(windows)
+        found += ['0x%08x %r moved from %s to %s when the rule was repeated'
+                  % (w, after[w].title, _geometry(before[w]), _geometry(after[w]))
                   for w in windows
                   if w in before and w in after and before[w] != after[w]]
         if not found:
-            return RuleOutcome(matcher, len(windows), attempt, ())
-    return RuleOutcome(matcher, len(windows), ATTEMPTS, tuple(found))
+            return RuleOutcome(matcher, len(windows), attempt, (), tuple(first))
+        if attempt == 0:
+            first = found
+    return RuleOutcome(matcher, len(windows), ATTEMPTS, tuple(found), tuple(first))
+
+
+def _geometry(state: WindowState) -> str:
+    return '%dx%d%+d%+d@%d' % (state.width, state.height, state.x, state.y,
+                               state.desktop)

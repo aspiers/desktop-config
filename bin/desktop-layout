@@ -93,7 +93,8 @@ def place_rule(matcher, map_cmd, cmds):
         return
     if outcome.repairs:
         REPAIRED_RULES.append(matcher)
-        log("WINDOW_LAYOUT_REPAIRED attempts=%d rule=%s" % (outcome.repairs, matcher))
+        log("WINDOW_LAYOUT_REPAIRED attempts=%d rule=%s first_found=%s"
+            % (outcome.repairs, matcher, "; ".join(outcome.repaired)))
     for problem in outcome.problems:
         MISPLACED.append(problem)
         log("WINDOW_LAYOUT_MISPLACED rule=%s: %s" % (matcher, problem))

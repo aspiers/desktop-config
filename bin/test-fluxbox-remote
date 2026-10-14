@@ -134,4 +134,32 @@ outcome = wp.apply_rule('(Name=w4)', rule, ['MoveTo 300 300'], heads)
 fluxbox_remote.send = real_send
 assert dropped and outcome.repairs == 1 and not outcome.problems, outcome
 print('ok - a lost rule is detected and repaired, and counted as a repair')
+
+# Emacs snaps to its character grid shortly after each resize; a window that
+# settles on its own must not count as a repair.
+w5 = subprocess.check_output(
+    ['xdotool', 'search', '--classname', '^w5$'], text=True).split()[0]
+snapping = threading.Event()
+
+
+def snap_to_grid():
+    while not snapping.is_set():
+        out = subprocess.check_output(['xdotool', 'getwindowgeometry', w5], text=True)
+        width, height = map(int, out.split('Geometry:')[1].split()[0].split('x'))
+        if width % 7 or height % 7:
+            subprocess.call(['xdotool', 'windowsize', w5,
+                             str(width - width % 7), str(height - height % 7)])
+        time.sleep(0.002)
+
+
+snapper = threading.Thread(target=snap_to_grid)
+snapper.start()
+try:
+    rule = 'Map {MacroCmd {MoveTo 50 60} {ResizeTo 403 302}} {Matches (Name=w5)}'
+    outcome = wp.apply_rule('(Name=w5)', rule, ['MoveTo 50 60', 'ResizeTo 403 302'], heads)
+finally:
+    snapping.set()
+    snapper.join()
+assert outcome.repairs == 0 and not outcome.problems, outcome
+print('ok - a window that snaps its own size after a move is not a repair')
 PY
