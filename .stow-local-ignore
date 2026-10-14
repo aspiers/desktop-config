@@ -76,6 +76,8 @@ COPYING
 ^/\.opencode
 ^/\.prettier.*
 ^/\.editorconfig
+^/\.gitleaks\.toml
+^/\.gitleaksignore
 ^/node_modules
 tmp
 nohup\.out
