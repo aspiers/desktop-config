@@ -73,10 +73,9 @@ fluxbox_responds() {
     local result
     local attempt
 
-    # Reconfigure lives in this guarded probe rather than the preceding file
-    # installation. If Fluxbox is absent or hung, this whole operation fails
-    # into the restart path instead of aborting finalization early.
-    fluxbox-remote Reconfigure >/dev/null 2>&1 || return 1
+    # No Reconfigure here: every caller has just restarted Fluxbox, which
+    # reloads keys and styles itself, and a second command sent straight
+    # after it could overwrite it unread (dc-zg8i, dc-yhr0).
     xprop -root -remove _FLUXBOX_ACTION_RESULT >/dev/null 2>&1 || return 1
     fluxbox-remote "ClientPatternTest (name=$probe)" >/dev/null 2>&1 || return 1
 

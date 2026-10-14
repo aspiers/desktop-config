@@ -62,7 +62,7 @@ printf '%s\n' "$*" >> "$FLUXBOX_REMOTE_LOG"
 if [ "${1:-}" = Restart ]; then
     [ "${STUB_RESTART:-}" != request-failed ] || exit 1
     touch "$STUB_RESTART_EVENT"
-elif [ "${1:-}" = Reconfigure ] && [ "${STUB_RESPONSE:-}" = eventual ]; then
+elif [[ ${1:-} == ClientPatternTest* ]] && [ "${STUB_RESPONSE:-}" = eventual ]; then
     count=0
     [ ! -r "$FLUXBOX_REMOTE_COUNT" ] || count=$(cat "$FLUXBOX_REMOTE_COUNT")
     printf '%s\n' "$((count + 1))" > "$FLUXBOX_REMOTE_COUNT"
@@ -102,7 +102,7 @@ run_case() (
 
     [ "$status" -eq "$expected_status" ] &&
         grep -q "$expected_reason" <<< "$output" &&
-        grep -qx 'Reconfigure' "$FLUXBOX_REMOTE_LOG" &&
+        ! grep -q '^Reconfigure$' "$FLUXBOX_REMOTE_LOG" &&
         grep -q '^ClientPatternTest ' "$FLUXBOX_REMOTE_LOG"
 )
 
@@ -250,7 +250,7 @@ test_restart_waits_for_incarnation_then_health() (
 
     grep -q 'FLUXBOX_RESTART result=healthy mode=in-place' <<< "$output" &&
         grep -qx 'Restart' "$FLUXBOX_REMOTE_LOG" &&
-        grep -qx 'Reconfigure' "$FLUXBOX_REMOTE_LOG" &&
+        ! grep -q '^Reconfigure$' "$FLUXBOX_REMOTE_LOG" &&
         grep -q '^ClientPatternTest ' "$FLUXBOX_REMOTE_LOG"
 )
 
