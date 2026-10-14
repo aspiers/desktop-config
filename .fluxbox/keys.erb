@@ -408,7 +408,7 @@ Control Mod4 g <%= next_unhidden "(Title=Google Meet.*)" %>
 #Control Mod4 g :Exec chrome-session-tabs https://app.gather.town/
 
 Mod4 h :Exec chrome-session-rofi 'https://github.com/ '
-Control Mod4 h :Exec chrome-session-rofi --no-tokenize '^octobox( \([0-9]+\))? \| '
+Control Mod4 h :Exec fluxbox-focus-or-launch --toggle '^Octobox( \([0-9]+\))?$' gtk-launch chrome-abmmfmbebheickoidomeknhdimhaeand-Default
 # bead-me-up-scotty
 Control Mod4 b :Exec chrome-session-rofi 'http://localhost:19847/ '
 
