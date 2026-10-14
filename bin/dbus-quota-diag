@@ -1,0 +1,144 @@
+#!/usr/bin/env python3
+"""Sample the user D-Bus broker's per-user quota usage.
+
+On 2026-10-14 the session bus exhausted UID 1000's 'bytes' quota at suspend,
+disconnected long-lived peers and took the whole X session down (dc-uu11).
+The bus that filled up died with the session, so nothing showed which peer
+was growing.  Runs from dbus-quota-diag.timer and appends one line per sample
+to ~/.log/dbus-quota/samples.tsv:
+
+    time  boot  used_bytes  quota_bytes  connections  max_peer_id  top_peers
+
+top_peers lists the five peers holding the most bytes against the quota, as
+comm:pid:bytes.  Usage above WARN_FRACTION of the quota is also logged to the
+journal at warning priority, before it can take the session down.
+
+`status` compares the first and latest sample of this boot and names the
+peers that grew, or says the build-up has not been observed yet.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import subprocess
+import sys
+from datetime import datetime
+from pathlib import Path
+
+LOG_ROOT = Path.home() / ".log" / "dbus-quota"
+SAMPLES = LOG_ROOT / "samples.tsv"
+KEEP_LINES = 6000  # about six weeks at one sample per 10 minutes
+WARN_FRACTION = 0.25
+TOP = 5
+
+
+def bus_stats() -> dict:
+    out = subprocess.run(
+        ["busctl", "--user", "--json=short", "call", "org.freedesktop.DBus",
+         "/org/freedesktop/DBus", "org.freedesktop.DBus.Debug.Stats",
+         "GetStats"],
+        capture_output=True, text=True, timeout=10, check=True,
+    ).stdout
+    return json.loads(out)["data"][0]
+
+
+def user_bytes(stats: dict, uid: int) -> tuple[int, int]:
+    """Return (used, quota) bytes; the broker reports (remaining, quota)."""
+    for entry_uid, limits, _ in stats["org.bus1.DBus.Debug.Stats.UserAccounting"]["data"]:
+        if entry_uid == uid:
+            for name, remaining, quota in limits:
+                if name == "Bytes":
+                    return quota - remaining, quota
+    raise LookupError(f"no Bytes accounting for UID {uid}")
+
+
+def comm(pid: int | None) -> str:
+    try:
+        return Path(f"/proc/{pid}/comm").read_text().strip()
+    except OSError:
+        return "?"
+
+
+def peer_bytes(stats: dict) -> list[tuple[int, str, int | None]]:
+    rows = []
+    for name, ident, acct in stats["org.bus1.DBus.Debug.Stats.PeerAccounting"]["data"]:
+        held = sum(acct.get(key, 0) for key in
+                   ("MatchBytes", "IncomingBytes", "OutgoingBytes",
+                    "ActivationRequestBytes"))
+        rows.append((held, name, ident.get("ProcessID", {}).get("data")))
+    return sorted(rows, reverse=True)
+
+
+def boot_id() -> str:
+    return Path("/proc/sys/kernel/random/boot_id").read_text().strip()
+
+
+def sample() -> int:
+    stats = bus_stats()
+    used, quota = user_bytes(stats, int(subprocess.check_output(["id", "-u"])))
+    peers = peer_bytes(stats)
+    max_id = max(int(name.rsplit(".", 1)[1]) for _, name, _ in peers)
+    top = ",".join(f"{comm(pid)}:{pid}:{held}" for held, _, pid in peers[:TOP])
+    line = "\t".join([
+        datetime.now().isoformat(timespec="seconds"), boot_id(), str(used),
+        str(quota), str(stats["ActiveConnections"]["data"]), str(max_id), top,
+    ])
+    LOG_ROOT.mkdir(parents=True, exist_ok=True)
+    lines = SAMPLES.read_text().splitlines() if SAMPLES.exists() else []
+    SAMPLES.write_text("\n".join((lines + [line])[-KEEP_LINES:]) + "\n")
+    if used > quota * WARN_FRACTION:
+        print(f"<4>user bus holds {used} of {quota} quota bytes; top: {top}")
+    return 0
+
+
+def parse(line: str) -> dict:
+    when, boot, used, quota, conns, max_id, top = line.split("\t")
+    peers = {}
+    for item in filter(None, top.split(",")):
+        name, pid, held = item.rsplit(":", 2)
+        peers[f"{name}:{pid}"] = int(held)
+    return {"when": when, "boot": boot, "used": int(used),
+            "quota": int(quota), "max_id": int(max_id), "peers": peers}
+
+
+def status() -> int:
+    if not SAMPLES.exists():
+        print("No samples yet: is dbus-quota-diag.timer enabled?")
+        return 1
+    rows = [parse(line) for line in SAMPLES.read_text().splitlines() if line]
+    current = [row for row in rows if row["boot"] == boot_id()] or rows[-1:]
+    first, last = current[0], current[-1]
+    print(f"Samples this boot: {len(current)} ({first['when']} to {last['when']})")
+    print(f"Quota used: {last['used']} of {last['quota']} bytes "
+          f"({100 * last['used'] / last['quota']:.2f}%), "
+          f"{last['used'] - first['used']:+d} since first sample")
+    grown = sorted(((held - first["peers"].get(peer, 0), peer)
+                    for peer, held in last["peers"].items()), reverse=True)
+    for delta, peer in grown:
+        print(f"  {peer}: {last['peers'][peer]} bytes ({delta:+d})")
+    peak = max(row["used"] / row["quota"] for row in rows)
+    print("Outstanding: a build-up past "
+          f"{WARN_FRACTION:.0%} of the quota (peak so far {peak:.2%})"
+          if peak <= WARN_FRACTION else
+          f"Observed: usage passed {WARN_FRACTION:.0%} of the quota")
+    return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("command", choices=["sample", "status"])
+    args = parser.parse_args()
+    if args.command == "status":
+        return status()
+    try:
+        return sample()
+    except (OSError, subprocess.SubprocessError, LookupError, ValueError,
+            KeyError) as error:
+        # A failed sample must never look like a bus problem.
+        print(f"sample skipped: {error}", file=sys.stderr)
+        return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

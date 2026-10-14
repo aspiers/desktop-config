@@ -1,0 +1,10 @@
+[Unit]
+Description=Periodically sample user D-Bus quota usage (dc-uu11)
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=10min
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target

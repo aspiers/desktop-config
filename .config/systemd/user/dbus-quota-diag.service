@@ -1,0 +1,13 @@
+[Unit]
+Description=Sample the user D-Bus broker's per-user quota usage
+
+[Service]
+SyslogIdentifier=dbus-quota-diag
+Type=oneshot
+ExecStart=%h/bin/dbus-quota-diag sample
+TimeoutStartSec=30s
+Nice=15
+IOSchedulingClass=idle
+StandardOutput=journal
+StandardError=journal
+SyslogLevelPrefix=yes
