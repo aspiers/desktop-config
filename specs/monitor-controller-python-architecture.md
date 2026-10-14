@@ -415,7 +415,7 @@ Preserve the three-phase split from the state-machine design:
    clean proof of the same
    exact/current/active target and only after probe/application workers have
    completed. It applies repeatable, supersedable properties while the full
-   ten-second proof continues.
+   stability proof (`PROFILE_STABILITY_MS`) continues.
 3. **Finalize** is eligible only when full proof holds, preparation is
    `PREPARED` for the same plan hash, and a fresh dirty-event fence passes. It
    moves windows and performs only process restarts still proven necessary.

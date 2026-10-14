@@ -41,6 +41,7 @@ from monitor_controller.desktop.tray import (
     wait_for_stable_tray,
     wait_for_status_notifier_item,
 )
+from monitor_controller.invariants import PROFILE_STABILITY_MS
 from monitor_controller.model import (
     ActionId,
     ActionKind,
@@ -86,7 +87,7 @@ from monitor_controller.workers.desktop_guard import (
     validate_plan_request_binding,
 )
 
-FINALIZATION_PROOF_MS: Final = 10_000
+FINALIZATION_PROOF_MS: Final = PROFILE_STABILITY_MS
 _JOURNAL = service_logger("monitor_controller.journal")
 
 FINALIZE_COMMAND_TIMEOUT_SECONDS: Final = 120.0
@@ -1174,7 +1175,7 @@ def _validate_boundary(
         _stale("worker lacks its exact durable finalization execution claim")
     planning_action, preparation_action, proof_duration = _finalization_payload(request)
     if proof_duration < FINALIZATION_PROOF_MS:
-        _stale("finalization request lacks ten seconds of continuous proof")
+        _stale("finalization request lacks continuous stability proof")
     try:
         bundle = plan_store.read(planning_action)
     except (OSError, ValueError) as error:

@@ -12,6 +12,7 @@ import pytest
 
 from monitor_controller.codec import decode_state, encode_state
 from monitor_controller.invariants import (
+    PROFILE_STABILITY_MS,
     ControllerInvariantError,
     assert_controller_invariants,
 )
@@ -166,7 +167,7 @@ def test_verification_requires_current_valid_exact_evidence() -> None:
         assert_controller_invariants(invalid)
 
 
-def test_finalization_requires_full_ten_second_proof() -> None:
+def test_finalization_requires_full_stability_proof() -> None:
     pending = _first(
         lambda state: (
             state.phase is ControllerPhase.FINALIZE_PENDING
@@ -175,9 +176,11 @@ def test_finalization_requires_full_ten_second_proof() -> None:
     )
     observation = pending.latest_observation
     assert observation is not None
-    invalid = replace(pending, verify_since_ms=observation.observed_at_ms - 9_999)
+    invalid = replace(
+        pending, verify_since_ms=observation.observed_at_ms - (PROFILE_STABILITY_MS - 1)
+    )
 
-    with pytest.raises(ControllerInvariantError, match="ten seconds"):
+    with pytest.raises(ControllerInvariantError, match="continuous stability proof"):
         assert_controller_invariants(invalid)
 
 

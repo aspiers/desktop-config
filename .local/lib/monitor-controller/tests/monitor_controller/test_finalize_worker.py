@@ -39,6 +39,7 @@ from monitor_controller.desktop.tray import (
     TrayState,
     wait_for_stable_tray,
 )
+from monitor_controller.invariants import PROFILE_STABILITY_MS
 from monitor_controller.model import (
     ActionId,
     ActionKind,
@@ -906,7 +907,7 @@ def test_topology_change_during_in_place_restart_prevents_full_recovery(
 @pytest.mark.parametrize(
     ("case", "expected_detail"),
     [
-        ("short-proof", "ten seconds"),
+        ("short-proof", "continuous stability proof"),
         ("generation", "event-generation"),
         ("mutator", "mutator"),
         ("transition", "transition guards"),
@@ -931,7 +932,9 @@ def test_proof_plan_event_mutator_and_transition_guards_fail_before_mutation(
         tmp_path,
         tree,
         commands,
-        proof_duration_ms=9_999 if case == "short-proof" else 10_000,
+        proof_duration_ms=(
+            PROFILE_STABILITY_MS - 1 if case == "short-proof" else PROFILE_STABILITY_MS
+        ),
         mutate_final=mutate,
     )
     fence = _Fence(

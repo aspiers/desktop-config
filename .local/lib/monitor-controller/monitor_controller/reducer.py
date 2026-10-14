@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 
-from .invariants import assert_controller_invariants
+from .invariants import PROFILE_STABILITY_MS, assert_controller_invariants
 from .model import (
     EVENT_TYPES,
     TERMINAL_ACTION_LIFECYCLES,
@@ -88,9 +88,8 @@ from .model import (
 AGGRESSIVE_BUDGET_MS: int = 30_000
 FAST_DELAYS_MS = (0, 250, 500, 1_000, 2_000)
 SLOW_DELAYS_MS = (5_000, 10_000, 20_000, 30_000)
-PROFILE_STABILITY_MS: int = 10_000
 PREPARATION_STABILITY_MS: int = 2_000
-EVENT_QUIET_MS: int = 5_000
+EVENT_QUIET_MS: int = 3_000
 UNKNOWN_STABILITY_MS = 10_000
 UNPLUG_STABILITY_MS = 1_000
 UNPLUG_REQUIRED_SAMPLES = 2

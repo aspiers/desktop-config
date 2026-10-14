@@ -26,7 +26,10 @@ _FAILED_LIFECYCLES: set[ActionLifecycle] = {
     ActionLifecycle.UNKNOWN,
     ActionLifecycle.TIMED_OUT,
 }
-_PROFILE_STABILITY_MS: int = 10_000
+# Shared by the reducer and the finalize worker's proof check.  4s covers the
+# DP link-retraining hint seen ~2s after most mode sets; later hints in 30
+# days of history were all real monitor swaps (see the stability-wait bead).
+PROFILE_STABILITY_MS: int = 4_000
 _PREPARATION_STABILITY_MS = 2_000
 
 NUMBERED_INVARIANTS: tuple[str, ...] = (
@@ -494,8 +497,8 @@ def _check_action_authorization(state: State) -> None:
                 state.verify_since_ms is not None
                 and observation is not None
                 and observation.observed_at_ms - state.verify_since_ms
-                >= _PROFILE_STABILITY_MS,
-                "finalization requires ten seconds of continuous proof",
+                >= PROFILE_STABILITY_MS,
+                "finalization requires full continuous stability proof",
             )
             _require(
                 not state.baseline_adoption,

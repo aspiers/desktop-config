@@ -403,8 +403,8 @@ Use monotonic milliseconds from `/proc/uptime`, not wall-clock time or Bash
 AGGRESSIVE_BUDGET_MS = 30000
 FAST_DELAYS_MS        = 0, 250, 500, 1000, 2000
 SLOW_DELAYS_MS        = 5000, 10000, 20000, 30000 (cap)
-PROFILE_STABILITY_MS  = 10000
-EVENT_QUIET_MS        = 5000
+PROFILE_STABILITY_MS  = 4000  (was 10000; see dc-32k2)
+EVENT_QUIET_MS        = 3000  (was 5000; see dc-32k2)
 UNKNOWN_STABILITY_MS  = 10000
 UNPLUG_STABILITY_MS   = 1000
 HEALTH_POLL_MS        = 60000 (failure/unsupported backoff only)
