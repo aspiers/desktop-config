@@ -687,3 +687,51 @@ def test_scanner_failure_is_a_fail_closed_result() -> None:
     assert result.state.recovery_units == (_unit(),)
     assert not result.effects
     assert any("scan failed" in reason for reason in result.reasons)
+
+
+@pytest.mark.parametrize(
+    ("persisted_lifecycle", "verified_lifecycle", "allowed"),
+    [
+        # The controller failed a finished worker because the confirming
+        # observation showed a new topology: expected, keep the verdict.
+        (ActionLifecycle.FAILED, ActionLifecycle.COMPLETED, True),
+        # The controller believed in a success the worker never reported.
+        (ActionLifecycle.COMPLETED, ActionLifecycle.FAILED, False),
+    ],
+)
+def test_superseded_worker_success_is_not_a_tombstone_conflict(
+    persisted_lifecycle: ActionLifecycle,
+    verified_lifecycle: ActionLifecycle,
+    allowed: bool,
+) -> None:
+    action_id = ActionId(_OLD_INSTANCE, ActionKind.FINALIZATION, 9)
+    persisted = State(
+        boot_id=_OLD_BOOT,
+        controller_instance=_OLD_INSTANCE,
+        display_identity=_DISPLAY,
+        action_tombstones=(ActionTombstone(action_id, persisted_lifecycle),),
+        action_sequence_high_water=9,
+    )
+
+    recovered = recover_state(
+        persisted,
+        current_boot_id=_OLD_BOOT,
+        controller_instance=_NEW_INSTANCE,
+        display_identity=_DISPLAY,
+        namespace=StateNamespace.ACTIVE,
+        scanner=_Scanner(
+            WorkerNamespaceSnapshot(
+                verified_tombstones=(ActionTombstone(action_id, verified_lifecycle),)
+            ),
+            [],
+        ),
+    )
+
+    assert recovered.authority_allowed is allowed
+    if allowed:
+        assert recovered.reasons == ()
+        assert ActionTombstone(action_id, ActionLifecycle.FAILED) in (
+            recovered.state.action_tombstones
+        )
+    else:
+        assert any("conflicting terminal lifecycle" in r for r in recovered.reasons)

@@ -1,0 +1,10 @@
+[Unit]
+Description=Warn that the monitor controller has stopped for good
+# Triggered by OnFailure= in monitor-controller.service.  With Restart=, the
+# controller only reaches the failed state once systemd stops restarting it,
+# which used to leave the monitors silently unmanaged until the next login
+# (dc-ik6x).
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/notify-send -u critical "Monitor controller stopped" "systemd gave up restarting it, so monitor changes are not being handled. See: journalctl --user -u monitor-controller"

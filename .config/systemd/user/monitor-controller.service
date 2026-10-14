@@ -18,6 +18,7 @@ PartOf=fluxbox-session.target
 After=fluxbox-session.target
 StartLimitIntervalSec=60s
 StartLimitBurst=5
+OnFailure=monitor-controller-failed.service
 
 [Service]
 Type=simple

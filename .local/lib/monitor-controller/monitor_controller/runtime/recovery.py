@@ -481,6 +481,16 @@ def _merge_tombstones(
         key = tombstone.action_id.value
         previous = merged.get(key)
         if previous is not None and previous.lifecycle is not tombstone.lifecycle:
+            # A worker can finish successfully and still be failed by the
+            # controller when the confirming observation shows the topology
+            # moved on (RESULT_PENDING -> FAILED in the reducer).  The
+            # stricter persisted verdict stands; refusing authority over it
+            # crash-looped the controller until reboot (dc-ik6x).
+            if (
+                previous.lifecycle is ActionLifecycle.FAILED
+                and tombstone.lifecycle is ActionLifecycle.COMPLETED
+            ):
+                continue
             reasons.append(f"conflicting terminal lifecycle for action {key}")
         merged[key] = tombstone
     return tuple(sorted(merged.values(), key=lambda item: item.action_id.value)), tuple(
