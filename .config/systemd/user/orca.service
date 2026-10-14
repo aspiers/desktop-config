@@ -1,0 +1,29 @@
+[Unit]
+Description=Orca agent IDE
+
+# Same shape as beeper.service, which documents the reasoning: bind to
+# adam-session.target (not graphical-session.target, which never
+# deactivates at logout), and run the FUSE AppImage directly from the
+# manager so NoNewPrivileges stays unset, via run-with-local-X-display for
+# the X/DBus environment.
+PartOf=adam-session.target
+After=adam-session.target
+
+[Service]
+SyslogIdentifier=orca
+
+# orca-linux.AppImage is the stable name that upgrades replace in place;
+# versioned backups and test builds sit beside it under other names.
+ExecStart=/bin/bash -c 'exec ${HOME}/bin/run-with-local-X-display ${HOME}/software/AI/orca-linux.AppImage'
+
+Restart=no
+
+# Electron leaves a tree of renderer and zygote processes behind.
+KillMode=control-group
+TimeoutStopSec=20s
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=adam-session.target
