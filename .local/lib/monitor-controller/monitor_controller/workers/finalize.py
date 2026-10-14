@@ -896,7 +896,18 @@ def execute_finalization(  # noqa: C901, PLR0913, PLR0915
     """Run exact actions with a complete fresh guard before every mutation."""
     guarded_bundle: DesktopPlanBundle | None = None
 
+    # Per-step and boundary timings show where relayout time goes (dc-yhr0
+    # follow-up); they cost one monotonic read per step.
+    boundary_seconds: list[float] = []
+
     def boundary() -> CurrentTopology:
+        started = time.monotonic()
+        try:
+            return _sampled_boundary()
+        finally:
+            boundary_seconds.append(time.monotonic() - started)
+
+    def _sampled_boundary() -> CurrentTopology:
         nonlocal guarded_bundle
         guarded_bundle = _validate_boundary(startup, plan_store, cancellation)
         current = sample_exact_desktop_topology(
@@ -933,7 +944,20 @@ def execute_finalization(  # noqa: C901, PLR0913, PLR0915
         # A misplaced window must not stop the tray and applet steps that
         # follow it, but the relayout still has to end failed (dc-yhr0.3).
         window_layout_failure: WorkerExecution | None = None
+        step: tuple[str, float] | None = None
+
+        def log_step() -> None:
+            if step is not None:
+                _JOURNAL.info(
+                    "FINALIZE_STEP action=%s step=%s ms=%d",
+                    startup.request.action_id.value,
+                    step[0],
+                    1000 * (time.monotonic() - step[1]),
+                )
+
         for index, action in enumerate(bundle.plan.finalize_actions):
+            log_step()
+            step = (action.kind.value, time.monotonic())
             if index:
                 boundary()
                 bundle = guarded_bundle
@@ -1051,6 +1075,14 @@ def execute_finalization(  # noqa: C901, PLR0913, PLR0915
                 window_layout_failure = failure
             elif failure is not None:
                 return failure
+        log_step()
+        _JOURNAL.info(
+            "FINALIZE_BOUNDARIES action=%s count=%d total_ms=%d max_ms=%d",
+            startup.request.action_id.value,
+            len(boundary_seconds),
+            1000 * sum(boundary_seconds),
+            1000 * max(boundary_seconds, default=0.0),
+        )
         if window_layout_failure is not None:
             return window_layout_failure
         request = startup.request
