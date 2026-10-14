@@ -120,6 +120,39 @@ $ cat ~/.config/autorandr/celtic+AOC-U28G2G6B/layout
 celtic+external
 ```
 
+### DPI and UI scale
+
+Three different numbers get called "DPI", and mixing them up has caused bugs.
+
+- **Physical DPI**: the monitor's real pixels per inch, from its width in
+  pixels and millimetres (`xrandr`). The BenQ BL3200 is 2560 px over 708 mm,
+  about 92.
+- **XFCE's DPI setting**: `/Xft/DPI` in the `xsettings` channel of `xfconf`
+  (`xfconf-query -c xsettings -p /Xft/DPI`), broadcast by `xfsettingsd` to
+  GTK apps. `bin/set-xfce4-dpi` also copies it to the `Xft.dpi` X resource,
+  because kitty and other Xft clients read that instead. A layout's `dpi:`
+  key sets it on every relayout. It is part of XFCE, not of X.
+- **The X server's own DPI**: what `xdpyinfo` reports as `resolution`.
+  Nothing in this pipeline sets or reads it.
+
+Fonts sized in points grow with XFCE's setting (pixels = points × DPI ÷ 72).
+Panel heights and other pixel sizes don't. The **UI scale** multiplies both:
+panel heights, terminal font size and the Fluxbox overlay.
+
+- A layout that sets `ui_scale:` (and optionally `font_scale:` for fonts
+  alone) fixes the multiplier directly.
+- Otherwise it should be physical DPI ÷ the layout's own `dpi:`, or ÷ 96
+  when the layout sets none (decided in `dc-h82x`, implemented by
+  `dc-ftna.2`). Until then the controller divides by `/Xft/DPI` read once at
+  startup, so the result depends on whichever layout was live when the
+  service started. `lib/libdpy.py`'s
+  `calculate_ui_scale_factor()` still reads `/Xft/DPI` live, and
+  `bin/setup-monitor` calls it before applying the new layout's DPI, so the
+  legacy pipeline divides by the *previous* layout's DPI.
+
+One multiplier for both points and pixels is a compromise; that sizing moves
+into per-application hooks under the decoupling epic `dc-ftna`.
+
 ## Cookbook
 
 ### Which configuration am I in right now?
