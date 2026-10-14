@@ -44,6 +44,7 @@ from ..runtime.commands import (  # noqa: TID252
     CommandRequest,
     CommandRunner,
 )
+from ..runtime.journal import service_logger  # noqa: TID252
 from .autorandr import (
     AutorandrEvidenceSource,
     AutorandrObservation,
@@ -66,6 +67,8 @@ from .drm import (
 from .evidence import ParseIssue, ParseIssueCode, TextCommandEvidence
 from .mapping import AmbiguousBijectionError, unique_bijection
 from .topology import derive_canonical_topology
+
+_JOURNAL = service_logger("monitor_controller.journal")
 
 DEFAULT_OBSERVER_TIMEOUT_SECONDS: float = 5.0
 EDID_BASE_HEX_CHARS: int = 256
@@ -295,7 +298,12 @@ class _CanonicalFacts:
     probe: ProbeCandidate | None
     physical_token: PhysicalToken
     raw_evidence: tuple[RawEvidenceReference, ...]
-    inconsistent: bool
+    # Names of the checks that disagreed; empty when consistent.
+    inconsistencies: tuple[str, ...]
+
+    @property
+    def inconsistent(self) -> bool:
+        return bool(self.inconsistencies)
 
 
 class CanonicalSnapshotCoordinator:
@@ -608,13 +616,17 @@ def _derive_facts(
         probe=probe,
         physical_token=topology.physical_token,
         raw_evidence=raw,
-        inconsistent=(
-            topology.inconsistent
-            or mapping_inconsistent
-            or profile_inconsistent
-            or topology_inconsistent
-            or fingerprint_inconsistent
-            or x_uncertain
+        inconsistencies=tuple(
+            name
+            for name, failed in (
+                ("drm_topology", topology.inconsistent),
+                ("profile_mapping", mapping_inconsistent),
+                ("unknown_autorandr_profile", profile_inconsistent),
+                ("kernel_vs_x_connected", topology_inconsistent),
+                ("fingerprint_vs_x_connected", fingerprint_inconsistent),
+                ("x_connection_unknown", x_uncertain),
+            )
+            if failed
         ),
     )
 
@@ -973,7 +985,7 @@ def _resolve_probe_mapping(  # probe edges also admit base-EDID matches
     return tuple(OutputMapping(saved, solution[saved]) for saved in sorted(solution))
 
 
-def _invalidity_reason(  # noqa: PLR0913, PLR0917
+def _invalidity_reason(  # noqa: PLR0911, PLR0913, PLR0917
     begin_generation: EventGeneration,
     end_generation: EventGeneration,
     begin_drm: DrmSnapshot,
@@ -993,18 +1005,31 @@ def _invalidity_reason(  # noqa: PLR0913, PLR0917
         return ObservationInvalidityReason.COMMAND_TIMED_OUT
     non_torn_issues = tuple(item for item in issues if not _is_xrandr_torn_issue(item))
     if non_torn_issues:
-        return (
-            ObservationInvalidityReason.INCONSISTENT_EVIDENCE
-            if any(item.code is ParseIssueCode.INCONSISTENT for item in non_torn_issues)
-            else ObservationInvalidityReason.PARSE_FAILED
-        )
+        if any(item.code is ParseIssueCode.INCONSISTENT for item in non_torn_issues):
+            _log_inconsistency(
+                tuple(
+                    f"{item.source.value}:{item.code.value}:{item.detail}"
+                    for item in non_torn_issues
+                )
+            )
+            return ObservationInvalidityReason.INCONSISTENT_EVIDENCE
+        return ObservationInvalidityReason.PARSE_FAILED
     if _xrandr_torn(xrandr.issues):
         return ObservationInvalidityReason.TOPOLOGY_CHANGED
-    return (
-        ObservationInvalidityReason.INCONSISTENT_EVIDENCE
-        if not _drm_certain(end_drm) or facts.inconsistent
-        else None
+    causes = (
+        *(() if _drm_certain(end_drm) else ("drm_status_uncertain",)),
+        *facts.inconsistencies,
     )
+    if causes:
+        _log_inconsistency(causes)
+        return ObservationInvalidityReason.INCONSISTENT_EVIDENCE
+    return None
+
+
+def _log_inconsistency(causes: tuple[str, ...]) -> None:
+    # Only the reason enum reaches the audit; keep the causes so a wait on
+    # inconsistent evidence can be explained afterwards.
+    _JOURNAL.info("OBSERVATION_INCONSISTENT causes=%s", ",".join(causes))
 
 
 def _is_xrandr_torn_issue(issue: ParseIssue) -> bool:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import subprocess
 import sys
@@ -516,9 +517,12 @@ def test_parse_failure_is_explicit_invalid_evidence(tmp_path: Path) -> None:
     assert observation.probe_candidate is None
 
 
-def test_cross_source_connector_contradiction_fails_closed(tmp_path: Path) -> None:
+def test_cross_source_connector_contradiction_fails_closed(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
     root, commands, profiles = load_manifest(tmp_path, "exact-aoc")
     (root / "card0-DP-3" / "connector_id").write_text("999\n", encoding="ascii")
+    caplog.set_level(logging.INFO, logger="monitor_controller.journal")
 
     observation = coordinator(
         RootedSysfsReader(root), _FixtureRunner(commands), profiles
@@ -530,6 +534,12 @@ def test_cross_source_connector_contradiction_fails_closed(tmp_path: Path) -> No
         is ObservationInvalidityReason.INCONSISTENT_EVIDENCE
     )
     assert observation.exact_profile is None
+    # The specific cause must reach the journal, not just the reason enum.
+    assert any(
+        record.getMessage().startswith("OBSERVATION_INCONSISTENT causes=")
+        and record.getMessage() != "OBSERVATION_INCONSISTENT causes="
+        for record in caplog.records
+    )
 
 
 def test_observation_key_excludes_time_and_both_generation_sequences(
