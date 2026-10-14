@@ -1,0 +1,22 @@
+#!/bin/sh
+# Report what the X stop watcher (system/, bead dc-ouv5) has captured, and
+# which scenarios are still outstanding.
+
+dir=/var/log/x-diag
+captures=$(ls -1t "$dir"/*.txt 2>/dev/null)
+echo "X stop captures in $dir: $(printf '%s' "$captures" | grep -c .)"
+printf '%s\n' "$captures" | head -n 5
+
+if grep -q "not DRM master" /var/log/Xorg.0.log 2>/dev/null; then
+    echo "Current X server: amdgpu failed (not DRM master), running on modesetting"
+else
+    echo "Current X server: no DRM master failure"
+fi
+
+dumps=$(coredumpctl list --no-pager --no-legend Xorg.bin 2>/dev/null)
+echo "Xorg core dumps: $(printf '%s' "$dumps" | grep -c .)"
+
+echo "Outstanding:"
+[ -n "$captures" ] || echo "  - no X stop captured yet"
+printf '%s\n' "$captures" | xargs -r grep -l "Lid opened\|resume" 2>/dev/null | grep -q . ||
+    echo "  - no X stop at resume captured yet"

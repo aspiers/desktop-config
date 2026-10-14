@@ -1,0 +1,35 @@
+#!/bin/sh
+# sddm DisplayStopCommand: run the stock Xstop, then record why X stopped and
+# what still holds the GPU, since the next X server starts straight after this
+# and failed to become DRM master on 2026-10-14 (bead dc-ouv5).
+# Must never fail or delay sddm noticeably.
+
+/usr/share/sddm/scripts/Xstop "$@"
+status=$?
+
+dir=/var/log/x-diag
+mkdir -p "$dir" 2>/dev/null || exit "$status"
+out="$dir/$(date +%Y%m%d-%H%M%S).txt"
+
+timeout 3 sh -c '
+    echo "== captured $(date --iso-8601=ns)"
+    echo "== X servers"
+    pgrep -a -x "X|Xorg|Xorg\.bin" || echo none
+    echo "== /dev/dri holders"
+    # lsof and fuser take seconds here; a direct /proc scan takes ~0.1 s.
+    find /proc/[0-9]*/fd -lname "/dev/dri/card*" -printf "%h %l\n" 2>/dev/null |
+        while read -r fd target; do
+            pid=${fd#/proc/}; pid=${pid%%/*}
+            echo "$pid $(cat /proc/$pid/comm 2>/dev/null) $target"
+        done | sort -u
+    echo "== tail of /var/log/Xorg.0.log (the stopped server)"
+    tail -n 80 /var/log/Xorg.0.log
+    echo "== journal, last 60 s"
+    journalctl --no-pager -o short-precise --since "-60s" \
+        --grep "sddm|logind|sleep|drm|amdgpu|Lid|suspend|resume|Display" \
+        2>&1 | tail -n 80
+' > "$out" 2>&1
+
+# Keep the newest 30 captures.
+ls -1t "$dir"/*.txt 2>/dev/null | tail -n +31 | xargs -r rm -f --
+exit "$status"
