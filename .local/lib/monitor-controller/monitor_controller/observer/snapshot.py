@@ -1023,16 +1023,23 @@ def _invalidity_reason(  # noqa: PLR0911, PLR0913, PLR0917
         *(() if _drm_certain(end_drm) else ("drm_status_uncertain",)),
         *facts.inconsistencies,
     )
+    _log_inconsistency(causes)
     if causes:
-        _log_inconsistency(causes)
         return ObservationInvalidityReason.INCONSISTENT_EVIDENCE
     return None
 
 
+_last_inconsistency: list[tuple[str, ...]] = [()]
+
+
 def _log_inconsistency(causes: tuple[str, ...]) -> None:
     # Only the reason enum reaches the audit; keep the causes so a wait on
-    # inconsistent evidence can be explained afterwards.
-    _JOURNAL.info("OBSERVATION_INCONSISTENT causes=%s", ",".join(causes))
+    # inconsistent evidence can be explained afterwards.  Log changes only:
+    # observation repeats every second or so, and one overnight wait wrote
+    # 20,715 identical lines.
+    if causes and causes != _last_inconsistency[0]:
+        _JOURNAL.info("OBSERVATION_INCONSISTENT causes=%s", ",".join(causes))
+    _last_inconsistency[0] = causes
 
 
 def _is_xrandr_torn_issue(issue: ParseIssue) -> bool:

@@ -23,6 +23,7 @@ from monitor_controller.model import (
     ProfileScope,
     RawEvidenceSource,
 )
+from monitor_controller.observer import snapshot as snapshot_module
 from monitor_controller.observer.autorandr import (
     SavedAutorandrProfile,
     parse_saved_profile,
@@ -517,14 +518,17 @@ def test_parse_failure_is_explicit_invalid_evidence(tmp_path: Path) -> None:
 
 
 def test_cross_source_connector_contradiction_fails_closed(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    monkeypatch.setattr(snapshot_module, "_last_inconsistency", [()])
     root, commands, profiles = load_manifest(tmp_path, "exact-aoc")
     (root / "card0-DP-3" / "connector_id").write_text("999\n", encoding="ascii")
+    source = coordinator(RootedSysfsReader(root), _FixtureRunner(commands), profiles)
 
-    observation = coordinator(
-        RootedSysfsReader(root), _FixtureRunner(commands), profiles
-    ).observe()
+    observation = source.observe()
+    source.observe()
 
     assert not observation.valid
     assert (
@@ -532,9 +536,11 @@ def test_cross_source_connector_contradiction_fails_closed(
         is ObservationInvalidityReason.INCONSISTENT_EVIDENCE
     )
     assert observation.exact_profile is None
-    # The specific cause must reach the journal, not just the reason enum.
-    # The journal logger writes straight to stderr and does not propagate.
-    assert "OBSERVATION_INCONSISTENT causes=drm_topology" in capsys.readouterr().err
+    # The specific cause must reach the journal, not just the reason enum,
+    # but only once while it persists.  The journal logger writes straight to
+    # stderr and does not propagate.
+    err = capsys.readouterr().err
+    assert err.count("OBSERVATION_INCONSISTENT causes=drm_topology") == 1
 
 
 def test_observation_key_excludes_time_and_both_generation_sequences(
