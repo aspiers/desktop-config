@@ -794,6 +794,26 @@ def test_exact_profile_requires_the_saved_primary(
     ]
 
 
+def test_retained_crtc_after_unplug_is_reapplied_not_frozen(tmp_path: Path) -> None:
+    """An unplugged monitor's retained CRTC must lead to an apply (dc-5seo).
+
+    Rejecting it as torn evidence left the controller waiting for xfsettingsd
+    to release the CRTC.  autorandr still counts the CRTC as configured, so
+    the laptop profile is detected but not current, which makes the
+    controller apply it and release the CRTC itself.
+    """
+    root, commands, profiles = load_manifest(tmp_path, "stale-crtc")
+
+    observation = coordinator(
+        RootedSysfsReader(root), _FixtureRunner(commands), profiles
+    ).observe()
+
+    assert observation.valid
+    assert [item.profile for item in observation.eligible_profiles] == ["celtic"]
+    assert observation.current_profiles == ()
+    assert observation.exact_profile is None
+
+
 def test_observation_records_blanked_screens_without_changing_its_key(
     tmp_path: Path,
 ) -> None:

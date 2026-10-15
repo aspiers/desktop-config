@@ -1,0 +1,12 @@
+Screen 0: minimum 320 x 200, current 6720 x 2160, maximum 16384 x 16384
+eDP connected primary 2880x1920+0+0 (normal left inverted right x axis y axis) 285mm x 190mm
+	CONNECTOR_ID: 438
+   2880x1920    120.00*+  60.00 +
+   1920x1080    120.00
+DisplayPort-0 disconnected (normal left inverted right x axis y axis)
+	CONNECTOR_ID: 446
+DisplayPort-1 disconnected 3840x2160+2880+0 (normal left inverted right x axis y axis) 0mm x 0mm
+	CONNECTOR_ID: 453
+  3840x2160 (0x5c) 533.250MHz +HSync -VSync *current
+        h: width  3840 start 3888 end 3920 total 4000 skew    0 clock 133.31KHz
+        v: height 2160 start 2163 end 2168 total 2222           clock  60.00Hz

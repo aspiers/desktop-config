@@ -542,7 +542,10 @@ def _derive_facts(
             x_connected,
         )
     current = autorandr.current_profiles
-    if not current and len(eligible) == 1:
+    # A CRTC still held by an unplugged output is part of the live layout,
+    # so no profile is current until the controller applies one (dc-5seo).
+    retained_crtc = any(item.retained_crtc for item in xrandr.outputs)
+    if not current and len(eligible) == 1 and not retained_crtc:
         target_match = eligible[0]
         if _geometry_matches_saved_config(
             _profile_by_name(profiles, target_match.profile),

@@ -1,0 +1,21 @@
+{
+  "sysfs": [
+    {
+      "kernel_name": "card1-eDP-1",
+      "connector_id": 438,
+      "edid_from": "autorandr/commands/laptop.fingerprint",
+      "fingerprint_output": "eDP"
+    }
+  ],
+  "commands": {
+    "xrandr --query": "xrandr/stale-crtc.query",
+    "xrandr --props": "xrandr/stale-crtc.props",
+    "autorandr --match-edid --fingerprint": "autorandr/commands/laptop.fingerprint",
+    "autorandr --match-edid --detected": "snapshots/stale-crtc.detected",
+    "autorandr --match-edid --current": "autorandr/commands/empty.out"
+  },
+  "profiles": [
+    "celtic",
+    "celtic+Samsung-Odyssey-G75F"
+  ]
+}

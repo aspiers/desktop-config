@@ -97,6 +97,8 @@ class XrandrOutput:
     connector_id: int | None = None
     width_mm: int = 0
     height_mm: int = 0
+    # An unplugged output whose CRTC nobody has released yet (dc-5seo).
+    retained_crtc: bool = False
 
     def __post_init__(self) -> None:
         if not self.name or len(self.name) > MAX_OUTPUT_NAME_CHARS:
@@ -106,6 +108,9 @@ class XrandrOutput:
             self.geometry is not None or self.primary or self.modes
         ):
             msg = "non-connected XRandR output cannot be active, primary, or have modes"
+            raise ValueError(msg)
+        if self.retained_crtc and self.connection is XConnectionState.CONNECTED:
+            msg = "only a non-connected XRandR output can retain a CRTC"
             raise ValueError(msg)
         if (
             self.connector_id is not None
@@ -303,18 +308,15 @@ def parse_xrandr_query(  # noqa: C901, PLR0912, PLR0915
                 )
                 primary = re.search(r"(?<!\S)primary(?!\S)", rest) is not None
                 width_mm, height_mm = _parse_physical_size(rest, line_number, collector)
+                retained_crtc = False
                 if connection is not XConnectionState.CONNECTED:
-                    # X leaves the primary pointer on an unplugged output until a
-                    # client names another, so a stale flag is not torn evidence;
-                    # rejecting it froze the controller for good (dc-96jy).
+                    # X keeps an unplugged output's primary flag and CRTC until a
+                    # client releases them, so neither is torn evidence; rejecting
+                    # them froze the controller (dc-96jy, dc-5seo).  The retained
+                    # CRTC is kept as a fact so the layout is not taken as applied.
+                    retained_crtc = geometry is not None
                     primary = False
-                    if geometry is not None:
-                        collector.add(
-                            ParseIssueCode.INCONSISTENT,
-                            "non-connected output carries active facts",
-                            line_number,
-                        )
-                        geometry = None
+                    geometry = None
                 outputs.append(
                     XrandrOutput(
                         name,
@@ -324,10 +326,18 @@ def parse_xrandr_query(  # noqa: C901, PLR0912, PLR0915
                         (),
                         width_mm=width_mm,
                         height_mm=height_mm,
+                        retained_crtc=retained_crtc,
                     )
                 )
                 current_index = len(outputs) - 1
                 mode_names = set()
+                continue
+            if (
+                current_index is not None
+                and outputs[current_index].connection is not XConnectionState.CONNECTED
+                and line.startswith(" ")
+            ):
+                # A retained CRTC's mode, printed in xrandr's verbose form.
                 continue
             if current_index is None or not _has_mode_indentation(line):
                 collector.add(
@@ -337,13 +347,6 @@ def parse_xrandr_query(  # noqa: C901, PLR0912, PLR0915
                 )
                 continue
             output = outputs[current_index]
-            if output.connection is not XConnectionState.CONNECTED:
-                collector.add(
-                    ParseIssueCode.INCONSISTENT,
-                    "non-connected output has an indented mode line",
-                    line_number,
-                )
-                continue
             mode = _parse_mode_line(line, line_number, collector)
             if mode is None:
                 continue
@@ -424,17 +427,9 @@ def parse_xrandr_properties(  # noqa: C901, PLR0912, PLR0915
                 primary = re.search(r"(?<!\S)primary(?!\S)", rest) is not None
                 width_mm, height_mm = _parse_physical_size(rest, line_number, collector)
                 if connection is not XConnectionState.CONNECTED:
-                    # X leaves the primary pointer on an unplugged output until a
-                    # client names another, so a stale flag is not torn evidence;
-                    # rejecting it froze the controller for good (dc-96jy).
+                    # Stale primary flag and CRTC: see parse_xrandr_query.
                     primary = False
-                    if geometry is not None:
-                        collector.add(
-                            ParseIssueCode.INCONSISTENT,
-                            "non-connected properties output carries active facts",
-                            line_number,
-                        )
-                        geometry = None
+                    geometry = None
                 outputs.append(
                     XrandrPropertyOutput(
                         name=name,

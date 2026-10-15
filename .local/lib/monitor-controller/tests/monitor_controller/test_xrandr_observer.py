@@ -458,17 +458,18 @@ def test_stale_primary_on_a_disconnected_output_is_not_torn_evidence() -> None:
     assert snapshot.primary_output is None
 
 
-def test_geometry_on_a_disconnected_output_is_still_inconsistent() -> None:
-    parsed = parse_xrandr_query(
-        TextCommandEvidence(
-            RawEvidenceSource.XRANDR_QUERY,
-            "injected:disconnected-geometry",
-            "DP-1 disconnected primary 1920x1080+0+0 "
-            "(normal left inverted right x axis y axis)\n",
-        )
-    )
+def test_retained_crtc_on_a_disconnected_output_is_not_torn_evidence() -> None:
+    # X keeps an unplugged monitor's CRTC until a client releases it, and
+    # prints its mode in verbose form.  Rejecting that made the controller
+    # depend on xfsettingsd releasing it first (dc-5seo).  The layout follows
+    # the Samsung link drop logged 2026-10-15; the mode lines use xrandr's own
+    # format strings.
+    snapshot = sample_xrandr(InjectedXrandr("stale-crtc.query", "stale-crtc.props", []))
 
-    assert not parsed.valid
-    assert {item.code for item in parsed.issues} == {ParseIssueCode.INCONSISTENT}
-    assert parsed.outputs[0].geometry is None
-    assert not parsed.outputs[0].primary
+    assert snapshot.valid
+    assert snapshot.connected_outputs == ("eDP",)
+    assert snapshot.active_outputs == ("eDP",)
+    assert snapshot.primary_output == "eDP"
+    assert [item.name for item in snapshot.outputs if item.retained_crtc] == [
+        "DisplayPort-1"
+    ]
