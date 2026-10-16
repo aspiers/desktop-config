@@ -206,8 +206,8 @@ below. Work is NOT complete until they are completed.
 
 ## Beads Solo
 
-Use the `beads-solo` skill for Beads setup and maintainer policy in this
-repository. Use the `beads` skill for the standard Beads workflow.
+Before running any `bd` command, load the `beads-solo` (policy), `beads`
+(workflow) and `beads-best-practices` (issue writing and updates) skills.
 
 This repository opts into the Beads **team-maintainer** profile.
 
