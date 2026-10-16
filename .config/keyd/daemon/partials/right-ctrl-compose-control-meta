@@ -1,0 +1,18 @@
+# right-ctrl-compose-control-meta: right Ctrl is Compose on tap and
+# Control+Meta while held.
+#
+# On the Framework 13 both Alt keys share one keyboard matrix column, so
+# holding them together (Control+Meta via laptop-left-mods and
+# right-alt-super-right) makes the EC discard any scan that also has a key
+# in matrix rows 0-1 (B, N, M, C, V, Space, Enter, Shift, ...). One held
+# key cannot ghost.
+#
+# Compose needs setxkbmap -option compose:menu; see right-ctrl-menu.
+[main]
+rightcontrol = overload(control_meta, compose)
+
+[control_meta:C-M]
+
+# prevent any lines after an include of this file from
+# being accidentally put in the control_meta layer
+[main]
