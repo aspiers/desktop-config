@@ -49,7 +49,11 @@ from monitor_controller.model import (
     WorkerTimedOut,
     WorkerUnit,
 )
-from monitor_controller.reducer import DISPLAY_ASLEEP_POLL_MS, reduce
+from monitor_controller.reducer import (
+    DISPLAY_ASLEEP_POLL_MS,
+    UNPLUG_STABILITY_MS,
+    reduce,
+)
 from monitor_controller.runtime.persistence import StateNamespace
 from monitor_controller.runtime.recovery import (
     VerifiedWorkerResult,
@@ -952,7 +956,7 @@ def test_first_unplug_sample_clears_failed_probe_before_discovery() -> None:
     assert decision.state.phase is ControllerPhase.DISCOVER_FAST
     assert decision.state.probe is None
     assert decision.state.unplug_proof is not None
-    assert decision.state.next_timer_ms == 1_002
+    assert decision.state.next_timer_ms == 2 + UNPLUG_STABILITY_MS
 
 
 def test_reducer_prunes_tombstones_and_preserves_failure_high_water() -> None:

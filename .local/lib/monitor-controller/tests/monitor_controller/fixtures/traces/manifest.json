@@ -286,7 +286,7 @@
     "explicit-unplug reducer policy"
    ],
    "scenario": "shadow_genuine_unplug",
-   "shadow_outcome": "The first and too-early second internal-only samples remain discovery; only dual sysfs/X absence spanning one second authorizes celtic verification and desktop transition work.",
+   "shadow_outcome": "The first and too-early second internal-only samples remain discovery; only dual sysfs/X absence spanning three seconds authorizes celtic verification and desktop transition work.",
    "source_evidence": {
     "ng": {
      "acceptance_limit": "comparison input only; not a live shadow trace",
@@ -303,13 +303,13 @@
     "explicit_unplug_proof"
    ],
    "timer_deadlines_ms": [
-    1000,
-    1000,
-    2000,
-    1002,
+    3000,
+    3000,
     4000,
     3002,
-    5000
+    6000,
+    5002,
+    7000
    ],
    "trace": "genuine_unplug.jsonl",
    "trace_semantics": "scenario_replay_not_production_audit"

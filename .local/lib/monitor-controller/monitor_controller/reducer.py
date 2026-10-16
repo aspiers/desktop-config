@@ -91,7 +91,7 @@ SLOW_DELAYS_MS = (5_000, 10_000, 20_000, 30_000)
 PREPARATION_STABILITY_MS: int = 2_000
 EVENT_QUIET_MS: int = 3_000
 UNKNOWN_STABILITY_MS = 10_000
-UNPLUG_STABILITY_MS = 1_000
+UNPLUG_STABILITY_MS = 3_000
 UNPLUG_REQUIRED_SAMPLES = 2
 HEALTH_POLL_MS = 60_000
 # The runtime wakes the reducer as soon as DPMS reports the screens on; this
@@ -951,7 +951,10 @@ def _classify_observation(state: State, observation: CanonicalObservation) -> De
             )
             return _schedule(
                 state,
-                max(now_ms + 1, state.unplug_proof.first_observed_at_ms + 1_000)
+                max(
+                    now_ms + 1,
+                    state.unplug_proof.first_observed_at_ms + UNPLUG_STABILITY_MS,
+                )
                 if state.unplug_proof is not None
                 else now_ms + 1,
             )

@@ -302,7 +302,9 @@ transition:
    `desktop_finalized_profile`.
 10. **Explicit unplug proof.** Internal-only becomes eligible only after both
    sysfs and X report no external output for two observations spanning at
-   least one second with no queued event.
+   least three seconds with no queued event. Three seconds outlasts the
+   Samsung G75F's DisplayPort link blips (1.3-2.5 s in 68 of 70 recorded),
+   so a blip passes without a relayout (dc-5seo).
 11. **No implicit abandonment.** Every unresolved connected external topology
     has a scheduled timer.
 12. **Preparation is subordinate and keyed.** Preparation may start only after
@@ -406,7 +408,7 @@ SLOW_DELAYS_MS        = 5000, 10000, 20000, 30000 (cap)
 PROFILE_STABILITY_MS  = 4000  (was 10000; see dc-32k2)
 EVENT_QUIET_MS        = 3000  (was 5000; see dc-32k2)
 UNKNOWN_STABILITY_MS  = 10000
-UNPLUG_STABILITY_MS   = 1000
+UNPLUG_STABILITY_MS   = 3000  (was 1000; see dc-5seo)
 HEALTH_POLL_MS        = 60000 (failure/unsupported backoff only)
 ```
 

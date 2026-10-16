@@ -5863,7 +5863,7 @@
             },
             "effects": [
               {
-                "deadline_ms": 1000,
+                "deadline_ms": 3000,
                 "type": "schedule"
               }
             ],
@@ -5879,7 +5879,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 1000,
+              "next_timer_ms": 3000,
               "phase": "discover_fast",
               "physical_epoch": 1,
               "planning_action_id": null,
@@ -5939,7 +5939,7 @@
             },
             "effects": [
               {
-                "deadline_ms": 1000,
+                "deadline_ms": 3000,
                 "type": "schedule"
               }
             ],
@@ -5955,7 +5955,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 1000,
+              "next_timer_ms": 3000,
               "phase": "discover_fast",
               "physical_epoch": 1,
               "planning_action_id": null,
@@ -5975,7 +5975,7 @@
         },
         {
           "event": {
-            "at_ms": 1000,
+            "at_ms": 3000,
             "base_identity_outputs": [],
             "complete_edid_outputs": [],
             "configuration_hashes": {
@@ -6022,7 +6022,7 @@
                 "type": "request_plan"
               },
               {
-                "deadline_ms": 2000,
+                "deadline_ms": 4000,
                 "type": "schedule"
               }
             ],
@@ -6038,7 +6038,7 @@
               "external_intent": false,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 2000,
+              "next_timer_ms": 4000,
               "phase": "verifying",
               "physical_epoch": 1,
               "planning_action_id": "plan-22222222222222222222222222222222-1",
@@ -6052,13 +6052,13 @@
               "stable_x_profile": null,
               "tombstone_count": 0,
               "transition_sequence_high_water": 1,
-              "verify_since_ms": 1000
+              "verify_since_ms": 3000
             }
           }
         },
         {
           "event": {
-            "at_ms": 1001,
+            "at_ms": 3001,
             "type": "plan_requested"
           },
           "expect": {
@@ -6086,7 +6086,7 @@
               "external_intent": false,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 2000,
+              "next_timer_ms": 4000,
               "phase": "verifying",
               "physical_epoch": 1,
               "planning_action_id": "plan-22222222222222222222222222222222-1",
@@ -6100,13 +6100,13 @@
               "stable_x_profile": null,
               "tombstone_count": 0,
               "transition_sequence_high_water": 1,
-              "verify_since_ms": 1000
+              "verify_since_ms": 3000
             }
           }
         },
         {
           "event": {
-            "at_ms": 1002,
+            "at_ms": 3002,
             "plan_hash": "plan-unplug",
             "type": "plan_completed"
           },
@@ -6128,7 +6128,7 @@
                 "type": "request_observation"
               },
               {
-                "deadline_ms": 1002,
+                "deadline_ms": 3002,
                 "type": "schedule"
               }
             ],
@@ -6144,7 +6144,7 @@
               "external_intent": false,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 1002,
+              "next_timer_ms": 3002,
               "phase": "verifying",
               "physical_epoch": 1,
               "planning_action_id": "plan-22222222222222222222222222222222-1",
@@ -6158,13 +6158,13 @@
               "stable_x_profile": null,
               "tombstone_count": 1,
               "transition_sequence_high_water": 1,
-              "verify_since_ms": 1000
+              "verify_since_ms": 3000
             }
           }
         },
         {
           "event": {
-            "at_ms": 3000,
+            "at_ms": 5000,
             "base_identity_outputs": [],
             "complete_edid_outputs": [],
             "configuration_hashes": {
@@ -6214,7 +6214,7 @@
                 "type": "prepare_desktop"
               },
               {
-                "deadline_ms": 4000,
+                "deadline_ms": 6000,
                 "type": "schedule"
               }
             ],
@@ -6230,7 +6230,7 @@
               "external_intent": false,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 4000,
+              "next_timer_ms": 6000,
               "phase": "verifying",
               "physical_epoch": 1,
               "planning_action_id": "plan-22222222222222222222222222222222-1",
@@ -6244,13 +6244,13 @@
               "stable_x_profile": null,
               "tombstone_count": 1,
               "transition_sequence_high_water": 1,
-              "verify_since_ms": 1000
+              "verify_since_ms": 3000
             }
           }
         },
         {
           "event": {
-            "at_ms": 3001,
+            "at_ms": 5001,
             "kind": "preparation",
             "type": "dispatch",
             "unit": "monitor-preparation@scenario.service"
@@ -6280,7 +6280,7 @@
               "external_intent": false,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 4000,
+              "next_timer_ms": 6000,
               "phase": "verifying",
               "physical_epoch": 1,
               "planning_action_id": "plan-22222222222222222222222222222222-1",
@@ -6294,13 +6294,13 @@
               "stable_x_profile": null,
               "tombstone_count": 1,
               "transition_sequence_high_water": 1,
-              "verify_since_ms": 1000
+              "verify_since_ms": 3000
             }
           }
         },
         {
           "event": {
-            "at_ms": 3002,
+            "at_ms": 5002,
             "exit_status": 0,
             "kind": "preparation",
             "outcome": "succeeded",
@@ -6325,7 +6325,7 @@
                 "type": "request_observation"
               },
               {
-                "deadline_ms": 3002,
+                "deadline_ms": 5002,
                 "type": "schedule"
               }
             ],
@@ -6341,7 +6341,7 @@
               "external_intent": false,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 3002,
+              "next_timer_ms": 5002,
               "phase": "verifying",
               "physical_epoch": 1,
               "planning_action_id": "plan-22222222222222222222222222222222-1",
@@ -6355,13 +6355,13 @@
               "stable_x_profile": null,
               "tombstone_count": 1,
               "transition_sequence_high_water": 1,
-              "verify_since_ms": 1000
+              "verify_since_ms": 3000
             }
           }
         },
         {
           "event": {
-            "at_ms": 4000,
+            "at_ms": 6000,
             "base_identity_outputs": [],
             "complete_edid_outputs": [],
             "configuration_hashes": {
@@ -6401,7 +6401,7 @@
             },
             "effects": [
               {
-                "deadline_ms": 5000,
+                "deadline_ms": 7000,
                 "type": "schedule"
               }
             ],
@@ -6417,7 +6417,7 @@
               "external_intent": false,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 5000,
+              "next_timer_ms": 7000,
               "phase": "verifying",
               "physical_epoch": 1,
               "planning_action_id": "plan-22222222222222222222222222222222-1",
@@ -6431,13 +6431,13 @@
               "stable_x_profile": null,
               "tombstone_count": 2,
               "transition_sequence_high_water": 1,
-              "verify_since_ms": 1000
+              "verify_since_ms": 3000
             }
           }
         },
         {
           "event": {
-            "at_ms": 11000,
+            "at_ms": 13000,
             "base_identity_outputs": [],
             "complete_edid_outputs": [],
             "configuration_hashes": {
@@ -6499,7 +6499,7 @@
               "external_intent": false,
               "finalization_action_id": "finalization-22222222222222222222222222222222-3",
               "finalization_lifecycle": "admitted",
-              "next_timer_ms": 11000,
+              "next_timer_ms": 13000,
               "phase": "finalize_pending",
               "physical_epoch": 1,
               "planning_action_id": "plan-22222222222222222222222222222222-1",
@@ -6513,7 +6513,7 @@
               "stable_x_profile": null,
               "tombstone_count": 2,
               "transition_sequence_high_water": 1,
-              "verify_since_ms": 1000
+              "verify_since_ms": 3000
             }
           }
         }
@@ -6575,7 +6575,7 @@
             },
             "effects": [
               {
-                "deadline_ms": 1000,
+                "deadline_ms": 3000,
                 "type": "schedule"
               }
             ],
@@ -6591,7 +6591,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 1000,
+              "next_timer_ms": 3000,
               "phase": "discover_fast",
               "physical_epoch": 1,
               "planning_action_id": null,
@@ -6709,7 +6709,7 @@
             },
             "effects": [
               {
-                "deadline_ms": 2000,
+                "deadline_ms": 4000,
                 "type": "schedule"
               }
             ],
@@ -6725,7 +6725,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 2000,
+              "next_timer_ms": 4000,
               "phase": "discover_fast",
               "physical_epoch": 1,
               "planning_action_id": null,
@@ -6785,7 +6785,7 @@
             },
             "effects": [
               {
-                "deadline_ms": 2000,
+                "deadline_ms": 4000,
                 "type": "schedule"
               }
             ],
@@ -6801,7 +6801,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 2000,
+              "next_timer_ms": 4000,
               "phase": "discover_fast",
               "physical_epoch": 1,
               "planning_action_id": null,
@@ -6821,7 +6821,7 @@
         },
         {
           "event": {
-            "at_ms": 2000,
+            "at_ms": 4000,
             "base_identity_outputs": [],
             "complete_edid_outputs": [],
             "configuration_hashes": {
@@ -6868,7 +6868,7 @@
                 "type": "request_plan"
               },
               {
-                "deadline_ms": 3000,
+                "deadline_ms": 5000,
                 "type": "schedule"
               }
             ],
@@ -6884,7 +6884,7 @@
               "external_intent": false,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 3000,
+              "next_timer_ms": 5000,
               "phase": "verifying",
               "physical_epoch": 1,
               "planning_action_id": "plan-22222222222222222222222222222222-1",
@@ -6898,7 +6898,7 @@
               "stable_x_profile": null,
               "tombstone_count": 0,
               "transition_sequence_high_water": 1,
-              "verify_since_ms": 2000
+              "verify_since_ms": 4000
             }
           }
         }
@@ -14867,7 +14867,7 @@
                 "type": "discard_plan"
               },
               {
-                "deadline_ms": 12000,
+                "deadline_ms": 14000,
                 "type": "schedule"
               }
             ],
@@ -14883,7 +14883,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 12000,
+              "next_timer_ms": 14000,
               "phase": "discover_fast",
               "physical_epoch": 2,
               "planning_action_id": null,
@@ -14903,7 +14903,7 @@
         },
         {
           "event": {
-            "at_ms": 12000,
+            "at_ms": 14000,
             "base_identity_outputs": [],
             "complete_edid_outputs": [],
             "configuration_hashes": {
@@ -14943,7 +14943,7 @@
             },
             "effects": [
               {
-                "deadline_ms": 13000,
+                "deadline_ms": 15000,
                 "type": "schedule"
               }
             ],
@@ -14959,7 +14959,7 @@
               "external_intent": false,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 13000,
+              "next_timer_ms": 15000,
               "phase": "verifying",
               "physical_epoch": 2,
               "planning_action_id": null,
@@ -14973,13 +14973,13 @@
               "stable_x_profile": null,
               "tombstone_count": 3,
               "transition_sequence_high_water": 1,
-              "verify_since_ms": 12000
+              "verify_since_ms": 14000
             }
           }
         },
         {
           "event": {
-            "at_ms": 22000,
+            "at_ms": 24000,
             "base_identity_outputs": [],
             "complete_edid_outputs": [],
             "configuration_hashes": {
@@ -15044,13 +15044,13 @@
               "stable_x_profile": "celtic",
               "tombstone_count": 3,
               "transition_sequence_high_water": 1,
-              "verify_since_ms": 12000
+              "verify_since_ms": 14000
             }
           }
         },
         {
           "event": {
-            "at_ms": 23000,
+            "at_ms": 25000,
             "base_identity_outputs": [
               "DP-1"
             ],
@@ -15103,7 +15103,7 @@
                 "type": "request_plan"
               },
               {
-                "deadline_ms": 24000,
+                "deadline_ms": 26000,
                 "type": "schedule"
               }
             ],
@@ -15119,7 +15119,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 24000,
+              "next_timer_ms": 26000,
               "phase": "verifying",
               "physical_epoch": 3,
               "planning_action_id": "plan-22222222222222222222222222222222-4",
@@ -15133,7 +15133,7 @@
               "stable_x_profile": null,
               "tombstone_count": 3,
               "transition_sequence_high_water": 2,
-              "verify_since_ms": 23000
+              "verify_since_ms": 25000
             }
           }
         }
@@ -23507,7 +23507,7 @@
             },
             "effects": [
               {
-                "deadline_ms": 1001,
+                "deadline_ms": 3001,
                 "type": "schedule"
               }
             ],
@@ -23523,7 +23523,7 @@
               "external_intent": true,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 1001,
+              "next_timer_ms": 3001,
               "phase": "discover_fast",
               "physical_epoch": 1,
               "planning_action_id": null,
@@ -23543,7 +23543,7 @@
         },
         {
           "event": {
-            "at_ms": 1001,
+            "at_ms": 3001,
             "base_identity_outputs": [],
             "complete_edid_outputs": [],
             "configuration_hashes": {
@@ -23583,7 +23583,7 @@
             },
             "effects": [
               {
-                "deadline_ms": 2001,
+                "deadline_ms": 4001,
                 "type": "schedule"
               }
             ],
@@ -23599,7 +23599,7 @@
               "external_intent": false,
               "finalization_action_id": null,
               "finalization_lifecycle": null,
-              "next_timer_ms": 2001,
+              "next_timer_ms": 4001,
               "phase": "verifying",
               "physical_epoch": 1,
               "planning_action_id": null,
@@ -23613,7 +23613,7 @@
               "stable_x_profile": null,
               "tombstone_count": 0,
               "transition_sequence_high_water": 0,
-              "verify_since_ms": 1001
+              "verify_since_ms": 3001
             }
           }
         }
