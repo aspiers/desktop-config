@@ -124,6 +124,11 @@
   [Dimensions]	{96% 89%}
   [Position]	(UPPERLEFT)	{0 0}
 [end]
+# Chrome app (PWA) windows: Octobox (abmm...) and Bead Me Up, Scotty (ljll...).
+# Must precede the (head=2) rule, which would otherwise make them sticky.
+[app] (name=crx_(abmmfmbebheickoidomeknhdimhaeand|ljlljnognehhlkgfnimnmobbidakmlld))
+  [Head]	{1}
+[end]
 [app] (head=2)
   [Sticky]	{yes}
 [end]

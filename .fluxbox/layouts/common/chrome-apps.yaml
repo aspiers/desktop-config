@@ -1,0 +1,6 @@
+# Chrome app (PWA) windows carry the app id in WM_CLASS name rather than
+# google-chrome, so the browser rules never match them.
+# abmm... is Octobox; ljll... is Bead Me Up, Scotty.
+- - (Name=crx_(abmmfmbebheickoidomeknhdimhaeand|ljlljnognehhlkgfnimnmobbidakmlld))
+  - MacroCmd {<s_primary_SetHead>}
+  - <unstick>

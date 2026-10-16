@@ -17,6 +17,9 @@ windows:
 
   <INCLUDE common/orca>
 
+
+  <INCLUDE common/chrome-apps>
+
   <INCLUDE common/toucan>
 
   <INCLUDE common/side-projects>

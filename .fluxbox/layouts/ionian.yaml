@@ -13,6 +13,9 @@ windows:
 
   <INCLUDE common/orca>
 
+
+  <INCLUDE common/chrome-apps>
+
   <INCLUDE common/terminal-windows>
 
   <INCLUDE common/top-term-windows-primary>
