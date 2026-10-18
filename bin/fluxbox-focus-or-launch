@@ -176,7 +176,9 @@ hide_window () {
     local fluxbox_pattern
     fluxbox_pattern=$(get_fluxbox_pattern)
     echo "Hiding window matching $fluxbox_pattern..."
-    cmd="MacroCmd {If {Matches (Stuck=yes)} {Stick}} {SendToWorkspace 6} {Minimize}"
+    # Minimize before leaving the workspace: the other order leaves Chrome
+    # apps without keyboard focus in the page when shown again.
+    cmd="MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Minimize} {SendToWorkspace 6}"
     fluxbox-remote "ForEach {$cmd} {Matches $fluxbox_pattern}"
 }
 
