@@ -138,6 +138,22 @@ def problems(window: int, state: WindowState | None, expected: Expectation,
     return found
 
 
+def bring_onto_head(windows: list[int], head: int,
+                    heads: list[tuple[int, int, int, int]]) -> None:
+    """Move windows whose centre is on no head to the given head's corner.
+
+    Fluxbox's SetHead keeps a window's offset from its nearest head, so a
+    window left where a removed monitor used to be stays off-screen
+    (dc-359t)."""
+    states = window_states()
+    x, y = heads[head - 1][:2]
+    for window in windows:
+        state = states.get(window)
+        if state and head_of(state, heads) is None:
+            subprocess.call(['wmctrl', '-i', '-r', hex(window),
+                             '-e', '0,%d,%d,-1,-1' % (x, y)])
+
+
 def settled_states(windows: list[int]) -> dict[int, WindowState]:
     """Window states once the given windows stop changing, or at the timeout."""
     deadline = time.monotonic() + SETTLE_TIMEOUT_SECONDS
@@ -156,6 +172,8 @@ def apply_rule(matcher: str, map_command: str, commands: list[str],
     # Ask before applying: the rule may move windows out of its own pattern.
     windows = fluxbox_remote.matching_windows(matcher)
     expected = expectation(commands)
+    if windows and expected.head is not None and expected.head <= len(heads):
+        bring_onto_head(windows, expected.head, heads)
     fluxbox_remote.send(map_command)
     if not windows:
         return RuleOutcome(matcher, 0, 0, ())

@@ -162,4 +162,15 @@ finally:
     snapper.join()
 assert outcome.repairs == 0 and not outcome.problems, outcome
 print('ok - a window that snaps its own size after a move is not a repair')
+
+# A window left where a removed monitor used to be is on no head, and a
+# relative SetHead cannot bring it back (dc-359t).
+subprocess.check_call(['wmctrl', '-i', '-r', hex(w1), '-e', '0,2000,100,-1,-1'])
+time.sleep(0.3)
+assert wp.head_of(wp.window_states()[w1], heads) is None
+rule = 'Map {MacroCmd {SetHead 1} {SendToWorkspace 2}} {Matches (Name=w1)}'
+outcome = wp.apply_rule('(Name=w1)', rule, ['MacroCmd {SetHead 1} {SendToWorkspace 2}'], heads)
+assert outcome.repairs == 0 and not outcome.problems, outcome
+assert wp.head_of(wp.window_states()[w1], heads) == 1
+print('ok - a window off every head is brought onto its rule\'s head')
 PY
