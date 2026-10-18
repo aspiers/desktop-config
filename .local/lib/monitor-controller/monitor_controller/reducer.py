@@ -2093,7 +2093,18 @@ def _cancellation_acknowledged(
             )
         else:
             return _no_op(state)
-        return _schedule(state, event.metadata.processed_at_ms + HEALTH_POLL_MS)
+        if (
+            action.terminal_after_stop is not None
+            or action.action_id.kind is ActionKind.PREPARATION
+        ):
+            return _schedule(state, event.metadata.processed_at_ms + HEALTH_POLL_MS)
+        # Not a timeout, so the stop came from a topology change: look at the
+        # new topology now rather than after a health poll (dc-ihpk).
+        return _schedule(
+            state,
+            event.metadata.processed_at_ms,
+            RequestObservation(WakeReason.WORKER_COMPLETED),
+        )
 
     effects: tuple[Effect, ...] = ()
     if action.action_id.kind is ActionKind.PROBE:

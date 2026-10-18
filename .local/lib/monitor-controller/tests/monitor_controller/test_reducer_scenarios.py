@@ -51,6 +51,7 @@ from monitor_controller.model import (
 )
 from monitor_controller.reducer import (
     DISPLAY_ASLEEP_POLL_MS,
+    HEALTH_POLL_MS,
     UNPLUG_STABILITY_MS,
     reduce,
 )
@@ -815,6 +816,50 @@ def test_late_worker_completion_keeps_stopping_exclusion_and_terminal_outcome(
     }[kind]
     assert terminal is not None
     assert terminal.lifecycle is ActionLifecycle.TIMED_OUT
+
+
+def test_failure_of_finalizer_stopped_by_topology_change_reobserves_at_once() -> None:
+    # 2026-10-16 15:13: a dock arrived mid-finalize, the stopped finalizer
+    # exited non-zero, and the new dock waited a whole health poll (dc-ihpk).
+    state = _scenario_state(
+        "test_topology_change_stops_running_finalizer",
+        ControllerPhase.FINALIZE_STOPPING,
+        ActionLifecycle.STOPPING,
+    )
+    action = state.finalization
+    observation = state.latest_observation
+    assert action is not None
+    assert observation is not None
+    assert observation.observation_key != action.observation_key
+
+    acknowledged = reduce(
+        state,
+        WorkerCancellationAcknowledged(
+            EventMetadata(11_002, state.boot_id),
+            action.action_id,
+            ActionLifecycle.FAILED,
+            1,
+        ),
+    )
+    assert acknowledged.state.phase is ControllerPhase.FINALIZE_FAILED
+    assert acknowledged.state.next_timer_ms == 11_002
+    assert any(isinstance(e, RequestObservation) for e in acknowledged.effects)
+
+    reobserved = reduce(
+        acknowledged.state,
+        ObservationCompleted(
+            EventMetadata(11_003, state.boot_id),
+            replace(
+                observation,
+                observed_at_ms=11_003,
+                observation_generation=ObservationGeneration(
+                    observation.observation_generation.value + 1
+                ),
+            ),
+        ),
+    )
+    assert reobserved.state.phase is not ControllerPhase.FINALIZE_FAILED
+    assert reobserved.state.next_timer_ms != 11_003 + HEALTH_POLL_MS
 
 
 def test_late_finalizer_success_cannot_supersede_timeout_or_commit_profile() -> None:
