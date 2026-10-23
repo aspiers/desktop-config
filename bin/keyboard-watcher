@@ -8,7 +8,9 @@
 # Reads udevadm monitor in property mode and only re-runs keyboard setup for
 # physical keyboard parent devices. Virtual devices include Bluetooth
 # reconnects and input-remapper interfaces; neither requires reapplying the
-# global X keymap. Ignoring event* children also turns one physical attach
+# global X keymap. keyd's virtual keyboard is the exception: X gives each
+# new device the server's default keymap, so restarting keyd loses it.
+# Ignoring event* children also turns one physical attach
 # burst into one setup run. Mouse interfaces remain excluded because some
 # advertise consumer-control keys.
 
@@ -32,12 +34,13 @@ $SETUP
 udevadm monitor -u -p -s input | tee "$log" | awk '
     /^$/ {
         if (action != "" && kbd && !mouse &&
-            devpath !~ "^/devices/virtual/" &&
+            (devpath !~ "^/devices/virtual/" ||
+             name == "\"keyd virtual keyboard\"") &&
             devpath !~ "/event[0-9]+$") {
             print action, devpath
             fflush()
         }
-        action=""; devpath=""; kbd=0; mouse=0
+        action=""; devpath=""; name=""; kbd=0; mouse=0
         next
     }
     /^UDEV  \[/ {
@@ -48,6 +51,7 @@ udevadm monitor -u -p -s input | tee "$log" | awk '
     }
     /^ACTION=/      { sub("ACTION=", "", $0); action=$0; next }
     /^DEVPATH=/     { sub("DEVPATH=", "", $0); devpath=$0; next }
+    /^NAME=/        { sub("NAME=", "", $0); name=$0; next }
     /^ID_INPUT_KEYBOARD=1/ { kbd=1; next }
     /^ID_INPUT_MOUSE=1/    { mouse=1; next }
 ' | while read -r action devpath; do
