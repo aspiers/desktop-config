@@ -4,7 +4,7 @@ app:
   log_level: "info" # debug, info, warn, error
   skip_llm_cleanup: true
   capture_dir: "/home/adam/.sussurro/captures" # temporary: sussurro-916 diagnosis
-  dictionary: ["dolt","sshfs","autorandr","bluetuith","journald","systemd","skilletto","agentsview","Claude","pi","herdr","Xero","omarchy","symlink","OAuth","ksnip","sussurro","octobox","machete","git-machete","worktree","tailscale","Seestar","tmux","CORC","Celo"]
+  dictionary: ["dolt","sshfs","autorandr","bluetuith","journald","systemd","skilletto","agentsview","Claude","pi","herdr","Xero","omarchy","symlink","OAuth","ksnip","sussurro","octobox","machete","git-machete","worktree","tailscale","Seestar","tmux","CORC","Celo","Sepolia","chord","daemon","Toucan","Spiers","ChatGPT"]
 
 audio:
   sample_rate: 16000
