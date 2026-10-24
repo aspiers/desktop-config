@@ -28,6 +28,7 @@ Options:
   -r, --role     Match WINDOW-PATTERN against role rather than title
   -t, --toggle   If matching window is focused, minimize it; otherwise focus/launch
   -f, --focus    Focus the window after launching (if launched)
+  -n, --no-stick In toggle mode, don't make the shown window sticky
 
 WINDOW-PATTERN is a regexp matching the window title, class, or role.
 LAUNCH-CMD is a command for launching the program if it's not found.
@@ -62,6 +63,10 @@ main () {
                 ;;
             -f|--focus)
                 focus_after_launch=y
+                shift
+                ;;
+            -n|--no-stick)
+                no_stick=y
                 shift
                 ;;
             *)
@@ -168,7 +173,8 @@ fetch_window () {
     fluxbox_pattern=$(get_fluxbox_pattern)
     current_desktop=$(<"$DESKTOP_FILE")
     echo "Fetching window matching $fluxbox_pattern to current workspace..."
-    cmd="MacroCmd {TakeToWorkspace $(( current_desktop + 1 ))} {If {Matches (Stuck=no)} {Stick}}"
+    cmd="TakeToWorkspace $(( current_desktop + 1 ))"
+    [ -n "$no_stick" ] || cmd="MacroCmd {$cmd} {If {Matches (Stuck=no)} {Stick}}"
     fluxbox-remote "ForEach {$cmd} {Matches $fluxbox_pattern}"
 }
 
