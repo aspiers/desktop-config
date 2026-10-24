@@ -27,12 +27,15 @@ windows:
 
   <INCLUDE common/side-projects>
 
-  - - (Name=brave-browser|google-chrome|chromium) (Title=.*(personal$|secondary|Panther))
-    - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 5}
+  - match: (Name=brave-browser|google-chrome|chromium) (Title=.*(personal$|secondary|Panther))
+    screen: primary
+    workspace: 5
 
-  - - (Name=brave-browser|google-chrome|chromium)
-    - MacroCmd {<s_primary_SetHead>} {MoveTo <s_primary_single_left> <s_primary_single_top>} {ResizeTo <s_primary_single_width> <s_primary_single_height>}
-    - <unstick>
+  - match: (Name=brave-browser|google-chrome|chromium)
+    screen: primary
+    position: <s_primary_single_left> <s_primary_single_top>
+    size: <s_primary_single_width> <s_primary_single_height>
+    sticky: no
 
   <INCLUDE common/firefox>
 
@@ -46,12 +49,18 @@ windows:
 
   <INCLUDE common/lm-studio>
 
-  - - (Class=pavucontrol)
-    - <unstick>
-    - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 6} {MoveTo 42% 1%} {ResizeTo 32% 35%}
+  - match: (Class=pavucontrol)
+    screen: primary
+    workspace: 6
+    position: 42% 1%
+    size: 32% 35%
+    sticky: no
 
-  - - (Class=Blueman-manager)
-    - <unstick>
-    - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 6} {MoveTo 0% 0%} {ResizeTo 20% 52%}
+  - match: (Class=Blueman-manager)
+    screen: primary
+    workspace: 6
+    position: 0% 0%
+    size: 20% 52%
+    sticky: no
 
   <INCLUDE common/chrysalis-single>

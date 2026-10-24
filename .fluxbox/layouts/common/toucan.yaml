@@ -1,2 +1,3 @@
-- - (Name=brave-browser|google-chrome|chromium) (Title=.*Toucan)
-  - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 2}
+- match: (Name=brave-browser|google-chrome|chromium) (Title=.*Toucan)
+  screen: primary
+  workspace: 2

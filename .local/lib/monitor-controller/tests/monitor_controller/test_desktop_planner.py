@@ -1179,59 +1179,59 @@ def test_layout_parser_rejects_missing_and_cyclic_includes() -> None:
     [
         _joined_bytes(
             b"unknown: 1\nscreens:\n  -\n    name: one\n    head: 1\n",
-            b"windows:\n  - - (Name=x)\n    - Raise\n",
+            b"windows:\n  - match: (Name=x)\n    relayout_command: Raise\n",
         ),
         _joined_bytes(
             b"screens:\n  -\n    name: one\n    head: 1\n    mystery: value\n",
-            b"windows:\n  - - (Name=x)\n    - Raise\n",
+            b"windows:\n  - match: (Name=x)\n    relayout_command: Raise\n",
         ),
         _joined_bytes(
             b"screens:\n  -\n    name: one\n    head: 1\n",
-            b"windows:\n    - Raise\n",
+            b"windows:\n    relayout_command: Raise\n",
         ),
         _joined_bytes(
             b"screens:\n  -\n    name: one\n    head: *MISSING\n",
-            b"windows:\n  - - (Name=x)\n    - Raise\n",
+            b"windows:\n  - match: (Name=x)\n    relayout_command: Raise\n",
         ),
         _joined_bytes(
             b"screens:\n -\n   name: one\n   head: 1\n",
-            b"windows:\n  - - (Name=x)\n    - Raise\n",
+            b"windows:\n  - match: (Name=x)\n    relayout_command: Raise\n",
         ),
         _joined_bytes(
             b"screens:\n  -\n    name: one\n    head: 1\n",
-            b"windows:\n  - - *matcher\n    - Raise\n",
+            b"windows:\n  - match: *matcher\n    relayout_command: Raise\n",
         ),
         _joined_bytes(
             b"screens:\n  -\n    name: one\n    head: 1\n",
-            b"windows:\n  - - (Name=x)\n      - Raise\n",
+            b"windows:\n  - match: (Name=x)\n      relayout_command: Raise\n",
         ),
         _joined_bytes(
             b"---\nscreens:\n  -\n    name: one\n    head: 1\n",
-            b"windows:\n  - - (Name=x)\n    - Raise\n",
+            b"windows:\n  - match: (Name=x)\n    relayout_command: Raise\n",
         ),
         _joined_bytes(
             b"screens:\n  -\n    name: 'one'\n    head: 1\n",
-            b"windows:\n  - - (Name=x)\n    - Raise\n",
+            b"windows:\n  - match: (Name=x)\n    relayout_command: Raise\n",
         ),
         _joined_bytes(
             b"screens:\n  -\n    name: one\n    head: {value: 1}\n",
-            b"windows:\n  - - (Name=x)\n    - Raise\n",
+            b"windows:\n  - match: (Name=x)\n    relayout_command: Raise\n",
         ),
         _joined_bytes(
             b"screens:\n  -\n    name: one\n    head: !integer 1\n",
-            b"windows:\n  - - (Name=x)\n    - Raise\n",
+            b"windows:\n  - match: (Name=x)\n    relayout_command: Raise\n",
         ),
         _joined_bytes(
             b"screens:\n  -\n    name: one\n    head: 1\n",
-            b"windows:\n  - - (Name=x)\n    - Raise: now\n",
+            b"windows:\n  - match: (Name=x)\n    relayout_command: Raise: now\n",
         ),
         _joined_bytes(
             b"screens:\r\n  -\r\n    name: one\r\n    head: 1\r\n",
-            b"windows:\r\n  - - (Name=x)\r\n    - Raise\r\n",
+            b"windows:\r\n  - match: (Name=x)\r\n    relayout_command: Raise\r\n",
         ),
         _joined_bytes(
             b"screens:\n\t-\n    name: one\n    head: 1\n",
-            b"windows:\n  - - (Name=x)\n    - Raise\n",
+            b"windows:\n  - match: (Name=x)\n    relayout_command: Raise\n",
         ),
         b"\xffscreens:\n",
     ],
@@ -1244,7 +1244,7 @@ def test_layout_parser_rejects_malformed_structural_corpus(payload: bytes) -> No
 def test_layout_parser_enforces_file_depth_and_resolved_output_budgets() -> None:
     minimal = (
         b"screens:\n  -\n    name: one\n    head: 1\n"
-        b"windows:\n  - - (Name=x)\n    - Raise\n"
+        b"windows:\n  - match: (Name=x)\n    relayout_command: Raise\n"
     )
     too_many = tuple(
         (f".fluxbox/layouts/{index}.yaml", minimal)
@@ -1283,7 +1283,7 @@ def test_layout_parser_enforces_file_depth_and_resolved_output_budgets() -> None
     deep_files.append(
         (
             f".fluxbox/layouts/depth/{MAX_INCLUDE_DEPTH + 1}.yaml",
-            b"- - (Name=x)\n  - Raise\n",
+            b"- match: (Name=x)\n  relayout_command: Raise\n",
         )
     )
     with pytest.raises(LayoutPlanningError, match="depth"):
@@ -1291,7 +1291,8 @@ def test_layout_parser_enforces_file_depth_and_resolved_output_budgets() -> None
 
     long_command = b"R" * 12_000
     window_group = b"".join(
-        b"- - (Name=x)\n  - " + long_command + b"\n" for _unused in range(20)
+        b"- match: (Name=x)\n  relayout_command: " + long_command + b"\n"
+        for _unused in range(20)
     )
     main = b"screens:\n  -\n    name: one\n    head: 1\nwindows:\n" + b"".join(
         f"  <INCLUDE large/{index}>\n".encode() for index in range(5)
@@ -1340,7 +1341,7 @@ def test_layout_include_dag_is_charged_during_expansion() -> None:
     files.append(
         (
             ".fluxbox/layouts/common/15.yaml",
-            b"- - (Name=x)\n  - Raise\n",
+            b"- match: (Name=x)\n  relayout_command: Raise\n",
         )
     )
     with pytest.raises(LayoutPlanningError, match="line limit"):

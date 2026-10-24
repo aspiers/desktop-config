@@ -54,26 +54,32 @@ windows:
 
   <INCLUDE common/side-projects>
 
-  - - (Name=brave-browser|google-chrome|chromium) (Title=.*(personal$|Panther))
-    - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 5}
+  - match: (Name=brave-browser|google-chrome|chromium) (Title=.*(personal$|Panther))
+    screen: primary
+    workspace: 5
 
   # Windows that lived on the RHS Dell in celtic+BenQ+Dell go into the full
-  # third column here (sticky), via the <place_RHS> directive.  This replaces
-  # the secondary-title rule from common/browser-multi (inlined below) which
-  # would otherwise send these to the celtic laptop head and clobber col3.
-  - - (Name=brave-browser|google-chrome|chromium) (Title=.*(secondary|gather\.town|.* \| Gather.*))
-    - <place_RHS>
+  # third column here (sticky).  This replaces the secondary-title rule from
+  # common/browser-multi (inlined below) which would otherwise send these to
+  # the celtic laptop head and clobber col3.
+  - match: (Name=brave-browser|google-chrome|chromium) (Title=.*(secondary|gather\.town|.* \| Gather.*))
+    screen: primary
+    position: <s_primary_col3_left> <s_primary_row1_top>
+    size: <s_primary_col3_width> <s_primary_active_height>
+    sticky: yes
 
   # Head-1 rules must exclude the col3 (secondary-titled) browsers, else they
   # override the col3 geometry and unstick them - col3 lives on head 1.
-  - - (Name=brave-browser|google-chrome|chromium) (Head=1) (Title!=.*(secondary|gather\.town|.* \| Gather.*))
-    - MacroCmd {MoveTo <s_primary_single_left> <s_primary_single_top>} {ResizeTo <s_primary_single_width> <s_primary_single_height>}
+  - match: (Name=brave-browser|google-chrome|chromium) (Head=1) (Title!=.*(secondary|gather\.town|.* \| Gather.*))
+    position: <s_primary_single_left> <s_primary_single_top>
+    size: <s_primary_single_width> <s_primary_single_height>
 
-  - - (Name=brave-browser|google-chrome|chromium) (Head=2)
-    - MacroCmd {MoveTo <s_secondary_single_left> <s_secondary_single_top>} {ResizeTo <s_secondary_single_width> <s_secondary_single_height>}
+  - match: (Name=brave-browser|google-chrome|chromium) (Head=2)
+    position: <s_secondary_single_left> <s_secondary_single_top>
+    size: <s_secondary_single_width> <s_secondary_single_height>
 
-  - - (Name=brave-browser|google-chrome|chromium) (Head=<s_primary_head>) (Title!=.*(secondary|gather\.town|.* \| Gather.*))
-    - <unstick>
+  - match: (Name=brave-browser|google-chrome|chromium) (Head=<s_primary_head>) (Title!=.*(secondary|gather\.town|.* \| Gather.*))
+    sticky: no
 
   <INCLUDE common/firefox>
 

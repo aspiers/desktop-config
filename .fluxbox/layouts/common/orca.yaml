@@ -1,2 +1,4 @@
-- - (Name=orca)
-  - MacroCmd {<s_primary_SetHead>} {MoveTo <s_primary_active_left> <s_primary_active_top>} {ResizeTo <s_primary_active_width> <s_primary_active_height>}
+- match: (Name=orca)
+  screen: primary
+  position: <s_primary_active_left> <s_primary_active_top>
+  size: <s_primary_active_width> <s_primary_active_height>

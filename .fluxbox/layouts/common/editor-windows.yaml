@@ -1,6 +1,10 @@
-- - (name=emacs) (title!=Ediff)
-  - MacroCmd {<s_primary_SetHead>} {MoveTo <s_primary_col2_left> <s_primary_row1_top>} {ResizeTo <s_primary_col2_width> <s_primary_active_height>}
+- match: (name=emacs) (title!=Ediff)
+  screen: primary
+  position: <s_primary_col2_left> <s_primary_row1_top>
+  size: <s_primary_col2_width> <s_primary_active_height>
 
-- - (class=Cursor|Code)
-  - MacroCmd {<s_primary_SetHead>} {MoveTo <s_primary_full_left> <s_primary_full_top>} {ResizeTo <s_primary_full_width> <s_primary_full_height>}
-  - <unstick>
+- match: (class=Cursor|Code)
+  screen: primary
+  position: <s_primary_full_left> <s_primary_full_top>
+  size: <s_primary_full_width> <s_primary_full_height>
+  sticky: no

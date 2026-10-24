@@ -3,6 +3,9 @@
 # "Lm-studio") 10x10 and 200x200 windows.  Matching the hyphenated name would
 # therefore move the helpers and leave the actual GUI where it was, so match
 # the spaced class instead.
-- - (Class=LM Studio)
-  - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 3} {MoveTo <s_primary_col1_left> <s_primary_row1_top>} {ResizeTo <s_primary_active_width> <s_primary_active_height>}
-  - <unstick>
+- match: (Class=LM Studio)
+  screen: primary
+  workspace: 3
+  position: <s_primary_col1_left> <s_primary_row1_top>
+  size: <s_primary_active_width> <s_primary_active_height>
+  sticky: no

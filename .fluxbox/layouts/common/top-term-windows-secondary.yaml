@@ -1,14 +1,12 @@
-# ResizeTo must precede an anchored MoveTo; see top-term-windows-primary.yaml.
-#
 # lnav-system is split out of the shared monitoring-tools rule below and left
-# non-sticky, so that fluxbox-focus-or-launch --toggle owns its workspace
+# alone, so that fluxbox-focus-or-launch --toggle owns its workspace
 # placement.  See top-term-windows-primary.yaml for the full rationale.
-- - (Name=top-term) (Title=lnav-system)
-  - MacroCmd {<s_secondary_SetHead>} {ResizeTo 90% 90%} {MoveTo 0 0 Center}
-  - Sticky {no}
-  - Iconhidden {no}
+- match: (Name=top-term) (Title=lnav-system)
+  screen: secondary
+  position: 0 0 Center
+  size: 90% 90%
 
-- - (Name=top-term) (Title=btop|htop|sudo (powertop|nethogs|iotop|iftop)|nvtop|amdgpu_top)
-  - MacroCmd {<s_secondary_SetHead>} {ResizeTo 90% 90%} {MoveTo 0 0 Center}
-  - Sticky {yes}
-  - Iconhidden {no}
+- match: (Name=top-term) (Title=btop|htop|sudo (powertop|nethogs|iotop|iftop)|nvtop|amdgpu_top)
+  screen: secondary
+  position: 0 0 Center
+  size: 90% 90%

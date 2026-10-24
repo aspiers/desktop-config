@@ -1,3 +1,5 @@
-- - (Class=Chrysalis)
-  - <stick>
-  - MacroCmd {<s_secondary_SetHead>} {ResizeTo 90% 90%} {MoveTo 5% 5%}
+- match: (Class=Chrysalis)
+  screen: secondary
+  position: 5% 5%
+  size: 90% 90%
+  sticky: yes

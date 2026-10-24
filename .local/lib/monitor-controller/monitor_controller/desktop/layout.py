@@ -72,6 +72,41 @@ _SCREEN_FIELDS: Final = frozenset(
 )
 _STICK = "If {Matches (Stuck=no)} {Stick}"
 _UNSTICK = "If {Matches (Stuck=yes)} {Stick}"
+_WINDOW_FIELDS: Final = frozenset(
+    {"screen", "workspace", "size", "position", "sticky", "relayout_command", "map"}
+)
+_YES_NO: Final = frozenset({"yes", "no"})
+# Corner names FluxboxWindow::getCorner() accepts for both MoveTo and the apps
+# file's [Position], so a layout's corner word passes through unchanged.
+_CORNERS: Final = frozenset(
+    {
+        "lefttop",
+        "topleft",
+        "upperleft",
+        "top",
+        "upper",
+        "topcenter",
+        "righttop",
+        "topright",
+        "upperright",
+        "left",
+        "leftcenter",
+        "center",
+        "wincenter",
+        "right",
+        "rightcenter",
+        "leftbottom",
+        "bottomleft",
+        "lowerleft",
+        "bottom",
+        "lower",
+        "bottomcenter",
+        "rightbottom",
+        "bottomright",
+        "lowerright",
+    }
+)
+_SIZE_TOKEN = re.compile(r"^-?[0-9]+%?$")
 
 
 class LayoutPlanningError(ValueError):
@@ -155,17 +190,32 @@ class LayoutScreen:
 
 @dataclass(frozen=True, slots=True)
 class WindowRule:
-    """One structurally parsed matcher and non-empty command array."""
+    """Where the windows one matcher selects belong, as declarative fields.
+
+    The same fields drive both relayout (Fluxbox commands) and the generated
+    apps file, which places each window when it first maps.
+    """
 
     matcher: str
-    commands: tuple[str, ...]
+    fields: tuple[tuple[str, str], ...]
 
     def __post_init__(self) -> None:
         _bounded_scalar(self.matcher, "window matcher")
-        if not self.commands:
-            raise LayoutPlanningError("window rule must contain at least one command")
-        for command in self.commands:
-            _bounded_scalar(command, "window command")
+        keys = tuple(key for key, _value in self.fields)
+        if len(keys) != len(set(keys)):
+            raise LayoutPlanningError("window rule repeats a field")
+        if not set(keys) - {"map"}:
+            raise LayoutPlanningError("window rule must place the window somehow")
+        for key, value in self.fields:
+            if key not in _WINDOW_FIELDS:
+                raise LayoutPlanningError(f"unsupported window rule field: {key}")
+            _bounded_scalar(value, f"window rule {key}")
+            if key in {"sticky", "map"} and value not in _YES_NO:
+                raise LayoutPlanningError(f"window rule {key} must be yes or no")
+
+    def field(self, name: str) -> str | None:
+        """Return one field's source value if present."""
+        return next((value for key, value in self.fields if key == name), None)
 
 
 @dataclass(frozen=True, slots=True)
@@ -175,6 +225,8 @@ class ResolvedWindowAction:
     matcher: str
     commands: tuple[str, ...]
     map_command: str
+    # Apps-file attributes for windows as they first map; empty for map: no.
+    apps_attributes: tuple[NamedString, ...]
 
     def __post_init__(self) -> None:
         _bounded_scalar(self.matcher, "resolved window matcher")
@@ -624,9 +676,9 @@ def _parse_expanded(  # noqa: C901, PLR0912, PLR0915
     anchors: dict[str, str] = {}
     windows: list[WindowRule] = []
     current_matcher: str | None = None
-    current_commands: list[str] = []
+    current_fields: list[tuple[str, str]] = []
     nodes = 0
-    commands = 0
+    fields = 0
 
     def finish_screen() -> None:
         nonlocal current_screen
@@ -635,11 +687,11 @@ def _parse_expanded(  # noqa: C901, PLR0912, PLR0915
             current_screen = None
 
     def finish_window() -> None:
-        nonlocal current_matcher, current_commands
+        nonlocal current_matcher, current_fields
         if current_matcher is not None:
-            windows.append(WindowRule(current_matcher, tuple(current_commands)))
+            windows.append(WindowRule(current_matcher, tuple(current_fields)))
             current_matcher = None
-            current_commands = []
+            current_fields = []
 
     for line_number, original in enumerate(expanded.splitlines(), start=1):
         if not original.strip() or original.lstrip().startswith("#"):
@@ -724,28 +776,39 @@ def _parse_expanded(  # noqa: C901, PLR0912, PLR0915
             continue
 
         if section == "windows":
-            if indent == _BLOCK_INDENT and stripped.startswith("- - "):
+            if stripped.startswith("- - "):
+                raise LayoutPlanningError(
+                    f"{path}:{line_number}: command-list window rules were "
+                    "replaced by declarative fields (match:, screen:, ...)"
+                )
+            if indent == _BLOCK_INDENT and stripped.startswith("- "):
+                match = _KEY_VALUE.fullmatch(stripped[2:])
+                if match is None or match.group("key") != "match":
+                    raise LayoutPlanningError(
+                        f"{path}:{line_number}: window rule must start with match:"
+                    )
                 finish_window()
                 if len(windows) >= MAX_WINDOW_RULES:
                     raise LayoutPlanningError(
                         "layout window-rule count exceeds its limit"
                     )
-                matcher = stripped[4:].strip()
+                matcher = (match.group("value") or "").strip()
                 _plain_scalar(matcher, path, line_number)
                 current_matcher = matcher
                 continue
-            if indent == _FIELD_INDENT and stripped.startswith("- "):
+            match = _KEY_VALUE.fullmatch(line)
+            if indent == _FIELD_INDENT and match is not None:
                 if current_matcher is None:
                     raise LayoutPlanningError(
-                        f"{path}:{line_number}: window command precedes matcher"
+                        f"{path}:{line_number}: window field precedes match:"
                     )
-                command = stripped[2:].strip()
-                _plain_scalar(command, path, line_number)
-                current_commands.append(command)
-                commands += 1
-                if commands > MAX_WINDOW_COMMANDS:
+                value = (match.group("value") or "").strip()
+                _plain_scalar(value, path, line_number)
+                current_fields.append((match.group("key"), value))
+                fields += 1
+                if fields > MAX_WINDOW_COMMANDS:
                     raise LayoutPlanningError(
-                        "layout window-command count exceeds its limit"
+                        "layout window-field count exceeds its limit"
                     )
                 continue
             raise LayoutPlanningError(
@@ -1041,7 +1104,7 @@ def _resolve_screen(  # noqa: PLR0915
 
 
 def _placeholder_values(screens: tuple[ResolvedScreen, ...]) -> dict[str, str]:
-    values = {"<stick>": _STICK, "<unstick>": _UNSTICK}
+    values: dict[str, str] = {}
     for screen in screens:
         fields = {item.name: item.value for item in screen.geometry}
         text_fields: dict[str, str] = {
@@ -1056,28 +1119,8 @@ def _placeholder_values(screens: tuple[ResolvedScreen, ...]) -> dict[str, str]:
             for name, value in text_fields.items():
                 rendered = value + ("%" if name.endswith("_pc") else "")
                 values[f"<{prefix}{name}>"] = rendered
-    primary = next((item for item in screens if item.assignment == "primary"), None)
-    if primary is None:
+    if not any(item.assignment == "primary" for item in screens):
         raise LayoutPlanningError("resolved layout has no primary assignment")
-    if primary.value("col3_width") > 0:
-        col3_left = primary.value("col3_left")
-        row1_top = primary.value("row1_top")
-        col3_width = primary.value("col3_width")
-        active_height = primary.value("active_height")
-        values["<place_RHS>"] = (
-            f"MacroCmd {{SetHead {primary.head}}} "
-            f"{{MoveTo {col3_left} {row1_top}}} "
-            f"{{ResizeTo {col3_width} {active_height}}} "
-            f"{{{_STICK}}}"
-        )
-    else:
-        secondary = next(
-            (item for item in screens if item.assignment == "secondary"), None
-        )
-        if secondary is not None:
-            values["<place_RHS>"] = (
-                f"MacroCmd {{SetHead {secondary.head}}} {{{_STICK}}}"
-            )
     return values
 
 
@@ -1100,9 +1143,10 @@ def _resolve_window_actions(
     result: list[ResolvedWindowAction] = []
     for rule in rules:
         matcher = _expand_placeholders(rule.matcher, values)
-        commands = tuple(
-            _expand_placeholders(command, values) for command in rule.commands
-        )
+        fields = {
+            key: _expand_placeholders(value, values) for key, value in rule.fields
+        }
+        commands, attributes = _rule_placement(fields, screens)
         combined = _combine_commands(commands)
         map_command = f"Map {{{combined}}} {{Matches {matcher}}}"
         budget.charge(matcher, *commands, map_command)
@@ -1111,9 +1155,66 @@ def _resolve_window_actions(
                 matcher=matcher,
                 commands=commands,
                 map_command=map_command,
+                apps_attributes=() if fields.get("map") == "no" else attributes,
             )
         )
     return tuple(result)
+
+
+def _rule_placement(
+    fields: dict[str, str], screens: tuple[ResolvedScreen, ...]
+) -> tuple[tuple[str, ...], tuple[NamedString, ...]]:
+    """Derive relayout commands and apps attributes from one rule's fields.
+
+    ResizeTo always precedes MoveTo: an anchored MoveTo (Center et al.) is
+    resolved against the window's size at the moment it runs.
+    """
+    commands: list[str] = []
+    attributes: list[NamedString] = []
+    if (screen := fields.get("screen")) is not None:
+        head = _screen_head(screen, screens)
+        commands.append(f"SetHead {head}")
+        attributes.append(NamedString("Head", f"{{{head}}}"))
+    if (workspace := fields.get("workspace")) is not None:
+        number = _positive_integer(workspace, "window rule workspace")
+        commands.append(f"SendToWorkspace {number}")
+        # SendToWorkspace counts from 1, the apps file's [Workspace] from 0.
+        attributes.append(NamedString("Workspace", f"{{{number - 1}}}"))
+    if (size := fields.get("size")) is not None:
+        width, height = _size_tokens(size, 2, "size")
+        commands.append(f"ResizeTo {width} {height}")
+        attributes.append(NamedString("Dimensions", f"{{{width} {height}}}"))
+    if (position := fields.get("position")) is not None:
+        x, y, *corner = _size_tokens(position, 3, "position")
+        if corner and corner[0].lower() not in _CORNERS:
+            raise LayoutPlanningError(f"unknown window position corner {corner[0]!r}")
+        commands.append(" ".join(("MoveTo", x, y, *corner)))
+        reference = corner[0] if corner else "UpperLeft"
+        attributes.append(NamedString("Position", f"({reference})\t{{{x} {y}}}"))
+    if (sticky := fields.get("sticky")) is not None:
+        commands.append(_STICK if sticky == "yes" else _UNSTICK)
+        attributes.append(NamedString("Sticky", f"{{{sticky}}}"))
+    if (command := fields.get("relayout_command")) is not None:
+        commands.append(command)
+    if not commands:
+        raise LayoutPlanningError("window rule has nothing to apply on relayout")
+    return tuple(commands), tuple(attributes)
+
+
+def _screen_head(name: str, screens: tuple[ResolvedScreen, ...]) -> int:
+    heads = {item.head for item in screens if name in {item.assignment, item.name}}
+    if len(heads) != 1:
+        raise LayoutPlanningError(f"window rule screen {name!r} names no single screen")
+    return heads.pop()
+
+
+def _size_tokens(value: str, limit: int, field: str) -> list[str]:
+    tokens = value.split()
+    if len(tokens) not in range(2, limit + 1) or not all(
+        _SIZE_TOKEN.fullmatch(token) for token in tokens[:2]
+    ):
+        raise LayoutPlanningError(f"window rule {field} {value!r} is malformed")
+    return tokens
 
 
 def _expand_placeholders(value: str, replacements: dict[str, str]) -> str:

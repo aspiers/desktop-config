@@ -1,14 +1,16 @@
-- - (Name=brave-browser|google-chrome|chromium) (Head=1)
-  - MacroCmd {MoveTo <s_primary_single_left> <s_primary_single_top>} {ResizeTo <s_primary_single_width> <s_primary_single_height>}
+- match: (Name=brave-browser|google-chrome|chromium) (Head=1)
+  position: <s_primary_single_left> <s_primary_single_top>
+  size: <s_primary_single_width> <s_primary_single_height>
 
-- - (Name=brave-browser|google-chrome|chromium) (Head=2)
-  - MacroCmd {MoveTo <s_secondary_single_left> <s_secondary_single_top>} {ResizeTo <s_secondary_single_width> <s_secondary_single_height>}
+- match: (Name=brave-browser|google-chrome|chromium) (Head=2)
+  position: <s_secondary_single_left> <s_secondary_single_top>
+  size: <s_secondary_single_width> <s_secondary_single_height>
 
-- - (Name=brave-browser|google-chrome|chromium) (Title=.*(secondary|gather.town))
-  - MacroCmd {<s_secondary_SetHead>}
+- match: (Name=brave-browser|google-chrome|chromium) (Title=.*(secondary|gather.town))
+  screen: secondary
 
-- - (Name=brave-browser|google-chrome|chromium) (Head=<s_primary_head>)
-  - <unstick>
+- match: (Name=brave-browser|google-chrome|chromium) (Head=<s_primary_head>)
+  sticky: no
 
-- - (Name=brave-browser|google-chrome|chromium) (Head=<s_secondary_head>)
-  - <stick>
+- match: (Name=brave-browser|google-chrome|chromium) (Head=<s_secondary_head>)
+  sticky: yes

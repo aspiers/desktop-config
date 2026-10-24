@@ -1,7 +1,11 @@
-- - (Class=pavucontrol)
-  - <stick>
-  - MacroCmd {<s_secondary_SetHead>} {MoveTo 55% 5%} {ResizeTo 40% 90%}
+- match: (Class=pavucontrol)
+  screen: secondary
+  position: 55% 5%
+  size: 40% 90%
+  sticky: yes
 
-- - (Class=Blueman-manager)
-  - <stick>
-  - MacroCmd {<s_secondary_SetHead>} {ResizeTo 35% 40%} {MoveTo 2% 22% BottomLeft}
+- match: (Class=Blueman-manager)
+  screen: secondary
+  position: 2% 22% BottomLeft
+  size: 35% 40%
+  sticky: yes

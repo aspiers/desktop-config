@@ -42,29 +42,33 @@ windows:
 
   <INCLUDE common/side-projects>
 
-  - - (Name=brave-browser|google-chrome|chromium) (Title=.*(personal$|Panther))
-    - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 5}
+  - match: (Name=brave-browser|google-chrome|chromium) (Title=.*(personal$|Panther))
+    screen: primary
+    workspace: 5
 
-  - - (Name=brave-browser|google-chrome|chromium) (Title=.*(secondary))
-    - MacroCmd {<s_secondary_SetHead>}
-    - <stick>
+  - match: (Name=brave-browser|google-chrome|chromium) (Title=.*(secondary))
+    screen: secondary
+    sticky: yes
 
-  - - (Name=brave-browser|google-chrome|chromium) (Title=.*(gather\.town|.* \| Gather.*))
-    - MacroCmd {<s_celtic_SetHead>}
-    - MacroCmd {MoveTo <s_celtic_single_left> <s_celtic_single_top>} {ResizeTo <s_celtic_single_width> <s_celtic_single_height>}
-    - <stick>
+  - match: (Name=brave-browser|google-chrome|chromium) (Title=.*(gather\.town|.* \| Gather.*))
+    screen: celtic
+    position: <s_celtic_single_left> <s_celtic_single_top>
+    size: <s_celtic_single_width> <s_celtic_single_height>
+    sticky: yes
 
-  - - (Name=brave-browser|google-chrome|chromium) (Head=<s_primary_head>)
-    - MacroCmd {MoveTo <s_primary_single_left> <s_primary_single_top>} {ResizeTo <s_primary_single_width> <s_primary_single_height>}
+  - match: (Name=brave-browser|google-chrome|chromium) (Head=<s_primary_head>)
+    position: <s_primary_single_left> <s_primary_single_top>
+    size: <s_primary_single_width> <s_primary_single_height>
 
-  - - (Name=brave-browser|google-chrome|chromium) (Head=<s_secondary_head>)
-    - MacroCmd {MoveTo <s_secondary_single_left> <s_secondary_single_top>} {ResizeTo <s_secondary_single_width> <s_secondary_single_height>}
+  - match: (Name=brave-browser|google-chrome|chromium) (Head=<s_secondary_head>)
+    position: <s_secondary_single_left> <s_secondary_single_top>
+    size: <s_secondary_single_width> <s_secondary_single_height>
 
-  - - (Name=brave-browser|google-chrome|chromium) (Head=<s_primary_head>)
-    - <unstick>
+  - match: (Name=brave-browser|google-chrome|chromium) (Head=<s_primary_head>)
+    sticky: no
 
-  - - (Name=brave-browser|google-chrome|chromium) (Head=<s_celtic_head>|<s_secondary_head>)
-    - <stick>
+  - match: (Name=brave-browser|google-chrome|chromium) (Head=<s_celtic_head>|<s_secondary_head>)
+    sticky: yes
 
   <INCLUDE common/firefox>
 
@@ -78,14 +82,20 @@ windows:
 
   <INCLUDE common/lm-studio>
 
-  - - (Class=pavucontrol)
-    - <stick>
-    - MacroCmd {<s_celtic_SetHead>} {MoveTo 2% 2%} {ResizeTo 40% 35%}
+  - match: (Class=pavucontrol)
+    screen: celtic
+    position: 2% 2%
+    size: 40% 35%
+    sticky: yes
 
-  - - (Class=Blueman-manager)
-    - <stick>
-    - MacroCmd {<s_celtic_SetHead>} {ResizeTo 35% 40%} {MoveTo 2% 22% BottomLeft}
+  - match: (Class=Blueman-manager)
+    screen: celtic
+    position: 2% 22% BottomLeft
+    size: 35% 40%
+    sticky: yes
 
-  - - (Class=Chrysalis)
-    - <stick>
-    - MacroCmd {<s_celtic_SetHead>} {ResizeTo 90% 90%} {MoveTo 5% 5%}
+  - match: (Class=Chrysalis)
+    screen: celtic
+    position: 5% 5%
+    size: 90% 90%
+    sticky: yes

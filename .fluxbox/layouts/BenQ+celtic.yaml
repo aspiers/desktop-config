@@ -33,8 +33,9 @@ windows:
 
   <INCLUDE common/side-projects>
 
-  - - (Name=brave-browser|google-chrome|chromium) (Title=.*(personal$|Panther))
-    - MacroCmd {<s_primary_SetHead>} {SendToWorkspace 5}
+  - match: (Name=brave-browser|google-chrome|chromium) (Title=.*(personal$|Panther))
+    screen: primary
+    workspace: 5
 
   <INCLUDE common/browser-multi>
 
