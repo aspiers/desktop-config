@@ -131,9 +131,10 @@ class ReloadEmacsFonts:
 
 @dataclass(frozen=True, slots=True)
 class GenerateFluxboxConfiguration:
-    """Install exact planning-rendered keys bytes without live reconfigure."""
+    """Install exact planning-rendered keys and apps bytes without reconfigure."""
 
     content: bytes
+    apps: bytes
 
 
 type PrepareOperation = (
@@ -263,6 +264,10 @@ class SubprocessPrepareCommands:
             _atomic_replace(
                 self._home_root / ".fluxbox" / "keys",
                 operation.content,
+            )
+            _atomic_replace(
+                self._home_root / ".fluxbox" / "apps",
+                operation.apps,
             )
             return PrepareCommandResult(0)
         with self._stage_verified_leaves(operation.leaves) as staged:
@@ -607,7 +612,8 @@ def _operation(  # noqa: PLR0911 - closed six-action typed dispatch
         )
     if kind is PlannedActionKind.GENERATE_FLUXBOX_CONFIGURATION:
         return GenerateFluxboxConfiguration(
-            artifacts[plan.fluxbox.rendered_keys_artifact]
+            artifacts[plan.fluxbox.rendered_keys_artifact],
+            artifacts[plan.fluxbox.rendered_apps_artifact],
         )
     return _stale(
         f"forbidden non-prepare action appeared in prepare phase: {kind.value}"

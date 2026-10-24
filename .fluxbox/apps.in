@@ -1,0 +1,73 @@
+# Hand-written part of ~/.fluxbox/apps.  The monitor controller renders the
+# real apps file from this one and the active layout at every relayout.
+#
+# Window placement ([Head], [Position], [Dimensions], [Workspace]) belongs in
+# the window rules in .fluxbox/layouts, never here.  A block whose pattern is
+# exactly a layout rule's match: text gets that rule's placement added.  Fluxbox
+# uses only the first block matching a window, and placement blocks come
+# first, so a block here that matches no layout rule only reaches windows that
+# no layout rule matches.
+
+[app] (name=xfce4-notifyd)
+  [Layer]	{0}
+[end]
+[app] (name=fbrun)
+  [Layer]	{2}
+[end]
+[app] (Name=gkrellm)
+  [Hidden]	{yes}
+[end]
+[app] (role=.*Workrave.*)
+  [Hidden]	{yes}
+  [Sticky]	{yes}
+  [Layer]	{2}
+[end]
+[app] (title=Workrave)
+  [Hidden]	{yes}
+  [Sticky]	{yes}
+  [Layer]	{2}
+[end]
+[app] (name=top-term) (title=ccmonitor)
+  [IconHidden]	{yes}
+[end]
+
+# Weirdly gnome-terminal --title=foo cannot be reliably matched by
+# (title=foo); it seems that the title is set to ''Terminal' on startup
+# and then changed soon after, creating a race condition.  So match on
+# role instead.
+[app] (role=Chrome fzf)
+  [Layer]	{4}
+[end]
+[app] (name=emacs) (title!=Ediff)
+  # This doesn't work :-(
+  [FocusNewWindow]	{yes}
+[end]
+[app] (class=Cursor|Code)
+  # This doesn't work :-(
+  [FocusNewWindow]	{yes}
+[end]
+# Keep agent-browser's Chrome on the laptop display; common/agent-browser.yaml
+# places it.  Its WM_CLASS name carries the profile dir: ./.agent-browser-data
+# for a fixed profile, or /tmp/agent-browser-chrome-<uuid> when agent-browser
+# makes a throwaway one.
+# FocusProtection needs the backport in home:aspiers:branches:X11:windowmanagers
+# fluxbox: agent clicks and tab switches must never take focus from the user.
+[app] (name=google-chrome.*agent-browser-(data|chrome).*)
+  [FocusProtection]	{Deny, Refuse}
+  [Sticky]	{yes}
+[end]
+[app] (title=Telegram)
+  [Deco]	{0x5e0}
+[end]
+[app] (head=2)
+  [Sticky]	{yes}
+[end]
+[app] (name=ksnip|xfce4-display-settings)
+  [Sticky]	{yes}
+[end]
+[app] (name=eog)
+  [Deco]	{NORMAL}
+[end]
+[transient] (name=ardour-9.7.0) (class=Ardour-9.7.0) (role=plugin_ui)
+  [Layer]	{8}
+[end]

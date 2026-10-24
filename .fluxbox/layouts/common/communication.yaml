@@ -4,3 +4,19 @@
   position: <s_primary_col1_left> <s_primary_row1_top>
   size: <s_primary_active_width> <s_primary_active_height>
   sticky: no
+
+# Matched on title as the apps file always did, for chat windows whose
+# WM_CLASS name the rule above misses.
+- match: (title=Telegram)
+  screen: primary
+  workspace: 4
+  position: <s_primary_col1_left> <s_primary_row1_top>
+  size: <s_primary_active_width> <s_primary_active_height>
+  sticky: no
+
+- match: (title=Beeper|discord|Discord|Discord Updater|Zulip.*)
+  screen: primary
+  workspace: 4
+  position: <s_primary_col1_left> <s_primary_row1_top>
+  size: <s_primary_active_width> <s_primary_active_height>
+  sticky: no

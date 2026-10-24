@@ -1,0 +1,18 @@
+# Placement that is the same in every layout.  Include this after
+# terminal-windows: Fluxbox's apps file uses only the first matching block,
+# and these terminals would otherwise get the generic terminal placement.
+- match: (name=fbrun)
+  position: 0 0 Center
+
+# A gnome-terminal matched on role; see .fluxbox/apps.in.
+- match: (role=Chrome fzf)
+  size: 90% 90%
+  position: 0 0 Center
+
+- match: (name=top-term) (title=ccmonitor)
+  position: 50 30 LowerRight
+  size: 50% 50%
+
+- match: (name=top-term) (title=.* mail sync( daemon)?|bluetuith.*|rxx)
+  size: 90% 90%
+  position: 0 0 Center

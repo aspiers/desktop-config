@@ -12,6 +12,11 @@
 
 - match: (Name=top-term) (Title=btop|htop|sudo (powertop|nethogs|iotop|iftop)|nvtop|amdgpu_top)
   screen: primary
-  workspace: 6
   position: 0 0 Center
   size: 90% 90%
+
+# Relayout only: workspace 6 is fluxbox-focus-or-launch's hiding pen, so a
+# newly launched btop must not open there.
+- match: (Name=top-term) (Title=btop|htop|sudo (powertop|nethogs|iotop|iftop)|nvtop|amdgpu_top)
+  workspace: 6
+  map: no

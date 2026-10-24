@@ -11,6 +11,8 @@ windows:
 
   <INCLUDE common/terminal-windows>
 
+  <INCLUDE common/fixed-windows>
+
   <INCLUDE common/top-term-windows-primary>
 
   <INCLUDE common/editor-windows>
@@ -28,12 +30,15 @@ windows:
     screen: primary
     workspace: 5
     relayout_command: Attach (Name=brave-browser|google-chrome|chromium) (Title=.*(personal$|secondary))
+    map: no
 
   - match: (Name=brave-browser|google-chrome|chromium)
     screen: primary
     position: <s_primary_single_left> <s_primary_single_top>
     size: <s_primary_single_width> <s_primary_single_height>
     sticky: no
+
+  <INCLUDE common/agent-browser>
 
   <INCLUDE common/firefox>
 
@@ -49,16 +54,22 @@ windows:
 
   - match: (Class=pavucontrol)
     screen: primary
-    workspace: 6
     position: 5% 30% TopRight
     size: 45% 45%
     sticky: no
+  # Relayout only: a new window opens on the current workspace.
+  - match: (Class=pavucontrol)
+    workspace: 6
+    map: no
 
   - match: (Class=Blueman-manager)
     screen: primary
-    workspace: 6
     position: 5% 30%
     size: 35% 45%
     sticky: no
+  # Relayout only: a new window opens on the current workspace.
+  - match: (Class=Blueman-manager)
+    workspace: 6
+    map: no
 
   <INCLUDE common/chrysalis-single>

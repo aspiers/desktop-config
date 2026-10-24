@@ -14,6 +14,8 @@ windows:
 
   <INCLUDE common/terminal-windows>
 
+  <INCLUDE common/fixed-windows>
+
   <INCLUDE common/top-term-windows-primary>
 
   <INCLUDE common/editor-windows>
@@ -30,6 +32,7 @@ windows:
   - match: (Name=brave-browser|google-chrome|chromium) (Title=.*(personal$|secondary|Panther))
     screen: primary
     workspace: 5
+    map: no
 
   - match: (Name=brave-browser|google-chrome|chromium)
     screen: primary
@@ -51,16 +54,22 @@ windows:
 
   - match: (Class=pavucontrol)
     screen: primary
-    workspace: 6
     position: 42% 1%
     size: 32% 35%
     sticky: no
+  # Relayout only: a new window opens on the current workspace.
+  - match: (Class=pavucontrol)
+    workspace: 6
+    map: no
 
   - match: (Class=Blueman-manager)
     screen: primary
-    workspace: 6
     position: 0% 0%
     size: 20% 52%
     sticky: no
+  # Relayout only: a new window opens on the current workspace.
+  - match: (Class=Blueman-manager)
+    workspace: 6
+    map: no
 
   <INCLUDE common/chrysalis-single>

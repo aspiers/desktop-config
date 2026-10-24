@@ -46,7 +46,11 @@ from monitor_controller.safeio import (
 if TYPE_CHECKING:
     from monitor_controller.observer.autorandr import SavedAutorandrProfile
 
-from .fluxbox_renderer import FluxboxRenderError, render_fluxbox_keys
+from .fluxbox_renderer import (
+    FluxboxRenderError,
+    render_fluxbox_apps,
+    render_fluxbox_keys,
+)
 from .layout import (
     DisplayScreenSnapshot,
     LayoutPlanningError,
@@ -156,6 +160,7 @@ class InputRole(StrEnum):
     FONT_POLICY = "font_policy"
     TERMINAL_POLICY = "terminal_policy"
     FLUXBOX_TEMPLATE = "fluxbox_template"
+    FLUXBOX_APPS_TEMPLATE = "fluxbox_apps_template"
     FLUXBOX_GENERATOR = "fluxbox_generator"
     KEYBOARD_POLICY = "keyboard_policy"
     EMACS_POLICY = "emacs_policy"
@@ -626,6 +631,7 @@ class FilesystemDesktopPlanningInputSource:
                 self._required(InputRole.TERMINAL_POLICY, "bin/xfce4-terminal-config"),
                 self._required(InputRole.TERMINAL_POLICY, "bin/kitty-theme-config"),
                 self._required(InputRole.FLUXBOX_TEMPLATE, ".fluxbox/keys.erb"),
+                self._required(InputRole.FLUXBOX_APPS_TEMPLATE, ".fluxbox/apps.in"),
                 self._required(InputRole.FLUXBOX_GENERATOR, "bin/fluxbox-gen-config"),
                 self._required(
                     InputRole.FLUXBOX_GENERATOR,
@@ -1047,6 +1053,21 @@ def build_desktop_plan(  # noqa: PLR0915
     except FluxboxRenderError as error:
         raise DesktopPlanningError(str(error)) from error
     rendered_keys_artifact = PlanArtifact("artifacts/fluxbox/keys", rendered_keys)
+    apps_template_content = _required_content(
+        configuration.one(InputRole.FLUXBOX_APPS_TEMPLATE)
+    )
+    apps_template_artifact = PlanArtifact(
+        "artifacts/fluxbox/apps.in", apps_template_content
+    )
+    try:
+        rendered_apps = render_fluxbox_apps(
+            apps_template_content,
+            resolved.window_actions,
+            template_label=".fluxbox/apps.in",
+        )
+    except FluxboxRenderError as error:
+        raise DesktopPlanningError(str(error)) from error
+    rendered_apps_artifact = PlanArtifact("artifacts/fluxbox/apps", rendered_apps)
     fluxbox = FluxboxGenerationIntent(
         template_artifact=template_artifact.relative_path,
         template_sha256=template_artifact.sha256,
@@ -1058,6 +1079,10 @@ def build_desktop_plan(  # noqa: PLR0915
         resolved_sublayouts_sha256=resolved_sublayouts_artifact.sha256,
         rendered_keys_artifact=rendered_keys_artifact.relative_path,
         rendered_keys_sha256=rendered_keys_artifact.sha256,
+        apps_template_artifact=apps_template_artifact.relative_path,
+        apps_template_sha256=apps_template_artifact.sha256,
+        rendered_apps_artifact=rendered_apps_artifact.relative_path,
+        rendered_apps_sha256=rendered_apps_artifact.sha256,
         generated_keys_path=".fluxbox/keys",
         monitor_count=len(inputs.display.screens),
         host_name=inputs.context.host_name,
@@ -1067,6 +1092,7 @@ def build_desktop_plan(  # noqa: PLR0915
         ),
         input_hashes=configuration.hashes_for(
             InputRole.FLUXBOX_TEMPLATE,
+            InputRole.FLUXBOX_APPS_TEMPLATE,
             InputRole.FLUXBOX_GENERATOR,
             InputRole.SUBLAYOUTS,
         ),
@@ -1085,7 +1111,10 @@ def build_desktop_plan(  # noqa: PLR0915
         topology=inputs.display.topology,
         display_screens=inputs.display.screens,
     )
-    fluxbox_refs = (rendered_keys_artifact.relative_path,)
+    fluxbox_refs = (
+        rendered_apps_artifact.relative_path,
+        rendered_keys_artifact.relative_path,
+    )
     prepare_refs = {
         PlannedActionKind.INSTALL_FLUXBOX_OVERLAY: (overlay_artifact.relative_path,),
         PlannedActionKind.GENERATE_FLUXBOX_CONFIGURATION: fluxbox_refs,
@@ -1114,6 +1143,8 @@ def build_desktop_plan(  # noqa: PLR0915
         sublayouts_artifact,
         resolved_sublayouts_artifact,
         rendered_keys_artifact,
+        apps_template_artifact,
+        rendered_apps_artifact,
     )
     manifest = tuple(
         PlanArtifactManifestEntry(item.relative_path, item.sha256)

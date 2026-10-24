@@ -25,6 +25,8 @@ windows:
 
   <INCLUDE common/terminal-windows>
 
+  <INCLUDE common/fixed-windows>
+
   <INCLUDE common/top-term-windows-primary>
 
   <INCLUDE common/editor-windows>
@@ -39,6 +41,8 @@ windows:
   <INCLUDE common/side-projects>
 
   <INCLUDE common/browser-multi>
+
+  <INCLUDE common/agent-browser>
 
   <INCLUDE common/firefox>
 

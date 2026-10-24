@@ -1,3 +1,4 @@
 - match: (Name=brave-browser|google-chrome|chromium) (Title=.*Toucan)
   screen: primary
   workspace: 2
+  map: no

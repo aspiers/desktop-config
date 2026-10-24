@@ -82,6 +82,7 @@ mr stow
 ### Layout System
 
 - **Configuration**: YAML files in `.fluxbox/layouts/` define monitor setups and window positions
+- **Window placement**: each layout's `windows:` rules (`match:` plus `screen`, `workspace`, `position`, `size`, `sticky`) are the only source of placement. Relayout turns them into Fluxbox commands, and the planner renders `~/.fluxbox/apps` (gitignored) from them plus the hand-written `.fluxbox/apps.in` so new windows land in the same place. `map: no` keeps a rule relayout-only. Never put `[Head]`, `[Position]`, `[Dimensions]` or `[Workspace]` in `apps.in`
 - **Model-based**: Monitor identification by model strings for consistent configuration
 - **HiDPI support**: Scaling factors via `calculate_ui_scale_factor()` in libdpy.py; layout `ui_scale` overrides panel and window-manager scaling, while `font_scale` can override fonts independently. `/Xft/DPI` is XFCE's setting, not X's; see "DPI and UI scale" in `docs/monitor-system.md` before touching scaling
 - **Event-driven**: Automatic reconfiguration on hardware changes

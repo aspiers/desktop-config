@@ -125,9 +125,10 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True, slots=True)
 class ApplyFluxboxConfiguration:
-    """Install the exact staged Fluxbox key configuration for the next restart."""
+    """Install the exact staged Fluxbox keys and apps for the next restart."""
 
     content: bytes
+    apps: bytes
 
 
 @dataclass(frozen=True, slots=True)
@@ -418,6 +419,10 @@ class SubprocessFinalizeCommands:
             _atomic_replace(
                 self._home_root / ".fluxbox" / "keys",
                 operation.content,
+            )
+            _atomic_replace(
+                self._home_root / ".fluxbox" / "apps",
+                operation.apps,
             )
             # The following in-place restart owns live configuration loading;
             # a missing or hung Fluxbox then falls back to full recovery.
@@ -1272,7 +1277,10 @@ def _operation(  # noqa: PLR0911
     plan = bundle.plan
     artifacts = {item.relative_path: item.content for item in bundle.artifacts}
     if kind is PlannedActionKind.APPLY_FLUXBOX_CONFIGURATION:
-        return ApplyFluxboxConfiguration(artifacts[plan.fluxbox.rendered_keys_artifact])
+        return ApplyFluxboxConfiguration(
+            artifacts[plan.fluxbox.rendered_keys_artifact],
+            artifacts[plan.fluxbox.rendered_apps_artifact],
+        )
     if kind is PlannedActionKind.APPLY_KEYBOARD_INTENT:
         return ApplyKeyboardIntent(plan.keyboard.disposition)
     if kind is PlannedActionKind.APPLY_WINDOW_LAYOUT:

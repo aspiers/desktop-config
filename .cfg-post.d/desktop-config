@@ -27,4 +27,8 @@ if ! "$here/../bin/fluxbox-gen-config"; then
     exit 1
 fi
 
+# The monitor controller renders ~/.fluxbox/apps from apps.in and the layout
+# at every relayout.  Until the first one, apps.in alone is a valid apps file.
+[ -e ~/.fluxbox/apps ] || cp "$here/../.fluxbox/apps.in" ~/.fluxbox/apps
+
 ggkg

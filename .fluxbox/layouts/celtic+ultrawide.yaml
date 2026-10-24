@@ -41,6 +41,8 @@ windows:
 
   <INCLUDE common/terminal-windows>
 
+  <INCLUDE common/fixed-windows>
+
   <INCLUDE common/top-term-windows-secondary>
 
   <INCLUDE common/editor-windows>
@@ -57,6 +59,7 @@ windows:
   - match: (Name=brave-browser|google-chrome|chromium) (Title=.*(personal$|Panther))
     screen: primary
     workspace: 5
+    map: no
 
   # Windows that lived on the RHS Dell in celtic+BenQ+Dell go into the full
   # third column here (sticky).  This replaces the secondary-title rule from
@@ -80,6 +83,8 @@ windows:
 
   - match: (Name=brave-browser|google-chrome|chromium) (Head=<s_primary_head>) (Title!=.*(secondary|gather\.town|.* \| Gather.*))
     sticky: no
+
+  <INCLUDE common/agent-browser>
 
   <INCLUDE common/firefox>
 

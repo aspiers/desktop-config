@@ -701,6 +701,7 @@ def test_production_adapter_captures_only_allowed_exact_leaves_in_temp_home(
     generated = operations[-1]
     assert isinstance(generated, GenerateFluxboxConfiguration)
     assert (home / ".fluxbox" / "keys").read_bytes() == generated.content
+    assert (home / ".fluxbox" / "apps").read_bytes() == generated.apps
     assert capture.calls[-1][1] is None
     assert str(bundle.plan.emacs.font_height) in capture.calls[-1][0][2]
     for _arguments, _input, environment in capture.calls:

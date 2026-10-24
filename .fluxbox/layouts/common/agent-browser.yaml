@@ -1,0 +1,5 @@
+# Keep agent-browser's Chrome on the laptop display, whichever head number
+# the layout gives it.  See .fluxbox/apps.in for the pattern.
+- match: (name=google-chrome.*agent-browser-(data|chrome).*)
+  screen: celtic
+  position: 0 0

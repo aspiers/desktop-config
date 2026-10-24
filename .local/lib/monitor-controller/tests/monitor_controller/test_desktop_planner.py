@@ -347,6 +347,8 @@ def test_real_saved_edids_drive_model_and_complete_plan(  # noqa: PLR0913, PLR09
     expected_artifacts = {
         "artifacts/autorandr/config",
         "artifacts/autorandr/setup",
+        "artifacts/fluxbox/apps",
+        "artifacts/fluxbox/apps.in",
         "artifacts/fluxbox/generator-policy",
         "artifacts/fluxbox/keys",
         "artifacts/fluxbox/keys.erb",
@@ -747,7 +749,7 @@ def test_identical_inputs_have_identical_canonical_bytes_and_hash() -> None:
     second = build_desktop_plan(source.load(request))
 
     assert first == second
-    assert first.plan.schema_version == PLAN_SCHEMA_VERSION == 5
+    assert first.plan.schema_version == PLAN_SCHEMA_VERSION == 6
     assert encode_plan(first.plan) == encode_plan(second.plan)
     assert hash_plan_bundle(first) == hash_plan_bundle(second)
     assert decode_plan(encode_plan(first.plan)) == first.plan
@@ -808,6 +810,7 @@ def _semantic_projection(desktop: DesktopPlan, roles: tuple[InputRole, ...]) -> 
         values.append(desktop.terminal)
     if role_set & {
         InputRole.FLUXBOX_TEMPLATE,
+        InputRole.FLUXBOX_APPS_TEMPLATE,
         InputRole.FLUXBOX_GENERATOR,
         InputRole.SUBLAYOUTS,
     }:

@@ -29,6 +29,8 @@ windows:
 
   <INCLUDE common/terminal-windows>
 
+  <INCLUDE common/fixed-windows>
+
   <INCLUDE common/top-term-windows-secondary>
 
   <INCLUDE common/editor-windows>
@@ -45,6 +47,7 @@ windows:
   - match: (Name=brave-browser|google-chrome|chromium) (Title=.*(personal$|Panther))
     screen: primary
     workspace: 5
+    map: no
 
   - match: (Name=brave-browser|google-chrome|chromium) (Title=.*(secondary))
     screen: secondary
@@ -69,6 +72,8 @@ windows:
 
   - match: (Name=brave-browser|google-chrome|chromium) (Head=<s_celtic_head>|<s_secondary_head>)
     sticky: yes
+
+  <INCLUDE common/agent-browser>
 
   <INCLUDE common/firefox>
 

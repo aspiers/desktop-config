@@ -60,7 +60,7 @@ from .layout import DisplayScreenSnapshot, ResolvedLayout  # noqa: TC001
 # Version 3 predates independent layout font scaling. It is intentionally
 # rejected because its resolved layout lacks font_scale; deploy this schema
 # change only while no older plan is in flight.
-PLAN_SCHEMA_VERSION: Final = 5
+PLAN_SCHEMA_VERSION: Final = 6
 MAX_PLAN_BYTES: Final = 1024 * 1024
 MAX_PLAN_ARTIFACT_BYTES: Final = 512 * 1024
 MAX_PLAN_ARTIFACT_TOTAL_BYTES: Final = 2 * 1024 * 1024
@@ -376,6 +376,10 @@ class FluxboxGenerationIntent:
     resolved_sublayouts_sha256: str
     rendered_keys_artifact: str
     rendered_keys_sha256: str
+    apps_template_artifact: str
+    apps_template_sha256: str
+    rendered_apps_artifact: str
+    rendered_apps_sha256: str
     generated_keys_path: str
     monitor_count: int
     host_name: str
@@ -396,6 +400,16 @@ class FluxboxGenerationIntent:
                 self.rendered_keys_artifact,
                 self.rendered_keys_sha256,
                 "rendered Fluxbox keys",
+            ),
+            (
+                self.apps_template_artifact,
+                self.apps_template_sha256,
+                "Fluxbox apps template",
+            ),
+            (
+                self.rendered_apps_artifact,
+                self.rendered_apps_sha256,
+                "rendered Fluxbox apps",
             ),
         ):
             _artifact_path(path)
@@ -526,6 +540,8 @@ class DesktopPlan:
             self.fluxbox.rendered_keys_artifact: (
                 "artifacts/fluxbox/keys"  # gitleaks:allow
             ),
+            self.fluxbox.apps_template_artifact: "artifacts/fluxbox/apps.in",
+            self.fluxbox.rendered_apps_artifact: "artifacts/fluxbox/apps",
             self.windows.source_artifact: "artifacts/layout/expanded.yaml",
             self.windows.actions_artifact: "artifacts/layout/window-actions.json",
         }
@@ -548,6 +564,14 @@ class DesktopPlan:
             (
                 self.fluxbox.rendered_keys_artifact,
                 self.fluxbox.rendered_keys_sha256,
+            ),
+            (
+                self.fluxbox.apps_template_artifact,
+                self.fluxbox.apps_template_sha256,
+            ),
+            (
+                self.fluxbox.rendered_apps_artifact,
+                self.fluxbox.rendered_apps_sha256,
             ),
             (self.windows.source_artifact, self.windows.source_sha256),
             (self.windows.actions_artifact, self.windows.actions_sha256),
@@ -576,6 +600,8 @@ class DesktopPlan:
                 self.fluxbox.resolved_sublayouts_sha256
             ),
             self.fluxbox.rendered_keys_artifact: self.fluxbox.rendered_keys_sha256,
+            self.fluxbox.apps_template_artifact: self.fluxbox.apps_template_sha256,
+            self.fluxbox.rendered_apps_artifact: self.fluxbox.rendered_apps_sha256,
             self.windows.source_artifact: self.windows.source_sha256,
             self.windows.actions_artifact: self.windows.actions_sha256,
         }
@@ -595,9 +621,11 @@ class DesktopPlan:
         expected_refs = {
             PlannedActionKind.INSTALL_FLUXBOX_OVERLAY: (self.overlay.artifact_path,),
             PlannedActionKind.GENERATE_FLUXBOX_CONFIGURATION: (
+                self.fluxbox.rendered_apps_artifact,
                 self.fluxbox.rendered_keys_artifact,
             ),
             PlannedActionKind.APPLY_FLUXBOX_CONFIGURATION: (
+                self.fluxbox.rendered_apps_artifact,
                 self.fluxbox.rendered_keys_artifact,
             ),
             PlannedActionKind.APPLY_WINDOW_LAYOUT: (self.windows.actions_artifact,),

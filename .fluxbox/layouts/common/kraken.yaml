@@ -3,7 +3,11 @@
 # from catching browser windows etc. which happen to mention Kraken.
 - match: (Class=^$) (Title=Kraken)
   screen: primary
-  workspace: 6
   position: <s_primary_col1_left> <s_primary_row1_top>
   size: <s_primary_active_width> <s_primary_active_height>
   sticky: no
+
+# Relayout only: a new window opens on the current workspace.
+- match: (Class=^$) (Title=Kraken)
+  workspace: 6
+  map: no

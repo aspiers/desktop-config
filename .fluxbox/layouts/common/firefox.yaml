@@ -1,5 +1,9 @@
 - match: (Class=firefox)
   screen: primary
-  workspace: 3
   position: <s_primary_col1_left> <s_primary_row1_top>
   size: <s_primary_active_width> <s_primary_active_height>
+
+# Relayout only: a new window opens on the current workspace.
+- match: (Class=firefox)
+  workspace: 3
+  map: no

@@ -1297,10 +1297,16 @@ def test_production_adapter_uses_only_exact_leaves_and_separate_units(
     for action in bundle.plan.finalize_actions:
         operation = {
             0: ApplyFluxboxConfiguration(
-                next(
-                    item.content
-                    for item in bundle.artifacts
-                    if item.relative_path == bundle.plan.fluxbox.rendered_keys_artifact
+                *(
+                    next(
+                        item.content
+                        for item in bundle.artifacts
+                        if item.relative_path == path
+                    )
+                    for path in (
+                        bundle.plan.fluxbox.rendered_keys_artifact,
+                        bundle.plan.fluxbox.rendered_apps_artifact,
+                    )
                 )
             ),
             1: ApplyKeyboardIntent(bundle.plan.keyboard.disposition),
@@ -1369,6 +1375,7 @@ def test_production_adapter_uses_only_exact_leaves_and_separate_units(
     assert f"monitor-tray-diagnostics@{escaped_instance}.service" in joined
     assert capture.window_payload is not None
     assert (tmp_path / "home" / ".fluxbox" / "keys").is_file()
+    assert (tmp_path / "home" / ".fluxbox" / "apps").is_file()
     for _arguments, environment in capture.calls:
         assert environment["HOME"] == str(tmp_path / "home")
         assert environment["PATH"].startswith(f"{_REPO / 'bin'}:")

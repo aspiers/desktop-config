@@ -1,12 +1,15 @@
 # ruff: noqa: C901, EM101, EM102, PLR0911, PLR0912, TRY003
-"""Closed deterministic renderer for the tracked Fluxbox keys template."""
+"""Closed deterministic renderers for the tracked Fluxbox keys and apps files."""
 
 from __future__ import annotations
 
 import hashlib
 import re
 from dataclasses import dataclass
-from typing import Final
+from typing import TYPE_CHECKING, Final
+
+if TYPE_CHECKING:
+    from .layout import ResolvedWindowAction
 
 _PRELUDE_SHA256: Final = (
     "e3da53410fd705f3975056efdb8fe36bc46b151c12c89836b454625fd6f73a4b"
@@ -21,11 +24,15 @@ _PREFIX_VALUES: Final = ("", "reorg: ")
 # bytes. The template is a tracked repository file, so this guards against a
 # malformed edit rather than an adversary; exact argument values are proven
 # against real erb by the renderer parity test, not pinned here.
-_UNSAFE_HELPER_CHARACTERS: Final = frozenset('$`"\';&{}\\') | frozenset(
+_UNSAFE_HELPER_CHARACTERS: Final = frozenset("$`\"';&{}\\") | frozenset(
     chr(value) for value in range(0x20)
 )
 _MODE_NAME: Final = re.compile(r"^[A-Za-z0-9_-]+$")
 _MAX_DELAY_MS: Final = 600_000
+_APPS_BLOCK: Final = re.compile(r"^\[(app|transient)\][ \t]+(?P<pattern>\S.*?)[ \t]*$")
+_APPS_ATTRIBUTE: Final = re.compile(r"^[ \t]*\[(?P<name>[A-Za-z]+)\]")
+# Placement the layouts own; apps.in keeps every other setting.
+_LAYOUT_OWNED: Final = frozenset({"head", "position", "dimensions", "workspace"})
 
 
 class FluxboxRenderError(ValueError):
@@ -99,6 +106,121 @@ def render_fluxbox_keys(
         "# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
     )
     return (warning + body).encode("utf-8")
+
+
+@dataclass(frozen=True, slots=True)
+class _AppsBlock:
+    comments: tuple[str, ...]
+    header: str
+    pattern: str
+    body: tuple[str, ...]
+
+
+def render_fluxbox_apps(
+    template: bytes,
+    actions: tuple[ResolvedWindowAction, ...],
+    *,
+    template_label: str,
+) -> bytes:
+    """Merge the layout's placement into the hand-written apps template.
+
+    Fluxbox applies only the first [app] block that matches a window, while
+    relayout applies every matching rule in order, so the latest rule wins.
+    Placement blocks therefore come first, latest rule first, and rules with
+    identical matchers merge.  A template block with exactly the same pattern
+    joins its placement block; the rest of the template follows unchanged.
+    """
+    try:
+        source = template.decode("utf-8", errors="strict")
+    except UnicodeDecodeError as error:
+        raise FluxboxRenderError("Fluxbox apps template is not UTF-8") from error
+    items = _apps_items(source.splitlines())
+    blocks = {
+        item.pattern: item
+        for item in items
+        if isinstance(item, _AppsBlock) and item.header.startswith("[app]")
+    }
+    placements: dict[str, dict[str, str]] = {}
+    for action in reversed(actions):
+        if action.apps_attributes and action.matcher not in placements:
+            merged: dict[str, str] = {}
+            for earlier in actions:
+                if earlier.matcher == action.matcher:
+                    merged.update(
+                        (item.name, item.value) for item in earlier.apps_attributes
+                    )
+            placements[action.matcher] = merged
+    lines = [
+        "# WARNING: This file is auto-generated. DO NOT EDIT IT MANUALLY.",
+        f"# Edit {template_label} or the window rules in .fluxbox/layouts.",
+        "",
+    ]
+    merged_blocks: set[int] = set()
+    for pattern, attributes in placements.items():
+        block = blocks.get(pattern)
+        if block is None:
+            lines.append(f"[app] {pattern}")
+        else:
+            merged_blocks.add(id(block))
+            lines.extend((*block.comments, block.header))
+            lines.extend(
+                line
+                for line in block.body
+                if _apps_attribute_name(line)
+                not in {name.lower() for name in attributes}
+            )
+        lines.extend(f"  [{name}]\t{value}" for name, value in attributes.items())
+        lines.append("[end]")
+    for item in items:
+        if isinstance(item, str):
+            lines.append(item)
+        elif id(item) not in merged_blocks:
+            lines.extend((*item.comments, item.header, *item.body, "[end]"))
+    # Remember::reload() drops a final line that lacks its newline.
+    return ("\n".join(lines) + "\n").encode("utf-8")
+
+
+def _apps_items(lines: list[str]) -> list[str | _AppsBlock]:
+    items: list[str | _AppsBlock] = []
+    comments: list[str] = []
+    block: tuple[str, str] | None = None
+    body: list[str] = []
+    for number, line in enumerate(lines, start=1):
+        if block is not None:
+            if line.strip().lower() == "[end]":
+                items.append(_AppsBlock(tuple(comments), *block, tuple(body)))
+                comments, block, body = [], None, []
+                continue
+            if _APPS_BLOCK.match(line):
+                raise FluxboxRenderError(f"apps template line {number}: missing [end]")
+            if _apps_attribute_name(line) in _LAYOUT_OWNED:
+                raise FluxboxRenderError(
+                    f"apps template line {number}: window placement belongs in "
+                    ".fluxbox/layouts"
+                )
+            body.append(line)
+            continue
+        if match := _APPS_BLOCK.match(line):
+            block = (line.rstrip(), match.group("pattern"))
+        elif line.lstrip().startswith("#"):
+            comments.append(line)
+        else:
+            items.extend(comments)
+            items.append(line)
+            comments = []
+    if block is not None:
+        raise FluxboxRenderError("apps template ends inside a block")
+    items.extend(comments)
+    return items
+
+
+def _apps_attribute_name(line: str) -> str | None:
+    match = _APPS_ATTRIBUTE.match(line)
+    return (
+        None
+        if match is None or line.lstrip().startswith("#")
+        else (match.group("name").lower())
+    )
 
 
 def _tokens(source: str) -> tuple[_Text | _Expression, ...]:
@@ -252,9 +374,7 @@ def _evaluate(expression: str, *, monitor_count: int, prefix: str | None) -> str
         return _delay(_notify(message), _validated_delay(match.group(2)))
     match = re.fullmatch(r'next_unhidden "([^"]*)"(.*)', expression)
     if match:
-        selector = _validate_helper_text(
-            match.group(1), "next_unhidden arguments"
-        )
+        selector = _validate_helper_text(match.group(1), "next_unhidden arguments")
         options = _keyword_options(match.group(2))
         return _next_unhidden(selector, **options)
     raise FluxboxRenderError(
