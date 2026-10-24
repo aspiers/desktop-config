@@ -34,6 +34,10 @@ done
 # and supports running from another account, which a hardcoded path would
 # silently break. mr/sh.d/cfg-post guarantees ZDOTDIR is set before it runs
 # these hooks.
+#
+# ~/.local/bin must precede /usr/bin: Fluxbox and every app it launches run
+# as transient units with this PATH, and local overrides such as the patched
+# ~/.local/bin/bluetuith are otherwise silently bypassed for the RPM copy.
 env_d=${XDG_CONFIG_HOME:-$HOME/.config}/environment.d
 mkdir -p "$env_d"
 cat > "$env_d/60-shell-env.conf" <<CONF
@@ -41,7 +45,7 @@ cat > "$env_d/60-shell-env.conf" <<CONF
 #
 # Static shell environment for systemd --user services, needed before the X
 # session starts. See the generating hook for why this exists.
-PATH=$ZDOTDIR/bin:/usr/local/bin:/usr/X11R6/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin
+PATH=$ZDOTDIR/bin:$ZDOTDIR/.local/bin:/usr/local/bin:/usr/X11R6/bin:/usr/bin:/bin:/usr/local/sbin:/usr/sbin:/sbin
 ZDOTDIR=$ZDOTDIR
 ZDOT_FIND_HOOKS=$ZDOT_FIND_HOOKS
 ZDOT_RUN_HOOKS=$ZDOT_RUN_HOOKS

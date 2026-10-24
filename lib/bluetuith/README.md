@@ -21,7 +21,10 @@ Run:
 The installer fetches pinned commits for bluetuith v0.2.7 and
 bluetooth-classic v0.0.8, applies and tests the patch, runs the full bluetuith
 suite, and atomically installs `~/.local/bin/bluetuith`. That path precedes
-`/usr/bin`, leaving the Tumbleweed RPM untouched. Remove the local binary to
+`/usr/bin`, leaving the Tumbleweed RPM untouched. Desktop launches such as
+Mod4-u run as systemd user units, so they see it only because
+`.cfg-post.d/xsession-progs` puts `~/.local/bin` in the manager's `PATH`; if
+the quotes come back, check `readlink /proc/$(pgrep -x bluetuith)/exe`. Remove the local binary to
 roll back:
 
 ```sh
