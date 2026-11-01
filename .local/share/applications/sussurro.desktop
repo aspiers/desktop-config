@@ -1,0 +1,13 @@
+[Desktop Entry]
+# Start the existing systemd unit rather than the binary, so a menu launch
+# gets the same X environment, journal logging, single-instance guard and
+# Conflicts=epicenter.service as the session autostart.
+Type=Application
+Name=Sussurro
+GenericName=Dictation
+Comment=Start the Sussurro dictation daemon
+Exec=systemctl --user start sussurro.service
+Icon=audio-input-microphone
+Terminal=false
+Categories=Utility;Accessibility;
+Keywords=dictation;speech;voice;whisper;
