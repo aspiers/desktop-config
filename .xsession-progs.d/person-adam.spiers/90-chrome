@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# Not run_unless_running: Chrome's process is "chrome", not "google-chrome",
+# so that helper would never see it running and open an extra window on rerun.
+if pgrep -x -u "$(id -un)" chrome >/dev/null; then
+    echo "chrome already running"
+elif which google-chrome >/dev/null 2>&1; then
+    google-chrome >~/.log/google-chrome.log 2>&1 </dev/null &
+else
+    echo >&2 "google-chrome not found"
+fi
