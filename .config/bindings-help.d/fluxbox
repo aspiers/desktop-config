@@ -58,10 +58,13 @@ def main() -> None:
         description = describe(command)
         above = lines[index - 1] if index > 0 else ""
         above2 = lines[index - 2] if index > 1 else ""
-        # Only a lone comment line describes one binding; a block usually
-        # describes a group, and a commented-out binding describes nothing.
-        if (above.startswith("#") and not above2.startswith("#")
-                and " :" not in above):
+        below = lines[index + 1] if index + 1 < len(lines) else ""
+        # A comment describes this binding only when the two form a block of
+        # their own, set off by blank lines.  Otherwise it heads a group
+        # ("# opening terminals"), continues another comment, or is a note
+        # such as a FIXME.  A commented-out binding describes nothing.
+        if (above.startswith("#") and " :" not in above
+                and not above2.strip() and not below.strip()):
             description = above.lstrip("# ").strip()
         print(f"{context}\t{pretty_keys(spec)}\t{description}")
 
