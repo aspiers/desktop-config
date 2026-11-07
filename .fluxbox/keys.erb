@@ -352,7 +352,8 @@ Control Mod4 e :Exec efck-chat-keyboard
 # covers warpd --hint2) and hints jump to clickable elements.  fievel's
 # d+f chord replaces warpd --normal; nothing replaces warpd --grid.
 # Bound here because Neru's own X11 hotkeys can't grab symbol keys.
-Mod4 semicolon :Exec neru grid
+# --action move_mouse makes the sub-cell key end the mode.
+Mod4 semicolon :Exec neru grid --action move_mouse
 Mod4 minus :Exec neru hints
 
 # Leave these for Whispering bindings

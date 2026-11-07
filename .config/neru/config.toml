@@ -11,7 +11,9 @@
 characters = "abcdefghijklmnoprstuvwxyz"
 # Two-letter labels like warpd's; Neru enlarges the cells to still cover
 # the screen.  The cursor jumps after the label, so the sub-cell key is
-# optional: Escape leaves the cursor there, Shift+L clicks there.
+# optional: Escape leaves the cursor there, Shift+L clicks there.  The
+# fluxbox binding passes --action move_mouse, so a sub-cell key also
+# ends the mode.
 max_label_length = 2
 # The 3x3 sub-cells laid out like the keys: u i o / j k l / m , .
 # (warpd's hint2_chars).
