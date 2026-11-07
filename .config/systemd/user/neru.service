@@ -1,0 +1,19 @@
+[Unit]
+Description=Neru keyboard-driven hints, grids and pointer control
+
+# Bound to fluxbox-session.target rather than upstream's
+# graphical-session.target, which never deactivates here; see
+# keyboard-watcher.service.  Hotkeys come from .fluxbox/keys.erb, which
+# runs `neru grid` and friends against this daemon.
+PartOf=fluxbox-session.target
+After=fluxbox-session.target
+
+[Service]
+SyslogIdentifier=neru
+ExecStart=/bin/sh -c '${HOME}/bin/neru launch'
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+
+[Install]
+WantedBy=fluxbox-session.target

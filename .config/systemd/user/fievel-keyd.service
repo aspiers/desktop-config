@@ -1,0 +1,18 @@
+[Unit]
+Description=fievel free mouse mode on keyd's virtual keyboard
+
+# fievel-keyd finds keyd's virtual keyboard by name; keyd itself is a
+# system service, so retry until it has created that device.  Bound to
+# fluxbox-session.target for the reasons in keyboard-watcher.service.
+PartOf=fluxbox-session.target
+After=fluxbox-session.target
+
+[Service]
+SyslogIdentifier=fievel
+ExecStart=/bin/sh -c '${HOME}/bin/fievel-keyd'
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+
+[Install]
+WantedBy=fluxbox-session.target
