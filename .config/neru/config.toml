@@ -1,3 +1,7 @@
+# Documented in docs/keyboard-mouse-cheatsheet.md.  Update that cheatsheet
+# whenever a key binding or behaviour set here changes, so it stays
+# accurate.
+
 # Neru takes over warpd's jump-to-a-point modes; fievel handles free
 # mousing (d+f or F3).  Only settings that differ from Neru's defaults
 # are set here.
