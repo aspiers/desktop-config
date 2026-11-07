@@ -1,0 +1,90 @@
+#!/usr/bin/env python3
+"""Show every key binding in one searchable rofi list.
+
+Entries come from ~/.config/bindings-help.d/.  Each tool adds its own file:
+
+  *.tsv         one binding per line: context<TAB>keys<TAB>description.
+                Blank lines and lines starting with # are ignored.
+  executables   run with no arguments; they print the same three columns
+                on stdout.  Use one when the bindings can be read from the
+                tool's own config, so the list can never go stale.
+
+Anything else in the directory is ignored.  Typing in rofi filters on all
+three columns, so a binding can be found by key, by action or by tool.
+
+Usage: bindings-help [--list]
+  --list  print the aligned table to stdout instead of opening rofi
+"""
+
+import subprocess
+import sys
+from pathlib import Path
+
+HELP_DIR = Path.home() / ".config" / "bindings-help.d"
+GENERATOR_TIMEOUT = 5  # seconds; a hung generator must not hang the key
+MAX_KEYS_WIDTH = 30
+
+
+def parse_tsv(text: str, source: str) -> list[tuple[str, str, str]]:
+    entries = []
+    for line in text.splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        fields = line.split("\t")
+        if len(fields) != 3:
+            entries.append(("bindings-help", "!", f"{source}: bad line: {line}"))
+            continue
+        entries.append(tuple(field.strip() for field in fields))
+    return entries
+
+
+def run_generator(path: Path) -> list[tuple[str, str, str]]:
+    try:
+        result = subprocess.run(
+            [str(path)], capture_output=True, text=True,
+            timeout=GENERATOR_TIMEOUT, check=True,
+        )
+    except (OSError, subprocess.SubprocessError) as error:
+        return [("bindings-help", "!", f"{path.name} failed: {error}")]
+    return parse_tsv(result.stdout, path.name)
+
+
+def collect() -> list[tuple[str, str, str]]:
+    entries = []
+    for path in sorted(HELP_DIR.glob("*")):
+        if not path.is_file():
+            continue
+        if path.suffix == ".tsv":
+            entries += parse_tsv(path.read_text(), path.name)
+        elif path.stat().st_mode & 0o111:
+            entries += run_generator(path)
+    return entries
+
+
+def format_rows(entries: list[tuple[str, str, str]]) -> list[str]:
+    if not entries:
+        return [f"no bindings found in {HELP_DIR}"]
+    context_width = max(len(context) for context, _, _ in entries)
+    keys_width = min(MAX_KEYS_WIDTH, max(len(keys) for _, keys, _ in entries))
+    return [
+        f"{keys:<{keys_width}}  {context:<{context_width}}  {description}"
+        for context, keys, description in entries
+    ]
+
+
+def main() -> int:
+    rows = format_rows(collect())
+    if sys.argv[1:] == ["--list"]:
+        print("\n".join(rows))
+        return 0
+    # Selecting a row does nothing: the list is for reading.
+    subprocess.run(
+        ["rofi-themed", "-dmenu", "-i", "-no-custom", "-p", "bindings",
+         "-theme-str", "window { width: 90%; }"],
+        input="\n".join(rows), text=True,
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

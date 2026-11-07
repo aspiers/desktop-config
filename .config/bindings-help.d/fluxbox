@@ -1,0 +1,70 @@
+#!/usr/bin/env python3
+"""bindings-help generator: list fluxbox key and mouse bindings.
+
+Reads the rendered ~/.fluxbox/keys, so the list always matches what
+fluxbox loaded.  A binding's description is the one-line comment directly
+above it in .fluxbox/keys.erb, when there is one; otherwise its command.
+"""
+
+import re
+from pathlib import Path
+
+KEYS_FILE = Path.home() / ".fluxbox" / "keys"
+MAX_DESCRIPTION = 160
+
+MODIFIERS = {"Mod4": "Super", "Mod1": "Alt", "Control": "Ctrl", "Shift": "Shift"}
+KEY_NAMES = {
+    "minus": "-", "equal": "=", "semicolon": ";", "apostrophe": "'",
+    "slash": "/", "backslash": "\\", "comma": ",", "period": ".",
+    "grave": "`", "bracketleft": "[", "bracketright": "]",
+}
+MODE_PREFIX = re.compile(r"^([A-Za-z]+):\s+")
+
+
+def pretty_keys(spec: str) -> str:
+    """Turn 'Shift Mod4 slash' into 'Super+Shift+/'; chords stay space-separated."""
+    chords, mods = [], []
+    for token in spec.split():
+        if token in MODIFIERS:
+            mods.append(MODIFIERS[token])
+            continue
+        key = KEY_NAMES.get(token, token)
+        # Super first reads naturally and matches how the bindings are spoken.
+        mods.sort(key=lambda mod: ["Super", "Ctrl", "Alt", "Shift"].index(mod))
+        chords.append("+".join(mods + [key]))
+        mods = []
+    return " ".join(chords + mods)
+
+
+def describe(command: str) -> str:
+    command = re.sub(r"\s+", " ", command.strip())
+    command = re.sub(r"^Exec ", "", command)
+    if len(command) > MAX_DESCRIPTION:
+        command = command[: MAX_DESCRIPTION - 1] + "…"
+    return command
+
+
+def main() -> None:
+    lines = KEYS_FILE.read_text().splitlines()
+    for index, line in enumerate(lines):
+        if not line.strip() or line.lstrip().startswith("#") or " :" not in line:
+            continue
+        context = "fluxbox"
+        mode = MODE_PREFIX.match(line)
+        if mode:
+            context = f"fluxbox {mode.group(1)} mode"
+            line = line[mode.end():]
+        spec, command = line.split(" :", 1)
+        description = describe(command)
+        above = lines[index - 1] if index > 0 else ""
+        above2 = lines[index - 2] if index > 1 else ""
+        # Only a lone comment line describes one binding; a block usually
+        # describes a group, and a commented-out binding describes nothing.
+        if (above.startswith("#") and not above2.startswith("#")
+                and " :" not in above):
+            description = above.lstrip("# ").strip()
+        print(f"{context}\t{pretty_keys(spec)}\t{description}")
+
+
+if __name__ == "__main__":
+    main()
