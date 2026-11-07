@@ -17,9 +17,6 @@ characters = "abcdefghijklmnoprstuvwxyz"
 # Two-letter labels like warpd's; Neru enlarges the cells to still cover
 # the screen.
 max_label_length = 2
-# The label alone picks the cell; fievel does any finer positioning.
-# Needs the feat/grid-skip-subgrid branch of the aspiers/neru fork.
-subgrid_enabled = false
 
 [grid.ui]
 # The default 10pt is unreadably small here; labels still shrink to fit
