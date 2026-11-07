@@ -11,8 +11,16 @@
 characters = "abcdefghijklmnoprstuvwxyz"
 # Two-letter labels like warpd's; Neru enlarges the cells to still cover
 # the screen.  The cursor jumps after the label, so the sub-cell key is
-# optional.
+# optional: Escape leaves the cursor there, Shift+L clicks there.
 max_label_length = 2
+# The 3x3 sub-cells laid out like the keys: u i o / j k l / m , .
+# (warpd's hint2_chars).
+sublayer_keys = "uiojklm,."
+
+[grid.ui]
+# The default 10pt is unreadably small here; labels still shrink to fit
+# their cells.
+font_size = 24
 
 # Shift+N/Shift+P jump to the next/previous monitor; the overlay follows.
 [grid.hotkeys]
