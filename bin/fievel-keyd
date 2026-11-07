@@ -1,0 +1,24 @@
+#!/bin/bash
+#
+# Run fievel on keyd's virtual keyboard only.
+#
+# Left to pick devices itself, fievel grabs every device reporting the A
+# and Space keys, including the MX Master 3 mouse, which kills pointer
+# movement. It also retries the keyboards keyd holds every second, logging
+# an error each time. Reading keyd's output device instead keeps keyd's
+# remapping and leaves mice alone. Its event number changes across reboots
+# and keyd restarts, so look it up by name each time.
+
+set -euo pipefail
+
+target="keyd virtual keyboard"
+
+for name_file in /sys/class/input/event*/device/name; do
+    if [[ $(<"$name_file") == "$target" ]]; then
+        event=${name_file%/device/name}
+        exec fievel --device "/dev/input/${event##*/}" "$@"
+    fi
+done
+
+echo "${0##*/}: no \"$target\" input device found; is keyd running?" >&2
+exit 1
