@@ -14,8 +14,17 @@ characters = "abcdefghijklmnoprstuvwxyz"
 # optional.
 max_label_length = 2
 
+# Shift+N/Shift+P jump to the next/previous monitor; the overlay follows.
+[grid.hotkeys]
+"Shift+N" = "action move_monitor"
+"Shift+P" = "action move_monitor --previous"
+
 [hints]
 # The accessibility tree finds nothing in terminals and needs flags in
 # Chromium.  OCR finds few enough targets for two-letter labels; the
 # image-based contour and segment strategies found over 700 here.
 strategy = "vision"
+
+[hints.hotkeys]
+"Shift+N" = "action move_monitor"
+"Shift+P" = "action move_monitor --previous"
