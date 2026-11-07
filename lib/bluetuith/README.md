@@ -31,8 +31,11 @@ roll back:
 rm ~/.local/bin/bluetuith
 ```
 
-As of 2026-08-21, searches of open and closed issues and pull requests in both
-canonical repositories found no matching report or fix. Public issue/patch
-submission still requires explicit approval.
+Reported upstream as [bluetuith#87][upstream-issue] on 2026-11-07, as a bug
+report without the patch: the maintainer has said "No AI contributions". Once
+a bluetuith release picks up a fixed bluetooth-classic, remove the local
+binary.
+
+[upstream-issue]: https://github.com/bluetuith-org/bluetuith/issues/87
 
 [backend]: https://github.com/bluetuith-org/bluetooth-classic/tree/v0.0.8
