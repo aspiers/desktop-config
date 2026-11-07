@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Window placement crash course</title>
+<style>
+:root {
+  --bg: #fbfaf7; --fg: #1f2328; --muted: #5d6670; --card: #ffffff;
+  --line: #e2ddd3; --accent: #2f6f5e; --accent-soft: #e3f1ec;
+  --old: #9a4a2f; --old-soft: #f8e9e2; --code-bg: #f3f0ea; --warn-soft: #fff4d6; --warn: #8a6100;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15181c; --fg: #e6e8eb; --muted: #9aa3ad; --card: #1d2126;
+    --line: #2f353d; --accent: #6cc3a6; --accent-soft: #1f3530;
+    --old: #e39a7c; --old-soft: #3a2621; --code-bg: #232830; --warn-soft: #3a3120; --warn: #e8c46a;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15181c; --fg: #e6e8eb; --muted: #9aa3ad; --card: #1d2126;
+  --line: #2f353d; --accent: #6cc3a6; --accent-soft: #1f3530;
+  --old: #e39a7c; --old-soft: #3a2621; --code-bg: #232830; --warn-soft: #3a3120; --warn: #e8c46a;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+main { max-width: 980px; margin: 0 auto; padding: 32px 16px 80px; }
+h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 8px; }
+h2 { font-size: 1.35rem; margin: 48px 0 12px; padding-top: 8px; border-top: 1px solid var(--line); }
+h3 { font-size: 1.05rem; margin: 24px 0 8px; }
+p, li { max-width: 72ch; }
+.lede { color: var(--muted); font-size: 1.1rem; margin: 0 0 24px; }
+code, pre { font-family: ui-monospace, "JetBrains Mono", Menlo, monospace; font-size: 0.88em; }
+code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+pre { background: var(--code-bg); padding: 14px 16px; border-radius: 8px; overflow-x: auto; line-height: 1.45; margin: 8px 0 0; }
+pre code { background: none; padding: 0; }
+.tldr { background: var(--accent-soft); border-left: 4px solid var(--accent); padding: 16px 20px; border-radius: 8px; }
+.tldr ul { margin: 8px 0 0; padding-left: 20px; }
+.toc { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 0; padding: 0; list-style: none; }
+.toc a { display: inline-block; padding: 4px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--fg); text-decoration: none; font-size: 0.9rem; background: var(--card); }
+.toc a:hover { border-color: var(--accent); }
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 760px) { .compare { grid-template-columns: 1fr; } }
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; min-width: 0; }
+.panel h3 { margin-top: 0; }
+.tag { display: inline-block; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; margin-bottom: 6px; }
+.tag.old { background: var(--old-soft); color: var(--old); }
+.tag.new { background: var(--accent-soft); color: var(--accent); }
+.flow { display: flex; align-items: stretch; gap: 10px; flex-wrap: wrap; margin: 12px 0; }
+.box { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; flex: 1 1 160px; }
+.box b { display: block; }
+.box small { color: var(--muted); }
+.arrow { align-self: center; color: var(--muted); font-size: 1.4rem; }
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; flex: 2 1 340px; }
+@media (max-width: 560px) { .split { grid-template-columns: 1fr; } .arrow { transform: rotate(90deg); margin: 0 auto; } }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; margin: 8px 0; background: var(--card); border-radius: 8px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 0.85rem; color: var(--muted); font-weight: 600; }
+.note { background: var(--warn-soft); border-left: 4px solid var(--warn); padding: 12px 16px; border-radius: 8px; margin: 16px 0; }
+.note b { color: var(--warn); }
+ol.steps li, ul.tight li { margin: 4px 0; }
+footer { color: var(--muted); font-size: 0.9rem; margin-top: 56px; }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Window placement: one source per layout</h1>
+<p class="lede">A crash course in the change on branch <code>feat-layout-apps-file</code> (bead <code>dc-20st</code>, "Make each layout YAML the single source of window placement, including .fluxbox/apps"), and how it differs from what is on master.</p>
+
+<div class="tldr">
+  <b>In one minute</b>
+  <ul>
+    <li><b>Before:</b> two files placed windows. The layout YAML did it on relayout; the global <code>.fluxbox/apps</code> did it when a window first opened, using fixed head numbers that ignored the layout.</li>
+    <li><b>Now:</b> each layout rule says <em>where a window belongs</em> (screen, workspace, position, size, sticky). One parser turns that into both the relayout commands and the apps-file placement.</li>
+    <li><b>The apps file is generated</b> at every relayout from those rules plus a hand-written <code>.fluxbox/apps.in</code> that keeps only non-placement settings (Layer, Hidden, Deco, FocusProtection, ...).</li>
+    <li><b>The motivating bug is fixed:</b> agent-browser now opens on the laptop in both Celtic+external layouts, whichever screen is primary.</li>
+  </ul>
+</div>
+
+<ul class="toc">
+  <li><a href="#problem">The old problem</a></li>
+  <li><a href="#model">The new model</a></li>
+  <li><a href="#syntax">Rule syntax</a></li>
+  <li><a href="#fields">Field reference</a></li>
+  <li><a href="#order">First match vs last match</a></li>
+  <li><a href="#appsin">apps.in</a></li>
+  <li><a href="#workspaces">Workspaces and map: no</a></li>
+  <li><a href="#lifecycle">When it runs</a></li>
+  <li><a href="#changes">Behaviour changes</a></li>
+  <li><a href="#howto">How to edit</a></li>
+  <li><a href="#limits">Limits</a></li>
+</ul>
+
+<h2 id="problem">The old problem</h2>
+<p>Fluxbox has two unrelated ways to place a window, and the config used both:</p>
+<div class="compare">
+  <div class="panel">
+    <span class="tag old">On relayout</span>
+    <h3>Layout YAML</h3>
+    <p>Each <code>.fluxbox/layouts/*.yaml</code> listed Fluxbox commands per window pattern. Placeholders such as <code>&lt;s_primary_col1_left&gt;</code> resolved to pixels for the screens actually connected. Layout-aware, but it only ran when the monitor setup changed.</p>
+  </div>
+  <div class="panel">
+    <span class="tag old">On first open</span>
+    <h3>.fluxbox/apps</h3>
+    <p>One global file for every layout. <code>[Head]</code> takes only a number, and Fluxbox numbers the <em>primary</em> output head 1. So a rule saying "head 2" meant different physical screens in different layouts.</p>
+  </div>
+</div>
+<h3>The concrete case</h3>
+<pre><code># master's .fluxbox/apps
+[app] (name=google-chrome.*agent-browser-(data|chrome).*)
+  [FocusProtection]	{Deny, Refuse}
+  [Sticky]	{yes}
+  [Head]	{2}          # laptop only while the external screen is primary
+  [Position]	(UPPERLEFT)	{0 0}
+[end]</code></pre>
+<p>Under <code>celtic+external-secondary</code> the laptop is primary, so it is head 1 and head 2 is the external screen. New agent-browser windows opened on the wrong monitor. A sandbox run of real Fluxbox with two heads reproduced exactly that.</p>
+
+<h2 id="model">The new model</h2>
+<div class="flow">
+  <div class="box"><b>Layout YAML</b><small>declarative window rules, per layout</small></div>
+  <div class="arrow">&rarr;</div>
+  <div class="box"><b>Parser + resolver</b><small><code>layout.py</code>: resolves screens, placeholders, heads</small></div>
+  <div class="arrow">&rarr;</div>
+  <div class="split">
+    <div class="box"><b>Relayout commands</b><small><code>Map {SetHead ...} {Matches ...}</code>, applied to open windows</small></div>
+    <div class="box"><b>Apps attributes</b><small><code>[Head]</code>, <code>[Position]</code>, ... merged with <code>apps.in</code> into <code>~/.fluxbox/apps</code></small></div>
+  </div>
+</div>
+<p>Both outputs come from the same fields, so a window that opens after a relayout lands where the relayout would have put it. Every rule's head is resolved from the layout's own screen list, which is what fixes head-number drift.</p>
+
+<h2 id="syntax">Rule syntax, before and after</h2>
+<p>The chat-app rule from <code>common/communication.yaml</code>:</p>
+<div class="compare">
+  <div class="panel">
+    <span class="tag old">Before</span>
+<pre><code>- - (Name=beeper|slack|Telegram|discord|Discord*|zulip)
+  - MacroCmd {&lt;s_primary_SetHead&gt;} {SendToWorkspace 4}
+      {MoveTo &lt;s_primary_col1_left&gt; &lt;s_primary_row1_top&gt;}
+      {ResizeTo &lt;s_primary_active_width&gt; &lt;s_primary_active_height&gt;}
+  - &lt;unstick&gt;</code></pre>
+    <p>A matcher, then raw Fluxbox commands. (MacroCmd wrapped here for width; it was one line.)</p>
+  </div>
+  <div class="panel">
+    <span class="tag new">After</span>
+<pre><code>- match: (Name=beeper|slack|Telegram|discord|Discord*|zulip)
+  screen: primary
+  workspace: 4
+  position: &lt;s_primary_col1_left&gt; &lt;s_primary_row1_top&gt;
+  size: &lt;s_primary_active_width&gt; &lt;s_primary_active_height&gt;
+  sticky: no</code></pre>
+    <p>A matcher, then what the window's placement should be. Placeholders still work in any value.</p>
+  </div>
+</div>
+<p>Every tracked layout was converted mechanically, then checked: all nine resolve to the same relayout commands as before. The one exception is the top-term rules' <code>Sticky {..}</code> and <code>Iconhidden {..}</code> lines. Those aren't Fluxbox commands and never did anything, so they were dropped rather than turned into a real stick or unstick.</p>
+<p>The old form is now rejected with an error that points at the new one, so a stale layout fails loudly instead of placing nothing.</p>
+
+<h2 id="fields">Field reference</h2>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Field</th><th>Value</th><th>Relayout command</th><th>Apps attribute</th></tr></thead>
+  <tbody>
+    <tr><td><code>match</code></td><td>Fluxbox pattern (required, first line)</td><td><code>{Matches ...}</code></td><td><code>[app] ...</code></td></tr>
+    <tr><td><code>screen</code></td><td>a screen's assignment or name: <code>primary</code>, <code>secondary</code>, <code>celtic</code>, <code>external</code>, ...</td><td><code>SetHead N</code></td><td><code>[Head] {N}</code></td></tr>
+    <tr><td><code>workspace</code></td><td>1-based number</td><td><code>SendToWorkspace N</code></td><td><code>[Workspace] {N-1}</code> (apps counts from 0)</td></tr>
+    <tr><td><code>size</code></td><td><code>W H</code>, pixels or <code>%</code></td><td><code>ResizeTo W H</code></td><td><code>[Dimensions] {W H}</code></td></tr>
+    <tr><td><code>position</code></td><td><code>X Y [Corner]</code>, e.g. <code>0 0 Center</code></td><td><code>MoveTo X Y Corner</code></td><td><code>[Position] (Corner) {X Y}</code></td></tr>
+    <tr><td><code>sticky</code></td><td><code>yes</code> / <code>no</code></td><td>stick / unstick only if needed</td><td><code>[Sticky] {yes|no}</code></td></tr>
+    <tr><td><code>relayout_command</code></td><td>one raw Fluxbox command</td><td>appended as is</td><td>none (used for <code>Attach</code> and <code>Activate</code>)</td></tr>
+    <tr><td><code>map</code></td><td><code>no</code></td><td>unchanged</td><td>rule left out of the apps file</td></tr>
+  </tbody>
+</table>
+</div>
+<ul class="tight">
+  <li><b>Command order is fixed:</b> SetHead, SendToWorkspace, ResizeTo, MoveTo, stick, then <code>relayout_command</code>. Resizing before an anchored move (Center and friends) used to be a hand-maintained comment; now it is guaranteed.</li>
+  <li><b>Coordinates carry over unchanged.</b> In Fluxbox's source, <code>MoveTo</code> and <code>[Position]</code> both measure from the window's head and accept the same corner names.</li>
+  <li><b>Screens by name</b> are new. <code>screen: celtic</code> finds the laptop whether it is primary or secondary, which is how the agent-browser rule works.</li>
+  <li><b>Removed placeholders:</b> <code>&lt;stick&gt;</code>, <code>&lt;unstick&gt;</code> and <code>&lt;place_RHS&gt;</code> are gone from the parser; <code>celtic+ultrawide</code> spells out its column-3 placement instead.</li>
+</ul>
+
+<h2 id="order">First match vs last match</h2>
+<p>This is the one real semantic gap between the two mechanisms:</p>
+<div class="compare">
+  <div class="panel"><span class="tag">Relayout</span><p>Applies <b>every</b> matching rule in order, so the <b>latest</b> rule wins. A specific rule (mutt's kitty) placed after a generic one (all terminals) overrides it.</p></div>
+  <div class="panel"><span class="tag">Apps file</span><p>Uses only the <b>first</b> matching <code>[app]</code> block and ignores the rest.</p></div>
+</div>
+<p>The generator bridges this:</p>
+<ol class="steps">
+  <li>Placement blocks are written <b>latest rule first</b>, so the rule that wins on relayout also wins on open.</li>
+  <li>Rules with <b>identical match text merge</b> into one block, later fields winning. For example, the two browser rules for <code>(Head=2)</code>, one for geometry and one for sticky, become one block.</li>
+  <li>An <code>apps.in</code> block with <b>exactly the same pattern</b> joins that block, so agent-browser keeps FocusProtection and gains its head.</li>
+  <li>The rest of <code>apps.in</code> follows, in its own order.</li>
+</ol>
+<div class="note"><b>Known limit.</b> If two rules have <em>different</em> patterns that both match a window, the window gets only the later rule's fields when it opens, not a merge of both. For example, mutt's kitty window opens centred but not resized. That is what the old apps file did too.</div>
+<h3>Generated output for agent-browser</h3>
+<div class="compare">
+  <div class="panel"><span class="tag new">celtic+external</span>
+<pre><code>[app] (name=google-chrome.*agent-browser-(data|chrome).*)
+  [FocusProtection]	{Deny, Refuse}
+  [Sticky]	{yes}
+  [Head]	{2}
+  [Position]	(UpperLeft)	{0 0}
+[end]</code></pre></div>
+  <div class="panel"><span class="tag new">celtic+external-secondary</span>
+<pre><code>[app] (name=google-chrome.*agent-browser-(data|chrome).*)
+  [FocusProtection]	{Deny, Refuse}
+  [Sticky]	{yes}
+  [Head]	{1}
+  [Position]	(UpperLeft)	{0 0}
+[end]</code></pre></div>
+</div>
+
+<h2 id="appsin">apps.in: the hand-written part</h2>
+<ul class="tight">
+  <li><b><code>.fluxbox/apps</code> moved</b> to <code>.fluxbox/apps.in</code>, and <code>.fluxbox/apps</code> is now gitignored like <code>keys</code>.</li>
+  <li><b>It keeps only non-placement settings:</b> Layer, Hidden, Sticky, Deco, IconHidden, FocusNewWindow, FocusProtection and transient rules.</li>
+  <li><b>Placement keys are refused.</b> <code>[Head]</code>, <code>[Position]</code>, <code>[Dimensions]</code> or <code>[Workspace]</code> in <code>apps.in</code> makes planning fail with "window placement belongs in .fluxbox/layouts".</li>
+  <li><b>Pattern text must match exactly</b> for a block to join a layout rule. That's why the Code/Cursor block now reads <code>(class=Cursor|Code)</code>, the layout's spelling.</li>
+  <li><b>Blocks with no layout rule</b> (Workrave, eog, ksnip, the <code>(head=2)</code> catch-all) come after all placement blocks. So they only reach windows no layout rule matches.</li>
+</ul>
+<h3>Where the old apps placement went</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Old apps rule</th><th>Now</th></tr></thead>
+  <tbody>
+    <tr><td>terminals, kitty, mutt, emacs, Code/Cursor, orca, crx apps, Notion, Slack, LM Studio, gkrellm, pavucontrol</td><td>dropped: the existing layout rules already place them</td></tr>
+    <tr><td>fbrun, Chrome fzf, ccmonitor, mail-sync / bluetuith / rxx top-terms</td><td>new <code>common/fixed-windows.yaml</code>, the same in every layout</td></tr>
+    <tr><td>Telegram, Beeper/Discord/Zulip (matched on title)</td><td>added to <code>common/communication.yaml</code> with the chat-app placement</td></tr>
+    <tr><td>agent-browser</td><td>new <code>common/agent-browser.yaml</code> (<code>screen: celtic</code>), included in the seven Celtic layouts</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2 id="workspaces">Workspaces and <code>map: no</code></h2>
+<p>A literal translation would have sent every new Firefox and gitk window to workspace 3, and every new btop to workspace 6. Workspace 6 is where <code>fluxbox-focus-or-launch</code> hides windows, so btop would have opened hidden. You chose to keep today's behaviour:</p>
+<ul class="tight">
+  <li><b>Moved on open, as before:</b> chat apps (workspace 4), Notion and LM Studio (workspace 3).</li>
+  <li><b>Moved on relayout only:</b> Firefox, gitk, Kraken, Chrysalis, the single-screen pavucontrol and Blueman, the Chrome title rules, and btop.</li>
+</ul>
+<p>Each relayout-only workspace move is split into its own rule:</p>
+<pre><code>- match: (Class=firefox)
+  screen: primary
+  position: &lt;s_primary_col1_left&gt; &lt;s_primary_row1_top&gt;
+  size: &lt;s_primary_active_width&gt; &lt;s_primary_active_height&gt;
+
+# Relayout only: a new window opens on the current workspace.
+- match: (Class=firefox)
+  workspace: 3
+  map: no</code></pre>
+
+<h2 id="lifecycle">When the apps file is written and loaded</h2>
+<ol class="steps">
+  <li><b>Plan:</b> on each monitor change the controller's planner reads <code>apps.in</code> (now a hashed planning input like <code>keys.erb</code>) and renders the apps file as a plan artifact. The plan schema went from version 5 to 6.</li>
+  <li><b>Prepare and finalize:</b> both workers write <code>~/.fluxbox/apps</code> right after <code>~/.fluxbox/keys</code>, by atomic rename.</li>
+  <li><b>Restart:</b> the in-place Fluxbox restart that already follows loads it fresh. No Reconfigure is sent.</li>
+  <li><b>Bootstrap:</b> if no apps file exists, the post-stow hook (<code>.cfg-post.d/desktop-config</code>) copies <code>apps.in</code> into place. That gives you every setting except placement until the first relayout.</li>
+</ol>
+<div class="note"><b>Why not rely on Fluxbox's own reload?</b> Fluxbox rereads the apps file when its ctime changes, but checks only whole seconds, and closing a window also triggers the check. In testing on 2026-10-14, only 20 of 34 edits took effect, and a miss left the window with no rule at all. Likely cause (unconfirmed): a reload read a half-written file. The restart sidesteps that.</div>
+
+<h2 id="changes">Behaviour changes to expect</h2>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Window</th><th>Before</th><th>After</th></tr></thead>
+  <tbody>
+    <tr><td>agent-browser</td><td>head 2, wrong in celtic+external-secondary; never moved on relayout</td><td>always the laptop, on open and on relayout</td></tr>
+    <tr><td>emacs (on open)</td><td>47% wide at 50%</td><td>the layout's column 2</td></tr>
+    <tr><td>orca, Slack, Telegram (on open)</td><td>Slack, Telegram: 96% × 89%; orca: 100% × 98%</td><td>the layout's active area</td></tr>
+    <tr><td>terminals (on open)</td><td>55% × 98% on head 1</td><td>the layout's column 1 on the primary screen</td></tr>
+    <tr><td>plain xfce4-terminal</td><td>placed on open only</td><td>also relaid out (pattern broadened)</td></tr>
+    <tr><td>ccmonitor, Chrome fzf (on relayout)</td><td>moved to column 1 by the terminal rule</td><td>keep their own placement</td></tr>
+    <tr><td>btop, gitk, Firefox (on open)</td><td>current workspace</td><td>unchanged: still the current workspace</td></tr>
+  </tbody>
+</table>
+</div>
+<p>A sandbox run with your live celtic layout (2880 × 1920) opened 12 test windows under master's apps file and the branch's. kitty, mutt, gkrellm, btop, ccmonitor, rxx, fbrun and agent-browser landed identically. The rows above are the only differences.</p>
+
+<h2 id="howto">How to edit</h2>
+<h3>Place a new kind of window</h3>
+<pre><code>- match: (Class=Signal)
+  screen: primary
+  workspace: 4
+  position: &lt;s_primary_col1_left&gt; &lt;s_primary_row1_top&gt;
+  size: &lt;s_primary_active_width&gt; &lt;s_primary_active_height&gt;</code></pre>
+<p>Put it in a <code>common/</code> include if every layout wants it, or inline in one layout. Put it <b>after</b> any broader rule it should override.</p>
+<h3>Move it on relayout but not on open</h3>
+<p>Add <code>map: no</code> to the rule, or split out just the fields that should be relayout-only, as the Firefox workspace rule does.</p>
+<h3>Add a non-placement setting</h3>
+<p>Add a block to <code>.fluxbox/apps.in</code>. If the window also has a layout rule, copy that rule's <code>match:</code> text <b>exactly</b> into the block's pattern so the two merge. Otherwise Fluxbox will see the placement block first and never reach yours.</p>
+<h3>Check it</h3>
+<pre><code>cd .local/lib/monitor-controller &amp;&amp; uv run pytest -q</code></pre>
+<p><code>tests/monitor_controller/test_layout_rules.py</code> covers the fields, and <code>test_fluxbox_apps.py</code> covers the generator. That includes agent-browser in both external layouts and btop never opening on workspace 6.</p>
+
+<h2 id="limits">Limits and open ends</h2>
+<ul class="tight">
+  <li><b>Overlapping patterns don't merge on open.</b> See the note under <a href="#order">first match vs last match</a>.</li>
+  <li><b>Title rules rarely fire on open.</b> Chrome sets its real title after mapping. Because the browser <code>(Head=N)</code> blocks come first, title rules mostly apply on relayout only, as before.</li>
+  <li><b>Fluxbox's Remember menu</b> writes into the generated file, so the next relayout overwrites anything saved from it.</li>
+  <li><b>Gap after merging.</b> The merge deletes the tracked <code>.fluxbox/apps</code> in the main checkout. Fluxbox has no apps file until <code>mr stow</code> or the next relayout.</li>
+  <li><b>Follow-up <code>dc-gqkz</code></b> ("(head=2) sticky rule in .fluxbox/apps.in makes the wrong screen sticky in some layouts"). It has the same head-number problem: under celtic+external-secondary, new windows on the external screen probably become sticky.</li>
+</ul>
+
+<footer>Branch <code>feat-layout-apps-file</code>: commits <code>50ecd37</code> (declarative layout rules) and <code>a73d959</code> (generated apps file). Not yet merged or pushed.</footer>
+</main>
+</body>
+</html>
