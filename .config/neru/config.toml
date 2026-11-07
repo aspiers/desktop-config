@@ -9,3 +9,13 @@
 [grid]
 # warpd's hint_chars, so labels read the same as before.
 characters = "abcdefghijklmnoprstuvwxyz"
+# Two-letter labels like warpd's; Neru enlarges the cells to still cover
+# the screen.  The cursor jumps after the label, so the sub-cell key is
+# optional.
+max_label_length = 2
+
+[hints]
+# The accessibility tree finds nothing in terminals and needs flags in
+# Chromium.  OCR finds few enough targets for two-letter labels; the
+# image-based contour and segment strategies found over 700 here.
+strategy = "vision"
