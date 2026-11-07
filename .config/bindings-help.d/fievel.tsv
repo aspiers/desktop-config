@@ -5,7 +5,7 @@ fievel	hold d+f or F3	Free mouse mode, while held
 fievel	z	Lock free mouse mode on / off
 fievel	j k i l	Move left, down, up, right
 fievel	Space	Left click
-fievel	o	Right click
+fievel	;	Right click
 fievel	hold a	Move slowly
 fievel	hold s	Move fast
 fievel	n m , .	Scroll left, down, up, right
