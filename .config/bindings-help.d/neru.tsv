@@ -16,6 +16,6 @@ neru mode	Shift+L	Left click
 neru mode	Shift+R	Right click
 neru mode	Shift+M	Middle click
 neru mode	Shift+I / Shift+U	Press / release the left button (drag)
-neru mode	Shift+N / Shift+P	Jump to the next / previous monitor (grid and hints)
+neru mode	Shift+N / Shift+P	Jump to the next / previous monitor (grid, recursive grid and hints)
 neru mode	arrow keys	Nudge the pointer a few pixels
 neru mode	Escape	Leave the mode, pointer stays put

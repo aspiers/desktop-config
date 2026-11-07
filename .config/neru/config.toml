@@ -44,6 +44,10 @@ keys = "uijk"
 [recursive_grid.ui]
 font_size = 24
 
+[recursive_grid.hotkeys]
+"Shift+N" = "action move_monitor"
+"Shift+P" = "action move_monitor --previous"
+
 [hints]
 # OCR ("vision") took ~9s on a full-width window and the accessibility
 # tree finds nothing in terminals; segment takes ~0.2s.
