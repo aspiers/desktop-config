@@ -2,11 +2,10 @@
 # Super+- and Super+; come from the fluxbox generator.  Keep this in step
 # with .config/neru/config.toml and Neru's built-in mode defaults.
 # context	keys	description
-neru grid	two-letter label	Jump the pointer to that cell
-neru grid	u i o / j k l / m , .	Move to that part of the cell, then close the grid
+neru grid	two-letter label	Move the pointer to that cell and close the grid
 neru grid	Space	Start the label again
 neru grid	Backspace	Undo the last letter
-neru hints	two-letter label	Move the pointer to that target (OCR of the focused window)
+neru hints	label	Move the pointer to that target and close hints (targets found in the focused window)
 neru hints	Tab / Shift+Tab	Next / previous hint
 neru hints	/	Search hints by their text
 neru hints	Backspace	Undo the last letter

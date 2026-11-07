@@ -1,27 +1,25 @@
-# Documented in docs/keyboard-mouse-cheatsheet.md.  Update that cheatsheet
-# whenever a key binding or behaviour set here changes, so it stays
-# accurate.
+# The keys set here are listed for bin/bindings-help in
+# .config/bindings-help.d/neru.tsv.  Update that file whenever a binding
+# or behaviour set here changes, so the help stays accurate.
 
 # Neru takes over warpd's jump-to-a-point modes; fievel handles free
 # mousing (d+f or F3).  Only settings that differ from Neru's defaults
 # are set here.
 #
-# No [hotkeys]: .fluxbox/keys.erb runs `neru grid` and `neru hints` on
-# the keys warpd used.  Neru's X11 hotkey backend cannot
-# grab symbol keys such as ; and -, though its docs list them.
+# No [hotkeys]: .fluxbox/keys.erb runs `neru grid` and `neru hints` with
+# --action move_mouse, so picking a target moves the pointer and closes
+# the mode.  Neru's X11 hotkey backend cannot grab symbol keys such as ;
+# and -, though its docs list them.
 
 [grid]
 # warpd's hint_chars, so labels read the same as before.
 characters = "abcdefghijklmnoprstuvwxyz"
 # Two-letter labels like warpd's; Neru enlarges the cells to still cover
-# the screen.  The cursor jumps after the label, so the sub-cell key is
-# optional: Escape leaves the cursor there, Shift+L clicks there.  The
-# fluxbox binding passes --action move_mouse, so a sub-cell key also
-# ends the mode.
+# the screen.
 max_label_length = 2
-# The 3x3 sub-cells laid out like the keys: u i o / j k l / m , .
-# (warpd's hint2_chars).
-sublayer_keys = "uiojklm,."
+# The label alone picks the cell; fievel does any finer positioning.
+# Needs the feat/grid-skip-subgrid branch of the aspiers/neru fork.
+subgrid_enabled = false
 
 [grid.ui]
 # The default 10pt is unreadably small here; labels still shrink to fit
@@ -34,10 +32,17 @@ font_size = 24
 "Shift+P" = "action move_monitor --previous"
 
 [hints]
-# The accessibility tree finds nothing in terminals and needs flags in
-# Chromium.  OCR finds few enough targets for two-letter labels; the
-# image-based contour and segment strategies found over 700 here.
-strategy = "vision"
+# OCR ("vision") took ~9s on a full-width window and the accessibility
+# tree finds nothing in terminals; segment takes ~0.2s.
+strategy = "segment"
+# The default asdfghjkl gives three-letter labels; warpd's 25 letters
+# give two-letter labels for up to 625 targets.
+hint_characters = "abcdefghijklmnoprstuvwxyz"
+
+[hints.segment]
+# One hint per run of same-coloured words, not per word, to stay under
+# the label limit on text-heavy windows.
+targets = "phrases"
 
 [hints.hotkeys]
 "Shift+N" = "action move_monitor"
