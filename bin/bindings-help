@@ -79,7 +79,7 @@ def main() -> int:
         return 0
     # Selecting a row does nothing: the list is for reading.
     subprocess.run(
-        ["rofi-themed", "-dmenu", "-i", "-no-custom", "-p", "bindings",
+        ["rofi-themed", "-F", "xl", "-dmenu", "-i", "-no-custom", "-p", "bindings",
          "-theme-str", "window { width: 90%; }"],
         input="\n".join(rows), text=True,
     )
