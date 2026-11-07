@@ -6,10 +6,17 @@
 # mousing (d+f or F3).  Only settings that differ from Neru's defaults
 # are set here.
 #
-# No [hotkeys]: .fluxbox/keys.erb runs `neru grid` and `neru hints` with
-# --action move_mouse, so picking a target moves the pointer and closes
-# the mode.  Neru's X11 hotkey backend cannot grab symbol keys such as ;
-# and -, though its docs list them.
+# .fluxbox/keys.erb runs `neru grid` and `neru hints` with --action
+# move_mouse, so picking a target moves the pointer and closes the mode.
+# Neru's X11 hotkey backend cannot grab symbol keys such as ; and -, though
+# its docs list them.
+
+[hotkeys]
+# fievel holds F19 while E+R is held.  Tap u/i/j/k to drill into quadrants;
+# releasing the chord moves the pointer to the chosen cell and closes the
+# grid.  --hold comes from the local feat/mode-hold branch, proposed
+# upstream; a Neru build without it rejects this file.
+"F19" = "recursive_grid --hold --action move_mouse"
 
 [grid]
 # warpd's hint_chars, so labels read the same as before.
@@ -27,6 +34,15 @@ font_size = 24
 [grid.hotkeys]
 "Shift+N" = "action move_monitor"
 "Shift+P" = "action move_monitor --previous"
+
+[recursive_grid]
+# Quadrants on the right hand while the left holds E+R.
+grid_cols = 2
+grid_rows = 2
+keys = "uijk"
+
+[recursive_grid.ui]
+font_size = 24
 
 [hints]
 # OCR ("vision") took ~9s on a full-width window and the accessibility

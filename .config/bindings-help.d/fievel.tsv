@@ -11,3 +11,4 @@ fievel	hold s	Move fast
 fievel	n m , .	Scroll left, down, up, right
 fievel	, + m together	Home
 fievel	n + . together	End
+fievel	hold e+r	Hold F19, for Neru's hold-to-navigate recursive grid

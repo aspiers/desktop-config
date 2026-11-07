@@ -5,6 +5,9 @@
 neru grid	two-letter label	Move the pointer to that cell and close the grid
 neru grid	Space	Start the label again
 neru grid	Backspace	Undo the last letter
+neru recursive grid	hold e+r	Open a 2x2 grid; on release move the pointer to the chosen cell and close
+neru recursive grid	u i j k	Drill into the upper-left, upper-right, lower-left, lower-right quadrant
+neru recursive grid	Backspace	Back up one level
 neru hints	label	Move the pointer to that target and close hints (targets found in the focused window)
 neru hints	Tab / Shift+Tab	Next / previous hint
 neru hints	/	Search hints by their text
