@@ -55,6 +55,12 @@ strategy = "segment"
 # The default asdfghjkl gives three-letter labels; warpd's 25 letters
 # give two-letter labels for up to 625 targets.
 hint_characters = "abcdefghijklmnoprstuvwxyz"
+# Each screen region gets its own first key and isolated hints get single
+# keys (branch neru-hint-label-allocation, not upstream yet).
+label_direction = "spatial"
+# Drop the smaller of two targets whose centres are under 20 px apart
+# (branch neru-min-hint-dist, not upstream yet).
+min_hint_dist = 40
 
 [hints.segment]
 # One hint per run of same-coloured words, not per word, to stay under
