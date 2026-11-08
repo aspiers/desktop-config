@@ -2,11 +2,13 @@
 
 . $ZDOTDIR/lib/libproc.sh
 
+# Keep the terminal off the dts pipe in .xsession-progs, or every later
+# hook waits until the terminal is closed.
 case "$WINDOWMANAGER" in
     i3)
-        i3-sensible-terminal &
+        i3-sensible-terminal >~/.log/initial-terminal.log 2>&1 &
         ;;
     *)
-        xterm-window &
+        xterm-window >~/.log/initial-terminal.log 2>&1 &
         ;;
 esac
