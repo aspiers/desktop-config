@@ -117,6 +117,7 @@ Mod4 space :Raise
 Mod4 l :MacroCmd {Lower} {Delay {Exec focus-active-window} 300000}
 Mod1 Mod4 l :Lower
 Mod4 i :Minimize
+
 # Deminimize
 Control Mod4 i :MacroCmd {NextWindow (workspace=[current]) (Head=[mouse]) (Minimized=yes) (FocusHidden=no)} {Delay {Exec focus-active-window} 300000}
 
@@ -270,10 +271,22 @@ Control Mod4 space :Exec rofi-themed -show drun
 # uv tool install --with PyQt6 .
 Control Mod4 e :Exec efck-chat-keyboard
 
-Mod4 semicolon :Exec warpd --hint
-Shift Mod4 semicolon :Exec warpd --hint2
-Control Mod4 semicolon :Exec warpd --grid
-Mod4 minus :Exec warpd --normal
+# bin/bindings-help lists every binding in this file, read from the
+# rendered ~/.fluxbox/keys.  A one-line comment directly above a binding
+# becomes its description there; a comment block like this one is taken
+# to describe a group and is not used.
+# Neru replaces warpd: grid jumps to a labelled point (its sub-cell step
+# covers warpd --hint2) and hints jump to clickable elements.  fievel's
+# d+f chord replaces warpd --normal; nothing replaces warpd --grid.
+# Bound here because Neru's own X11 hotkeys can't grab symbol keys.
+# --no-subgrid (aspiers/neru feat/grid-skip-subgrid) lets the label alone
+# pick the cell, and --action move_mouse then closes the grid; fievel does
+# any finer positioning.
+Mod4 minus :Exec neru grid --no-subgrid --action move_mouse
+Mod4 semicolon :Exec neru hints --action move_mouse
+
+# Search every key binding (bin/bindings-help)
+Shift Mod1 Mod4 slash :Exec bindings-help
 
 # Leave these for Whispering bindings
 #Mod4 7 :MacroCmd {Exec xdotool keyup Super_R} {Exec warpd --click 1}
@@ -292,11 +305,16 @@ Mod4 minus :Exec warpd --normal
 Mod4 x :Exec fluxbox-focus-window 'NextWindow (Class=(Xfce4|Gnome)-terminal|kitty) (Head=1) (workspace=0) (FocusHidden=no) (Minimized=no)'
 Control Mod4 x :Exec rmx-window
 
-Mod4 a :Exec chrome-session-rofi 't3.chat|poe.com|chat.deepseek.com|claude.ai|chatgpt.com|gemini.google.com'
+#Mod4 a :Exec chrome-session-rofi 't3.chat|poe.com|chat.deepseek.com|claude.ai|chatgpt.com|gemini.google.com'
+Mod4 a :Exec fluxbox-focus-window 'NextWindow (Class=Chatgpt|Claude) (Minimized=yes|no)'
 #Mod4 a :Exec fluxbox-focus-or-launch --toggle AI true
 
 Shift Mod4 a :Exec fluxbox-focus-or-launch -c anytype anytype
-Control Mod4 a :Exec chrome-session-tabs 'tidal.com|open.spotify.com'
+#Control Mod4 a :Exec chrome-session-tabs 'tidal.com|open.spotify.com'
+
+# Toggle the Spotify Chrome app (matched by crx_ instance, so browser tabs are skipped)
+Control Mod4 a :Exec fluxbox-focus-or-launch --toggle --no-stick --instance '^crx_pjibgclleladliembfgfagdaldikeohf$' gtk-launch chrome-pjibgclleladliembfgfagdaldikeohf-Default
+
 #Mod4 b :Exec wmctrl -s 1; xdotool search --desktop 1 --class brave-browser windowactivate
 Mod4 b :MacroCmd {NextWindow (Name=brave-browser|google-chrome|chromium) (Head=1) (Minimized=no)} {Delay {Exec focus-active-window} 300000}
 
@@ -329,9 +347,11 @@ Control Mod4 g :Exec fluxbox-focus-window 'NextWindow (Title=Google Meet.*) (Foc
 #Control Mod4 g :Exec chrome-session-tabs https://app.gather.town/
 
 Mod4 h :Exec chrome-session-rofi 'https://github.com/ '
-Control Mod4 h :Exec chrome-session-rofi --no-tokenize '^octobox( \([0-9]+\))? \| '
-# bead-me-up-scotty
-Control Mod4 b :Exec chrome-session-rofi 'http://localhost:19847/ '
+Control Mod4 h :Exec fluxbox-focus-or-launch --toggle --no-stick '^Octobox( \([0-9]+\))?$' gtk-launch chrome-abmmfmbebheickoidomeknhdimhaeand-Default
+# bead-me-up-scotty, installed as a Chrome app; the trailing $ skips
+# ordinary browser tabs, whose titles end in " - Google Chrome"
+#Control Mod4 b :Exec chrome-session-rofi 'http://localhost:19847/ '
+Control Mod4 b :Exec fluxbox-focus-or-launch --toggle --no-stick '.*Bead Me Up, Scotty$' gtk-launch chrome-ljlljnognehhlkgfnimnmobbidakmlld-Default
 
 Control Mod4 2 :Exec switch-emacs-eval '(as-find-personal-todo)'
 Control Mod4 5 :Exec switch-emacs-eval '(as-find-Toucan-todo)'
