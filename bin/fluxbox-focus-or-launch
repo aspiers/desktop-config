@@ -26,7 +26,8 @@ Options:
   -h, --help     Show this help and exit
   -c, --class    Match WINDOW-PATTERN against class rather than title
   -r, --role     Match WINDOW-PATTERN against role rather than title
-  -t, --toggle   If matching window is focused, minimize it; otherwise focus/launch
+  -t, --toggle   If a matching window is focused, hide it and show the next
+                 matching one, or none after the last; otherwise focus/launch
   -f, --focus    Focus the window after launching (if launched)
   -n, --no-stick In toggle mode, don't make the shown window sticky
 
@@ -82,10 +83,20 @@ main () {
     window_pattern="$1"
     shift
 
-    # Check if toggle mode and window is already focused
+    # In toggle mode, each press hides the focused match and shows the
+    # next one, so repeated presses cycle through all matches then none.
     if [ -n "$toggle" ] && window_is_focused; then
-        hide_window
-        restore_previous_desktop
+        local next
+        next=$(next_matching_window "$(xdotool getactivewindow)")
+        if [ -z "$next" ]; then
+            hide_window
+            restore_previous_desktop
+            exit 0
+        fi
+        # One fluxbox-remote call, not hide then fetch: back-to-back calls
+        # can drop the first, leaving the next window on the hiding workspace.
+        fetch_window "$(xdotool get_desktop)" Minimize
+        show_window "$next"
         exit 0
     fi
 
@@ -93,10 +104,13 @@ main () {
     if [ -n "$toggle" ]; then
         store_current_desktop
         # First try to fetch window from other workspaces if it exists
-        fetch_window
+        fetch_window "$(xdotool get_desktop)"
+        # Start each cycle from the first match, not the last one focused.
+        first=$(matching_windows | head -n 1)
+        [ -z "$first" ] || show_window "$first"
+    else
+        focus_window
     fi
-
-    focus_window
 
     sleep 0.2
     exit_if_window_focused
@@ -140,17 +154,34 @@ restore_previous_desktop () {
 
 get_active_window_attribute () {
     local active_window
+    active_window=$(xdotool getactivewindow 2>/dev/null) || return
+    get_window_attribute "$active_window"
+}
+
+get_window_attribute () {
+    local window="$1"
     if [ -n "$class" ]; then
-        xdotool getactivewindow getwindowclassname 2>/dev/null
+        xdotool getwindowclassname "$window" 2>/dev/null
     elif [ -n "$role" ]; then
         # For role, we need to use xprop to get the WM_WINDOW_ROLE property
-        active_window=$(xdotool getactivewindow 2>/dev/null)
-        if [ -n "$active_window" ]; then
-            xprop -id "$active_window" WM_WINDOW_ROLE 2>/dev/null | sed 's/.*= "\(.*\)"/\1/'
-        fi
+        xprop -id "$window" WM_WINDOW_ROLE 2>/dev/null | sed -n 's/.*= "\(.*\)"/\1/p'
     else
-        xdotool getactivewindow getwindowname 2>/dev/null
+        xdotool getwindowname "$window" 2>/dev/null
     fi
+}
+
+# Print the decimal IDs of managed windows matching the pattern, sorted
+# by ID so the cycle order stays the same however focus moves.
+matching_windows () {
+    local window
+    for window in $(xprop -root _NET_CLIENT_LIST | sed 's/.*#//; s/,/ /g'); do
+        window=$(( window ))
+        [[ "$(get_window_attribute "$window")" =~ $window_pattern ]] && echo "$window"
+    done | sort -n
+}
+
+next_matching_window () {
+    matching_windows | awk -v current="$1" 'found { print; exit } $0 == current { found = 1 }'
 }
 
 window_is_focused () {
@@ -168,13 +199,14 @@ get_fluxbox_pattern () {
     fi
 }
 
+# Usage: fetch_window DESKTOP [COMMAND-TO-RUN-FIRST-ON-EACH-MATCH]
 fetch_window () {
-    local fluxbox_pattern current_desktop
+    local fluxbox_pattern
     fluxbox_pattern=$(get_fluxbox_pattern)
-    current_desktop=$(<"$DESKTOP_FILE")
-    echo "Fetching window matching $fluxbox_pattern to current workspace..."
-    cmd="TakeToWorkspace $(( current_desktop + 1 ))"
+    echo "Fetching window matching $fluxbox_pattern to workspace $1..."
+    cmd="TakeToWorkspace $(( $1 + 1 ))"
     [ -n "$no_stick" ] || cmd="MacroCmd {$cmd} {If {Matches (Stuck=no)} {Stick}}"
+    [ -z "${2:-}" ] || cmd="MacroCmd {$2} {$cmd}"
     fluxbox-remote "ForEach {$cmd} {Matches $fluxbox_pattern}"
 }
 
@@ -186,6 +218,11 @@ hide_window () {
     # apps without keyboard focus in the page when shown again.
     cmd="MacroCmd {If {Matches (Stuck=yes)} {Stick}} {Minimize} {SendToWorkspace 6}"
     fluxbox-remote "ForEach {$cmd} {Matches $fluxbox_pattern}"
+}
+
+show_window () {
+    echo "Activating window $1"
+    xdotool windowactivate "$1"
 }
 
 focus_window () {
