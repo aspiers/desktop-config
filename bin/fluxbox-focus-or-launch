@@ -26,12 +26,14 @@ Options:
   -h, --help     Show this help and exit
   -c, --class    Match WINDOW-PATTERN against class rather than title
   -r, --role     Match WINDOW-PATTERN against role rather than title
+  -i, --instance Match WINDOW-PATTERN against instance (WM_CLASS name),
+                 e.g. crx_<app-id> for a Chrome app
   -t, --toggle   If a matching window is focused, hide it and show the next
                  matching one, or none after the last; otherwise focus/launch
   -f, --focus    Focus the window after launching (if launched)
   -n, --no-stick In toggle mode, don't make the shown window sticky
 
-WINDOW-PATTERN is a regexp matching the window title, class, or role.
+WINDOW-PATTERN is a regexp matching the window title, class, role or instance.
 LAUNCH-CMD is a command for launching the program if it's not found.
 EOF
 
@@ -56,6 +58,10 @@ main () {
                 ;;
             -r|--role)
                 role=y
+                shift
+                ;;
+            -i|--instance)
+                instance=y
                 shift
                 ;;
             -t|--toggle)
@@ -165,6 +171,8 @@ get_window_attribute () {
     elif [ -n "$role" ]; then
         # For role, we need to use xprop to get the WM_WINDOW_ROLE property
         xprop -id "$window" WM_WINDOW_ROLE 2>/dev/null | sed -n 's/.*= "\(.*\)"/\1/p'
+    elif [ -n "$instance" ]; then
+        xprop -id "$window" WM_CLASS 2>/dev/null | sed -n 's/.*= "\([^"]*\)".*/\1/p'
     else
         xdotool getwindowname "$window" 2>/dev/null
     fi
@@ -194,6 +202,8 @@ get_fluxbox_pattern () {
         echo "(Class=$window_pattern)"
     elif [ -n "$role" ]; then
         echo "(Role=$window_pattern)"
+    elif [ -n "$instance" ]; then
+        echo "(Name=$window_pattern)"
     else
         echo "(Title=$window_pattern)"
     fi
