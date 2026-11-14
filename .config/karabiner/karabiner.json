@@ -1256,6 +1256,24 @@
                             {
                                 "type": "basic",
                                 "from": {
+                                    "key_code": "tab"
+                                },
+                                "to": [
+                                    {
+                                        "shell_command": "~/bin/mac-jump tab --pick '.'"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_if",
+                                        "name": "thumb",
+                                        "value": 1
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
                                     "key_code": "a",
                                     "modifiers": {
                                         "mandatory": [

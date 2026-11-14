@@ -260,6 +260,7 @@ Thumb+letter, Linux and the agreed Mac / Windows targets:
 | `z` | Zulip | same |
 | `` ` `` | `btop` (T) | Activity Monitor |
 | `'` | Beeper | same |
+| Tab | Picker of every Chrome tab (`chrome-session-rofi`) | same |
 
 Thumb+modifier+letter jumps:
 
@@ -572,8 +573,9 @@ Built as Karabiner rules (`bin/karabiner-gen-config`, `jumps()`) and
   with `aerospace focus --window-id`. Thumb+`b` cycles every Chrome
   window, not only those on the main monitor.
 - **Chrome tabs**: `mac-jump tab` finds tabs by URL through Chrome's
-  AppleScript dictionary and picks among several with AppleScript's
-  `choose from list`, which has no typed filter like rofi's. Web apps
+  AppleScript dictionary and picks among several with `choose`
+  (Homebrew `choose-gui`), a fuzzy finder in its own dialog, as rofi
+  does on Linux. Thumb+Tab picks from every tab. Web apps
   (Spotify, Octobox, "Bead Me Up, Scotty") open as `--app` windows.
 - **Emacs**: `emacsclient -e`, as `switch-emacs-eval` does on Linux.
 - **Outlook** mail and calendar: activate Outlook, then `Cmd+1` /

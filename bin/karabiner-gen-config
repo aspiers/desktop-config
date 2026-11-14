@@ -289,6 +289,8 @@ def jumps() -> list[Json]:
     m += thumb("z", shell("open -a Zulip"))
     m += toggle("grave_accent_and_tilde", "com.apple.ActivityMonitor")
     m += thumb("quote", shell("open -a Beeper"))
+    # Linux: chrome-session-rofi, a fuzzy picker of every Chrome tab.
+    m += thumb("tab", jump("tab --pick '.'"))
 
     m += thumb("a", shell("open -a Anytype"), "shift")
     m += thumb("a", jump(r"tab --toggle --app-window --open https://open.spotify.com/ '^https://open\.spotify\.com/'"), "ctrl")
