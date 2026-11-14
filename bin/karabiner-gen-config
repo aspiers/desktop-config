@@ -380,6 +380,12 @@ def other_bindings() -> list[Json]:
     m += thumb("w", shell("screencapture -iWo \"$HOME/Desktop/Screenshot $(date '+%F at %H.%M.%S').png\""), "ctrl")
     m += thumb("spacebar", key("spacebar", "command"), "ctrl")
     m += thumb("l", key("q", "control", "command"), "ctrl+alt")
+    # Dictation, as Sussurro's super+8 / super+9 on Linux (Adam,
+    # 2026-11-14: macOS Dictation). The Dictation key toggles it, so
+    # push-to-talk presses it again on release.
+    dictation = [{"consumer_key_code": "dictation"}]
+    m += [{**manip, "to_after_key_up": dictation} for manip in thumb("8", dictation)]
+    m += thumb("9", dictation)
     return m
 
 

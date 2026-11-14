@@ -371,6 +371,7 @@ Both need IT approval on the work Mac; Karabiner is assumed allowed.
 | Thumb+`=` | Clear notifications |
 | Thumb+Alt+Shift+`/` | Search every key binding |
 | Thumb+Ctrl+`8` | Push-to-talk recording (dictation) |
+| Thumb+`8` / Thumb+`9` | Dictation: push-to-talk / toggle on and off. Linux: Sussurro's own hotkeys. macOS: macOS Dictation, through its Dictation key (Adam, 2026-11-14) |
 
 ## 4. Windows
 
