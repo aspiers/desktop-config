@@ -13,8 +13,9 @@ questions.
 ## Terms
 
 - **Thumb**: the window-management modifier, pressed with the right thumb.
-  Linux: `Super` (`Mod4`). Windows: the Windows key. macOS: to be chosen
-  (section 5.1).
+  Linux: `Super` (`Mod4`). Windows: the Windows key. macOS: right
+  `command`, turned into a Karabiner layer that neither apps nor macOS see
+  as Command (section 5.1).
 - **Thumb+x**: hold Thumb, press `x`.
 - **Physical key**: the key as labelled on a standard PC laptop keyboard,
   before any remapping.
@@ -78,7 +79,10 @@ the previous mechanism; `.config/keyd/daemon/default.conf` says keyd is
 | Kinesis Essential (PS/2) | keyd (not programmable) | Right Ctrl on the thumb pad | Thumb pads (2.4), Caps Lock = `-`, Up/Down swapped, `-` key types `£` / `€` |
 | Gyration | keyd | Not remapped | Own variant of 2.1 |
 
-Which of these will be used with the Mac is an open question (Q2).
+With the Mac (Adam, 2026-11-14): the built-in keyboard, the Kinesis
+Advantage2 and Advantage 360, and the Keyboardio boards. The external ones
+do their OS-independent remaps in firmware, so on macOS most device rules
+are for the built-in keyboard.
 
 ## 2. Key remapping
 
@@ -94,7 +98,7 @@ further left than usual. Source: keyd partials `left-alpha-common`,
 | `Q` `W` `E` `R` `T` | `w` `e` `r` `t` `` ` `` / `~` |
 | Caps Lock | `a` |
 | `A` `S` `D` `F` `G` | `s` `d` `f` `g` `\` / `\|` |
-| Left Ctrl | `z` |
+| Left Ctrl (MacBook: `fn`, see 2.2) | `z` |
 | ISO key left of `Z` (`102nd`) | `x` |
 | `Z` `X` | `c` `v` |
 | `C` `V` `B` | unchanged: `c` `v` `b` |
@@ -124,15 +128,23 @@ So under Linux, **Control is the key immediately left of Space**, pressed
 with the left thumb, and Thumb is the key immediately right of Space.
 
 On a MacBook the bottom row is `fn` `control` `option` `command` Space
-`command` `option`. By position:
+`command` `option`; on the Framework it is Ctrl, Fn, Win, Alt, Space,
+Alt, Ctrl. By position (Adam, 2026-11-14):
 
-| MacBook key | Linux key in that position | Role it would take |
+| MacBook key | Linux key in that position | Role |
 | --- | --- | --- |
-| Left `command` | Left Alt | Control (for editing, see 2.5) |
-| Left `option` | Left Win | Alt's role, which on macOS is mostly Command, e.g. Alt+Tab is Cmd+Tab (Q9) |
-| Left `control` | Left Ctrl | `z` (2.1), open question Q8 |
-| Right `command` | Right Alt | **Thumb** |
+| `fn` (far left) | Left Ctrl | `z` (2.1) |
+| Left `control` | Fn | Fn |
+| Left `option` | Left Win | Option, macOS's Alt key: Meta in Emacs and terminals (Q9) |
+| Left `command` | Left Alt | Control's position: copy, paste and other editing (2.5) |
+| Right `command` | Right Alt | **Thumb** (5.1) |
 | Right `option` | Right Ctrl | Compose |
+
+Option, not Command, is the counterpart of Alt: a Mac keyboard's Option
+key sends the same USB code as Alt, the Advantage2 manual calls them the
+same action, and macOS terminals and Emacs use Option as Meta. Command
+sends the Windows key's code, but in apps it plays Ctrl's part (`Cmd+C`)
+and `Cmd+Tab` is the app switcher.
 
 ### 2.3 Characters
 
@@ -169,15 +181,24 @@ Required (Adam, 2026-11-14):
 explicit work on macOS, where copy is `Cmd+C` and word movement is
 `Option+Left`.
 
-Probably wanted too, to confirm (Q4): `Ctrl+X` / `Z` / `A` / `S` / `F` /
-`W` / `T` / `N`, Shift-selection versions of word movement,
-`Ctrl+Backspace` (delete word), `Home` / `End` (line start / end),
-`Ctrl+Home` / `Ctrl+End` (document start / end).
+Also required (Adam, 2026-11-14):
 
-**Exceptions**: apps where Control must stay Control, because `Ctrl+C`
-means interrupt and `Ctrl+Left` is the app's own binding. On Linux this is
-the default, so no list exists yet. Likely: terminal emulators, Emacs,
-remote desktop and VM windows (Q3).
+- the other common `Ctrl+`letter shortcuts: `X`, `Z`, `A`, `S`, `F`, `W`,
+  `T`, `N` and similar, as their `Cmd` equivalents;
+- `Ctrl+Shift+Left` / `Ctrl+Shift+Right`: select by word;
+- `Home` / `End`: line start / end; `Ctrl+Home` / `Ctrl+End`: document
+  start / end.
+
+Not wanted: `Ctrl+Backspace` / `Ctrl+Delete` word delete.
+
+macOS has no Control-based copy and paste at all: in most apps `Ctrl+C`
+does nothing and `Ctrl+V` pages down, so these are translations, not
+existing behaviour.
+
+**Exceptions**, where Control stays Control because `Ctrl+C` means
+interrupt and `Ctrl+Left` is the app's own binding (Adam, 2026-11-14):
+terminal emulators, Emacs, VM and remote desktop windows, and Orca's
+terminals.
 
 ### 2.6 Per-app key bindings
 
@@ -185,8 +206,9 @@ Source: `.config/keyd/app.conf`.
 
 - Emacs: currency keys as in 2.3.
 - Orca: `Alt+Shift+Up` / `Alt+Shift+Down` cycle between agents waiting for
-  attention; `Ctrl+Alt+o` opens a token picker. Needed on macOS only if
-  Orca is used there (Q7).
+  attention; `Ctrl+Alt+o` opens a token picker. Needed on macOS too.
+
+Emacs and Orca are both used on the work Mac (Adam, 2026-11-14).
 
 ## 3. Window management
 
@@ -211,22 +233,22 @@ Thumb+letter, Linux and the agreed Mac / Windows targets:
 | --- | --- | --- |
 | `a` | ChatGPT / Claude desktop window (C) | same |
 | `b` | Browser windows on the main monitor (C) | same |
-| `c` | Orca (T) | Orca, if used (Q7) |
-| `d` | Emacs: today's org agenda | same, if Emacs used (Q7) |
-| `e` | Emacs (T) | same, if Emacs used |
+| `c` | Orca (T) | same |
+| `d` | Emacs: today's org agenda | same |
+| `e` | Emacs (T) | same |
 | `f` | Firefox | same |
 | `g` | Telegram | same |
 | `h` | Picker of GitHub tabs in Chrome | same |
 | `j` | Jump menu | to decide |
-| `k` | Emacs: `org-capture` | same, if Emacs used |
+| `k` | Emacs: `org-capture` | same |
 | `m` | Mail menu (`rofi-mail-menu`) | **Outlook mail** |
-| `n` | Emacs: personal note | same, if Emacs used |
+| `n` | Emacs: personal note | same |
 | `o` | Org menu (`rofi-org-menu`) | to decide |
 | `p` | Volume control (`pavucontrol`) (T) | OS sound settings |
 | `s` | **Slack** | **Slack** |
 | `t` | Terminal menu (`rofi-terminal-menu`) | **Teams chat** (Linux has no Teams) |
 | `u` | Bluetooth TUI (T) | OS Bluetooth settings |
-| `v` | Emacs: daily review agenda | same, if Emacs used |
+| `v` | Emacs: daily review agenda | same |
 | `w` | Wi-Fi menu | OS Wi-Fi menu |
 | `x` | Terminal windows (C) | same |
 | `y` | Picker of YouTube tabs | same |
@@ -258,8 +280,10 @@ Thumb+modifier+letter jumps:
 | Thumb+Shift+`u` | Bluetooth manager (T) |
 | Thumb+Ctrl+`2` / `5` / `7` | Emacs: personal todo / Toucan todo / weekly review |
 
-Which of these have Mac / Windows targets, such as Outlook calendar for
-Thumb+Ctrl+`c`, is open (Q5).
+Rule for Mac / Windows targets (Adam, 2026-11-14): the Linux target
+wherever that app exists there; every other jump, such as Thumb+Ctrl+`c`
+(calendar) and the terminal menu displaced from Thumb+`t`, is decided one
+by one (Q10).
 
 ### 3.2 Window operations
 
@@ -345,8 +369,8 @@ Both need IT approval on the work Mac; Karabiner is assumed allowed.
 ## 4. Windows
 
 The AutoHotkey script covers part of this spec, with the Windows key as
-Thumb. Its location is not in this repository (Q6), so it is not yet
-compared here.
+Thumb. It exists only on the Windows PC (Adam, 2026-11-14), so it is not
+compared here until a copy is brought over.
 
 ## 5. macOS implementation proposals (unchecked)
 
@@ -379,7 +403,13 @@ Two ways, given that left `command` sits in Linux's Control position:
 - **B**: make left `command` Control everywhere, then translate
   `Ctrl+C` / `Ctrl+V` etc. to Command combos outside the exception apps.
 
-A needs fewer rules in ordinary apps. Both need the exception list (Q3).
+A needs fewer rules in ordinary apps. Both use the exception list in 2.5.
+
+### 5.5 Bottom row
+
+Karabiner is believed to remap `fn` and to send `fn` from another key,
+which the `fn` → `z` and left `control` → Fn swap in 2.2 needs; unchecked,
+as is how the Globe function of `fn` behaves after the swap.
 
 ### 5.3 App jumps
 
@@ -396,23 +426,8 @@ and floating centred pop-ups need checking.
 
 ## 6. Open questions
 
-- **Q1** (answered 2026-11-14): the MacBook has an ISO key left of `Z`
-  (legend `~`), so `x` goes there (2.1).
-- **Q2** (answered 2026-11-14): the Kinesis Advantage2, Kinesis Advantage
-  360 and the Keyboardio boards, besides the built-in keyboard.
-- **Q3** (answered 2026-11-14): Control stays Control in terminal
-  emulators, Emacs, VM and remote desktop windows, and Orca's terminals.
-- **Q4** (answered 2026-11-14): besides copy, paste and word movement:
-  the other common Ctrl+letter shortcuts (X, Z, A, S, F, W, T, N ...),
-  Shift-selection by word, and Home/End (line) and Ctrl+Home/End
-  (document). Not word delete with Ctrl+Backspace/Delete.
-- **Q5** (answered 2026-11-14): use the Linux target wherever the app
-  exists on the Mac, then go through every remaining jump one by one.
-- **Q6**: Where is the Windows AutoHotkey script?
-- **Q7**: Will Emacs and Orca be used on the work Mac?
-- **Q9**: Should the MacBook's left `option` act as Command, so Alt+Tab
-  on Linux and Windows matches Cmd+Tab (Adam's suggestion, 2026-11-14)?
-  If so, Option itself needs a home (macOS's Alt: Emacs Meta, special
-  characters), and with 5.2 A left `command` would be a second Command.
-- **Q8**: Should the MacBook's left `control` type `z`, as Left Ctrl does
-  on Linux laptops?
+- **Q9**: left `option` stays Option, macOS's Alt (2.2), unless Adam
+  prefers Command. Should Option+Tab then also switch apps, like Alt+Tab
+  on Linux and Windows?
+- **Q10**: the Mac / Windows target of each jump in 3.1 that has no agreed
+  one yet, decided one by one.
