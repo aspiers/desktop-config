@@ -84,4 +84,10 @@ for name, (keyboard, codes) in KEYBOARDS.items():
         # The Control-position key is Command only in ordinary apps.
         assert sends("left_command" if keyboard is None else "left_control", keyboard, bundle) == \
             ("left_command" if app == "ordinary" else "left_control"), f"{name} in {app}"
+
+# Spec 5.2: in ordinary apps Control-position+Tab and Compose-position+Tab
+# swap Control+Tab and Cmd+Tab.
+editing = next(r for r in rules if r["description"].startswith("PC-style editing"))
+tabs = {tuple(m["from"]["modifiers"]["mandatory"]): m["to"][0]["modifiers"] for m in editing["manipulators"] if m["from"]["key_code"] == "tab"}
+assert tabs == {("left_command",): ["control"], ("right_control",): ["command"]}, tabs
 print("ok")

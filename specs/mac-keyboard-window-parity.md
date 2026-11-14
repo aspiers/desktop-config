@@ -447,9 +447,13 @@ A needs rules only where the Mac differs from Linux:
 - `Home` / `End` → `Cmd+Left` / `Cmd+Right`; `Ctrl+Home` / `Ctrl+End` →
   `Cmd+Up` / `Cmd+Down`;
 - `Ctrl+Tab` → `Control+Tab`, so it switches tabs as on Linux rather than
-  apps. In ordinary apps no key then sends `Cmd+Tab`; app switching is
-  Thumb+letter and Thumb+`/` (3.1, 3.2). In the exception apps right
-  `option`+Tab is `Cmd+Tab`.
+  apps;
+- right `option`+Tab, which A2 makes `Control+Tab` in ordinary apps, →
+  `Cmd+Tab` (Adam, 2026-11-14), so the two are swapped and the app
+  switcher stays on the Compose-position key, as in the exception apps.
+  Unchecked: whether the switcher stays open while right `option` is
+  held and Tab pressed again, or Karabiner releases Command after each
+  Tab.
 
 The implementation is `bin/karabiner-gen-config`, which writes
 `.config/karabiner/karabiner.json`. Terminals and Orca also get
@@ -719,7 +723,10 @@ under Variables, whether `thumb` is set while right `command` is held.
 3. **Bottom row**: left `control` acts as Fn (Fn+arrows page). In
    TextEdit, right `option` with the key that types `a` moves to the
    paragraph start (Cocoa's `Ctrl+A`, so it is Control); in
-   Terminal, right `option`+Tab switches apps (Command). In
+   Terminal, right `option`+Tab switches apps (Command). In TextEdit,
+   hold right `option` and press Tab twice: the app switcher should stay
+   open and move to the second app; left `command`+Tab should switch
+   tabs in a browser. In
    EventViewer, no app should show two keys sending `command`.
 4. **Editing**: in TextEdit, Control-position+C / V copy and paste, and
    Control-position+arrows move by word; in Terminal, the same key+C

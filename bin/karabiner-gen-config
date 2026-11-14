@@ -456,8 +456,12 @@ def editing_rule() -> Json:
     add("end", ctrl, key("down_arrow", "command"))
     add("home", {"optional": ["shift"]}, key("left_arrow", "command"))
     add("end", {"optional": ["shift"]}, key("right_arrow", "command"))
-    # Ctrl+Tab switches tabs as on Linux.
+    # Ctrl+Tab switches tabs as on Linux, and the Compose-position key
+    # (Control here) takes over Cmd+Tab, so the two are swapped (Adam,
+    # 2026-11-14). Unchecked: whether the app switcher stays open while
+    # the key is held, as Karabiner may release Command after each Tab.
     add("tab", ctrl, key("tab", "control"))
+    add("tab", {"mandatory": ["right_control"], "optional": ["shift"]}, key("tab", "command"))
     return rule("PC-style editing outside terminals, Emacs, VMs and Orca (spec 2.5)", m)
 
 
