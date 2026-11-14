@@ -74,6 +74,9 @@ VMS_AND_REMOTE_DESKTOPS = [
 # does: Ctrl+C / Ctrl+G cancel, Ctrl+N / Ctrl+P move (Adam, 2026-11-14).
 CHOOSE = r"^org\.senkbeil\.choose$"
 CONTROL_APPS = TERMINALS + [EMACS, ORCA, CHOOSE] + VMS_AND_REMOTE_DESKTOPS
+# choose is a bare executable, not an .app, so Karabiner may not see its
+# bundle ID; match its path too (Adam, 2026-11-14: Ctrl+C still copied).
+CONTROL_APP_PATHS = [r"/choose$"]
 
 # USB IDs from .config/keyd/daemon/*.conf.
 ADVANTAGE2 = [(0x29EA, 0x0102), (0x29EA, 0x0103)]
@@ -149,9 +152,12 @@ def set_var(name: str, value: int) -> Json:
     return {"set_variable": {"name": name, "value": value}}
 
 
-def apps(patterns: list[str], negate: bool = False) -> Json:
+def apps(patterns: list[str], negate: bool = False, paths: list[str] | None = None) -> Json:
     kind = "frontmost_application_unless" if negate else "frontmost_application_if"
-    return {"type": kind, "bundle_identifiers": patterns}
+    condition: Json = {"type": kind, "bundle_identifiers": patterns}
+    if paths:
+        condition["file_paths"] = paths
+    return condition
 
 
 def shell(command: str) -> list[Json]:
@@ -483,7 +489,7 @@ def editing_rule() -> Json:
     """Spec 2.5, approach A2 (spec 5.2): the Control-position key sends
     Command in ordinary apps, so Cmd+C etc. need no rules; only keys whose
     Mac equivalent differs are translated."""
-    ordinary = [apps(CONTROL_APPS, negate=True)]
+    ordinary = [apps(CONTROL_APPS, negate=True, paths=CONTROL_APP_PATHS)]
     # left_command is the Control-position key. In ordinary apps the
     # Compose-position key sends Control, never Command (spec 5.2).
     ctrl = {"mandatory": ["left_command"], "optional": ["shift"]}
@@ -513,8 +519,8 @@ def editing_rule() -> Json:
 def modifier_rules() -> Json:
     """Spec 2.2 bottom-row roles."""
     any_mods = {"optional": ["any"]}
-    control_apps = apps(CONTROL_APPS)
-    ordinary = apps(CONTROL_APPS, negate=True)
+    control_apps = apps(CONTROL_APPS, paths=CONTROL_APP_PATHS)
+    ordinary = apps(CONTROL_APPS, negate=True, paths=CONTROL_APP_PATHS)
 
     def remap(code: str, to: str, conditions: list[Json]) -> Json:
         return {

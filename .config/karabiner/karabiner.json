@@ -7560,6 +7560,9 @@
                                             "^org\\.virtualbox\\.app\\.VirtualBoxVM$",
                                             "^com\\.utmapp\\.UTM$",
                                             "^com\\.citrix\\.receiver\\.icaviewer\\.mac$"
+                                        ],
+                                        "file_paths": [
+                                            "/choose$"
                                         ]
                                     }
                                 ]
@@ -7604,6 +7607,9 @@
                                             "^org\\.virtualbox\\.app\\.VirtualBoxVM$",
                                             "^com\\.utmapp\\.UTM$",
                                             "^com\\.citrix\\.receiver\\.icaviewer\\.mac$"
+                                        ],
+                                        "file_paths": [
+                                            "/choose$"
                                         ]
                                     }
                                 ]
@@ -7648,6 +7654,9 @@
                                             "^org\\.virtualbox\\.app\\.VirtualBoxVM$",
                                             "^com\\.utmapp\\.UTM$",
                                             "^com\\.citrix\\.receiver\\.icaviewer\\.mac$"
+                                        ],
+                                        "file_paths": [
+                                            "/choose$"
                                         ]
                                     }
                                 ]
@@ -7692,6 +7701,9 @@
                                             "^org\\.virtualbox\\.app\\.VirtualBoxVM$",
                                             "^com\\.utmapp\\.UTM$",
                                             "^com\\.citrix\\.receiver\\.icaviewer\\.mac$"
+                                        ],
+                                        "file_paths": [
+                                            "/choose$"
                                         ]
                                     }
                                 ]
@@ -7733,6 +7745,9 @@
                                             "^org\\.virtualbox\\.app\\.VirtualBoxVM$",
                                             "^com\\.utmapp\\.UTM$",
                                             "^com\\.citrix\\.receiver\\.icaviewer\\.mac$"
+                                        ],
+                                        "file_paths": [
+                                            "/choose$"
                                         ]
                                     }
                                 ]
@@ -7774,6 +7789,9 @@
                                             "^org\\.virtualbox\\.app\\.VirtualBoxVM$",
                                             "^com\\.utmapp\\.UTM$",
                                             "^com\\.citrix\\.receiver\\.icaviewer\\.mac$"
+                                        ],
+                                        "file_paths": [
+                                            "/choose$"
                                         ]
                                     }
                                 ]
@@ -7818,6 +7836,9 @@
                                             "^org\\.virtualbox\\.app\\.VirtualBoxVM$",
                                             "^com\\.utmapp\\.UTM$",
                                             "^com\\.citrix\\.receiver\\.icaviewer\\.mac$"
+                                        ],
+                                        "file_paths": [
+                                            "/choose$"
                                         ]
                                     }
                                 ]
@@ -7862,6 +7883,9 @@
                                             "^org\\.virtualbox\\.app\\.VirtualBoxVM$",
                                             "^com\\.utmapp\\.UTM$",
                                             "^com\\.citrix\\.receiver\\.icaviewer\\.mac$"
+                                        ],
+                                        "file_paths": [
+                                            "/choose$"
                                         ]
                                     }
                                 ]
@@ -7913,6 +7937,9 @@
                                             "^org\\.virtualbox\\.app\\.VirtualBoxVM$",
                                             "^com\\.utmapp\\.UTM$",
                                             "^com\\.citrix\\.receiver\\.icaviewer\\.mac$"
+                                        ],
+                                        "file_paths": [
+                                            "/choose$"
                                         ]
                                     }
                                 ]
@@ -7985,6 +8012,9 @@
                                             "^org\\.virtualbox\\.app\\.VirtualBoxVM$",
                                             "^com\\.utmapp\\.UTM$",
                                             "^com\\.citrix\\.receiver\\.icaviewer\\.mac$"
+                                        ],
+                                        "file_paths": [
+                                            "/choose$"
                                         ]
                                     }
                                 ]
@@ -8031,6 +8061,9 @@
                                             "^org\\.virtualbox\\.app\\.VirtualBoxVM$",
                                             "^com\\.utmapp\\.UTM$",
                                             "^com\\.citrix\\.receiver\\.icaviewer\\.mac$"
+                                        ],
+                                        "file_paths": [
+                                            "/choose$"
                                         ]
                                     }
                                 ]
@@ -8090,6 +8123,9 @@
                                             "^org\\.virtualbox\\.app\\.VirtualBoxVM$",
                                             "^com\\.utmapp\\.UTM$",
                                             "^com\\.citrix\\.receiver\\.icaviewer\\.mac$"
+                                        ],
+                                        "file_paths": [
+                                            "/choose$"
                                         ]
                                     }
                                 ]
@@ -8136,6 +8172,9 @@
                                             "^org\\.virtualbox\\.app\\.VirtualBoxVM$",
                                             "^com\\.utmapp\\.UTM$",
                                             "^com\\.citrix\\.receiver\\.icaviewer\\.mac$"
+                                        ],
+                                        "file_paths": [
+                                            "/choose$"
                                         ]
                                     }
                                 ]
@@ -8195,6 +8234,9 @@
                                             "^org\\.virtualbox\\.app\\.VirtualBoxVM$",
                                             "^com\\.utmapp\\.UTM$",
                                             "^com\\.citrix\\.receiver\\.icaviewer\\.mac$"
+                                        ],
+                                        "file_paths": [
+                                            "/choose$"
                                         ]
                                     }
                                 ]
@@ -8242,6 +8284,9 @@
                                             "^org\\.virtualbox\\.app\\.VirtualBoxVM$",
                                             "^com\\.utmapp\\.UTM$",
                                             "^com\\.citrix\\.receiver\\.icaviewer\\.mac$"
+                                        ],
+                                        "file_paths": [
+                                            "/choose$"
                                         ]
                                     }
                                 ]
