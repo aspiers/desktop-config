@@ -4473,7 +4473,30 @@
                                     "key_code": "open_bracket",
                                     "modifiers": {
                                         "mandatory": [
-                                            "shift"
+                                            "command"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "consumer_key_code": "display_brightness_decrement"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_if",
+                                        "name": "thumb",
+                                        "value": 1
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "open_bracket",
+                                    "modifiers": {
+                                        "mandatory": [
+                                            "control"
                                         ]
                                     }
                                 },
@@ -4496,7 +4519,30 @@
                                     "key_code": "close_bracket",
                                     "modifiers": {
                                         "mandatory": [
-                                            "shift"
+                                            "command"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "consumer_key_code": "display_brightness_increment"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_if",
+                                        "name": "thumb",
+                                        "value": 1
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "close_bracket",
+                                    "modifiers": {
+                                        "mandatory": [
+                                            "control"
                                         ]
                                     }
                                 },

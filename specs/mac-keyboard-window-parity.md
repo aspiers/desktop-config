@@ -363,7 +363,7 @@ Both need IT approval on the work Mac; Karabiner is assumed allowed.
 | Keys | Action |
 | --- | --- |
 | Thumb+`[` / `]` / `0` | Volume down / up / mute |
-| Thumb+Shift+`[` / `]` | Brightness down / up |
+| Thumb+Ctrl+`[` / `]` | Brightness down / up (Adam, 2026-11-14: Ctrl, not Shift) |
 | Thumb+Ctrl+`s` / `w` | Screenshot of a region / window |
 | Thumb+Ctrl+Space | App launcher |
 | Thumb+Ctrl+Alt+`l` | Lock screen |
