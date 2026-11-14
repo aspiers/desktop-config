@@ -4,7 +4,7 @@
             "name": "Default profile",
             "selected": true,
             "virtual_hid_keyboard": {
-                "keyboard_type_v2": "iso"
+                "keyboard_type_v2": "ansi"
             },
             "complex_modifications": {
                 "rules": [
@@ -8267,7 +8267,7 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "non_us_backslash"
+                                        "key_code": "grave_accent_and_tilde"
                                     }
                                 ],
                                 "conditions": [

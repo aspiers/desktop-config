@@ -545,10 +545,11 @@ Karabiner can give that role:
   Chrysalis.
 - **Model 01**: undecided; bead `dc-5ty3` (Decide: which Model 01 key sends Right Control for the Mac's A2 layout).
 
-The key codes Karabiner reports for the MacBook's ISO keys (§ left of
-`1`, `` ` `` left of `Z`) are unchecked: its ISO handling has swapped
-them before ([#3974][ke-3974]). The generator assumes
-`grave_accent_and_tilde` and `non_us_backslash`, as on Linux.
+Karabiner reports the MacBook's ISO keys the other way round from Linux
+(checked on the Mac, 2026-11-14; its ISO handling has swapped them before,
+[#3974][ke-3974]): § left of `1` is `non_us_backslash` and `` ` `` left
+of `Z` is `grave_accent_and_tilde`. The virtual keyboard is set to ANSI,
+not ISO: with ISO, macOS typed § for `grave_accent_and_tilde`.
 
 [ke-device]: https://karabiner-elements.pqrs.org/docs/json/complex-modifications-manipulator-definition/conditions/device/
 [ke-priority]: https://karabiner-elements.pqrs.org/docs/json/complex-modifications-manipulator-evaluation-priority/

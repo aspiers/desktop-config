@@ -105,12 +105,6 @@ ALPHA_SHIFT = {
 }
 TYPED_BY = {typed: physical for physical, typed in ALPHA_SHIFT.items()}
 
-# Key code to send for a key in ALPHA_SHIFT's values, where it differs.
-# With the ISO virtual keyboard, macOS types § for grave_accent_and_tilde
-# and ` for non_us_backslash (checked on the Mac, 2026-11-14: the T key
-# typed § until this was added).
-EMIT = {"grave_accent_and_tilde": "non_us_backslash"}
-
 # Thumb+Ctrl matches whichever modifier the Control-position key sends:
 # Command in ordinary apps, Control in CONTROL_APPS.
 MODS = {
@@ -518,7 +512,7 @@ def alpha_shift_rule() -> Json:
         {
             "type": "basic",
             "from": {"key_code": physical, "modifiers": {"optional": ["any"]}},
-            "to": [{"key_code": EMIT.get(typed, typed)}],
+            "to": [{"key_code": typed}],
             "conditions": [BUILT_IN],
         }
         for physical, typed in ALPHA_SHIFT.items()
@@ -558,7 +552,10 @@ def configuration() -> Json:
             {
                 "name": "Default profile",
                 "selected": True,
-                "virtual_hid_keyboard": {"keyboard_type_v2": "iso"},
+                # ANSI, not ISO: with ISO, macOS types § for
+                # grave_accent_and_tilde (Adam, 2026-11-14: "I don't think
+                # we should be using the ISO setting").
+                "virtual_hid_keyboard": {"keyboard_type_v2": "ansi"},
                 "complex_modifications": {"rules": rules},
             }
         ]
