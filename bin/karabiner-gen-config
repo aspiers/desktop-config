@@ -81,12 +81,12 @@ ATREUS = [(0x1209, 0x2302)]
 MODEL_01 = [(0x1209, 0x2301)]
 
 # Left-hand alpha shift on the built-in keyboard (spec 2.1): physical key
-# -> key it types. Karabiner is assumed to report the ISO key left of `1`
-# (labelled §) as grave_accent_and_tilde and the key left of Z as
-# non_us_backslash, as Linux does; unchecked, as Karabiner's ISO handling
-# has swapped these two before. Check in Karabiner-EventViewer.
+# -> key it types. On the MacBook's ISO keyboard Karabiner reports the key
+# left of `1` (labelled §) as non_us_backslash and the key left of Z as
+# grave_accent_and_tilde, the other way round from Linux (checked on the
+# Mac, 2026-11-14: the Linux-style mapping typed q and x swapped).
 ALPHA_SHIFT = {
-    "grave_accent_and_tilde": "q",
+    "non_us_backslash": "q",
     "q": "w",
     "w": "e",
     "e": "r",
@@ -99,7 +99,7 @@ ALPHA_SHIFT = {
     "f": "g",
     "g": "backslash",
     "fn": "z",
-    "non_us_backslash": "x",
+    "grave_accent_and_tilde": "x",
     "z": "c",
     "x": "v",
 }

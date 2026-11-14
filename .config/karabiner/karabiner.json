@@ -43,7 +43,7 @@
                             {
                                 "type": "basic",
                                 "from": {
-                                    "key_code": "grave_accent_and_tilde"
+                                    "key_code": "non_us_backslash"
                                 },
                                 "to": [
                                     {
@@ -1020,7 +1020,7 @@
                             {
                                 "type": "basic",
                                 "from": {
-                                    "key_code": "non_us_backslash"
+                                    "key_code": "grave_accent_and_tilde"
                                 },
                                 "to": [
                                     {
@@ -4156,7 +4156,7 @@
                             {
                                 "type": "basic",
                                 "from": {
-                                    "key_code": "grave_accent_and_tilde"
+                                    "key_code": "non_us_backslash"
                                 },
                                 "to": [
                                     {
@@ -4244,7 +4244,7 @@
                             {
                                 "type": "basic",
                                 "from": {
-                                    "key_code": "grave_accent_and_tilde",
+                                    "key_code": "non_us_backslash",
                                     "modifiers": {
                                         "mandatory": [
                                             "command"
@@ -4275,7 +4275,7 @@
                             {
                                 "type": "basic",
                                 "from": {
-                                    "key_code": "grave_accent_and_tilde",
+                                    "key_code": "non_us_backslash",
                                     "modifiers": {
                                         "mandatory": [
                                             "control"
@@ -6261,7 +6261,7 @@
                             {
                                 "type": "basic",
                                 "from": {
-                                    "key_code": "grave_accent_and_tilde"
+                                    "key_code": "non_us_backslash"
                                 },
                                 "to": [
                                     {
@@ -8128,7 +8128,7 @@
                             {
                                 "type": "basic",
                                 "from": {
-                                    "key_code": "grave_accent_and_tilde",
+                                    "key_code": "non_us_backslash",
                                     "modifiers": {
                                         "optional": [
                                             "any"
@@ -8466,7 +8466,7 @@
                             {
                                 "type": "basic",
                                 "from": {
-                                    "key_code": "non_us_backslash",
+                                    "key_code": "grave_accent_and_tilde",
                                     "modifiers": {
                                         "optional": [
                                             "any"
