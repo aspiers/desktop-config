@@ -6,3 +6,4 @@
 [\]>[intl-\]
 [delete]>[lalt]
 [lalt]>[delete]
+[intl-\]>[insert]

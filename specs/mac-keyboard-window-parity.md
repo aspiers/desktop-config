@@ -74,7 +74,7 @@ the previous mechanism; `.config/keyd/daemon/default.conf` says keyd is
 | Laptop built-ins (Framework, ThinkPad, Dell, Lenovo, Samsung) | keyd | Right Alt (Dell: Right Ctrl; Lenovo, Samsung: Menu) | Everything in 2.1 to 2.3 |
 | Keyboardio Atreus, Model 01, Preonic | Firmware (Chrysalis) | Firmware | UK shifted symbols, `£` / `€` (2.3) |
 | Kinesis Advantage 360 | Mostly firmware | Firmware | Home = AltGr, physical Win = Compose, Caps Lock = Insert, `£` / `€` |
-| Kinesis Advantage2 (USB) | Firmware (v-drive `qwerty.txt`) for OS-independent remaps, keyd for the rest | Right Ctrl on the thumb pad | Firmware: Caps Lock = `-`, Up/Down swapped, End = Esc, thumb Delete/Alt swapped, top-right key swap; backed up in `.keymaps/kinesis-advantage2/active/`. keyd: `£` / `€` on the top-right key, thumb pad layers |
+| Kinesis Advantage2 (USB) | Firmware (v-drive `qwerty.txt`) for OS-independent remaps, keyd for the rest | Right Ctrl on the thumb pad | Firmware: Caps Lock = `-`, Up/Down swapped, End = Esc, thumb Delete/Alt swapped, top-right key swap, International key = Insert; backed up in `.keymaps/kinesis-advantage2/active/`. keyd: `£` / `€` on the top-right key, thumb pad layers |
 | Kinesis Essential (PS/2) | keyd (not programmable) | Right Ctrl on the thumb pad | Thumb pads (2.4), Caps Lock = `-`, Up/Down swapped, `-` key types `£` / `€` |
 | HHKB Lite, Gyration | keyd | Not remapped | Own variants of 2.1 |
 
