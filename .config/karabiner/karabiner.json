@@ -22,6 +22,12 @@
                                             "name": "passthrough",
                                             "value": 0
                                         }
+                                    },
+                                    {
+                                        "set_notification_message": {
+                                            "id": "desktop-config.passthrough",
+                                            "text": ""
+                                        }
                                     }
                                 ],
                                 "conditions": [
@@ -50,6 +56,12 @@
                                         "set_variable": {
                                             "name": "passthrough",
                                             "value": 0
+                                        }
+                                    },
+                                    {
+                                        "set_notification_message": {
+                                            "id": "desktop-config.passthrough",
+                                            "text": ""
                                         }
                                     }
                                 ],
@@ -4337,6 +4349,12 @@
                                             "name": "passthrough",
                                             "value": 1
                                         }
+                                    },
+                                    {
+                                        "set_notification_message": {
+                                            "id": "desktop-config.passthrough",
+                                            "text": "Pass-through mode: Q leaves"
+                                        }
                                     }
                                 ],
                                 "conditions": [
@@ -4363,6 +4381,12 @@
                                             "name": "passthrough",
                                             "value": 1
                                         }
+                                    },
+                                    {
+                                        "set_notification_message": {
+                                            "id": "desktop-config.passthrough",
+                                            "text": "Pass-through mode: Q leaves"
+                                        }
                                     }
                                 ],
                                 "conditions": [
@@ -4383,6 +4407,12 @@
                                         "set_variable": {
                                             "name": "reorganise",
                                             "value": 1
+                                        }
+                                    },
+                                    {
+                                        "set_notification_message": {
+                                            "id": "desktop-config.reorganise",
+                                            "text": "Reorganise mode: Q, Esc or Space leaves"
                                         }
                                     }
                                 ],
@@ -4412,6 +4442,12 @@
                                         "set_variable": {
                                             "name": "reorganise",
                                             "value": 1
+                                        }
+                                    },
+                                    {
+                                        "set_notification_message": {
+                                            "id": "desktop-config.reorganise",
+                                            "text": "Reorganise mode: Q, Esc or Space leaves"
                                         }
                                     }
                                 ],
@@ -6351,6 +6387,12 @@
                                             "name": "reorganise",
                                             "value": 0
                                         }
+                                    },
+                                    {
+                                        "set_notification_message": {
+                                            "id": "desktop-config.reorganise",
+                                            "text": ""
+                                        }
                                     }
                                 ],
                                 "conditions": [
@@ -6379,6 +6421,12 @@
                                         "set_variable": {
                                             "name": "reorganise",
                                             "value": 0
+                                        }
+                                    },
+                                    {
+                                        "set_notification_message": {
+                                            "id": "desktop-config.reorganise",
+                                            "text": ""
                                         }
                                     }
                                 ],
@@ -6409,6 +6457,12 @@
                                             "name": "reorganise",
                                             "value": 0
                                         }
+                                    },
+                                    {
+                                        "set_notification_message": {
+                                            "id": "desktop-config.reorganise",
+                                            "text": ""
+                                        }
                                     }
                                 ],
                                 "conditions": [
@@ -6429,6 +6483,12 @@
                                         "set_variable": {
                                             "name": "reorganise",
                                             "value": 0
+                                        }
+                                    },
+                                    {
+                                        "set_notification_message": {
+                                            "id": "desktop-config.reorganise",
+                                            "text": ""
                                         }
                                     }
                                 ],

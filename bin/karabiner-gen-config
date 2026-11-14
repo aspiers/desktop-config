@@ -152,6 +152,16 @@ def set_var(name: str, value: int) -> Json:
     return {"set_variable": {"name": name, "value": value}}
 
 
+def notify(name: str, text: str = "") -> Json:
+    """Show Karabiner's on-screen notification `name`, or clear it with no
+    text. Marks the modes, which change what keys do (Adam, 2026-11-14)."""
+    return {"set_notification_message": {"id": f"desktop-config.{name}", "text": text}}
+
+
+PASSTHROUGH_ON = notify("passthrough", "Pass-through mode: Q leaves")
+REORGANISE_ON = notify("reorganise", "Reorganise mode: Q, Esc or Space leaves")
+
+
 def apps(patterns: list[str], negate: bool = False, paths: list[str] | None = None) -> Json:
     kind = "frontmost_application_unless" if negate else "frontmost_application_if"
     condition: Json = {"type": kind, "bundle_identifiers": patterns}
@@ -378,8 +388,8 @@ def window_operations() -> list[Json]:
     m += thumb("q", aerospace("close"))
     m += thumb("q", aerospace("close --quit-if-last-window"), "ctrl")
     # Modes. Thumb's own variable resets when Thumb is released.
-    m += thumb("p", [set_var("passthrough", 1)], "ctrl")
-    m += thumb("r", [set_var("reorganise", 1)])
+    m += thumb("p", [set_var("passthrough", 1), PASSTHROUGH_ON], "ctrl")
+    m += thumb("r", [set_var("reorganise", 1), REORGANISE_ON])
     return m
 
 
@@ -437,7 +447,7 @@ def passthrough_rule() -> Json:
     # Thumb+Ctrl+p: Thumb reaches apps as plain right Command until q.
     return rule(
         "Pass-through mode: q leaves it (spec 3.2)",
-        manipulators("q", [set_var("passthrough", 0)], conditions=[variable("passthrough")]),
+        manipulators("q", [set_var("passthrough", 0), notify("passthrough")], conditions=[variable("passthrough")]),
     )
 
 
@@ -446,7 +456,7 @@ def reorganise_rule() -> Json:
     mode = [variable("reorganise")]
     m: list[Json] = []
     for code in ["q", "escape", "spacebar"]:
-        m += manipulators(code, [set_var("reorganise", 0)], conditions=mode)
+        m += manipulators(code, [set_var("reorganise", 0), notify("reorganise")], conditions=mode)
     for code, direction in VIM.items():
         m += manipulators(code, aerospace(f"focus {direction}"), conditions=mode)
     for code, direction in ARROWS.items():
