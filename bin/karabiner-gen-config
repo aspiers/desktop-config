@@ -222,6 +222,13 @@ def rule(description: str, manips: list[Json]) -> Json:
 
 THUMB = variable("thumb")
 
+# What Thumb+8 (push-to-talk) and Thumb+9 (toggle) dictate with:
+# "macos" for macOS Dictation, "sussurro" to send Sussurro's hotkeys.
+DICTATION = "macos"
+# Sussurro's hotkeys on the Mac: its Linux super+8 / super+9, with Super
+# as Command. Match these to ~/.sussurro/config.yaml there.
+SUSSURRO_HOTKEYS = {"8": ("8", "command"), "9": ("9", "command")}
+
 
 def thumb(typed: str, to: list[Json], mods: str = "", extra: list[Json] | None = None) -> list[Json]:
     return manipulators(typed, to, mods, [THUMB] + (extra or []))
@@ -380,13 +387,24 @@ def other_bindings() -> list[Json]:
     m += thumb("w", shell("screencapture -iWo \"$HOME/Desktop/Screenshot $(date '+%F at %H.%M.%S').png\""), "ctrl")
     m += thumb("spacebar", key("spacebar", "command"), "ctrl")
     m += thumb("l", key("q", "control", "command"), "ctrl+alt")
-    # Dictation, as Sussurro's super+8 / super+9 on Linux (Adam,
-    # 2026-11-14: macOS Dictation). The Dictation key toggles it, so
-    # push-to-talk presses it again on release.
-    dictation = [{"consumer_key_code": "dictation"}]
-    m += [{**manip, "to_after_key_up": dictation} for manip in thumb("8", dictation)]
-    m += thumb("9", dictation)
+    m += dictation_bindings()
     return m
+
+
+def dictation_bindings() -> list[Json]:
+    """Thumb+8 push-to-talk, Thumb+9 toggle, as Sussurro's super+8 /
+    super+9 on Linux. DICTATION picks the engine (Adam, 2026-11-14:
+    macOS Dictation for now, keeping Sussurro a one-line switch)."""
+    if DICTATION == "sussurro":
+        # Karabiner holds the hotkey down for as long as Thumb+8 is held,
+        # so Sussurro's own push-to-talk sees a held key.
+        return [m for n, (code, *mods) in SUSSURRO_HOTKEYS.items() for m in thumb(n, key(code, *mods))]
+    if DICTATION != "macos":
+        sys.exit(f"DICTATION must be macos or sussurro, not {DICTATION!r}")
+    # The Dictation key toggles macOS Dictation, so push-to-talk presses
+    # it again on release.
+    dictation = [{"consumer_key_code": "dictation"}]
+    return [{**manip, "to_after_key_up": dictation} for manip in thumb("8", dictation)] + thumb("9", dictation)
 
 
 def block_unbound() -> Json:
