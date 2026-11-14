@@ -1,0 +1,7 @@
+[caps]>[hyphen]
+[up]>[down]
+[down]>[up]
+[hyphen]>[\]
+[end]>[escape]
+[\]>[intl-\]
+[delete]>[lalt]
