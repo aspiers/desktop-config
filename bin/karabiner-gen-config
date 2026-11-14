@@ -104,7 +104,12 @@ TYPED_BY = {typed: physical for physical, typed in ALPHA_SHIFT.items()}
 
 # Thumb+Ctrl matches whichever modifier the Control-position key sends:
 # Command in ordinary apps, Control in CONTROL_APPS.
-MODS = {"ctrl": ["command", "control"], "alt": ["option"], "shift": ["shift"]}
+MODS = {
+    "ctrl": ["command", "control"],
+    "control": ["control"],
+    "alt": ["option"],
+    "shift": ["shift"],
+}
 
 # Keys the Thumb layer swallows when unbound, so Thumb+key never types.
 PRINTABLE = (
@@ -404,7 +409,8 @@ def control_app_rules() -> Json:
     m: list[Json] = []
     # Linux terminals copy and paste with Ctrl+Shift+C / V.
     for typed in ("c", "v"):
-        m += manipulators(typed, key(typed, "command"), "ctrl+shift", [apps(TERMINALS + [ORCA])])
+        # In these apps the Control-position key always sends Control.
+        m += manipulators(typed, key(typed, "command"), "control+shift", [apps(TERMINALS + [ORCA])])
     # Spec 2.6: cycle Orca agents waiting for attention. The helper comes
     # from Adam's ai-config repository; unchecked on macOS.
     orca = [apps([ORCA])]
