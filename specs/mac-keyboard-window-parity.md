@@ -372,7 +372,10 @@ The AutoHotkey script covers part of this spec, with the Windows key as
 Thumb. It exists only on the Windows PC (Adam, 2026-11-14), so it is not
 compared here until a copy is brought over.
 
-## 5. macOS implementation proposals (unchecked)
+## 5. macOS implementation
+
+Built on branch `mac-karabiner-aerospace-configs`, not yet run on macOS.
+Section 7 says how to install and test it.
 
 ### 5.1 Thumb
 
@@ -488,18 +491,154 @@ them before ([#3974][ke-3974]). The generator assumes
 
 ### 5.3 App jumps
 
-`open -a <App>` focuses a running app or launches it. Toggle and cycle
-behaviour, Chrome tab jumps and Teams chat jumps need small scripts. How
-AeroSpace reacts when an app on another workspace takes focus is
-unchecked.
+Built as Karabiner rules (`bin/karabiner-gen-config`, `jumps()`) and
+`bin/mac-jump`:
+
+- **Focus or launch**: `open -b <bundle ID>`. AeroSpace switches to the
+  workspace of whichever window macOS focuses ([guide][as-guide],
+  "Emulation of virtual workspaces"); that `open` takes this path is
+  suspected, unchecked.
+- **Toggle** (T): when the app is frontmost, Karabiner sends `Cmd+H`
+  instead, decided by its frontmost-app condition. Hide stands in for
+  minimise because AeroSpace cannot focus a minimised window again
+  ([#18][as-18]).
+- **Cycle** (C): `mac-jump cycle` focuses the next window of the app
+  with `aerospace focus --window-id`. Thumb+`b` cycles every Chrome
+  window, not only those on the main monitor.
+- **Chrome tabs**: `mac-jump tab` finds tabs by URL through Chrome's
+  AppleScript dictionary and picks among several with AppleScript's
+  `choose from list`, which has no typed filter like rofi's. Web apps
+  (Spotify, Octobox, "Bead Me Up, Scotty") open as `--app` windows.
+- **Emacs**: `emacsclient -e`, as `switch-emacs-eval` does on Linux.
+- **Outlook** mail and calendar: activate Outlook, then `Cmd+1` /
+  `Cmd+2` through System Events, which needs the Accessibility permission.
+  **Teams chat** does the same with `Cmd+2`, assuming Chat is second in
+  Teams' app bar.
+
+Stubs and gaps, all unchecked on the Mac:
+
+- Thumb+`o` **Teams Planner** only focuses Teams: no reliable way found to
+  open Planner inside it.
+- Thumb+Ctrl+`t` **Teams meeting window** cycles all Teams windows.
+- Unbound: Thumb+Ctrl+`k` (Slack todo capture, a Linux script), Thumb+`=`
+  (clear notifications), Thumb+Alt+Shift+`/` (binding search),
+  Thumb+Ctrl+`8` (dictation), Orca's `Ctrl+Alt+o` token picker (uses
+  rofi), and pointer control (3.4, needs IT approval).
+- Thumb+Space (raise), Thumb+`l` (lower), Thumb+Ctrl+`i` (restore),
+  Thumb+Shift+`s` (sticky) and the reorganise mode's number presets have
+  no AeroSpace equivalent. Maximise, resize and the other tiling
+  operations wait for bead `dc-ql65.5` (Plan Thumb bindings for AeroSpace
+  tiling operations).
+
+[as-guide]: https://nikitabobko.github.io/AeroSpace/guide
+[as-18]: https://github.com/nikitabobko/AeroSpace/issues/18
 
 ### 5.4 Layouts
 
-AeroSpace can assign workspaces to monitors and send new windows to
-workspaces by app (believed, unchecked). Sticky windows across workspaces
-and floating centred pop-ups need checking.
+`.config/aerospace/aerospace.toml`, with no key bindings of its own:
+
+- Workspaces 1 to 6 are force-assigned to the main monitor, and a
+  workspace `S` to the secondary one ([guide][as-guide], "Assign
+  workspaces to monitors"). Undocked, `S` matches no monitor, so AeroSpace
+  shows it on the laptop screen like the others (read from AeroSpace's
+  source, not tested).
+- New windows go to the Linux workspace by app (`on-window-detected`).
+  Chrome cannot be split between workspaces 1, 2 and 5 by app, so all its
+  windows land on 1.
+- **Sticky windows**: not supported ([#2][as-2]). What Linux keeps sticky
+  on the secondary monitor lives on workspace `S` instead.
+- **Pop-ups**: System Settings floats. AeroSpace cannot centre or size a
+  floating window ([#494][as-494]), so pop-ups are not centred at 90%.
+
+[as-2]: https://github.com/nikitabobko/AeroSpace/issues/2
+[as-494]: https://github.com/nikitabobko/AeroSpace/issues/494
 
 ## 6. Open questions
 
-None. The choice between editing approaches A and B (5.2) is left to the
-implementer.
+None. The implementer chose editing approach A (5.2).
+
+## 7. Installing and testing on the Mac
+
+### Install
+
+1. Install both apps, then grant the permissions each asks for (Karabiner:
+   its driver extension and Input Monitoring; AeroSpace: Accessibility):
+
+   ```sh
+   brew install --cask karabiner-elements
+   brew install --cask nikitabobko/tap/aerospace
+   ```
+
+2. Move aside the config directory Karabiner created on first launch, and
+   any `~/.aerospace.toml`, which AeroSpace would report as ambiguous next
+   to `~/.config/aerospace/aerospace.toml`:
+
+   ```sh
+   mv ~/.config/karabiner ~/.config/karabiner.orig
+   ```
+
+3. Stow this repository (`mr stow`, or `stow -t ~ .` in the repo).
+4. Check that `~/.config/karabiner` is itself a symlink into the
+   repository. Karabiner's docs say to link the directory, not
+   `karabiner.json`, or it misses changes to the file
+   ([configuration file path][ke-path]); its saves also replace the file
+   by renaming, which would break a file link. If stow made a real
+   directory of file links, replace it with one link and restart
+   Karabiner's agent:
+
+   ```sh
+   rm ~/.config/karabiner/karabiner.json && rmdir ~/.config/karabiner
+   ln -s ~/.STOW/desktop-config/.config/karabiner ~/.config/karabiner
+   launchctl kickstart -k gui/$(id -u)/org.pqrs.service.agent.Karabiner-Console-User-Server
+   ```
+
+5. macOS settings:
+   - Disable "Displays have separate Spaces", as AeroSpace recommends,
+     then log out:
+     `defaults write com.apple.spaces spans-displays -bool true && killall SystemUIServer`.
+   - Arrange displays so each has a free bottom corner, where AeroSpace
+     parks windows of hidden workspaces ([guide][as-guide]).
+   - Make the external monitor the main display (the one with the menu
+     bar) when docked.
+   - The UK characters in 2.3 come from the input source, not Karabiner:
+     "British – PC" should match Linux's shifted symbols (unchecked).
+
+[ke-path]: https://karabiner-elements.pqrs.org/docs/manual/misc/configuration-file-path/
+
+### Test
+
+Karabiner-EventViewer (installed with Karabiner) shows key names and,
+under Variables, whether `thumb` is set while right `command` is held.
+
+1. **ISO keys**: press § (left of `1`) and `` ` `` (left of `Z`). If
+   EventViewer names them the other way round from
+   `grave_accent_and_tilde` and `non_us_backslash`, swap those two in
+   `ALPHA_SHIFT` in `bin/karabiner-gen-config`.
+2. **Letters**: in TextEdit, the left-hand keys should type 2.1's table,
+   including `fn` → `z` and the key left of `Z` → `x`.
+3. **Bottom row**: left `control` acts as Fn (Fn+arrows page), right
+   `option` as Command (Command+Tab switches apps).
+4. **Editing**: in TextEdit, Control-position+C / V copy and paste, and
+   Control-position+arrows move by word; in Terminal, the same key+C
+   interrupts `sleep 100`.
+5. **Thumb**: Thumb+`e` (Emacs, again hides it), Thumb+`1`..`6`, Thumb+`/`,
+   Thumb+`h` (GitHub tab picker; macOS asks to let Karabiner control
+   Chrome), Thumb+`m` (Outlook mail; macOS asks for Accessibility).
+6. **Bundle IDs**: `osascript -e 'id of app "Orca"'`, and likewise for the
+   other apps in the generator's lists and in `aerospace.toml`. Fix any
+   that differ.
+7. **AeroSpace**: `aerospace list-apps` while the communication apps run,
+   then check that new windows land on workspace 4.
+
+Logs: `~/Library/Logs/mac-jump.log` for the jump helper, and
+`~/.local/share/karabiner/log/console_user_server.log` for Karabiner's
+`shell_command` output.
+
+### Changing the config
+
+Edit `bin/karabiner-gen-config`, never Karabiner's settings UI: the
+generator's next run overwrites `karabiner.json` and loses changes made
+there. If `git diff` shows Karabiner rewrote the file, port the change to
+the generator. Run the generator, then `bin/test-karabiner-gen-config`;
+Karabiner reloads the file on its own.
+After editing `aerospace.toml`, run `aerospace reload-config`.

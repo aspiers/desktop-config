@@ -1,0 +1,133 @@
+# AeroSpace config for the work MacBook, from
+# specs/mac-keyboard-window-parity.md (section 3.3, layout intent).
+#
+# There are no key bindings here: the Thumb layer in Karabiner
+# (bin/karabiner-gen-config) runs the aerospace CLI directly, because
+# macOS reserves some of the Hyper combinations Thumb would otherwise
+# need (spec 5.1). AeroSpace falls back to no bindings when
+# mode.main.binding is absent (https://nikitabobko.github.io/AeroSpace/guide).
+#
+# AeroSpace also reads ~/.aerospace.toml and reports an error if both
+# exist, so keep only this one.
+
+# Version 2 makes persistent-workspaces explicit instead of inferring it
+# from the bindings, which would leave none here.
+config-version = 2
+start-at-login = true
+
+# Workspaces 1-6 mirror the Linux ones; S holds what Linux keeps sticky
+# on the secondary monitor, since AeroSpace has no sticky windows
+# (https://github.com/nikitabobko/AeroSpace/issues/2).
+persistent-workspaces = ['1', '2', '3', '4', '5', '6', 'S']
+
+default-root-container-layout = 'tiles'
+default-root-container-orientation = 'auto'
+
+# With an external monitor attached it is the main one, and the laptop
+# screen is secondary (spec 3.3). macOS's main display is the one with the
+# menu bar, set in System Settings > Displays. A pattern that matches no
+# monitor leaves the workspace free to show anywhere, so undocked
+# everything is on the laptop screen.
+[workspace-to-monitor-force-assignment]
+1 = 'main'
+2 = 'main'
+3 = 'main'
+4 = 'main'
+5 = 'main'
+6 = 'main'
+S = 'secondary'
+
+# Which workspace each app's new windows land on (spec 3.3). Matching by
+# app-id where the bundle ID is well known, by app name otherwise; both
+# are unchecked on the Mac (check with `aerospace list-apps`). The
+# `if.app-id` form is soft-deprecated in favour of `if = 'test ...'` but
+# works on older AeroSpace releases too.
+
+# Workspace 1: main work. Chrome windows for workspaces 2 and 5 look the
+# same to AeroSpace, so they also land here; move them with Thumb+Alt+2/5.
+[[on-window-detected]]
+if.app-id = 'com.stablyai.orca'
+run = 'move-node-to-workspace 1'
+
+[[on-window-detected]]
+if.app-id = 'org.gnu.Emacs'
+run = 'move-node-to-workspace 1'
+
+[[on-window-detected]]
+if.app-id = 'com.google.Chrome'
+run = 'move-node-to-workspace 1'
+
+[[on-window-detected]]
+if.app-id = 'com.apple.Terminal'
+run = 'move-node-to-workspace 1'
+
+[[on-window-detected]]
+if.app-id = 'com.googlecode.iterm2'
+run = 'move-node-to-workspace 1'
+
+[[on-window-detected]]
+if.app-id = 'net.kovidgoyal.kitty'
+run = 'move-node-to-workspace 1'
+
+[[on-window-detected]]
+if.app-id = 'com.mitchellh.ghostty'
+run = 'move-node-to-workspace 1'
+
+# Workspace 3: Firefox, Notion, LM Studio.
+[[on-window-detected]]
+if.app-id = 'org.mozilla.firefox'
+run = 'move-node-to-workspace 3'
+
+[[on-window-detected]]
+if.app-name-regex-substring = '^Notion$'
+run = 'move-node-to-workspace 3'
+
+[[on-window-detected]]
+if.app-name-regex-substring = '^LM Studio$'
+run = 'move-node-to-workspace 3'
+
+# Workspace 4: communication. Teams and Outlook are Mac-only additions.
+[[on-window-detected]]
+if.app-id = 'com.tinyspeck.slackmacgap'
+run = 'move-node-to-workspace 4'
+
+[[on-window-detected]]
+if.app-name-regex-substring = '^Telegram'
+run = 'move-node-to-workspace 4'
+
+[[on-window-detected]]
+if.app-name-regex-substring = '^Discord$'
+run = 'move-node-to-workspace 4'
+
+[[on-window-detected]]
+if.app-name-regex-substring = '^Beeper'
+run = 'move-node-to-workspace 4'
+
+[[on-window-detected]]
+if.app-name-regex-substring = '^Zulip$'
+run = 'move-node-to-workspace 4'
+
+[[on-window-detected]]
+if.app-id = 'com.microsoft.teams2'
+run = 'move-node-to-workspace 4'
+
+[[on-window-detected]]
+if.app-id = 'com.microsoft.Outlook'
+run = 'move-node-to-workspace 4'
+
+# Workspace 6: monitoring and keyboard tools.
+[[on-window-detected]]
+if.app-id = 'com.apple.ActivityMonitor'
+run = 'move-node-to-workspace 6'
+
+[[on-window-detected]]
+if.app-name-regex-substring = '^Chrysalis$'
+run = 'move-node-to-workspace 6'
+
+# Pop-ups float (spec 3.3). AeroSpace cannot centre or size a floating
+# window (https://github.com/nikitabobko/AeroSpace/issues/494), so they
+# open where macOS puts them rather than centred at 90%. The pickers from
+# bin/mac-jump are dialogs, which AeroSpace floats already.
+[[on-window-detected]]
+if.app-id = 'com.apple.systempreferences'
+run = 'layout floating'
