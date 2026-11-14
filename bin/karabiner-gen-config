@@ -1,0 +1,550 @@
+#!/usr/bin/env python3
+"""Generate .config/karabiner/karabiner.json for the work MacBook.
+
+The requirements are in specs/mac-keyboard-window-parity.md; section
+numbers below refer to it. Edit this script, not the JSON: Karabiner's own
+settings UI rewrites karabiner.json and would drop the generated rules on
+the next run of this script.
+
+    bin/karabiner-gen-config          # rewrite the JSON
+    bin/karabiner-gen-config --check  # exit 1 if the JSON is out of date
+
+Karabiner facts this relies on, from its docs
+(https://karabiner-elements.pqrs.org/docs/):
+
+- Complex rules are tried top to bottom and the first matching
+  manipulator wins; its output is not fed to later complex rules
+  (manual/misc/event-modification-chaining/,
+  json/complex-modifications-manipulator-evaluation-priority/).
+- Profile `devices[]` entries cannot match the built-in keyboard without
+  its vendor and product IDs, but the `device_if` condition can, with
+  `is_built_in_keyboard` (Karabiner 14.9.0 and later). So every remap here
+  is a complex rule, and rules that match letters list the built-in
+  keyboard's physical key separately (see `variants`).
+- `from.modifiers.mandatory` modifiers are removed from the output, and
+  without `optional` a rule does not match when other modifiers are held
+  (json/complex-modifications-manipulator-definition/from/modifiers/).
+  Modifier conditions see the output of earlier remaps, which is why
+  Thumb+Ctrl bindings match both `command` and `control` (see `MODS`).
+- `shell_command` runs under `/bin/sh -c` with a minimal environment and
+  no Homebrew on PATH, and a new one kills any still running
+  (.../to/shell-command/).
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+from typing import Any
+
+Json = dict[str, Any]
+
+REPO = Path(__file__).resolve().parent.parent
+OUTPUT = REPO / ".config/karabiner/karabiner.json"
+
+AEROSPACE = "/opt/homebrew/bin/aerospace"
+JUMP = "~/bin/mac-jump"
+
+# Bundle IDs are the vendors' published CFBundleIdentifier values, not
+# checked on the Mac; check with `osascript -e 'id of app "Name"'`.
+TERMINALS = [
+    r"^com\.apple\.Terminal$",
+    r"^com\.googlecode\.iterm2$",
+    r"^net\.kovidgoyal\.kitty$",
+    r"^com\.mitchellh\.ghostty$",
+    r"^org\.alacritty$",
+    r"^com\.github\.wez\.wezterm$",
+]
+EMACS = r"^org\.gnu\.Emacs$"
+# Orca is one app whose editor and terminal panes Karabiner cannot tell
+# apart, so all of it keeps Control as Control, like a terminal (spec 5.2).
+ORCA = r"^com\.stablyai\.orca$"
+VMS_AND_REMOTE_DESKTOPS = [
+    r"^com\.microsoft\.rdc\.macos$",
+    r"^com\.vmware\.fusion$",
+    r"^com\.parallels\.desktop\.console$",
+    r"^org\.virtualbox\.app\.VirtualBoxVM$",
+    r"^com\.utmapp\.UTM$",
+    r"^com\.citrix\.receiver\.icaviewer\.mac$",
+]
+# Apps where Control stays Control (spec 2.5).
+CONTROL_APPS = TERMINALS + [EMACS, ORCA] + VMS_AND_REMOTE_DESKTOPS
+
+# USB IDs from .config/keyd/daemon/*.conf.
+ADVANTAGE2 = [(0x29EA, 0x0102), (0x29EA, 0x0103)]
+ADVANTAGE_360 = [(0x29EA, 0x0362), (0x1D50, 0x615E)]
+KEYBOARDIO = [(0x1209, 0x2301), (0x1209, 0x2302)]  # Model 01, Atreus
+
+# Left-hand alpha shift on the built-in keyboard (spec 2.1): physical key
+# -> key it types. Karabiner is assumed to report the ISO key left of `1`
+# (labelled §) as grave_accent_and_tilde and the key left of Z as
+# non_us_backslash, as Linux does; unchecked, as Karabiner's ISO handling
+# has swapped these two before. Check in Karabiner-EventViewer.
+ALPHA_SHIFT = {
+    "grave_accent_and_tilde": "q",
+    "q": "w",
+    "w": "e",
+    "e": "r",
+    "r": "t",
+    "t": "grave_accent_and_tilde",
+    "caps_lock": "a",
+    "a": "s",
+    "s": "d",
+    "d": "f",
+    "f": "g",
+    "g": "backslash",
+    "fn": "z",
+    "non_us_backslash": "x",
+    "z": "c",
+    "x": "v",
+}
+TYPED_BY = {typed: physical for physical, typed in ALPHA_SHIFT.items()}
+
+# Thumb+Ctrl matches whichever modifier the Control-position key sends:
+# Command in ordinary apps, Control in CONTROL_APPS.
+MODS = {"ctrl": ["command", "control"], "alt": ["option"], "shift": ["shift"]}
+
+# Keys the Thumb layer swallows when unbound, so Thumb+key never types.
+PRINTABLE = (
+    list("abcdefghijklmnopqrstuvwxyz1234567890")
+    + [
+        "hyphen", "equal_sign", "open_bracket", "close_bracket", "backslash",
+        "semicolon", "quote", "grave_accent_and_tilde", "comma", "period",
+        "slash", "non_us_backslash", "spacebar", "return_or_enter", "tab",
+        "delete_or_backspace", "left_arrow", "right_arrow", "up_arrow",
+        "down_arrow",
+    ]
+)
+
+
+def device(*ids: tuple[int, int]) -> Json:
+    return {
+        "type": "device_if",
+        "identifiers": [{"vendor_id": v, "product_id": p} for v, p in ids],
+    }
+
+
+BUILT_IN = {"type": "device_if", "identifiers": [{"is_built_in_keyboard": True}]}
+NOT_BUILT_IN = {**BUILT_IN, "type": "device_unless"}
+
+
+def variable(name: str, value: int = 1) -> Json:
+    return {"type": "variable_if", "name": name, "value": value}
+
+
+def set_var(name: str, value: int) -> Json:
+    return {"set_variable": {"name": name, "value": value}}
+
+
+def apps(patterns: list[str], negate: bool = False) -> Json:
+    kind = "frontmost_application_unless" if negate else "frontmost_application_if"
+    return {"type": kind, "bundle_identifiers": patterns}
+
+
+def shell(command: str) -> list[Json]:
+    return [{"shell_command": command}]
+
+
+def key(code: str, *modifiers: str) -> list[Json]:
+    event: Json = {"key_code": code}
+    if modifiers:
+        event["modifiers"] = list(modifiers)
+    return [event]
+
+
+def aerospace(args: str) -> list[Json]:
+    return shell(f"{AEROSPACE} {args}")
+
+
+def jump(args: str) -> list[Json]:
+    return shell(f"{JUMP} {args}")
+
+
+def open_bundle(bundle: str) -> list[Json]:
+    return shell(f"open -b {bundle}")
+
+
+def variants(typed: str) -> list[tuple[str, list[Json]]]:
+    """Physical keys that type `typed`, each with its device condition."""
+    # On the built-in keyboard the key named `typed` may type something
+    # else, and `c` and `v` are typed by two keys each.
+    same = [(typed, [NOT_BUILT_IN] if typed in ALPHA_SHIFT else [])]
+    moved = [(TYPED_BY[typed], [BUILT_IN])] if typed in TYPED_BY else []
+    return same + moved
+
+
+def manipulators(
+    typed: str,
+    to: list[Json],
+    mods: str = "",
+    conditions: list[Json] | None = None,
+    optional: list[str] | None = None,
+) -> list[Json]:
+    """One manipulator per physical variant and per alternative modifier."""
+    mod_options: list[list[str]] = [[]]
+    for name in mods.split("+") if mods else []:
+        mod_options = [m + [alt] for m in mod_options for alt in MODS[name]]
+    result = []
+    for physical, device_conditions in variants(typed):
+        for mandatory in mod_options:
+            source: Json = {"key_code": physical}
+            modifiers: Json = {}
+            if mandatory:
+                modifiers["mandatory"] = mandatory
+            if optional:
+                modifiers["optional"] = optional
+            if modifiers:
+                source["modifiers"] = modifiers
+            result.append(
+                {
+                    "type": "basic",
+                    "from": source,
+                    "to": to,
+                    "conditions": (conditions or []) + device_conditions,
+                }
+            )
+    return result
+
+
+def rule(description: str, manips: list[Json]) -> Json:
+    return {"description": description, "manipulators": manips}
+
+
+THUMB = variable("thumb")
+
+
+def thumb(typed: str, to: list[Json], mods: str = "", extra: list[Json] | None = None) -> list[Json]:
+    return manipulators(typed, to, mods, [THUMB] + (extra or []))
+
+
+def toggle(typed: str, bundle: str, mods: str = "") -> list[Json]:
+    """Hide the app if frontmost, else focus or launch it (spec 3.1, T)."""
+    return thumb(typed, key("h", "command"), mods, [apps([f"^{bundle}$".replace(".", r"\.")])]) + thumb(
+        typed, open_bundle(bundle), mods
+    )
+
+
+def thumb_trigger_rule() -> Json:
+    # Thumb (spec 5.1): right Command on every keyboard, plus the key in
+    # Thumb's position on keyboards that send something else there. Any GUI
+    # key is Super, and so Thumb, on Linux for the Keyboardio boards and the
+    # Advantage 360, whose keyd configs leave meta alone.
+    triggers = [("right_command", [])]
+    triggers += [("right_control", [device(*ADVANTAGE2)])]
+    triggers += [("left_command", [device(*ADVANTAGE_360, *KEYBOARDIO)])]
+    manips = []
+    for code, conditions in triggers:
+        manips.append(
+            {
+                "type": "basic",
+                "from": {"key_code": code, "modifiers": {"optional": ["any"]}},
+                "to": [set_var("thumb", 1)],
+                "to_after_key_up": [set_var("thumb", 0)],
+                "conditions": [variable("passthrough", 0)] + conditions,
+            }
+        )
+    return rule(
+        "Thumb layer: hold right Command (Advantage2: right Ctrl). "
+        "Generated by bin/karabiner-gen-config; edit that, not this file",
+        manips,
+    )
+
+
+def jumps() -> list[Json]:
+    """Spec 3.1."""
+    m: list[Json] = []
+    m += thumb("a", jump(r"cycle --launch com.anthropic.claudefordesktop '^(com\.anthropic\.claudefordesktop|com\.openai\.chat)$'"))
+    # shortcut: cycles every Chrome window, not just those on the main
+    # monitor as on Linux; filter by %{monitor-id} if that matters.
+    m += thumb("b", jump(r"cycle --launch com.google.Chrome '^com\.google\.Chrome$'"))
+    m += toggle("c", "com.stablyai.orca")
+    m += thumb("d", jump("emacs ~/lib/emacs/shortcuts/org-agenda-today.el"))
+    m += toggle("e", "org.gnu.Emacs")
+    m += thumb("f", open_bundle("org.mozilla.firefox"))
+    m += thumb("g", shell("open -a Telegram"))
+    m += thumb("h", jump(r"tab --pick --open https://github.com/ '^https://github\.com/'"))
+    m += thumb("k", jump("emacs '(org-capture)'"))
+    m += thumb("m", jump("outlook mail"))
+    m += thumb("n", jump("emacs '(as-find-personal-note)'"))
+    m += thumb("o", jump("teams planner"))
+    m += thumb("p", shell("open 'x-apple.systempreferences:com.apple.Sound-Settings.extension'"))
+    m += thumb("s", open_bundle("com.tinyspeck.slackmacgap"))
+    m += thumb("t", jump("teams chat"))
+    m += thumb("u", shell("open 'x-apple.systempreferences:com.apple.BluetoothSettings'"))
+    m += thumb("v", jump("emacs ~/lib/emacs/shortcuts/org-agenda-daily-review.el"))
+    m += thumb("w", shell("open 'x-apple.systempreferences:com.apple.wifi-settings-extension'"))
+    terminals = "|".join(p.strip("^$") for p in TERMINALS)
+    m += thumb("x", jump(f"cycle --launch com.apple.Terminal '^({terminals})$'"))
+    m += thumb("y", jump(r"tab --pick --open https://www.youtube.com/ '^https://(www\.)?youtube\.com/'"))
+    m += thumb("z", shell("open -a Zulip"))
+    m += toggle("grave_accent_and_tilde", "com.apple.ActivityMonitor")
+    m += thumb("quote", shell("open -a Beeper"))
+
+    m += thumb("a", shell("open -a Anytype"), "shift")
+    m += thumb("a", jump(r"tab --toggle --app-window --open https://open.spotify.com/ '^https://open\.spotify\.com/'"), "ctrl")
+    m += thumb("b", jump(r"tab --toggle --app-window --open http://localhost:19847/ '^http://localhost:19847/'"), "ctrl")
+    m += thumb("c", jump(r"tab --open https://calendar.google.com/calendar/u/0 '^https://calendar\.google\.com/calendar/u/0'"), "shift")
+    m += thumb("c", jump("outlook calendar"), "ctrl")
+    m += thumb("d", shell("open -a Discord"), "ctrl")
+    m += thumb("e", jump(r"tab --pick --open https://linear.app/ '^https://linear\.app/'"), "shift")
+    m += thumb("f", jump(r"tab --pick --open https://www.messenger.com/ '^https://(www\.)?messenger\.com/'"), "ctrl")
+    m += thumb("g", jump(r"tab --open https://meet.google.com/ '^https://meet\.google\.com/'"), "shift")
+    m += thumb("g", jump(r"tab '^https://meet\.google\.com/[a-z]+-[a-z]+-[a-z]+'"), "ctrl")
+    m += thumb("h", jump(r"tab --toggle --app-window --open https://octobox.io/ '^https://octobox\.io/'"), "ctrl")
+    m += thumb("n", shell("open -a Notion"), "alt")
+    m += thumb("n", jump(r"tab --pick --open https://www.notion.so/ '^https://(www|app)\.notion\.(so|com)/'"), "shift")
+    m += thumb("r", jump(r"tab --open https://app.reclaim.ai/ '^https://app\.reclaim\.ai/'"), "shift")
+    m += thumb("t", jump("teams meeting"), "ctrl")
+    m += thumb("w", jump(r"tab --open https://web.whatsapp.com/ '^https://web\.whatsapp\.com/'"), "alt")
+    m += thumb("z", jump(r"tab --pick 'zoom\.us/'"), "shift")
+    m += thumb("z", jump(r"tab 'zoom\.us/(wc|j)/'"), "ctrl")
+    m += thumb("2", jump("emacs '(as-find-personal-todo)'"), "ctrl")
+    m += thumb("5", jump("emacs '(as-find-Toucan-todo)'"), "ctrl")
+    m += thumb("7", jump("emacs ~/lib/emacs/shortcuts/org-agenda-weekly-review.el"), "ctrl")
+    return m
+
+
+ARROWS = {"left_arrow": "left", "right_arrow": "right", "up_arrow": "up", "down_arrow": "down"}
+VIM = {"h": "left", "j": "down", "k": "up", "l": "right"}
+
+
+def window_operations() -> list[Json]:
+    """Spec 3.2, as AeroSpace commands."""
+    m: list[Json] = []
+    for code, direction in ARROWS.items():
+        m += thumb(code, aerospace(f"focus {direction}"))
+        m += thumb(code, aerospace(f"focus {direction}"), "ctrl")
+    # Tiling windows move between tiles, not by pixels.
+    for code, direction in {**ARROWS, **VIM}.items():
+        m += thumb(code, aerospace(f"move {direction}"), "shift")
+        m += thumb(code, aerospace(f"move {direction}"), "alt+shift")
+    cycle = "focus --boundaries-action wrap-around-the-workspace"
+    m += thumb("slash", aerospace(f"{cycle} dfs-next"))
+    m += thumb("slash", aerospace(f"{cycle} dfs-prev"), "shift")
+    # AeroSpace cannot focus minimised windows, so Ctrl adds nothing.
+    m += thumb("slash", aerospace(f"{cycle} dfs-next"), "ctrl")
+    m += thumb("return_or_enter", jump("windows"), "alt")
+    for n in range(1, 7):
+        m += thumb(str(n), aerospace(f"workspace {n}"))
+        m += thumb(str(n), aerospace(f"move-node-to-workspace --focus-follows-window {n}"), "alt")
+    for code, step in {"comma": "prev", "period": "next"}.items():
+        m += thumb(code, aerospace(f"workspace {step}"))
+        m += thumb(code, aerospace(f"move-node-to-workspace --focus-follows-window {step}"), "alt")
+    for code, side in {"comma": "left", "period": "right"}.items():
+        m += thumb(code, aerospace(f"focus-monitor {side}"), "shift")
+        m += thumb(code, aerospace(f"move-node-to-monitor --focus-follows-window {side}"), "alt+shift")
+    for n in range(1, 4):
+        m += thumb(str(n), aerospace(f"move-node-to-monitor --focus-follows-window {n}"), "alt+shift")
+    m += thumb("i", aerospace("macos-native-minimize"))
+    m += thumb("m", aerospace("fullscreen"), "ctrl+shift")
+    m += thumb("q", aerospace("close"))
+    m += thumb("q", aerospace("close --quit-if-last-window"), "ctrl")
+    # Modes. Thumb's own variable resets when Thumb is released.
+    m += thumb("p", [set_var("passthrough", 1)], "ctrl")
+    m += thumb("r", [set_var("reorganise", 1)])
+    return m
+
+
+def other_bindings() -> list[Json]:
+    """Spec 3.5."""
+    m: list[Json] = []
+    m += thumb("open_bracket", [{"consumer_key_code": "volume_decrement"}])
+    m += thumb("close_bracket", [{"consumer_key_code": "volume_increment"}])
+    m += thumb("0", [{"consumer_key_code": "mute"}])
+    m += thumb("open_bracket", [{"consumer_key_code": "display_brightness_decrement"}], "shift")
+    m += thumb("close_bracket", [{"consumer_key_code": "display_brightness_increment"}], "shift")
+    m += thumb("s", key("4", "command", "shift"), "ctrl")
+    m += thumb("w", shell("screencapture -iWo \"$HOME/Desktop/Screenshot $(date '+%F at %H.%M.%S').png\""), "ctrl")
+    m += thumb("spacebar", key("spacebar", "command"), "ctrl")
+    m += thumb("l", key("q", "control", "command"), "ctrl+alt")
+    return m
+
+
+def block_unbound() -> Json:
+    manips = [
+        {
+            "type": "basic",
+            "from": {"key_code": code, "modifiers": {"optional": ["any"]}},
+            "to": [{"key_code": "vk_none"}],
+            "conditions": [THUMB],
+        }
+        for code in PRINTABLE + ["caps_lock", "fn"]
+    ]
+    return rule("Thumb layer: swallow unbound keys, so Thumb+key never types", manips)
+
+
+def passthrough_rule() -> Json:
+    # Thumb+Ctrl+p: Thumb reaches apps as plain right Command until q.
+    return rule(
+        "Pass-through mode: q leaves it (spec 3.2)",
+        manipulators("q", [set_var("passthrough", 0)], conditions=[variable("passthrough")]),
+    )
+
+
+def reorganise_rule() -> Json:
+    """Spec 3.2 reorganise mode, entered with Thumb+r."""
+    mode = [variable("reorganise")]
+    leave = [set_var("reorganise", 0)]
+    m: list[Json] = []
+    m += manipulators("q", leave, conditions=mode)
+    m += manipulators("escape", leave, conditions=mode)
+    for code, direction in VIM.items():
+        m += manipulators(code, aerospace(f"focus {direction}"), conditions=mode)
+    for code, direction in ARROWS.items():
+        m += manipulators(code, aerospace(f"move {direction}"), conditions=mode)
+        m += manipulators(code, aerospace(f"move {direction}"), "shift", mode)
+        dimension = "width" if direction in ("left", "right") else "height"
+        sign = "-" if direction in ("left", "up") else "+"
+        m += manipulators(code, aerospace(f"resize {dimension} {sign}50"), "ctrl", mode)
+        m += manipulators(code, aerospace(f"resize {dimension} {sign}200"), "ctrl+shift", mode)
+    m += manipulators("m", aerospace("fullscreen"), conditions=mode)
+    m += manipulators("slash", aerospace("focus --boundaries-action wrap-around-the-workspace dfs-next"), conditions=mode)
+    return rule("Reorganise mode: q or Escape leaves it", m)
+
+
+def control_app_rules() -> Json:
+    m: list[Json] = []
+    # Linux terminals copy and paste with Ctrl+Shift+C / V.
+    for typed in ("c", "v"):
+        m += manipulators(typed, key(typed, "command"), "ctrl+shift", [apps(TERMINALS + [ORCA])])
+    # Spec 2.6: cycle Orca agents waiting for attention. The helper comes
+    # from Adam's ai-config repository; unchecked on macOS.
+    orca = [apps([ORCA])]
+    m += manipulators("up_arrow", shell("~/bin/orca-cycle-attention-agent previous"), "alt+shift", orca)
+    m += manipulators("down_arrow", shell("~/bin/orca-cycle-attention-agent next"), "alt+shift", orca)
+    return rule("Terminals and Orca: Ctrl+Shift+C/V copy and paste; Orca attention cycling", m)
+
+
+def editing_rule() -> Json:
+    """Spec 2.5, approach A (spec 5.2): the Control-position key sends
+    Command in ordinary apps, so Cmd+C etc. need no rules; only keys whose
+    Mac equivalent differs are translated."""
+    ordinary = [apps(CONTROL_APPS, negate=True)]
+    # left_command is the Control-position key: right Command comes from
+    # the Compose-position key and keeps its Mac meaning.
+    ctrl = {"mandatory": ["left_command"], "optional": ["shift"]}
+    m: list[Json] = []
+
+    def add(code: str, modifiers: Json | None, to: list[Json]) -> None:
+        source: Json = {"key_code": code}
+        if modifiers:
+            source["modifiers"] = modifiers
+        m.append({"type": "basic", "from": source, "to": to, "conditions": ordinary})
+
+    add("left_arrow", ctrl, key("left_arrow", "option"))
+    add("right_arrow", ctrl, key("right_arrow", "option"))
+    add("home", ctrl, key("up_arrow", "command"))
+    add("end", ctrl, key("down_arrow", "command"))
+    add("home", {"optional": ["shift"]}, key("left_arrow", "command"))
+    add("end", {"optional": ["shift"]}, key("right_arrow", "command"))
+    # Ctrl+Tab switches tabs as on Linux; the Compose-position key
+    # (right Command) still reaches the app switcher.
+    add("tab", ctrl, key("tab", "control"))
+    return rule("PC-style editing outside terminals, Emacs, VMs and Orca (spec 2.5)", m)
+
+
+def modifier_rules() -> Json:
+    """Spec 2.2 bottom-row roles."""
+    any_mods = {"optional": ["any"]}
+    control_apps = apps(CONTROL_APPS)
+    ordinary = apps(CONTROL_APPS, negate=True)
+
+    def remap(code: str, to: str, conditions: list[Json]) -> Json:
+        return {
+            "type": "basic",
+            "from": {"key_code": code, "modifiers": any_mods},
+            "to": [{"key_code": to}],
+            "conditions": conditions,
+        }
+
+    return rule(
+        "Bottom row: Control position is Command except in terminals, Emacs, VMs "
+        "and Orca; Compose position is Command; MacBook left control is fn",
+        [
+            remap("left_command", "left_control", [BUILT_IN, control_apps]),
+            remap("left_control", "fn", [BUILT_IN]),
+            remap("right_option", "right_command", [BUILT_IN]),
+            # Kinesis Compose keys send right Alt (keyd configs).
+            remap("right_option", "right_command", [device(*ADVANTAGE2, *ADVANTAGE_360)]),
+            # External keyboards send Control from the Control position.
+            remap("left_control", "left_command", [NOT_BUILT_IN, ordinary]),
+        ],
+    )
+
+
+def alpha_shift_rule() -> Json:
+    manips = [
+        {
+            "type": "basic",
+            "from": {"key_code": physical, "modifiers": {"optional": ["any"]}},
+            "to": [{"key_code": typed}],
+            "conditions": [BUILT_IN],
+        }
+        for physical, typed in ALPHA_SHIFT.items()
+    ]
+    return rule("MacBook keyboard: left-hand letters one column left (spec 2.1)", manips)
+
+
+def check_no_clashes(manips: list[Json]) -> None:
+    """Fail if two Thumb bindings claim the same keys."""
+    seen: dict[str, Json] = {}
+    for manip in manips:
+        signature = json.dumps(
+            [manip["from"], [c for c in manip["conditions"] if c.get("type", "").startswith("device")],
+             [c for c in manip["conditions"] if c.get("type", "").startswith("frontmost")]],
+            sort_keys=True,
+        )
+        assert signature not in seen, f"Thumb binding clash: {manip['from']} -> {manip['to']} and {seen[signature]['to']}"
+        seen[signature] = manip
+
+
+def configuration() -> Json:
+    bound = jumps() + window_operations() + other_bindings()
+    check_no_clashes(bound)
+    rules = [
+        passthrough_rule(),
+        thumb_trigger_rule(),
+        rule("Thumb layer: app jumps, window management, volume and more (spec 3)", bound),
+        block_unbound(),
+        reorganise_rule(),
+        control_app_rules(),
+        editing_rule(),
+        modifier_rules(),
+        alpha_shift_rule(),
+    ]
+    return {
+        "profiles": [
+            {
+                "name": "Default profile",
+                "selected": True,
+                "virtual_hid_keyboard": {"keyboard_type_v2": "iso"},
+                "complex_modifications": {"rules": rules},
+            }
+        ]
+    }
+
+
+def render() -> str:
+    # Karabiner writes 4-space JSON, so its own saves give small diffs.
+    return json.dumps(configuration(), indent=4) + "\n"
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--check", action="store_true", help="exit 1 if the JSON is out of date")
+    args = parser.parse_args()
+    text = render()
+    if args.check:
+        if OUTPUT.read_text() != text:
+            print(f"{OUTPUT.relative_to(REPO)} is out of date; run {Path(__file__).name}", file=sys.stderr)
+            return 1
+        return 0
+    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+    OUTPUT.write_text(text)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

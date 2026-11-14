@@ -1,0 +1,4 @@
+# Karabiner writes these into its config directory, which is stowed as a
+# whole (see specs/mac-keyboard-window-parity.md, "Installing on the Mac").
+automatic_backups/
+assets/

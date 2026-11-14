@@ -405,11 +405,86 @@ Two ways, given that left `command` sits in Linux's Control position:
 
 A needs fewer rules in ordinary apps. Both use the exception list in 2.5.
 
+**Chosen: A** (implementer, 2026-11-14). In ordinary apps every `Cmd`
+shortcut then works from the Control position without a rule, including
+ones the list in 2.5 leaves out (`Cmd+L`, `Cmd+R`, `Cmd+click`). B would
+need a rule per letter and would still miss mouse and scroll combinations.
+A needs rules only where the Mac differs from Linux:
+
+- `Ctrl+Left` / `Ctrl+Right`, with or without Shift → `Option+arrows`;
+- `Home` / `End` → `Cmd+Left` / `Cmd+Right`; `Ctrl+Home` / `Ctrl+End` →
+  `Cmd+Up` / `Cmd+Down`;
+- `Ctrl+Tab` → `Control+Tab`, so it switches tabs as on Linux rather than
+  apps. The Compose-position key (Command, 2.2) still reaches the app
+  switcher.
+
+The implementation is `bin/karabiner-gen-config`, which writes
+`.config/karabiner/karabiner.json`. Terminals and Orca also get
+`Ctrl+Shift+C` / `Ctrl+Shift+V` as copy and paste, as on Linux.
+
+**Orca**: Karabiner's conditions see only the frontmost app, not the
+pane inside it ([conditions][ke-conditions]). Karabiner 16.1.94 and later
+expose the focused element's role, subrole, title and window title as
+variables, but Orca's editor and terminal panes are both Chromium text
+areas, so whether those values differ is unknown until checked on the
+Mac. Until then all of Orca keeps Control as Control: an interrupt sent
+as `Cmd+C` would silently fail to stop an agent, which is worse than
+copying with Command in Orca's editor panes. Follow-up: bead `dc-ql65.6` (Check whether Karabiner can tell Orca's terminal panes from its editor panes).
+
+[ke-conditions]: https://karabiner-elements.pqrs.org/docs/json/complex-modifications-manipulator-definition/conditions/
+
 ### 5.5 Bottom row
 
-Karabiner is believed to remap `fn` and to send `fn` from another key,
-which the `fn` → `z` and left `control` → Fn swap in 2.2 needs; unchecked,
-as is how the Globe function of `fn` behaves after the swap.
+Karabiner treats `fn` as an ordinary key code that it can remap and send
+(maintainer, [pqrs-org/Karabiner-Elements#3940][ke-3940]), so the built-in
+`fn` types `z` and left `control` sends `fn`. Unchecked on the Mac:
+
+- `fn`+arrows giving Home/End/Page Up/Page Down from the new Fn key.
+  Karabiner's docs say macOS does this itself "if the virtual device has
+  Apple's Vendor ID and Product ID" ([breaking changes][ke-breaking]).
+- The Globe action: [#2866][ke-2866] reports a stray `fn` key-up that
+  opens the emoji picker. If it happens, set System Settings > Keyboard >
+  "Press Globe key to" to "Do Nothing".
+
+[ke-3940]: https://github.com/pqrs-org/Karabiner-Elements/issues/3940
+[ke-breaking]: https://karabiner-elements.pqrs.org/docs/help/troubleshooting/breaking-changes/
+[ke-2866]: https://github.com/pqrs-org/Karabiner-Elements/issues/2866
+
+### 5.6 Keyboards in Karabiner
+
+Profile `devices[]` entries cannot match the built-in keyboard without
+its USB IDs, which differ by model, but the `device_if` condition can,
+with `is_built_in_keyboard` ([device conditions][ke-device]). So every
+remap is a complex rule, and the Thumb bindings for letters list the
+built-in keyboard's physical key separately: Karabiner applies only the
+first matching complex rule and does not feed its output to later ones
+([evaluation priority][ke-priority]).
+
+Thumb on each keyboard, worked out from this repository:
+
+| Keyboard | Thumb key sends | Evidence |
+| --- | --- | --- |
+| MacBook built-in | right `command` | Spec 2.2 |
+| Kinesis Advantage2 | right Control | `kinesis-right-thumb-pad`: `rightcontrol = layer(meta)`; firmware leaves it alone |
+| Kinesis Advantage 360 | a GUI key, side unknown | keyd leaves meta alone, so any GUI key is Super on Linux |
+| Keyboardio Atreus | left GUI, from Space held | `.config/chrysalis/atreus.json`: the right-thumb Space is a dual-use key, code 49981 (`0xC311` + Space; Kaleidoscope dual-use index 3 is left GUI, unchecked) |
+| Keyboardio Model 01, Preonic | a GUI key, side unknown | keyd leaves meta alone; no firmware export in the repository |
+
+So right `command` is Thumb on every keyboard, and left `command` is
+Thumb too on the 360 and the Keyboardio boards (matched by the USB IDs in
+their keyd configs; the Preonic's keyd ID is not a USB ID, so only its
+right GUI key works). On the Kinesis boards, the Compose key (right Alt)
+becomes Command, as right `option` does on the MacBook. Each is a single
+line in `thumb_trigger_rule` or `modifier_rules`.
+
+The key codes Karabiner reports for the MacBook's ISO keys (§ left of
+`1`, `` ` `` left of `Z`) are unchecked: its ISO handling has swapped
+them before ([#3974][ke-3974]). The generator assumes
+`grave_accent_and_tilde` and `non_us_backslash`, as on Linux.
+
+[ke-device]: https://karabiner-elements.pqrs.org/docs/json/complex-modifications-manipulator-definition/conditions/device/
+[ke-priority]: https://karabiner-elements.pqrs.org/docs/json/complex-modifications-manipulator-evaluation-priority/
+[ke-3974]: https://github.com/pqrs-org/Karabiner-Elements/issues/3974
 
 ### 5.3 App jumps
 

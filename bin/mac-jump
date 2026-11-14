@@ -1,0 +1,198 @@
+#!/bin/bash
+#
+# App and window jumps for macOS, run by the Thumb layer in
+# .config/karabiner/karabiner.json (see specs/mac-keyboard-window-parity.md,
+# section 3.1). The Linux equivalents are fluxbox-focus-or-launch,
+# chrome-session-tabs and switch-emacs-eval.
+#
+# Usage:
+#   mac-jump cycle [--launch BUNDLE_ID] BUNDLE_ID_REGEX
+#   mac-jump tab [--pick|--toggle] [--app-window] [--open URL] URL_REGEX
+#   mac-jump emacs ELISP|FILE
+#   mac-jump outlook mail|calendar
+#   mac-jump teams chat|planner|meeting
+#   mac-jump windows
+#
+# Simple focus-or-launch needs no helper: the Karabiner rules run
+# `open -b BUNDLE_ID` directly, and toggles send Cmd+H when the app is
+# already frontmost.
+#
+# Written for macOS's /bin/bash 3.2: no mapfile or associative arrays.
+
+set -u
+
+# Karabiner runs shell_command without Homebrew on PATH.
+PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+CHROME=${MAC_JUMP_CHROME:-Google Chrome}
+LOG="$HOME/Library/Logs/mac-jump.log"
+
+# Karabiner discards output, so keep errors where they can be found.
+[ -t 2 ] || exec 2>>"$LOG"
+
+die() {
+    echo "$(date '+%F %T') mac-jump: $*" >&2
+    exit 1
+}
+
+# Print the window ID that follows the focused one in a list of IDs on
+# stdin, wrapping round; the first ID when focus is elsewhere.
+next_window() {
+    awk -v f="$1" '{ id[NR] = $1; if ($1 == f) at = NR } END { if (NR) print id[at % NR + 1] }'
+}
+
+cycle() {
+    local launch=''
+    if [ "${1:-}" = --launch ]; then
+        launch=$2
+        shift 2
+    fi
+    [ $# -eq 1 ] || die "cycle: need one bundle ID regex"
+    local windows focused target
+    # ENVIRON, unlike awk -v, passes the regex's backslashes through.
+    windows=$(aerospace list-windows --all --format '%{window-id} %{app-bundle-id}' |
+        re=$1 awk '$2 ~ ENVIRON["re"] { print $1 }')
+    if [ -z "$windows" ]; then
+        [ -n "$launch" ] && open -b "$launch"
+        return
+    fi
+    focused=$(aerospace list-windows --focused --format '%{window-id}' 2>/dev/null)
+    target=$(printf '%s\n' "$windows" | next_window "$focused")
+    aerospace focus --window-id "$target"
+}
+
+# Focus a Chrome tab whose URL matches a regex. Prints "none" when no tab
+# matches, so the caller can open the URL instead.
+read -r -d '' TAB_JXA <<'EOF'
+function run(argv) {
+    const [mode, pattern, appName] = argv;
+    const chrome = Application(appName);
+    if (!chrome.running()) return 'none';
+    const re = new RegExp(pattern, 'i');
+    if (mode === 'toggle' && chrome.frontmost() && chrome.windows.length > 0) {
+        const front = chrome.windows[0];
+        if (re.test(front.activeTab.url())) {
+            front.minimized = true;
+            return 'hidden';
+        }
+    }
+    // One Apple Event per property, not per tab: fast with many tabs.
+    const urls = chrome.windows.tabs.url();
+    const titles = chrome.windows.tabs.title();
+    const ids = chrome.windows.id();
+    const matches = [];
+    urls.forEach((tabs, w) => tabs.forEach((url, t) => {
+        if (re.test(url)) matches.push({ id: ids[w], tab: t + 1, label: titles[w][t] + '  ' + url });
+    }));
+    if (matches.length === 0) return 'none';
+    let chosen = matches[0];
+    if (mode === 'pick' && matches.length > 1) {
+        chrome.includeStandardAdditions = true;
+        chrome.activate();
+        const labels = matches.map((m, i) => (i + 1) + '. ' + m.label);
+        const answer = chrome.chooseFromList(labels, { withPrompt: 'Tab', defaultItems: [labels[0]] });
+        if (!answer) return 'cancelled';
+        chosen = matches[parseInt(answer[0], 10) - 1];
+    }
+    const win = chrome.windows.byId(chosen.id);
+    win.activeTabIndex = chosen.tab;
+    win.index = 1;
+    chrome.activate();
+    return 'focused';
+}
+EOF
+
+tab() {
+    local mode=focus open_url='' app_window=''
+    while [ $# -gt 1 ]; do
+        case $1 in
+            --pick) mode=pick ;;
+            --toggle) mode=toggle ;;
+            --app-window) app_window=1 ;;
+            --open) open_url=$2; shift ;;
+            *) die "tab: unknown option $1" ;;
+        esac
+        shift
+    done
+    [ $# -eq 1 ] || die "tab: need one URL regex"
+    local result
+    result=$(osascript -l JavaScript -e "$TAB_JXA" "$mode" "$1" "$CHROME") ||
+        die "tab: osascript failed for $1"
+    [ "$result" = none ] && [ -n "$open_url" ] || return 0
+    if [ -n "$app_window" ]; then
+        open -na "$CHROME" --args --app="$open_url"
+    else
+        open -a "$CHROME" "$open_url"
+    fi
+}
+
+emacs() {
+    [ $# -eq 1 ] || die "emacs: need one expression or file"
+    local code=${1/#\~/$HOME}
+    [ -f "$code" ] && code="(load \"$code\")"
+    open -b org.gnu.Emacs
+    emacsclient -e "$code" >/dev/null || die "emacs: emacsclient failed on $code"
+}
+
+# Activate an app, then press Cmd+KEY in it. System Events needs the
+# Accessibility permission for whichever process runs this.
+activate_and_press() {
+    osascript -e "tell application id \"$1\" to activate" \
+        -e 'delay 0.5' \
+        -e "tell application \"System Events\" to keystroke \"$2\" using command down" ||
+        die "could not press Cmd+$2 in $1"
+}
+
+outlook() {
+    # Outlook for Mac: Cmd+1 is Mail, Cmd+2 is Calendar.
+    case ${1:-} in
+        mail) activate_and_press com.microsoft.Outlook 1 ;;
+        calendar) activate_and_press com.microsoft.Outlook 2 ;;
+        *) die "outlook: need mail or calendar" ;;
+    esac
+}
+
+teams() {
+    case ${1:-} in
+        # Teams numbers the apps in its left-hand bar from Cmd+1, so this
+        # assumes Chat is second, as it is by default.
+        chat) activate_and_press com.microsoft.teams2 2 ;;
+        # Stub: no reliable way found to open Planner inside Teams, so this
+        # only focuses Teams.
+        planner) open -b com.microsoft.teams2 ;;
+        # Stub: Teams gives a meeting its own window but no reliable way to
+        # tell it from the main one, so this cycles all Teams windows.
+        meeting) cycle --launch com.microsoft.teams2 '^com\.microsoft\.teams2$' ;;
+        *) die "teams: need chat, planner or meeting" ;;
+    esac
+}
+
+read -r -d '' WINDOWS_JXA <<'EOF'
+function run(argv) {
+    const lines = argv[0].split('\n').filter((l) => l);
+    const ui = Application('System Events');
+    ui.includeStandardAdditions = true;
+    ui.activate();
+    const answer = ui.chooseFromList(lines, { withPrompt: 'Window' });
+    return answer ? answer[0] : '';
+}
+EOF
+
+# Thumb+Alt+Return: pick any window by app and title.
+windows() {
+    local list choice
+    list=$(aerospace list-windows --all --format '%{window-id} | %{app-name} | %{window-title}')
+    choice=$(osascript -l JavaScript -e "$WINDOWS_JXA" "$list") || return
+    [ -n "$choice" ] && aerospace focus --window-id "${choice%% *}"
+}
+
+case ${1:-} in
+    cycle|tab|emacs|outlook|teams|windows)
+        cmd=$1
+        shift
+        "$cmd" "$@"
+        ;;
+    *)
+        sed -n '/^# Usage:/,/^$/p' "$0" >&2
+        exit 2
+        ;;
+esac
