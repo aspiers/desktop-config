@@ -402,9 +402,11 @@ def dictation_bindings() -> list[Json]:
     if DICTATION != "macos":
         sys.exit(f"DICTATION must be macos or sussurro, not {DICTATION!r}")
     # The Dictation key toggles macOS Dictation, so push-to-talk presses
-    # it again on release.
-    dictation = [{"consumer_key_code": "dictation"}]
-    return [{**manip, "to_after_key_up": dictation} for manip in thumb("8", dictation)] + thumb("9", dictation)
+    # it again on release. Karabiner holds the last key of `to` until
+    # Thumb+8/9 is released, and held, the key brought up Siri instead
+    # (Adam, 2026-11-14), so vk_none goes last to make it a tap.
+    tap = [{"consumer_key_code": "dictation"}, {"key_code": "vk_none"}]
+    return [{**manip, "to_after_key_up": tap[:1]} for manip in thumb("8", tap)] + thumb("9", tap)
 
 
 def block_unbound() -> Json:

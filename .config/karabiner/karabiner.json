@@ -4957,6 +4957,9 @@
                                 "to": [
                                     {
                                         "consumer_key_code": "dictation"
+                                    },
+                                    {
+                                        "key_code": "vk_none"
                                     }
                                 ],
                                 "conditions": [
@@ -4980,6 +4983,9 @@
                                 "to": [
                                     {
                                         "consumer_key_code": "dictation"
+                                    },
+                                    {
+                                        "key_code": "vk_none"
                                     }
                                 ],
                                 "conditions": [
