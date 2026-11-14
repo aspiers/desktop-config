@@ -76,7 +76,7 @@ the previous mechanism; `.config/keyd/daemon/default.conf` says keyd is
 | Kinesis Advantage 360 | Mostly firmware | Firmware | Home = AltGr, physical Win = Compose, Caps Lock = Insert, `£` / `€` |
 | Kinesis Advantage2 (USB) | Firmware (v-drive `qwerty.txt`) for OS-independent remaps, keyd for the rest | Right Ctrl on the thumb pad | Firmware: Caps Lock = `-`, Up/Down swapped, End = Esc, thumb Delete/Alt swapped, top-right key swap, International key = Insert; backed up in `.keymaps/kinesis-advantage2/active/`. keyd: `£` / `€` on the top-right key, thumb pad layers |
 | Kinesis Essential (PS/2) | keyd (not programmable) | Right Ctrl on the thumb pad | Thumb pads (2.4), Caps Lock = `-`, Up/Down swapped, `-` key types `£` / `€` |
-| HHKB Lite, Gyration | keyd | Not remapped | Own variants of 2.1 |
+| Gyration | keyd | Not remapped | Own variant of 2.1 |
 
 Which of these will be used with the Mac is an open question (Q2).
 
@@ -99,9 +99,9 @@ further left than usual. Source: keyd partials `left-alpha-common`,
 | `Z` `X` | `c` `v` |
 | `C` `V` `B` | unchanged: `c` `v` `b` |
 
-Tab, Left Shift and every right-hand key are unchanged. The HHKB Lite and
-one "hacked" US keyboard use variants: `x` on Left Shift (`xcv3`), and on
-the HHKB `q` on Esc and `a` on Left Ctrl.
+Tab, Left Shift and every right-hand key are unchanged. One "hacked" US
+keyboard uses a variant: `x` on Left Shift (`xcv3`). (The HHKB Lite has its
+own variant in keyd but is no longer used.)
 
 A keyboard with no ISO key left of `Z` (US/ANSI layout) has no home for
 `x` under this scheme. The MacBook has one: a `` ` `` / `~` key left of
@@ -129,7 +129,7 @@ On a MacBook the bottom row is `fn` `control` `option` `command` Space
 | MacBook key | Linux key in that position | Role it would take |
 | --- | --- | --- |
 | Left `command` | Left Alt | Control (for editing, see 2.5) |
-| Left `option` | Left Win | Alt / Meta |
+| Left `option` | Left Win | Alt's role, which on macOS is mostly Command, e.g. Alt+Tab is Cmd+Tab (Q9) |
 | Left `control` | Left Ctrl | `z` (2.1), open question Q8 |
 | Right `command` | Right Alt | **Thumb** |
 | Right `option` | Right Ctrl | Compose |
@@ -355,11 +355,18 @@ compared here.
 Right `command` must become a modifier no app sees as Command, otherwise
 Thumb+`c` would also copy. Options:
 
-- Karabiner turns right `command` into a layer whose bindings run commands
-  directly (`open -a`, the `aerospace` CLI), so apps never see a key combo.
-- Karabiner turns it into Hyper (Cmd+Option+Ctrl+Shift) and AeroSpace binds
-  Hyper combos. Simpler, but macOS reserves some Hyper combos (believed:
-  Hyper+`.` starts a system diagnostic). To check.
+- **Chosen**: Karabiner turns right `command` into a layer whose bindings
+  run commands directly (`open -a`, the `aerospace` CLI), so neither apps
+  nor macOS see a key combo.
+- Rejected: Karabiner turns it into Hyper (Cmd+Option+Ctrl+Shift) and
+  AeroSpace binds Hyper combos. macOS reserves Hyper+`.` for a system
+  diagnostic, reportedly with no way to override it ([Keyboard Maestro
+  forum][km-sysdiagnose]), and an old remapping recipe also blocks
+  Hyper+`,` and Hyper+`/` ([gist][hyper-gist]). Thumb+`.`, Thumb+`,` and
+  Thumb+`/` are core bindings (3.2), and Adam needs Thumb+`.` (2026-11-14).
+
+[km-sysdiagnose]: https://forum.keyboardmaestro.com/t/dont-try-to-use-for-a-macro-hot-key/14101
+[hyper-gist]: https://gist.github.com/mutewinter/6847308
 
 ### 5.2 Editing (2.5)
 
@@ -401,5 +408,9 @@ and floating centred pop-ups need checking.
   calendar and terminal menu, now that `t` is Teams.
 - **Q6**: Where is the Windows AutoHotkey script?
 - **Q7**: Will Emacs and Orca be used on the work Mac?
+- **Q9**: Should the MacBook's left `option` act as Command, so Alt+Tab
+  on Linux and Windows matches Cmd+Tab (Adam's suggestion, 2026-11-14)?
+  If so, Option itself needs a home (macOS's Alt: Emacs Meta, special
+  characters), and with 5.2 A left `command` would be a second Command.
 - **Q8**: Should the MacBook's left `control` type `z`, as Left Ctrl does
   on Linux laptops?
