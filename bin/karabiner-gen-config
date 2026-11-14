@@ -380,9 +380,11 @@ def other_bindings() -> list[Json]:
     m += thumb("open_bracket", [{"consumer_key_code": "volume_decrement"}])
     m += thumb("close_bracket", [{"consumer_key_code": "volume_increment"}])
     m += thumb("0", [{"consumer_key_code": "mute"}])
-    # Ctrl, not Shift (Adam, 2026-11-14).
-    m += thumb("open_bracket", [{"consumer_key_code": "display_brightness_decrement"}], "ctrl")
-    m += thumb("close_bracket", [{"consumer_key_code": "display_brightness_increment"}], "ctrl")
+    # Ctrl, not Shift (Adam, 2026-11-14). The consumer brightness codes
+    # that F1/F2 send did nothing here, though other Thumb+Ctrl keys work, so
+    # try the Apple keyboard's own brightness codes.
+    m += thumb("open_bracket", key("apple_display_brightness_decrement"), "ctrl")
+    m += thumb("close_bracket", key("apple_display_brightness_increment"), "ctrl")
     m += thumb("s", key("4", "command", "shift"), "ctrl")
     m += thumb("w", shell("screencapture -iWo \"$HOME/Desktop/Screenshot $(date '+%F at %H.%M.%S').png\""), "ctrl")
     m += thumb("spacebar", key("spacebar", "command"), "ctrl")

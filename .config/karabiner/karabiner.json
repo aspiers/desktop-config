@@ -4497,7 +4497,7 @@
                                 },
                                 "to": [
                                     {
-                                        "consumer_key_code": "display_brightness_decrement"
+                                        "key_code": "apple_display_brightness_decrement"
                                     }
                                 ],
                                 "conditions": [
@@ -4520,7 +4520,7 @@
                                 },
                                 "to": [
                                     {
-                                        "consumer_key_code": "display_brightness_decrement"
+                                        "key_code": "apple_display_brightness_decrement"
                                     }
                                 ],
                                 "conditions": [
@@ -4543,7 +4543,7 @@
                                 },
                                 "to": [
                                     {
-                                        "consumer_key_code": "display_brightness_increment"
+                                        "key_code": "apple_display_brightness_increment"
                                     }
                                 ],
                                 "conditions": [
@@ -4566,7 +4566,7 @@
                                 },
                                 "to": [
                                     {
-                                        "consumer_key_code": "display_brightness_increment"
+                                        "key_code": "apple_display_brightness_increment"
                                     }
                                 ],
                                 "conditions": [
