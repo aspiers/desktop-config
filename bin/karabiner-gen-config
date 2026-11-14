@@ -366,14 +366,14 @@ def window_operations() -> list[Json]:
         m += thumb(str(n), aerospace(f"workspace {n}"))
         m += thumb(str(n), aerospace(f"move-node-to-workspace --focus-follows-window {n}"), "alt")
     # next/prev step through workspaces 1-6 in order, empty ones included,
-    # wrapping round (Adam, 2026-11-14). The list goes on stdin, which
-    # AeroSpace 0.20 reads only with --stdin.
+    # stopping at either end (Adam, 2026-11-14: no wrapping round). The list
+    # goes on stdin, which AeroSpace 0.20 reads only with --stdin.
     numbered = "printf '%s\\n' 1 2 3 4 5 6 | " + AEROSPACE
     for code, step in {"comma": "prev", "period": "next"}.items():
-        m += thumb(code, shell(f"{numbered} workspace --stdin --wrap-around {step}"))
+        m += thumb(code, shell(f"{numbered} workspace --stdin {step}"))
         m += thumb(
             code,
-            shell(f"{numbered} move-node-to-workspace --stdin --wrap-around --focus-follows-window {step}"),
+            shell(f"{numbered} move-node-to-workspace --stdin --focus-follows-window {step}"),
             "alt",
         )
     for code, side in {"comma": "left", "period": "right"}.items():
