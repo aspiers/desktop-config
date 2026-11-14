@@ -70,7 +70,10 @@ VMS_AND_REMOTE_DESKTOPS = [
     r"^com\.citrix\.receiver\.icaviewer\.mac$",
 ]
 # Apps where Control stays Control (spec 2.5).
-CONTROL_APPS = TERMINALS + [EMACS, ORCA] + VMS_AND_REMOTE_DESKTOPS
+# choose (mac-jump's picker) is fzf-like, so it takes Control as a terminal
+# does: Ctrl+C / Ctrl+G cancel, Ctrl+N / Ctrl+P move (Adam, 2026-11-14).
+CHOOSE = r"^org\.senkbeil\.choose$"
+CONTROL_APPS = TERMINALS + [EMACS, ORCA, CHOOSE] + VMS_AND_REMOTE_DESKTOPS
 
 # USB IDs from .config/keyd/daemon/*.conf.
 ADVANTAGE2 = [(0x29EA, 0x0102), (0x29EA, 0x0103)]

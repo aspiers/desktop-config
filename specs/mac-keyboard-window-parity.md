@@ -203,7 +203,8 @@ existing behaviour.
 **Exceptions**, where Control stays Control because `Ctrl+C` means
 interrupt and `Ctrl+Left` is the app's own binding (Adam, 2026-11-14):
 terminal emulators, Emacs, VM and remote desktop windows, and Orca's
-terminals.
+terminals. On the Mac, also the `choose` picker, which is fzf-like:
+`Ctrl+C` / `Ctrl+G` cancel it (Adam, 2026-11-14).
 
 ### 2.6 Per-app key bindings
 
