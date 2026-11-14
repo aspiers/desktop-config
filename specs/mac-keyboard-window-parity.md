@@ -138,7 +138,7 @@ Alt, Ctrl. By position (Adam, 2026-11-14):
 | Left `option` | Left Win | Option, macOS's Alt key: Meta in Emacs and terminals (Q9) |
 | Left `command` | Left Alt | Control's position: copy, paste and other editing (2.5) |
 | Right `command` | Right Alt | **Thumb** (5.1) |
-| Right `option` | Right Ctrl | Compose |
+| Right `option` | Right Ctrl | Command (Adam, 2026-11-14): needed wherever left `command` acts as Control (2.5, 5.2). macOS has no Compose; left `option` combinations type special characters instead |
 
 Option, not Command, is the counterpart of Alt: a Mac keyboard's Option
 key sends the same USB code as Alt, the Advantage2 manual calls them the
