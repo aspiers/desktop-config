@@ -120,15 +120,23 @@ function run(argv) {
 }
 EOF
 
+# choose's query font size in points; its default is 26, and the list
+# uses 70% of it (Adam, 2026-11-14: slightly smaller).
+CHOOSE_FONT_SIZE=20
+
 # Rows for a choose list 90% of the screen high. choose sizes its window
-# by rows, not percent: its query line is Menlo 26pt and each row Menlo at
-# 70% of that, 1.2 lines high plus 2pt of spacing (choose's SDAppDelegate.m).
+# by rows, not percent: its query line is Menlo at CHOOSE_FONT_SIZE and each
+# row Menlo at 70% of that, 1.2 lines high plus 2pt of spacing (choose's
+# SDAppDelegate.m).
 read -r -d '' ROWS_JXA <<'EOF'
-ObjC.import('AppKit');
-const screen = $.NSScreen.mainScreen.visibleFrame.size.height;
-const query = $.NSFont.fontWithNameSize('Menlo', 26).boundingRectForFont.size.height;
-const row = $.NSFont.fontWithNameSize('Menlo', 26 * 0.7).boundingRectForFont.size.height * 1.2 + 2;
-Math.max(5, Math.floor((screen * 0.9 - query) / row));
+function run(argv) {
+    ObjC.import('AppKit');
+    const size = parseFloat(argv[0]);
+    const screen = $.NSScreen.mainScreen.visibleFrame.size.height;
+    const query = $.NSFont.fontWithNameSize('Menlo', size).boundingRectForFont.size.height;
+    const row = $.NSFont.fontWithNameSize('Menlo', size * 0.7).boundingRectForFont.size.height * 1.2 + 2;
+    return Math.max(5, Math.floor((screen * 0.9 - query) / row));
+}
 EOF
 
 # Fuzzy-pick a line from stdin with choose (brew install choose-gui) and
@@ -136,9 +144,9 @@ EOF
 # the screen's width and height (Adam, 2026-11-14).
 pick() {
     local index rows
-    rows=$(osascript -l JavaScript -e "$ROWS_JXA" 2>/dev/null)
+    rows=$(osascript -l JavaScript -e "$ROWS_JXA" "$CHOOSE_FONT_SIZE" 2>/dev/null)
     case $rows in '' | *[!0-9]*) rows=25 ;; esac
-    index=$(choose -i -w 90 -n "$rows" -p "$1") || return 1
+    index=$(choose -i -w 90 -n "$rows" -s "$CHOOSE_FONT_SIZE" -p "$1") || return 1
     [ "$index" -ge 0 ] 2>/dev/null || return 1
     echo "$index"
 }
