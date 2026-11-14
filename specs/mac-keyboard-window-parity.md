@@ -135,7 +135,7 @@ Alt, Ctrl. By position (Adam, 2026-11-14):
 | --- | --- | --- |
 | `fn` (far left) | Left Ctrl | `z` (2.1) |
 | Left `control` | Fn | Fn |
-| Left `option` | Left Win | Option, macOS's Alt key: Meta in Emacs and terminals (Q9) |
+| Left `option` | Left Win | Option, macOS's Alt key: Meta in Emacs and terminals. Option+Tab is left alone; window cycling is Thumb+`/` as on Linux (3.2) |
 | Left `command` | Left Alt | Control's position: copy, paste and other editing (2.5) |
 | Right `command` | Right Alt | **Thumb** (5.1) |
 | Right `option` | Right Ctrl | Command (Adam, 2026-11-14): needed wherever left `command` acts as Control (2.5, 5.2). macOS has no Compose; left `option` combinations type special characters instead |
@@ -426,8 +426,5 @@ and floating centred pop-ups need checking.
 
 ## 6. Open questions
 
-- **Q9**: left `option` stays Option, macOS's Alt (2.2), unless Adam
-  prefers Command. Should Option+Tab then also switch apps, like Alt+Tab
-  on Linux and Windows?
 - **Q10**: the Mac / Windows target of each jump in 3.1 that has no agreed
   one yet, decided one by one.
