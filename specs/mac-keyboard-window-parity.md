@@ -239,51 +239,51 @@ Thumb+letter, Linux and the agreed Mac / Windows targets:
 | `f` | Firefox | same |
 | `g` | Telegram | same |
 | `h` | Picker of GitHub tabs in Chrome | same |
-| `j` | Jump menu | to decide |
+| `j` | Jump menu | unbound for now |
 | `k` | Emacs: `org-capture` | same |
 | `m` | Mail menu (`rofi-mail-menu`) | **Outlook mail** |
 | `n` | Emacs: personal note | same |
-| `o` | Org menu (`rofi-org-menu`) | to decide |
-| `p` | Volume control (`pavucontrol`) (T) | OS sound settings |
+| `o` | Org menu (`rofi-org-menu`) | **Teams Planner** (focus or launch) |
+| `p` | Volume control (`pavucontrol`) (T) | Sound settings |
 | `s` | **Slack** | **Slack** |
-| `t` | Terminal menu (`rofi-terminal-menu`) | **Teams chat** (Linux has no Teams) |
-| `u` | Bluetooth TUI (T) | OS Bluetooth settings |
+| `t` | Terminal menu (`rofi-terminal-menu`) | **Teams chat** (Linux has no Teams); no terminal menu on the Mac |
+| `u` | Bluetooth TUI (T) | Bluetooth settings |
 | `v` | Emacs: daily review agenda | same |
-| `w` | Wi-Fi menu | OS Wi-Fi menu |
+| `w` | Wi-Fi menu | Wi-Fi menu |
 | `x` | Terminal windows (C) | same |
 | `y` | Picker of YouTube tabs | same |
 | `z` | Zulip | same |
-| `` ` `` | `btop` (T) | Activity monitor equivalent |
+| `` ` `` | `btop` (T) | Activity Monitor |
 | `'` | Beeper | same |
 
 Thumb+modifier+letter jumps:
 
-| Keys | Linux target |
-| --- | --- |
-| Thumb+Shift+`a` | Anytype |
-| Thumb+Ctrl+`a` | Spotify web app (T) |
-| Thumb+Ctrl+`b` | "Bead Me Up, Scotty" web app (T) |
-| Thumb+Shift+`c` / Thumb+Ctrl+`c` | Google Calendar tab, account 0 / account 1 |
-| Thumb+Ctrl+`d` | Discord |
-| Thumb+Shift+`e` | Picker of Linear tabs |
-| Thumb+Ctrl+`f` | Picker of Messenger tabs |
-| Thumb+Shift+`g` / Thumb+Ctrl+`g` | Google Meet tab / Meet window |
-| Thumb+Ctrl+`h` | Octobox web app (T) |
-| Thumb+Ctrl+`k` | Capture a todo from Slack |
-| Thumb+Alt+`n` / Thumb+Shift+`n` | Notion app / picker of Notion tabs |
-| Thumb+Shift+`r` | Reclaim tab |
-| Thumb+Alt+`w` | WhatsApp tab |
-| Thumb+Ctrl+`y` | Syncthing web UI |
-| Thumb+Shift+`z` / Thumb+Ctrl+`z` | Picker of Zoom tabs / Zoom meeting window |
-| Thumb+Shift+`` ` `` | `ccmonitor` (T) |
-| Thumb+Shift+`p` | EasyEffects (T) |
-| Thumb+Shift+`u` | Bluetooth manager (T) |
-| Thumb+Ctrl+`2` / `5` / `7` | Emacs: personal todo / Toucan todo / weekly review |
+| Keys | Linux | macOS / Windows |
+| --- | --- | --- |
+| Thumb+Shift+`a` | Anytype | same |
+| Thumb+Ctrl+`a` | Spotify web app (T) | same |
+| Thumb+Ctrl+`b` | "Bead Me Up, Scotty" web app (T) | same |
+| Thumb+Shift+`c` | Google Calendar tab, account 0 | same (personal Google Calendar) |
+| Thumb+Ctrl+`c` | Google Calendar tab, account 1 | **Outlook calendar** |
+| Thumb+Ctrl+`d` | Discord | same |
+| Thumb+Shift+`e` | Picker of Linear tabs | same |
+| Thumb+Ctrl+`f` | Picker of Messenger tabs | same |
+| Thumb+Shift+`g` / Thumb+Ctrl+`g` | Google Meet tab / Meet window | same |
+| Thumb+Ctrl+`h` | Octobox web app (T) | same |
+| Thumb+Ctrl+`k` | Capture a todo from Slack | same |
+| Thumb+Alt+`n` / Thumb+Shift+`n` | Notion app / picker of Notion tabs | same |
+| Thumb+Shift+`r` | Reclaim tab | same |
+| Thumb+Ctrl+`t` | (none) | **Teams meeting window** |
+| Thumb+Alt+`w` | WhatsApp tab | same |
+| Thumb+Ctrl+`y` | Syncthing web UI | unbound |
+| Thumb+Shift+`z` / Thumb+Ctrl+`z` | Picker of Zoom tabs / Zoom meeting window | same |
+| Thumb+Shift+`` ` `` | `ccmonitor` (T) | unbound |
+| Thumb+Shift+`p` | EasyEffects (T) | unbound (Linux-only tool) |
+| Thumb+Shift+`u` | Bluetooth manager (T) | unbound (Linux-only tool) |
+| Thumb+Ctrl+`2` / `5` / `7` | Emacs: personal todo / Toucan todo / weekly review | same |
 
-Rule for Mac / Windows targets (Adam, 2026-11-14): the Linux target
-wherever that app exists there; every other jump, such as Thumb+Ctrl+`c`
-(calendar) and the terminal menu displaced from Thumb+`t`, is decided one
-by one (Q10).
+Mac / Windows targets were agreed with Adam on 2026-11-14. "same" means
+the Linux target, bound where that app is installed.
 
 ### 3.2 Window operations
 
@@ -426,5 +426,5 @@ and floating centred pop-ups need checking.
 
 ## 6. Open questions
 
-- **Q10**: the Mac / Windows target of each jump in 3.1 that has no agreed
-  one yet, decided one by one.
+None. The choice between editing approaches A and B (5.2) is left to the
+implementer.
