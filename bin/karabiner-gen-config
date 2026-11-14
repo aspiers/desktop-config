@@ -338,7 +338,8 @@ def window_operations() -> list[Json]:
     for n in range(1, 4):
         m += thumb(str(n), aerospace(f"move-node-to-monitor --focus-follows-window {n}"), "alt+shift")
     m += thumb("i", aerospace("macos-native-minimize"))
-    m += thumb("m", aerospace("fullscreen"), "ctrl+shift")
+    # Maximise and the reorganise mode's resize and layout keys wait for
+    # the tiling plan in bead dc-ql65.5.
     m += thumb("q", aerospace("close"))
     m += thumb("q", aerospace("close --quit-if-last-window"), "ctrl")
     # Modes. Thumb's own variable resets when Thumb is released.
@@ -395,11 +396,6 @@ def reorganise_rule() -> Json:
     for code, direction in ARROWS.items():
         m += manipulators(code, aerospace(f"move {direction}"), conditions=mode)
         m += manipulators(code, aerospace(f"move {direction}"), "shift", mode)
-        dimension = "width" if direction in ("left", "right") else "height"
-        sign = "-" if direction in ("left", "up") else "+"
-        m += manipulators(code, aerospace(f"resize {dimension} {sign}50"), "ctrl", mode)
-        m += manipulators(code, aerospace(f"resize {dimension} {sign}200"), "ctrl+shift", mode)
-    m += manipulators("m", aerospace("fullscreen"), conditions=mode)
     m += manipulators("slash", aerospace("focus --boundaries-action wrap-around-the-workspace dfs-next"), conditions=mode)
     return rule("Reorganise mode: q or Escape leaves it", m)
 
