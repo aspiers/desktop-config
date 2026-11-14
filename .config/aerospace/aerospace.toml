@@ -15,6 +15,16 @@
 config-version = 2
 start-at-login = true
 
+# Border round the focused window, dimmer round the others: JankyBorders
+# (brew tap FelixKratz/formulae && brew install borders), as AeroSpace's
+# guide suggests, since AeroSpace draws none itself. AeroSpace runs this
+# only when it starts, not on reload-config. Full path, as AeroSpace's exec
+# environment may not have Homebrew on PATH. Colours are ARGB hex, width
+# in points.
+after-startup-command = [
+    'exec-and-forget /opt/homebrew/bin/borders active_color=0xffe1e3e4 inactive_color=0xff494d64 width=5.0',
+]
+
 # Workspaces 1-6 mirror the Linux ones; S holds what Linux keeps sticky
 # on the secondary monitor, since AeroSpace has no sticky windows
 # (https://github.com/nikitabobko/AeroSpace/issues/2).
