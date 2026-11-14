@@ -84,22 +84,40 @@ function run(argv) {
         if (re.test(url)) matches.push({ id: ids[w], tab: t + 1, label: titles[w][t] + '  ' + url });
     }));
     if (matches.length === 0) return 'none';
-    let chosen = matches[0];
+    // Several matches to pick from: hand them to choose, one per line.
     if (mode === 'pick' && matches.length > 1) {
-        chrome.includeStandardAdditions = true;
-        chrome.activate();
-        const labels = matches.map((m, i) => (i + 1) + '. ' + m.label);
-        const answer = chrome.chooseFromList(labels, { withPrompt: 'Tab', defaultItems: [labels[0]] });
-        if (!answer) return 'cancelled';
-        chosen = matches[parseInt(answer[0], 10) - 1];
+        return ['pick'].concat(matches.map((m) =>
+            [m.id, m.tab, m.label.replace(/[\t\n]/g, ' ')].join('\t'))).join('\n');
     }
-    const win = chrome.windows.byId(chosen.id);
-    win.activeTabIndex = chosen.tab;
+    const win = chrome.windows.byId(matches[0].id);
+    win.activeTabIndex = matches[0].tab;
     win.index = 1;
     chrome.activate();
     return 'focused';
 }
 EOF
+
+# Focus tab number $2 of Chrome window ID $1, for a tab chosen by pick.
+read -r -d '' TAB_FOCUS_JXA <<'EOF'
+function run(argv) {
+    const [windowId, tab, appName] = argv;
+    const chrome = Application(appName);
+    const win = chrome.windows.byId(parseInt(windowId, 10));
+    win.activeTabIndex = parseInt(tab, 10);
+    win.index = 1;
+    chrome.activate();
+    return 'focused';
+}
+EOF
+
+# Fuzzy-pick a line from stdin with choose (brew install choose-gui) and
+# print its 0-based index; fails when cancelled.
+pick() {
+    local index
+    index=$(choose -i -p "$1") || return 1
+    [ "$index" -ge 0 ] 2>/dev/null || return 1
+    echo "$index"
+}
 
 tab() {
     local mode=focus open_url='' app_window=''
@@ -117,6 +135,18 @@ tab() {
     local result
     result=$(osascript -l JavaScript -e "$TAB_JXA" "$mode" "$1" "$CHROME") ||
         die "tab: osascript failed for $1"
+    case $result in
+        pick*)
+            local matches index line
+            matches=$(printf '%s\n' "$result" | sed 1d)
+            index=$(printf '%s\n' "$matches" | cut -f3- | pick Tab) || return 0
+            line=$(printf '%s\n' "$matches" | sed -n "$((index + 1))p")
+            osascript -l JavaScript -e "$TAB_FOCUS_JXA" \
+                "$(printf '%s' "$line" | cut -f1)" "$(printf '%s' "$line" | cut -f2)" "$CHROME" >/dev/null ||
+                die "tab: could not focus the chosen tab"
+            return 0
+            ;;
+    esac
     [ "$result" = none ] && [ -n "$open_url" ] || return 0
     if [ -n "$app_window" ]; then
         open -na "$CHROME" --args --app="$open_url"
@@ -166,23 +196,13 @@ teams() {
     esac
 }
 
-read -r -d '' WINDOWS_JXA <<'EOF'
-function run(argv) {
-    const lines = argv[0].split('\n').filter((l) => l);
-    const ui = Application('System Events');
-    ui.includeStandardAdditions = true;
-    ui.activate();
-    const answer = ui.chooseFromList(lines, { withPrompt: 'Window' });
-    return answer ? answer[0] : '';
-}
-EOF
-
 # Thumb+Alt+Return: pick any window by app and title.
 windows() {
-    local list choice
+    local list index
     list=$(aerospace list-windows --all --format '%{window-id} | %{app-name} | %{window-title}')
-    choice=$(osascript -l JavaScript -e "$WINDOWS_JXA" "$list") || return
-    [ -n "$choice" ] && aerospace focus --window-id "${choice%% *}"
+    [ -n "$list" ] || return 0
+    index=$(printf '%s\n' "$list" | sed 's/^[0-9]* | //' | pick Window) || return 0
+    aerospace focus --window-id "$(printf '%s\n' "$list" | sed -n "$((index + 1))s/ .*//p")"
 }
 
 case ${1:-} in
