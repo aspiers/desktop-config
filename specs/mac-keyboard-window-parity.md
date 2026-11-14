@@ -136,9 +136,14 @@ Alt, Ctrl. By position (Adam, 2026-11-14):
 | `fn` (far left) | Left Ctrl | `z` (2.1) |
 | Left `control` | Fn | Fn |
 | Left `option` | Left Win | Option, macOS's Alt key: Meta in Emacs and terminals. Option+Tab is left alone; window cycling is Thumb+`/` as on Linux (3.2) |
-| Left `command` | Left Alt | Control's position: copy, paste and other editing (2.5) |
+| Left `command` | Left Alt | Control's position: Command in ordinary apps, so `Cmd+C` copies; Control in the exception apps (2.5, 5.2) |
 | Right `command` | Right Alt | **Thumb** (5.1) |
-| Right `option` | Right Ctrl | Command (Adam, 2026-11-14): needed wherever left `command` acts as Control (2.5, 5.2). macOS has no Compose; left `option` combinations type special characters instead |
+| Right `option` | Right Ctrl | The opposite of left `command` (Adam, 2026-11-14, approach A2 in 5.2): Control in ordinary apps, Command in the exception apps. macOS has no Compose; left `option` combinations type special characters instead |
+
+So in every app exactly one key is Command and one is Control. Adam's
+rules (2026-11-14): "There should never be any combination where there
+are two command keys", and Control and Command must always both be
+available.
 
 Option, not Command, is the counterpart of Alt: a Mac keyboard's Option
 key sends the same USB code as Alt, the Advantage2 manual calls them the
@@ -408,7 +413,31 @@ Two ways, given that left `command` sits in Linux's Control position:
 
 A needs fewer rules in ordinary apps. Both use the exception list in 2.5.
 
-**Chosen: A** (implementer, 2026-11-14). In ordinary apps every `Cmd`
+**Chosen: A2** (Adam, 2026-11-14: "OK A2 with Orca as an exception").
+Approach A as first built left ordinary apps with two Command keys (left
+`command` and right `option`) and no Control, which breaks the rule in
+2.2. A2 is A with right `option` swapped to match:
+
+| MacBook key | Ordinary apps | Exception apps (2.5, Orca included) |
+| --- | --- | --- |
+| `fn` | `z` | `z` |
+| Left `control` | Fn | Fn |
+| Left `option` | Option | Option |
+| Left `command` | Command | Control |
+| Right `command` | Thumb | Thumb |
+| Right `option` | Control | Command |
+
+Rejected (Adam, 2026-11-14):
+
+- **B**: translating `Ctrl+` shortcuts needs too many rules for Teams,
+  Outlook, browsers and AI clients.
+- **A'**: keeping a second Command key duplicates Command, which the rule
+  in 2.2 forbids.
+- **A chord to swap the two keys' roles**: Fn hurts the left little finger
+  (RSI), and Option clashes with Emacs `C-M-` bindings and Orca's
+  `Ctrl+Alt+o`.
+
+In ordinary apps every `Cmd`
 shortcut then works from the Control position without a rule, including
 ones the list in 2.5 leaves out (`Cmd+L`, `Cmd+R`, `Cmd+click`). B would
 need a rule per letter and would still miss mouse and scroll combinations.
@@ -418,8 +447,9 @@ A needs rules only where the Mac differs from Linux:
 - `Home` / `End` → `Cmd+Left` / `Cmd+Right`; `Ctrl+Home` / `Ctrl+End` →
   `Cmd+Up` / `Cmd+Down`;
 - `Ctrl+Tab` → `Control+Tab`, so it switches tabs as on Linux rather than
-  apps. The Compose-position key (Command, 2.2) still reaches the app
-  switcher.
+  apps. In ordinary apps no key then sends `Cmd+Tab`; app switching is
+  Thumb+letter and Thumb+`/` (3.1, 3.2). In the exception apps right
+  `option`+Tab is `Cmd+Tab`.
 
 The implementation is `bin/karabiner-gen-config`, which writes
 `.config/karabiner/karabiner.json`. Terminals and Orca also get
@@ -477,8 +507,10 @@ So right `command` is Thumb on every keyboard, and left `command` is
 Thumb too on the 360 and the Keyboardio boards (matched by the USB IDs in
 their keyd configs; the Preonic's keyd ID is not a USB ID, so only its
 right GUI key works). On the Kinesis boards, the Compose key (right Alt)
-becomes Command, as right `option` does on the MacBook. Each is a single
-line in `thumb_trigger_rule` or `modifier_rules`.
+acts as right `option` does on the MacBook: Control in ordinary apps,
+Command in the exception apps (5.2). So the Kinesis boards also have
+exactly one Command and one Control in every app. Each is a single line
+in `thumb_trigger_rule` or `modifier_rules`.
 
 The key codes Karabiner reports for the MacBook's ISO keys (§ left of
 `1`, `` ` `` left of `Z`) are unchecked: its ISO handling has swapped
@@ -623,7 +655,7 @@ still work inside the mode. Command syntax checked against AeroSpace's
 
 ## 6. Open questions
 
-None. The implementer chose editing approach A (5.2).
+None. Adam chose editing approach A2 (5.2).
 
 ## 7. Installing and testing on the Mac
 
@@ -684,8 +716,11 @@ under Variables, whether `thumb` is set while right `command` is held.
    `ALPHA_SHIFT` in `bin/karabiner-gen-config`.
 2. **Letters**: in TextEdit, the left-hand keys should type 2.1's table,
    including `fn` → `z` and the key left of `Z` → `x`.
-3. **Bottom row**: left `control` acts as Fn (Fn+arrows page), right
-   `option` as Command (Command+Tab switches apps).
+3. **Bottom row**: left `control` acts as Fn (Fn+arrows page). In
+   TextEdit, right `option` with the key that types `a` moves to the
+   paragraph start (Cocoa's `Ctrl+A`, so it is Control); in
+   Terminal, right `option`+Tab switches apps (Command). In
+   EventViewer, no app should show two keys sending `command`.
 4. **Editing**: in TextEdit, Control-position+C / V copy and paste, and
    Control-position+arrows move by word; in Terminal, the same key+C
    interrupts `sleep 100`.
