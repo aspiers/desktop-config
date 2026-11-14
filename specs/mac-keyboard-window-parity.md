@@ -553,6 +553,65 @@ Stubs and gaps, all unchecked on the Mac:
 [as-2]: https://github.com/nikitabobko/AeroSpace/issues/2
 [as-494]: https://github.com/nikitabobko/AeroSpace/issues/494
 
+### 5.7 Thumb bindings for AeroSpace tiling (agreed, bead `dc-ql65.5`)
+
+AeroSpace arranges each workspace as a tree of containers. Each container
+is **tiles** (side by side) or **accordion** (stacked, one visible), and
+horizontal or vertical. It has no pixel moves, raise/lower or sticky
+windows (5.4). The proposal keeps every Linux key that has a
+tiling meaning, reuses the keys whose Fluxbox meaning has none, and puts
+the less common tiling operations in the reorganise mode, as on Linux.
+Commands are from [AeroSpace's command reference][aerospace-commands].
+Agreed with Adam on 2026-11-14; Thumb+Space was his choice ("maybe
+toggle floating?"), so it is the first candidate to revisit.
+
+**Direct Thumb bindings** (changes from 3.2 in bold):
+
+| Keys | Linux (3.2) | AeroSpace |
+| --- | --- | --- |
+| Thumb+arrows | Focus in that direction | `focus <dir>` |
+| Thumb+Shift+arrows or `h` `j` `k` `l` | Move window 10 px | `move <dir>`: move the window in the tree |
+| Thumb+Alt+Shift+arrows or `h` `j` `k` `l` | Move window 50 px | **`join-with <dir>`**: group with the neighbour in a new container |
+| Thumb+`/` (Shift: reverse) | Cycle windows on this monitor and workspace | `focus dfs-next` / `dfs-prev`, wrapping round the workspace |
+| Thumb+Space | Raise | **`layout floating tiling`**: float or tile the window |
+| Thumb+Ctrl+Shift+`m` | Maximise | `fullscreen` toggle |
+| Thumb+`i` | Minimise | `macos-native-minimize` |
+| Thumb+`q` / Thumb+Ctrl+`q` | Close / kill | `close` / `close --quit-if-last-window` |
+| Thumb+`1` .. `6`, Thumb+`,` / `.` | Workspaces | `workspace <n>`, `workspace prev` / `next` |
+| Thumb+Alt+`1` .. `6`, Thumb+Alt+`,` / `.` | Take window to workspace | `move-node-to-workspace <n>` / `prev` / `next` |
+| Thumb+Shift+`,` / `.` | Focus monitor | `focus-monitor left` / `right` |
+| Thumb+Alt+Shift+`,` / `.` | Move window to monitor | `move-node-to-monitor left` / `right` |
+| Thumb+`r` | Reorganise mode | AeroSpace binding mode `reorg` (below) |
+| Thumb+Ctrl+`p` | Pass-through mode | Thumb layer off until `q` (Karabiner variable) |
+
+Unbound on the Mac: Thumb+`l` (lower), Thumb+Ctrl+`i` (restore minimised),
+Thumb+Shift+`m` / Thumb+Ctrl+`m` (maximise one way), Thumb+Shift+`s`
+(sticky).
+
+**Reorganise mode** (Thumb+`r`; `q`, Esc or Space leaves):
+
+| Keys | Linux reorganise mode | AeroSpace |
+| --- | --- | --- |
+| `h` `j` `k` `l` | Focus | `focus <dir>` |
+| arrows | Move 10 px | `move <dir>` |
+| Shift+arrows | Move 50 px | **`join-with <dir>`** |
+| Ctrl+arrows | Resize 2% | `resize width` / `height` ±50 |
+| Ctrl+Shift+arrows | Resize 10% | `resize width` / `height` ±200 |
+| `m` | Maximise | `fullscreen` toggle |
+| **`t`** | (none) | `layout tiles horizontal vertical`: tiles, or flip orientation |
+| **`a`** | (none) | `layout accordion horizontal vertical`: accordion, or flip orientation |
+| **`f`** | (none) | `layout floating tiling`: float or tile the window |
+| **`b`** | (none) | `balance-sizes` |
+| `0` | Two columns, left | **`flatten-workspace-tree`**: reset the workspace |
+| Shift+`2` | Two columns | `layout --root h_tiles` |
+| Shift+`;` | Two rows | `layout --root v_tiles` |
+| Thumb+`,` / `.` etc. | Workspaces | as in main mode |
+
+The other numbered presets (halves, quarters, thirds) have no tiling
+equivalent and are dropped.
+
+[aerospace-commands]: https://nikitabobko.github.io/AeroSpace/commands
+
 ## 6. Open questions
 
 None. The implementer chose editing approach A (5.2).
