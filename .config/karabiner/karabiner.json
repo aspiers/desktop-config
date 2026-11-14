@@ -3802,7 +3802,7 @@
                                 },
                                 "to": [
                                     {
-                                        "shell_command": "/opt/homebrew/bin/aerospace workspace prev"
+                                        "shell_command": "/opt/homebrew/bin/aerospace workspace --no-stdin prev"
                                     }
                                 ],
                                 "conditions": [
@@ -3825,7 +3825,7 @@
                                 },
                                 "to": [
                                     {
-                                        "shell_command": "/opt/homebrew/bin/aerospace move-node-to-workspace --focus-follows-window prev"
+                                        "shell_command": "/opt/homebrew/bin/aerospace move-node-to-workspace --no-stdin --focus-follows-window prev"
                                     }
                                 ],
                                 "conditions": [
@@ -3843,7 +3843,7 @@
                                 },
                                 "to": [
                                     {
-                                        "shell_command": "/opt/homebrew/bin/aerospace workspace next"
+                                        "shell_command": "/opt/homebrew/bin/aerospace workspace --no-stdin next"
                                     }
                                 ],
                                 "conditions": [
@@ -3866,7 +3866,7 @@
                                 },
                                 "to": [
                                     {
-                                        "shell_command": "/opt/homebrew/bin/aerospace move-node-to-workspace --focus-follows-window next"
+                                        "shell_command": "/opt/homebrew/bin/aerospace move-node-to-workspace --no-stdin --focus-follows-window next"
                                     }
                                 ],
                                 "conditions": [

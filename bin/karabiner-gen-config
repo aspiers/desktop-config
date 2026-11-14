@@ -337,9 +337,11 @@ def window_operations() -> list[Json]:
     for n in range(1, 7):
         m += thumb(str(n), aerospace(f"workspace {n}"))
         m += thumb(str(n), aerospace(f"move-node-to-workspace --focus-follows-window {n}"), "alt")
+    # next/prev read a workspace list from stdin when it is not a TTY, and
+    # shell_command's never is; AeroSpace 0.20 refuses that without a flag.
     for code, step in {"comma": "prev", "period": "next"}.items():
-        m += thumb(code, aerospace(f"workspace {step}"))
-        m += thumb(code, aerospace(f"move-node-to-workspace --focus-follows-window {step}"), "alt")
+        m += thumb(code, aerospace(f"workspace --no-stdin {step}"))
+        m += thumb(code, aerospace(f"move-node-to-workspace --no-stdin --focus-follows-window {step}"), "alt")
     for code, side in {"comma": "left", "period": "right"}.items():
         m += thumb(code, aerospace(f"focus-monitor {side}"), "shift")
         m += thumb(code, aerospace(f"move-node-to-monitor --focus-follows-window {side}"), "alt+shift")
