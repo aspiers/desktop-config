@@ -7711,7 +7711,7 @@
                         ]
                     },
                     {
-                        "description": "Bottom row: Control position is Command except in terminals, Emacs, VMs and Orca; Compose position is Command; MacBook left control is fn",
+                        "description": "Bottom row: Control position is Command and Compose position is Control, swapped in terminals, Emacs, VMs and Orca; MacBook left control is fn",
                         "manipulators": [
                             {
                                 "type": "basic",
@@ -7787,6 +7787,154 @@
                             {
                                 "type": "basic",
                                 "from": {
+                                    "key_code": "left_control",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "left_command"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "device_unless",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "frontmost_application_unless",
+                                        "bundle_identifiers": [
+                                            "^com\\.apple\\.Terminal$",
+                                            "^com\\.googlecode\\.iterm2$",
+                                            "^net\\.kovidgoyal\\.kitty$",
+                                            "^com\\.mitchellh\\.ghostty$",
+                                            "^org\\.alacritty$",
+                                            "^com\\.github\\.wez\\.wezterm$",
+                                            "^org\\.gnu\\.Emacs$",
+                                            "^com\\.stablyai\\.orca$",
+                                            "^com\\.microsoft\\.rdc\\.macos$",
+                                            "^com\\.vmware\\.fusion$",
+                                            "^com\\.parallels\\.desktop\\.console$",
+                                            "^org\\.virtualbox\\.app\\.VirtualBoxVM$",
+                                            "^com\\.utmapp\\.UTM$",
+                                            "^com\\.citrix\\.receiver\\.icaviewer\\.mac$"
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "right_option",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "right_control"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "device_if",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "frontmost_application_unless",
+                                        "bundle_identifiers": [
+                                            "^com\\.apple\\.Terminal$",
+                                            "^com\\.googlecode\\.iterm2$",
+                                            "^net\\.kovidgoyal\\.kitty$",
+                                            "^com\\.mitchellh\\.ghostty$",
+                                            "^org\\.alacritty$",
+                                            "^com\\.github\\.wez\\.wezterm$",
+                                            "^org\\.gnu\\.Emacs$",
+                                            "^com\\.stablyai\\.orca$",
+                                            "^com\\.microsoft\\.rdc\\.macos$",
+                                            "^com\\.vmware\\.fusion$",
+                                            "^com\\.parallels\\.desktop\\.console$",
+                                            "^org\\.virtualbox\\.app\\.VirtualBoxVM$",
+                                            "^com\\.utmapp\\.UTM$",
+                                            "^com\\.citrix\\.receiver\\.icaviewer\\.mac$"
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "right_option",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "right_control"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "device_if",
+                                        "identifiers": [
+                                            {
+                                                "vendor_id": 10730,
+                                                "product_id": 258
+                                            },
+                                            {
+                                                "vendor_id": 10730,
+                                                "product_id": 259
+                                            },
+                                            {
+                                                "vendor_id": 10730,
+                                                "product_id": 866
+                                            },
+                                            {
+                                                "vendor_id": 7504,
+                                                "product_id": 24926
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "type": "frontmost_application_unless",
+                                        "bundle_identifiers": [
+                                            "^com\\.apple\\.Terminal$",
+                                            "^com\\.googlecode\\.iterm2$",
+                                            "^net\\.kovidgoyal\\.kitty$",
+                                            "^com\\.mitchellh\\.ghostty$",
+                                            "^org\\.alacritty$",
+                                            "^com\\.github\\.wez\\.wezterm$",
+                                            "^org\\.gnu\\.Emacs$",
+                                            "^com\\.stablyai\\.orca$",
+                                            "^com\\.microsoft\\.rdc\\.macos$",
+                                            "^com\\.vmware\\.fusion$",
+                                            "^com\\.parallels\\.desktop\\.console$",
+                                            "^org\\.virtualbox\\.app\\.VirtualBoxVM$",
+                                            "^com\\.utmapp\\.UTM$",
+                                            "^com\\.citrix\\.receiver\\.icaviewer\\.mac$"
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
                                     "key_code": "right_option",
                                     "modifiers": {
                                         "optional": [
@@ -7806,6 +7954,25 @@
                                             {
                                                 "is_built_in_keyboard": true
                                             }
+                                        ]
+                                    },
+                                    {
+                                        "type": "frontmost_application_if",
+                                        "bundle_identifiers": [
+                                            "^com\\.apple\\.Terminal$",
+                                            "^com\\.googlecode\\.iterm2$",
+                                            "^net\\.kovidgoyal\\.kitty$",
+                                            "^com\\.mitchellh\\.ghostty$",
+                                            "^org\\.alacritty$",
+                                            "^com\\.github\\.wez\\.wezterm$",
+                                            "^org\\.gnu\\.Emacs$",
+                                            "^com\\.stablyai\\.orca$",
+                                            "^com\\.microsoft\\.rdc\\.macos$",
+                                            "^com\\.vmware\\.fusion$",
+                                            "^com\\.parallels\\.desktop\\.console$",
+                                            "^org\\.virtualbox\\.app\\.VirtualBoxVM$",
+                                            "^com\\.utmapp\\.UTM$",
+                                            "^com\\.citrix\\.receiver\\.icaviewer\\.mac$"
                                         ]
                                     }
                                 ]
@@ -7846,35 +8013,9 @@
                                                 "product_id": 24926
                                             }
                                         ]
-                                    }
-                                ]
-                            },
-                            {
-                                "type": "basic",
-                                "from": {
-                                    "key_code": "left_control",
-                                    "modifiers": {
-                                        "optional": [
-                                            "any"
-                                        ]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "left_command"
-                                    }
-                                ],
-                                "conditions": [
-                                    {
-                                        "type": "device_unless",
-                                        "identifiers": [
-                                            {
-                                                "is_built_in_keyboard": true
-                                            }
-                                        ]
                                     },
                                     {
-                                        "type": "frontmost_application_unless",
+                                        "type": "frontmost_application_if",
                                         "bundle_identifiers": [
                                             "^com\\.apple\\.Terminal$",
                                             "^com\\.googlecode\\.iterm2$",

@@ -5,6 +5,7 @@ committed karabiner.json matches the generator."""
 import importlib.machinery
 import importlib.util
 import json
+import re
 from pathlib import Path
 
 SCRIPT = Path(__file__).with_name("karabiner-gen-config")
@@ -34,4 +35,53 @@ text = gen.render()
 assert gen.OUTPUT.read_text() == text, "karabiner.json is out of date: run bin/karabiner-gen-config"
 rules = json.loads(text)["profiles"][0]["complex_modifications"]["rules"]
 assert all(m["type"] == "basic" and "from" in m for r in rules for m in r["manipulators"])
+
+
+def holds(condition, keyboard, bundle):
+    """Whether a condition holds for a lone modifier press with no mode on."""
+    kind = condition["type"]
+    if kind.startswith("device"):
+        hit = any(
+            ident.get("is_built_in_keyboard") is True if keyboard is None
+            else (ident.get("vendor_id"), ident.get("product_id")) == keyboard
+            for ident in condition["identifiers"]
+        )
+        return hit == (kind == "device_if")
+    if kind.startswith("frontmost"):
+        hit = any(re.search(p, bundle) for p in condition["bundle_identifiers"])
+        return hit == (kind == "frontmost_application_if")
+    assert kind == "variable_if", condition
+    return condition["value"] == 0
+
+
+def sends(code, keyboard, bundle):
+    """What a modifier key sends: the first matching manipulator wins."""
+    for m in (m for r in rules for m in r["manipulators"]):
+        if m["from"]["key_code"] == code and "mandatory" not in m["from"].get("modifiers", {}) \
+                and all(holds(c, keyboard, bundle) for c in m.get("conditions", [])):
+            event = m["to"][0]
+            return "thumb" if event.get("set_variable", {}).get("name") == "thumb" else event["key_code"]
+    return code
+
+
+# Modifier keys each keyboard sends, from spec 2.2 and 5.6. None is the
+# built-in keyboard. Kinesis: left pad Ctrl and Alt, right pad Compose
+# (right Alt) and Thumb. Advantage 360: Thumb's GUI key side is unknown.
+KEYBOARDS = {
+    "MacBook": (None, ["fn", "left_control", "left_option", "left_command", "right_command", "right_option"]),
+    "Advantage2": (gen.ADVANTAGE2[0], ["left_control", "left_option", "right_option", "right_control"]),
+    "Advantage 360": (gen.ADVANTAGE_360[0], ["left_control", "left_option", "right_option", "left_command", "right_command"]),
+}
+APPS = {"ordinary": "com.apple.TextEdit", "Terminal": "com.apple.Terminal", "Emacs": "org.gnu.Emacs", "Orca": "com.stablyai.orca"}
+for name, (keyboard, codes) in KEYBOARDS.items():
+    for app, bundle in APPS.items():
+        out = [sends(code, keyboard, bundle) for code in codes]
+        commands = [o for o in out if o.endswith("_command")]
+        controls = [o for o in out if o.endswith("_control")]
+        # Spec 5.2, approach A2: never two Command keys, Control always there.
+        assert len(commands) == 1, f"{name} in {app}: Command from {commands}"
+        assert controls, f"{name} in {app}: no Control key"
+        # The Control-position key is Command only in ordinary apps.
+        assert sends("left_command" if keyboard is None else "left_control", keyboard, bundle) == \
+            ("left_command" if app == "ordinary" else "left_control"), f"{name} in {app}"
 print("ok")

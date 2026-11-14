@@ -435,12 +435,12 @@ def control_app_rules() -> Json:
 
 
 def editing_rule() -> Json:
-    """Spec 2.5, approach A (spec 5.2): the Control-position key sends
+    """Spec 2.5, approach A2 (spec 5.2): the Control-position key sends
     Command in ordinary apps, so Cmd+C etc. need no rules; only keys whose
     Mac equivalent differs are translated."""
     ordinary = [apps(CONTROL_APPS, negate=True)]
-    # left_command is the Control-position key: right Command comes from
-    # the Compose-position key and keeps its Mac meaning.
+    # left_command is the Control-position key. In ordinary apps the
+    # Compose-position key sends Control, never Command (spec 5.2).
     ctrl = {"mandatory": ["left_command"], "optional": ["shift"]}
     m: list[Json] = []
 
@@ -456,8 +456,7 @@ def editing_rule() -> Json:
     add("end", ctrl, key("down_arrow", "command"))
     add("home", {"optional": ["shift"]}, key("left_arrow", "command"))
     add("end", {"optional": ["shift"]}, key("right_arrow", "command"))
-    # Ctrl+Tab switches tabs as on Linux; the Compose-position key
-    # (right Command) still reaches the app switcher.
+    # Ctrl+Tab switches tabs as on Linux.
     add("tab", ctrl, key("tab", "control"))
     return rule("PC-style editing outside terminals, Emacs, VMs and Orca (spec 2.5)", m)
 
@@ -476,18 +475,24 @@ def modifier_rules() -> Json:
             "conditions": conditions,
         }
 
+    # Approach A2 (spec 5.2): in every app exactly one key is Command and
+    # one is Control. The Control-position key is Command in ordinary apps
+    # and Control in CONTROL_APPS; the Compose-position key is the reverse.
+    # Kinesis Compose keys send right Alt (keyd configs), like the MacBook's
+    # right option.
+    compose_keyboards = [[BUILT_IN], [device(*ADVANTAGE2, *ADVANTAGE_360)]]
     return rule(
-        "Bottom row: Control position is Command except in terminals, Emacs, VMs "
-        "and Orca; Compose position is Command; MacBook left control is fn",
+        "Bottom row: Control position is Command and Compose position is "
+        "Control, swapped in terminals, Emacs, VMs and Orca; MacBook left "
+        "control is fn",
         [
             remap("left_command", "left_control", [BUILT_IN, control_apps]),
             remap("left_control", "fn", [BUILT_IN]),
-            remap("right_option", "right_command", [BUILT_IN]),
-            # Kinesis Compose keys send right Alt (keyd configs).
-            remap("right_option", "right_command", [device(*ADVANTAGE2, *ADVANTAGE_360)]),
             # External keyboards send Control from the Control position.
             remap("left_control", "left_command", [NOT_BUILT_IN, ordinary]),
-        ],
+        ]
+        + [remap("right_option", "right_control", d + [ordinary]) for d in compose_keyboards]
+        + [remap("right_option", "right_command", d + [control_apps]) for d in compose_keyboards],
     )
 
 
