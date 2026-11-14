@@ -398,14 +398,16 @@ and floating centred pop-ups need checking.
 
 - **Q1** (answered 2026-11-14): the MacBook has an ISO key left of `Z`
   (legend `~`), so `x` goes there (2.1).
-- **Q2**: Which external keyboards will be used with the Mac?
-  Firmware-remapped ones need little.
-- **Q3**: Which Mac apps keep Control as Control? Terminal app, Emacs, VMs,
-  remote desktop?
-- **Q4**: Which editing shortcuts beyond copy, paste and word movement
-  (2.5)?
-- **Q5**: Mac / Windows targets for the remaining jumps (3.1), such as the
-  calendar and terminal menu, now that `t` is Teams.
+- **Q2** (answered 2026-11-14): the Kinesis Advantage2, Kinesis Advantage
+  360 and the Keyboardio boards, besides the built-in keyboard.
+- **Q3** (answered 2026-11-14): Control stays Control in terminal
+  emulators, Emacs, VM and remote desktop windows, and Orca's terminals.
+- **Q4** (answered 2026-11-14): besides copy, paste and word movement:
+  the other common Ctrl+letter shortcuts (X, Z, A, S, F, W, T, N ...),
+  Shift-selection by word, and Home/End (line) and Ctrl+Home/End
+  (document). Not word delete with Ctrl+Backspace/Delete.
+- **Q5** (answered 2026-11-14): use the Linux target wherever the app
+  exists on the Mac, then go through every remaining jump one by one.
 - **Q6**: Where is the Windows AutoHotkey script?
 - **Q7**: Will Emacs and Orca be used on the work Mac?
 - **Q9**: Should the MacBook's left `option` act as Command, so Alt+Tab
