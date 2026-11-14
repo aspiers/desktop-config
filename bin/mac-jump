@@ -79,15 +79,25 @@ function run(argv) {
     const urls = chrome.windows.tabs.url();
     const titles = chrome.windows.tabs.title();
     const ids = chrome.windows.id();
+    // Windows named with Chrome's "Name window...", else "Win #N", as
+    // chrome-session-tabs labels them on Linux.
+    let names;
+    try { names = chrome.windows.givenName(); } catch (e) { names = []; }
     const matches = [];
     urls.forEach((tabs, w) => tabs.forEach((url, t) => {
-        if (re.test(url)) matches.push({ id: ids[w], tab: t + 1, label: titles[w][t] + '  ' + url });
+        if (re.test(url)) {
+            matches.push({ id: ids[w], tab: t + 1, win: names[w] || 'Win #' + w, title: titles[w][t] || url, url: url });
+        }
     }));
     if (matches.length === 0) return 'none';
-    // Several matches to pick from: hand them to choose, one per line.
+    // Several matches to pick from: hand them to choose, one per line, in
+    // Linux's "window / tab number -~- title | URL" layout.
     if (mode === 'pick' && matches.length > 1) {
-        return ['pick'].concat(matches.map((m) =>
-            [m.id, m.tab, m.label.replace(/[\t\n]/g, ' ')].join('\t'))).join('\n');
+        const width = Math.max(...matches.map((m) => m.win.length));
+        return ['pick'].concat(matches.map((m) => {
+            const label = m.win.padEnd(width) + ' / ' + String(m.tab).padStart(2) + ' -~- ' + m.title + ' | ' + m.url;
+            return [m.id, m.tab, label.replace(/[\t\n]/g, ' ')].join('\t');
+        })).join('\n');
     }
     const win = chrome.windows.byId(matches[0].id);
     win.activeTabIndex = matches[0].tab;
