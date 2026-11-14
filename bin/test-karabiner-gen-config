@@ -71,6 +71,8 @@ KEYBOARDS = {
     "MacBook": (None, ["fn", "left_control", "left_option", "left_command", "right_command", "right_option"]),
     "Advantage2": (gen.ADVANTAGE2[0], ["left_control", "left_option", "right_option", "right_control"]),
     "Advantage 360": (gen.ADVANTAGE_360[0], ["left_control", "left_option", "right_option", "left_command", "right_command"]),
+    # Ctrl, Backspace held, Space held, layer 4 Ctrl (.config/chrysalis/atreus.json).
+    "Atreus": (gen.ATREUS[0], ["left_control", "left_option", "left_command", "right_control"]),
 }
 APPS = {"ordinary": "com.apple.TextEdit", "Terminal": "com.apple.Terminal", "Emacs": "org.gnu.Emacs", "Orca": "com.stablyai.orca"}
 for name, (keyboard, codes) in KEYBOARDS.items():

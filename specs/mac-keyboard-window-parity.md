@@ -531,12 +531,19 @@ in `thumb_trigger_rule` or `modifier_rules`.
   left palm key left Shift. The right arc sends right GUI (Thumb), Space,
   Page Up and Page Down, and the right palm key holds layer 2.
 
-Neither board sends right Control, right Alt or Compose from any key, so
-neither has a Compose-position key for A2's second role. Under A2 each
-has no Control in ordinary apps and no Command in the exception apps.
+Neither board sent right Control, right Alt or Compose from any key, so
+neither had a Compose-position key for A2's second role: under A2 each
+had no Control in ordinary apps and no Command in the exception apps.
 Each needs a firmware change so that one key sends a right-side code
-Karabiner can give that role. Which key, for each board, is Adam's
-decision (bead `dc-ql65.7`).
+Karabiner can give that role:
+
+- **Atreus**: the Ctrl key on layer 4 (held `-` or `[`) sends right
+  Control (Adam, 2026-11-14: "We can put it on layer 4 Ctrl for now").
+  Karabiner leaves it Control in ordinary apps and makes it Command in
+  the exception apps. The change is in `.config/chrysalis/atreus.json`
+  and takes effect once that layout is loaded into the keyboard with
+  Chrysalis.
+- **Model 01**: undecided.
 
 The key codes Karabiner reports for the MacBook's ISO keys (§ left of
 `1`, `` ` `` left of `Z`) are unchecked: its ISO handling has swapped

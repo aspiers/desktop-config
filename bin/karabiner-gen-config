@@ -499,7 +499,11 @@ def modifier_rules() -> Json:
             remap("left_control", "left_command", [NOT_BUILT_IN, ordinary]),
         ]
         + [remap("right_option", "right_control", d + [ordinary]) for d in compose_keyboards]
-        + [remap("right_option", "right_command", d + [control_apps]) for d in compose_keyboards],
+        + [remap("right_option", "right_command", d + [control_apps]) for d in compose_keyboards]
+        # The Atreus has no Compose-position key; its layer 4 Ctrl sends
+        # right Control instead (.config/chrysalis/atreus.json), which
+        # stays Control in ordinary apps.
+        + [remap("right_control", "right_command", [device(*ATREUS), control_apps])],
     )
 
 

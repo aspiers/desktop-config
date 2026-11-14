@@ -2295,15 +2295,16 @@
         ]
       },
       {
-        "code": 65535,
+        "code": 228,
         "label": {
           "base": {
-            "full": "Transparent",
-            "1u": " "
+            "full": "Right Control",
+            "1u": "RCtrl"
           }
         },
+        "location": "right",
         "categories": [
-          "blanks"
+          "modifier"
         ]
       },
       {
