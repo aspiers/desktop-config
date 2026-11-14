@@ -128,12 +128,18 @@ mr stow
 
 - **`bin/`** - Executable scripts (100+ utilities)
 - **`lib/`** - Shared libraries and browser userscripts
+- **`.local/lib/<tool>/`** - Support code for one tool, stowed to
+  `~/.local/lib/<tool>/` (e.g. `monitor-controller`)
 - **`.fluxbox/layouts/`** - YAML layout configuration files
 - **`.cursor/rules/`** - Development workflow and coding guidelines
 
 ### Configuration Patterns
 
-- **Standards compliance**: Follows XDG Base Directory where possible
+- **Standards compliance**: Follows the XDG Base Directory spec.
+  `.config/` holds configuration data only. Commands go in `bin/` and
+  support code in `.local/lib/<tool>/`. The only exceptions are scripts
+  a tool requires in its own config directory, such as the hooks in
+  `.config/autorandr/`.
 - **Personal optimization**: Heavily customized for specific hardware setups
 - **Modular design**: Clear separation between libraries and executables
 - **Caching strategy**: Performance optimization through cached monitor detection
