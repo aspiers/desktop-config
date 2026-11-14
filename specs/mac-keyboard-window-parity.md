@@ -80,7 +80,8 @@ one "hacked" US keyboard use variants: `x` on Left Shift (`xcv3`), and on
 the HHKB `q` on Esc and `a` on Left Ctrl.
 
 A keyboard with no ISO key left of `Z` (US/ANSI layout) has no home for
-`x` under this scheme. This matters for the MacBook (Q1).
+`x` under this scheme. The MacBook has one: a `` ` `` / `~` key left of
+`Z`, before Left Shift (Adam, 2026-11-14), which becomes `x`.
 
 ### 2.2 Modifiers (laptop-style keyboards)
 
@@ -364,8 +365,8 @@ and floating centred pop-ups need checking.
 
 ## 6. Open questions
 
-- **Q1**: Is the MacBook keyboard UK (ISO, with a key left of `Z`) or US
-  (ANSI)? Decides where `x` goes (2.1).
+- **Q1** (answered 2026-11-14): the MacBook has an ISO key left of `Z`
+  (legend `~`), so `x` goes there (2.1).
 - **Q2**: Which external keyboards will be used with the Mac?
   Firmware-remapped ones need little.
 - **Q3**: Which Mac apps keep Control as Control? Terminal app, Emacs, VMs,
