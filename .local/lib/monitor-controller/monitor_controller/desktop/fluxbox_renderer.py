@@ -33,6 +33,10 @@ _APPS_BLOCK: Final = re.compile(r"^\[(app|transient)\][ \t]+(?P<pattern>\S.*?)[ 
 _APPS_ATTRIBUTE: Final = re.compile(r"^[ \t]*\[(?P<name>[A-Za-z]+)\]")
 # Placement the layouts own; apps.in keeps every other setting.
 _LAYOUT_OWNED: Final = frozenset({"head", "position", "dimensions", "workspace"})
+# apps.in pattern standing for each non-primary head of the active layout; the
+# renderer repeats its block once per such head, in place, so earlier blocks
+# still win, and drops it when the layout has a single screen.
+_NON_PRIMARY_HEADS: Final = "(head=non-primary)"
 
 
 class FluxboxRenderError(ValueError):
@@ -120,6 +124,7 @@ def render_fluxbox_apps(
     template: bytes,
     actions: tuple[ResolvedWindowAction, ...],
     *,
+    non_primary_heads: tuple[int, ...],
     template_label: str,
 ) -> bytes:
     """Merge the layout's placement into the hand-written apps template.
@@ -128,7 +133,9 @@ def render_fluxbox_apps(
     relayout applies every matching rule in order, so the latest rule wins.
     Placement blocks therefore come first, latest rule first, and rules with
     identical matchers merge.  A template block with exactly the same pattern
-    joins its placement block; the rest of the template follows unchanged.
+    joins its placement block; the rest of the template follows unchanged,
+    except that a block with the pattern (head=non-primary) becomes one
+    (head=N) block per non-primary head.
     """
     try:
         source = template.decode("utf-8", errors="strict")
@@ -174,6 +181,11 @@ def render_fluxbox_apps(
     for item in items:
         if isinstance(item, str):
             lines.append(item)
+        elif item.pattern == _NON_PRIMARY_HEADS:
+            lines.extend(item.comments)
+            for head in sorted(non_primary_heads):
+                header = item.header.replace(_NON_PRIMARY_HEADS, f"(head={head})")
+                lines.extend((header, *item.body, "[end]"))
         elif id(item) not in merged_blocks:
             lines.extend((*item.comments, item.header, *item.body, "[end]"))
     # Remember::reload() drops a final line that lacks its newline.

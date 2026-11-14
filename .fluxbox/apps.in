@@ -59,7 +59,7 @@
 [app] (title=Telegram)
   [Deco]	{0x5e0}
 [end]
-[app] (head=2)
+[app] (head=non-primary)
   [Sticky]	{yes}
 [end]
 [app] (name=ksnip|xfce4-display-settings)

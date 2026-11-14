@@ -30,9 +30,16 @@ def _action(matcher: str, *attributes: tuple[str, str]) -> ResolvedWindowAction:
     )
 
 
-def _render(template: str, *actions: ResolvedWindowAction) -> str:
+def _render(
+    template: str,
+    *actions: ResolvedWindowAction,
+    non_primary_heads: tuple[int, ...] = (),
+) -> str:
     return render_fluxbox_apps(
-        template.encode(), actions, template_label="apps.in"
+        template.encode(),
+        actions,
+        non_primary_heads=non_primary_heads,
+        template_label="apps.in",
     ).decode()
 
 
@@ -80,6 +87,39 @@ def test_malformed_templates_are_rejected(template: str, message: str) -> None:
         _render(template)
 
 
+_STICKY_TEMPLATE = (
+    "[app] (name=chrome-app)\n  [Sticky]\t{no}\n[end]\n"
+    "[app] (head=non-primary)\n  [Sticky]\t{yes}\n[end]\n"
+    "[app] (name=eog)\n  [Deco]\t{NORMAL}\n[end]\n"
+)
+
+
+@pytest.mark.parametrize(
+    ("non_primary_heads", "sticky_blocks"),
+    [
+        ((), ""),
+        ((2,), "[app] (head=2)\n  [Sticky]\t{yes}\n[end]\n"),
+        (
+            (3, 2),
+            (
+                "[app] (head=2)\n  [Sticky]\t{yes}\n[end]\n"
+                "[app] (head=3)\n  [Sticky]\t{yes}\n[end]\n"
+            ),
+        ),
+    ],
+    ids=["one-screen", "two-screens", "three-screens"],
+)
+def test_non_primary_heads_block_repeats_in_place_per_head(
+    non_primary_heads: tuple[int, ...], sticky_blocks: str
+) -> None:
+    rendered = _render(_STICKY_TEMPLATE, non_primary_heads=non_primary_heads)
+    assert rendered.split("\n\n", 1)[1] == (
+        "[app] (name=chrome-app)\n  [Sticky]\t{no}\n[end]\n"
+        + sticky_blocks
+        + "[app] (name=eog)\n  [Deco]\t{NORMAL}\n[end]\n"
+    )
+
+
 def _tracked_apps(layout: str, primary: int) -> str:
     root = _REPO / ".fluxbox/layouts"
     files = tuple(
@@ -100,9 +140,13 @@ def _tracked_apps(layout: str, primary: int) -> str:
         )
         for index in range(len(parsed.screens))
     )
+    resolved = resolve_layout(parsed, screens)
     return render_fluxbox_apps(
         (_REPO / ".fluxbox/apps.in").read_bytes(),
-        resolve_layout(parsed, screens).window_actions,
+        resolved.window_actions,
+        non_primary_heads=tuple(
+            screen.head for screen in resolved.screens if not screen.primary
+        ),
         template_label=".fluxbox/apps.in",
     ).decode()
 

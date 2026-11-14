@@ -1063,6 +1063,9 @@ def build_desktop_plan(  # noqa: PLR0915
         rendered_apps = render_fluxbox_apps(
             apps_template_content,
             resolved.window_actions,
+            non_primary_heads=tuple(
+                screen.head for screen in resolved.screens if not screen.primary
+            ),
             template_label=".fluxbox/apps.in",
         )
     except FluxboxRenderError as error:
