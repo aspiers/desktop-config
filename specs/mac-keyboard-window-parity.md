@@ -32,6 +32,29 @@ questions.
 4. The window management operations in section 3.2, mapped to the tiling
    window manager's nearest equivalents.
 
+## Strategy: remap in firmware first
+
+Adam's rule (2026-11-14): **a remapping that is the same on every
+operating system belongs in the keyboard's firmware**, wherever the
+keyboard can be programmed. It then works on Linux, macOS and Windows with
+no software, and each OS's tool (keyd, Karabiner-Elements, AutoHotkey) only
+has to carry what really differs between OSes, such as app jumps, PC-style
+editing on macOS, or the left-hand alpha shift on a laptop's built-in
+keyboard.
+
+Examples on the Kinesis Advantage2: swapping Up and Down, and Caps Lock
+typing `-`. These must be done in firmware, not in keyd.
+
+So for each requirement in section 2, the implementation order is:
+
+1. Keyboard firmware, if the keyboard is programmable and the behaviour is
+   the same on every OS.
+2. Otherwise the per-OS tool, matched to the device where the tool allows
+   it.
+
+When a firmware change moves a remap out of software, the software config
+must drop it in the same step, or the key is remapped twice.
+
 ## 1. Keyboards
 
 Remapping lives in three layers, and only the first travels with the
@@ -51,7 +74,8 @@ the previous mechanism; `.config/keyd/daemon/default.conf` says keyd is
 | Laptop built-ins (Framework, ThinkPad, Dell, Lenovo, Samsung) | keyd | Right Alt (Dell: Right Ctrl; Lenovo, Samsung: Menu) | Everything in 2.1 to 2.3 |
 | Keyboardio Atreus, Model 01, Preonic | Firmware (Chrysalis) | Firmware | UK shifted symbols, `£` / `€` (2.3) |
 | Kinesis Advantage 360 | Mostly firmware | Firmware | Home = AltGr, physical Win = Compose, Caps Lock = Insert, `£` / `€` |
-| Kinesis Advantage (USB), Kinesis Essential (PS/2) | keyd | Right Ctrl on the thumb pad | Thumb pads (2.4), Caps Lock = `-`, Up/Down swapped, `-` key types `£` / `€` |
+| Kinesis Advantage2 (USB) | Firmware (v-drive `qwerty.txt`) for OS-independent remaps, keyd for the rest | Right Ctrl on the thumb pad | Target: Caps Lock = `-`, Up/Down swapped and the top-right key swap in firmware. On 2026-11-14 the firmware lost these and keyd carries them again for now (`dc-iyml`) |
+| Kinesis Essential (PS/2) | keyd (not programmable) | Right Ctrl on the thumb pad | Thumb pads (2.4), Caps Lock = `-`, Up/Down swapped, `-` key types `£` / `€` |
 | HHKB Lite, Gyration | keyd | Not remapped | Own variants of 2.1 |
 
 Which of these will be used with the Mac is an open question (Q2).
