@@ -543,7 +543,7 @@ Karabiner can give that role:
   the exception apps. The change is in `.config/chrysalis/atreus.json`
   and takes effect once that layout is loaded into the keyboard with
   Chrysalis.
-- **Model 01**: undecided.
+- **Model 01**: undecided; bead `dc-5ty3` (Decide: which Model 01 key sends Right Control for the Mac's A2 layout).
 
 The key codes Karabiner reports for the MacBook's ISO keys (§ left of
 `1`, `` ` `` left of `Z`) are unchecked: its ISO handling has swapped
