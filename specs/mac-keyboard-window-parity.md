@@ -505,16 +505,38 @@ Thumb on each keyboard, worked out from this repository:
 | Kinesis Advantage2 | right Control | `kinesis-right-thumb-pad`: `rightcontrol = layer(meta)`; firmware leaves it alone |
 | Kinesis Advantage 360 | a GUI key, side unknown | keyd leaves meta alone, so any GUI key is Super on Linux |
 | Keyboardio Atreus | left GUI, from Space held | `.config/chrysalis/atreus.json`: the right-thumb Space is a dual-use key, code 49981 (`0xC311` + Space; Kaleidoscope dual-use index 3 is left GUI, unchecked) |
-| Keyboardio Model 01, Preonic | a GUI key, side unknown | keyd leaves meta alone; no firmware export in the repository |
+| Keyboardio Model 01 | right GUI, on the right thumb arc | Adam's `Model01-Firmware` fork, `aspiers` branch: the 2020 Chrysalis backup (`layer-0.json`, commit `8b4b6cd`) and the older sketch agree |
+| Keyboardio Preonic | a GUI key, side unknown | keyd leaves meta alone; no firmware export found |
 
 So right `command` is Thumb on every keyboard, and left `command` is
-Thumb too on the 360 and the Keyboardio boards (matched by the USB IDs in
-their keyd configs; the Preonic's keyd ID is not a USB ID, so only its
-right GUI key works). On the Kinesis boards, the Compose key (right Alt)
+Thumb too on the 360 and the Atreus (matched by the USB IDs in their keyd
+configs). The Preonic's keyd ID is not a USB ID, so only its right GUI
+key works. On the Kinesis boards, the Compose key (right Alt)
 acts as right `option` does on the MacBook: Control in ordinary apps,
 Command in the exception apps (5.2). So the Kinesis boards also have
 exactly one Command and one Control in every app. Each is a single line
 in `thumb_trigger_rule` or `modifier_rules`.
+
+**The Atreus and the Model 01 are different keyboards** (Adam,
+2026-11-14), and each needs its own rules:
+
+- **Atreus**: 44 keys. Each half's bottom row has five keys, plus one
+  centre key per side. On the base layer the modifiers are all holds or
+  left-side codes: Esc, Tab and Enter are Shift when held, Backspace is
+  Alt when held, Space is left GUI (Thumb) when held, and one key is
+  Ctrl.
+- **Model 01**: separate halves, each with a four-key thumb arc and a
+  palm key. Per the 2020 backup, the left arc sends Backspace, left
+  Control, left Alt and Esc, the key beside it a second left Alt, and the
+  left palm key left Shift. The right arc sends right GUI (Thumb), Space,
+  Page Up and Page Down, and the right palm key holds layer 2.
+
+Neither board sends right Control, right Alt or Compose from any key, so
+neither has a Compose-position key for A2's second role. Under A2 each
+has no Control in ordinary apps and no Command in the exception apps.
+Each needs a firmware change so that one key sends a right-side code
+Karabiner can give that role. Which key, for each board, is Adam's
+decision (bead `dc-ql65.7`).
 
 The key codes Karabiner reports for the MacBook's ISO keys (§ left of
 `1`, `` ` `` left of `Z`) are unchecked: its ISO handling has swapped

@@ -75,7 +75,10 @@ CONTROL_APPS = TERMINALS + [EMACS, ORCA] + VMS_AND_REMOTE_DESKTOPS
 # USB IDs from .config/keyd/daemon/*.conf.
 ADVANTAGE2 = [(0x29EA, 0x0102), (0x29EA, 0x0103)]
 ADVANTAGE_360 = [(0x29EA, 0x0362), (0x1D50, 0x615E)]
-KEYBOARDIO = [(0x1209, 0x2301), (0x1209, 0x2302)]  # Model 01, Atreus
+# The Keyboardio boards differ: the Atreus has two keys per side under
+# the thumbs, the Model 01 a four-key thumb arc and a palm key (spec 5.6).
+ATREUS = [(0x1209, 0x2302)]
+MODEL_01 = [(0x1209, 0x2301)]
 
 # Left-hand alpha shift on the built-in keyboard (spec 2.1): physical key
 # -> key it types. Karabiner is assumed to report the ISO key left of `1`
@@ -233,12 +236,12 @@ def toggle(typed: str, bundle: str, mods: str = "") -> list[Json]:
 
 def thumb_trigger_rule() -> Json:
     # Thumb (spec 5.1): right Command on every keyboard, plus the key in
-    # Thumb's position on keyboards that send something else there. Any GUI
-    # key is Super, and so Thumb, on Linux for the Keyboardio boards and the
-    # Advantage 360, whose keyd configs leave meta alone.
+    # Thumb's position on keyboards that send something else there: the
+    # Atreus's Space sends left GUI when held, and the Advantage 360's GUI
+    # key side is unknown. The Model 01's Thumb key sends right GUI.
     triggers = [("right_command", [])]
     triggers += [("right_control", [device(*ADVANTAGE2)])]
-    triggers += [("left_command", [device(*ADVANTAGE_360, *KEYBOARDIO)])]
+    triggers += [("left_command", [device(*ADVANTAGE_360, *ATREUS)])]
     manips = []
     for code, conditions in triggers:
         manips.append(
