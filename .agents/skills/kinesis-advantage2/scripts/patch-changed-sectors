@@ -1,0 +1,88 @@
+#!/usr/bin/env python3
+"""Write to a block device only the sectors that differ between an original
+image of it and a repaired copy, after checking the device is the expected
+one and still matches the original in those sectors. Dry run by default.
+
+A regular file may stand in for the device, to test without hardware.
+"""
+import argparse
+import os
+import subprocess
+import sys
+import time
+
+SECTOR = 512
+
+
+def sector(data: bytes, i: int) -> bytes:
+    return data[i * SECTOR:(i + 1) * SECTOR]
+
+
+def read_sectors(device: str, numbers: list[int]) -> dict[int, bytes]:
+    """Read from the device itself, not the page cache; only the sectors
+    needed, since a whole Advantage2 v-drive takes 25-50 s to read."""
+    with open(device, "rb") as f:
+        os.posix_fadvise(f.fileno(), 0, 0, os.POSIX_FADV_DONTNEED)
+        out = {}
+        for i in numbers:
+            f.seek(i * SECTOR)
+            out[i] = f.read(SECTOR)
+        return out
+
+
+def check_device(device: str, label: str, size: int) -> None:
+    if os.path.isfile(device):
+        if os.path.getsize(device) != size:
+            sys.exit(f"refusing: {device} is not {size} bytes")
+        return
+    got = subprocess.run(["lsblk", "-dn", "-o", "LABEL,MOUNTPOINTS", device],
+                         capture_output=True, text=True).stdout.strip()
+    if got != label:
+        sys.exit(f"refusing: {device} has label/mounts {got!r}, want unmounted {label!r}")
+    sectors = int(open(f"/sys/class/block/{os.path.basename(device)}/size").read())
+    if sectors * 512 != size:
+        sys.exit(f"refusing: {device} is {sectors * 512} bytes, images are {size}")
+
+
+def main() -> None:
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument("device", help="block device, e.g. /dev/sda")
+    p.add_argument("original", help="image copied from the device before repair")
+    p.add_argument("repaired", help="repaired image to write back")
+    p.add_argument("--label", default="KINESIS KB", help="expected filesystem label")
+    p.add_argument("--write", action="store_true", help="actually write")
+    a = p.parse_args()
+
+    orig = open(a.original, "rb").read()
+    fixed = open(a.repaired, "rb").read()
+    if len(orig) != len(fixed):
+        sys.exit("refusing: images differ in size")
+    check_device(a.device, a.label, len(orig))
+
+    changes = [i for i in range(len(orig) // SECTOR) if sector(orig, i) != sector(fixed, i)]
+    print(f"{len(changes)} sectors to write: {changes}")
+    current = read_sectors(a.device, changes)
+    drift = [i for i in changes if current[i] != sector(orig, i)]
+    if drift:
+        sys.exit(f"refusing: sectors changed since the original was taken: {drift}")
+    print("those sectors still match the original image")
+    if not a.write:
+        print("dry run: nothing written; rerun with --write")
+        return
+
+    start = time.monotonic()
+    with open(a.device, "r+b", buffering=0) as f:
+        for i in changes:
+            f.seek(i * SECTOR)
+            f.write(sector(fixed, i))
+        os.fsync(f.fileno())
+    print(f"flushed after {time.monotonic() - start:.1f}s", flush=True)
+    after = read_sectors(a.device, changes)
+    bad = [i for i in changes if after[i] != sector(fixed, i)]
+    if bad:
+        sys.exit(f"VERIFY FAILED for sectors {bad}")
+    print("written and verified")
+
+
+if __name__ == "__main__":
+    main()
