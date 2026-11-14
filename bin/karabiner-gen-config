@@ -321,10 +321,10 @@ def window_operations() -> list[Json]:
     for code, direction in ARROWS.items():
         m += thumb(code, aerospace(f"focus {direction}"))
         m += thumb(code, aerospace(f"focus {direction}"), "ctrl")
-    # Tiling windows move between tiles, not by pixels.
+    # Tiling windows move between tiles, not by pixels (spec 5.7).
     for code, direction in {**ARROWS, **VIM}.items():
         m += thumb(code, aerospace(f"move {direction}"), "shift")
-        m += thumb(code, aerospace(f"move {direction}"), "alt+shift")
+        m += thumb(code, aerospace(f"join-with {direction}"), "alt+shift")
     cycle = "focus --boundaries-action wrap-around-the-workspace"
     m += thumb("slash", aerospace(f"{cycle} dfs-next"))
     m += thumb("slash", aerospace(f"{cycle} dfs-prev"), "shift")
@@ -343,8 +343,9 @@ def window_operations() -> list[Json]:
     for n in range(1, 4):
         m += thumb(str(n), aerospace(f"move-node-to-monitor --focus-follows-window {n}"), "alt+shift")
     m += thumb("i", aerospace("macos-native-minimize"))
-    # Maximise and the reorganise mode's resize and layout keys wait for
-    # the tiling plan in bead dc-ql65.5.
+    m += thumb("m", aerospace("fullscreen"), "ctrl+shift")
+    # Raise means nothing when tiling; Adam chose float/tile instead (5.7).
+    m += thumb("spacebar", aerospace("layout floating tiling"))
     m += thumb("q", aerospace("close"))
     m += thumb("q", aerospace("close --quit-if-last-window"), "ctrl")
     # Modes. Thumb's own variable resets when Thumb is released.
@@ -390,19 +391,33 @@ def passthrough_rule() -> Json:
 
 
 def reorganise_rule() -> Json:
-    """Spec 3.2 reorganise mode, entered with Thumb+r."""
+    """Reorganise mode, entered with Thumb+r (spec 5.7)."""
     mode = [variable("reorganise")]
-    leave = [set_var("reorganise", 0)]
     m: list[Json] = []
-    m += manipulators("q", leave, conditions=mode)
-    m += manipulators("escape", leave, conditions=mode)
+    for code in ["q", "escape", "spacebar"]:
+        m += manipulators(code, [set_var("reorganise", 0)], conditions=mode)
     for code, direction in VIM.items():
         m += manipulators(code, aerospace(f"focus {direction}"), conditions=mode)
     for code, direction in ARROWS.items():
         m += manipulators(code, aerospace(f"move {direction}"), conditions=mode)
-        m += manipulators(code, aerospace(f"move {direction}"), "shift", mode)
-    m += manipulators("slash", aerospace("focus --boundaries-action wrap-around-the-workspace dfs-next"), conditions=mode)
-    return rule("Reorganise mode: q or Escape leaves it", m)
+        m += manipulators(code, aerospace(f"join-with {direction}"), "shift", mode)
+    # As on Linux, Left and Up shrink, Right and Down grow.
+    resize = {"left_arrow": "width -", "right_arrow": "width +", "up_arrow": "height -", "down_arrow": "height +"}
+    for code, change in resize.items():
+        m += manipulators(code, aerospace(f"resize {change}50"), "ctrl", mode)
+        m += manipulators(code, aerospace(f"resize {change}200"), "ctrl+shift", mode)
+    for typed, args in {
+        "m": "fullscreen",
+        "t": "layout tiles horizontal vertical",
+        "a": "layout accordion horizontal vertical",
+        "f": "layout floating tiling",
+        "b": "balance-sizes",
+        "0": "flatten-workspace-tree",
+    }.items():
+        m += manipulators(typed, aerospace(args), conditions=mode)
+    m += manipulators("2", aerospace("layout --root h_tiles"), "shift", mode)
+    m += manipulators("semicolon", aerospace("layout --root v_tiles"), "shift", mode)
+    return rule("Reorganise mode: q, Escape or Space leaves it", m)
 
 
 def control_app_rules() -> Json:

@@ -524,11 +524,10 @@ Stubs and gaps, all unchecked on the Mac:
   (clear notifications), Thumb+Alt+Shift+`/` (binding search),
   Thumb+Ctrl+`8` (dictation), Orca's `Ctrl+Alt+o` token picker (uses
   rofi), and pointer control (3.4, needs IT approval).
-- Thumb+Space (raise), Thumb+`l` (lower), Thumb+Ctrl+`i` (restore),
-  Thumb+Shift+`s` (sticky) and the reorganise mode's number presets have
-  no AeroSpace equivalent. Maximise, resize and the other tiling
-  operations wait for bead `dc-ql65.5` (Plan Thumb bindings for AeroSpace
-  tiling operations).
+- Raise, Thumb+`l` (lower), Thumb+Ctrl+`i` (restore), Thumb+Shift+`s`
+  (sticky) and most of the reorganise mode's number presets have no
+  AeroSpace equivalent. The tiling operations that replace them are in
+  5.7.
 
 [as-guide]: https://nikitabobko.github.io/AeroSpace/guide
 [as-18]: https://github.com/nikitabobko/AeroSpace/issues/18
@@ -581,7 +580,7 @@ toggle floating?"), so it is the first candidate to revisit.
 | Thumb+Alt+`1` .. `6`, Thumb+Alt+`,` / `.` | Take window to workspace | `move-node-to-workspace <n>` / `prev` / `next` |
 | Thumb+Shift+`,` / `.` | Focus monitor | `focus-monitor left` / `right` |
 | Thumb+Alt+Shift+`,` / `.` | Move window to monitor | `move-node-to-monitor left` / `right` |
-| Thumb+`r` | Reorganise mode | AeroSpace binding mode `reorg` (below) |
+| Thumb+`r` | Reorganise mode | Karabiner variable `reorganise` (below) |
 | Thumb+Ctrl+`p` | Pass-through mode | Thumb layer off until `q` (Karabiner variable) |
 
 Unbound on the Mac: Thumb+`l` (lower), Thumb+Ctrl+`i` (restore minimised),
@@ -609,6 +608,16 @@ Thumb+Shift+`m` / Thumb+Ctrl+`m` (maximise one way), Thumb+Shift+`s`
 
 The other numbered presets (halves, quarters, thirds) have no tiling
 equivalent and are dropped.
+
+Built in `bin/karabiner-gen-config` (`window_operations()` and
+`reorganise_rule()`). The mode is a Karabiner variable, like pass-through,
+rather than an AeroSpace binding mode: Karabiner then sees the keys before
+the alpha shift and the editing rules change them, and Thumb bindings
+still work inside the mode. Command syntax checked against AeroSpace's
+[command reference][aerospace-commands] and its
+[`resize` man page source][aerospace-resize]; nothing has run on a Mac.
+
+[aerospace-resize]: https://github.com/nikitabobko/AeroSpace/blob/main/docs/aerospace-resize.adoc
 
 [aerospace-commands]: https://nikitabobko.github.io/AeroSpace/commands
 
