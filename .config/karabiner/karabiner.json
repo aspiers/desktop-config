@@ -3802,7 +3802,7 @@
                                 },
                                 "to": [
                                     {
-                                        "shell_command": "/opt/homebrew/bin/aerospace workspace --no-stdin prev"
+                                        "shell_command": "printf '%s\\n' 1 2 3 4 5 6 | /opt/homebrew/bin/aerospace workspace --stdin --wrap-around prev"
                                     }
                                 ],
                                 "conditions": [
@@ -3825,7 +3825,7 @@
                                 },
                                 "to": [
                                     {
-                                        "shell_command": "/opt/homebrew/bin/aerospace move-node-to-workspace --no-stdin --focus-follows-window prev"
+                                        "shell_command": "printf '%s\\n' 1 2 3 4 5 6 | /opt/homebrew/bin/aerospace move-node-to-workspace --stdin --wrap-around --focus-follows-window prev"
                                     }
                                 ],
                                 "conditions": [
@@ -3843,7 +3843,7 @@
                                 },
                                 "to": [
                                     {
-                                        "shell_command": "/opt/homebrew/bin/aerospace workspace --no-stdin next"
+                                        "shell_command": "printf '%s\\n' 1 2 3 4 5 6 | /opt/homebrew/bin/aerospace workspace --stdin --wrap-around next"
                                     }
                                 ],
                                 "conditions": [
@@ -3866,7 +3866,7 @@
                                 },
                                 "to": [
                                     {
-                                        "shell_command": "/opt/homebrew/bin/aerospace move-node-to-workspace --no-stdin --focus-follows-window next"
+                                        "shell_command": "printf '%s\\n' 1 2 3 4 5 6 | /opt/homebrew/bin/aerospace move-node-to-workspace --stdin --wrap-around --focus-follows-window next"
                                     }
                                 ],
                                 "conditions": [
