@@ -257,7 +257,9 @@ transition:
 
 1. **No laptop fallback with external hardware present.** If sysfs or X reports
    a connected external output, an internal-only target is ineligible even if
-   autorandr detects it.
+   autorandr detects it. An internal-only application already dispatched when
+   the external output appears is stopped, and stays represented as stopping
+   (rule 13) until the stop is acknowledged.
 2. **A probe is not profile authorization.** A safe activation probe requires
    one checksum-valid base block exactly matching one saved profile, an exact
    connected topology, one inactive external output, one active internal

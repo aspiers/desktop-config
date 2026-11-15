@@ -374,10 +374,14 @@ def _check_action_authorization(state: State) -> None:
             "application admission comes from a future event generation",
         )
         if observation is not None:
+            # A dispatched worker cannot be recalled instantly: the reducer
+            # revokes it by stopping it, and must survive the evidence that
+            # caused the stop (dc-tdco: crashed here on a Samsung link flap).
             _require(
                 not (
                     observation.has_external_hardware
                     and application.scope is ProfileScope.INTERNAL_ONLY
+                    and application.lifecycle is not ActionLifecycle.STOPPING
                 ),
                 "internal-only application is forbidden by external hardware evidence",
             )
@@ -517,7 +521,11 @@ def _check_numbered_safety_rules(state: State) -> None:  # noqa: C901
                 state.candidate.scope is not ProfileScope.INTERNAL_ONLY,
                 "external hardware forbids an internal-only candidate",
             )
-        if state.application is not None:
+        # Rule 13 keeps a stopping worker represented until acknowledged.
+        if (
+            state.application is not None
+            and state.application.lifecycle is not ActionLifecycle.STOPPING
+        ):
             _require(
                 state.application.scope is not ProfileScope.INTERNAL_ONLY,
                 "external hardware forbids an internal-only application",

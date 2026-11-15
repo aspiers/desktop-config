@@ -40,7 +40,13 @@ from monitor_controller.model import (
     State,
     WorkerUnit,
 )
-from monitor_controller.simulation.scenario import load_scenarios, run_scenario
+from monitor_controller.reducer import reduce
+from monitor_controller.simulation.scenario import (
+    event_from_data,
+    initial_state,
+    load_scenarios,
+    run_scenario,
+)
 
 _SCENARIOS: Path = Path(__file__).parent / "scenarios" / "reducer-scenarios.json"
 _INSTANCE: ControllerInstanceId = ControllerInstanceId(UUID(int=901))
@@ -241,3 +247,99 @@ def test_unplug_proof_requires_retained_external_intent() -> None:
 
     with pytest.raises(ControllerInvariantError, match="retained external intent"):
         assert_controller_invariants(invalid)
+
+
+def _observation_data(
+    at_ms: int, generation: int, sample: int, *, external: bool
+) -> dict[str, object]:
+    profile = "samsung" if external else "celtic"
+    layout = f"layouts/{profile}.yaml"
+    outputs = ["DP-1"] if external else []
+    return {
+        "type": "observation",
+        "at_ms": at_ms,
+        "event_generation": generation,
+        "observation_generation": sample,
+        "base_identity_outputs": outputs,
+        "complete_edid_outputs": outputs,
+        "configuration_hashes": {
+            "desktop/common.conf": "sha256:desktop:common",
+            layout: f"sha256:layout:{profile}",
+        },
+        "current_profile": None,
+        "exact_profile": None,
+        "external_outputs": outputs,
+        "external_state": "known" if external else "none",
+        "identity_profile": None,
+        "internal_edid_complete": False,
+        "key": f"{profile}-{sample}",
+        "physical_token": f"p-{profile}",
+        "probe_internal_output": None,
+        "probe_mode": None,
+        "probe_output": None,
+        "target_layout": layout,
+        "target_profile": profile,
+        "target_scope": "external" if external else "internal",
+        "valid": True,
+    }
+
+
+def test_external_return_during_laptop_apply_stops_it_without_crashing() -> None:
+    """A monitor blip outlasting the unplug proof admits the laptop profile.
+
+    When the monitor returns while that apply is dispatched, the reducer
+    stops the worker. Rule 13 keeps the stopping worker represented, so the
+    no-laptop-fallback invariant must not kill the controller (dc-tdco).
+    """
+    state = initial_state(
+        {
+            "phase": "quiescent",
+            "physical_token": "p-samsung",
+            "desktop_finalized_profile": "samsung",
+            "stable_x_profile": "samsung",
+            "external_intent": True,
+        }
+    )
+    laptop = [
+        _observation_data(at_ms, 0, sample, external=False)
+        for sample, at_ms in enumerate((0, 1, 1100, 4000), start=1)
+    ]
+    events: list[dict[str, object]] = [
+        *laptop,
+        {
+            "type": "dispatch",
+            "at_ms": 4003,
+            "kind": "application",
+            "unit": "monitor-application@scenario.service",
+        },
+        {"type": "drm_hint", "at_ms": 4500, "event_generation": 1},
+        _observation_data(4600, 1, 5, external=True),
+    ]
+    for data in events:
+        state = reduce(state, event_from_data(data, state)).state
+
+    assert state.application is not None
+    assert state.application.scope is ProfileScope.INTERNAL_ONLY
+    assert state.application.lifecycle is ActionLifecycle.STOPPING
+
+    still_running = replace(
+        state,
+        application=replace(state.application, lifecycle=ActionLifecycle.DISPATCHED),
+    )
+    with pytest.raises(ControllerInvariantError, match="internal-only application"):
+        assert_controller_invariants(still_running)
+
+    acknowledged = {
+        "type": "cancellation_acknowledged",
+        "at_ms": 4700,
+        "kind": "application",
+        "exit_status": 143,
+        "terminal_lifecycle": "cancelled",
+    }
+    state = reduce(state, event_from_data(acknowledged, state)).state
+    state = reduce(
+        state, event_from_data(_observation_data(4800, 1, 6, external=True), state)
+    ).state
+
+    assert state.application is not None
+    assert state.application.scope is not ProfileScope.INTERNAL_ONLY
