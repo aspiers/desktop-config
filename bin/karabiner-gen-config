@@ -591,6 +591,27 @@ def check_no_clashes(manips: list[Json]) -> None:
         seen[signature] = manip
 
 
+def modified_devices() -> list[Json]:
+    """Make Karabiner modify the external keyboards' events. It leaves some
+    devices alone by default, such as ones that also report a mouse, and
+    left the Advantage 360's alone, so its Thumb key did nothing (Adam,
+    2026-11-15). Device entries must match exactly, pointing device or not,
+    so each ID gets both."""
+    return [
+        {
+            "identifiers": {
+                "vendor_id": vendor,
+                "product_id": product,
+                "is_keyboard": True,
+                "is_pointing_device": pointing,
+            },
+            "ignore": False,
+        }
+        for vendor, product in ADVANTAGE2 + ADVANTAGE_360 + ATREUS + MODEL_01
+        for pointing in (False, True)
+    ]
+
+
 def configuration() -> Json:
     bound = jumps() + window_operations() + other_bindings()
     check_no_clashes(bound)
@@ -615,6 +636,7 @@ def configuration() -> Json:
                 # we should be using the ISO setting").
                 "virtual_hid_keyboard": {"keyboard_type_v2": "ansi"},
                 "complex_modifications": {"rules": rules},
+                "devices": modified_devices(),
             }
         ]
     }

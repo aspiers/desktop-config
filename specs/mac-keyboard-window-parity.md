@@ -511,6 +511,10 @@ Thumb on each keyboard, worked out from this repository:
 | Keyboardio Model 01 | right GUI, on the right thumb arc | Adam's `Model01-Firmware` fork, `aspiers` branch: the 2020 Chrysalis backup (`layer-0.json`, commit `8b4b6cd`) and the older sketch agree |
 | Keyboardio Preonic | a GUI key, side unknown | keyd leaves meta alone; no firmware export found |
 
+Karabiner remaps a keyboard only when its "Modify events" is on, and it
+left that off for the Advantage 360 (Adam, 2026-11-15), so the generator
+turns it on for every external keyboard listed here, by USB ID.
+
 So right `command` is Thumb on every keyboard, and left `command` is
 Thumb too on the 360 and the Atreus (matched by the USB IDs in their keyd
 configs). The Preonic's keyd ID is not a USB ID, so only its right GUI

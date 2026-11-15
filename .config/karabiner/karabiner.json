@@ -8775,7 +8775,117 @@
                         ]
                     }
                 ]
-            }
+            },
+            "devices": [
+                {
+                    "identifiers": {
+                        "vendor_id": 10730,
+                        "product_id": 258,
+                        "is_keyboard": true,
+                        "is_pointing_device": false
+                    },
+                    "ignore": false
+                },
+                {
+                    "identifiers": {
+                        "vendor_id": 10730,
+                        "product_id": 258,
+                        "is_keyboard": true,
+                        "is_pointing_device": true
+                    },
+                    "ignore": false
+                },
+                {
+                    "identifiers": {
+                        "vendor_id": 10730,
+                        "product_id": 259,
+                        "is_keyboard": true,
+                        "is_pointing_device": false
+                    },
+                    "ignore": false
+                },
+                {
+                    "identifiers": {
+                        "vendor_id": 10730,
+                        "product_id": 259,
+                        "is_keyboard": true,
+                        "is_pointing_device": true
+                    },
+                    "ignore": false
+                },
+                {
+                    "identifiers": {
+                        "vendor_id": 10730,
+                        "product_id": 866,
+                        "is_keyboard": true,
+                        "is_pointing_device": false
+                    },
+                    "ignore": false
+                },
+                {
+                    "identifiers": {
+                        "vendor_id": 10730,
+                        "product_id": 866,
+                        "is_keyboard": true,
+                        "is_pointing_device": true
+                    },
+                    "ignore": false
+                },
+                {
+                    "identifiers": {
+                        "vendor_id": 7504,
+                        "product_id": 24926,
+                        "is_keyboard": true,
+                        "is_pointing_device": false
+                    },
+                    "ignore": false
+                },
+                {
+                    "identifiers": {
+                        "vendor_id": 7504,
+                        "product_id": 24926,
+                        "is_keyboard": true,
+                        "is_pointing_device": true
+                    },
+                    "ignore": false
+                },
+                {
+                    "identifiers": {
+                        "vendor_id": 4617,
+                        "product_id": 8962,
+                        "is_keyboard": true,
+                        "is_pointing_device": false
+                    },
+                    "ignore": false
+                },
+                {
+                    "identifiers": {
+                        "vendor_id": 4617,
+                        "product_id": 8962,
+                        "is_keyboard": true,
+                        "is_pointing_device": true
+                    },
+                    "ignore": false
+                },
+                {
+                    "identifiers": {
+                        "vendor_id": 4617,
+                        "product_id": 8961,
+                        "is_keyboard": true,
+                        "is_pointing_device": false
+                    },
+                    "ignore": false
+                },
+                {
+                    "identifiers": {
+                        "vendor_id": 4617,
+                        "product_id": 8961,
+                        "is_keyboard": true,
+                        "is_pointing_device": true
+                    },
+                    "ignore": false
+                }
+            ]
         }
     ]
 }
