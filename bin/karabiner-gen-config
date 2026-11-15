@@ -324,6 +324,8 @@ def jumps() -> list[Json]:
     m += thumb("c", jump(r"tab --open https://calendar.google.com/calendar/u/0 '^https://calendar\.google\.com/calendar/u/0'"), "shift")
     m += thumb("c", jump("outlook calendar"), "ctrl")
     m += thumb("d", shell("open -a Discord"), "ctrl")
+    # Linux: xfce4-display-settings.
+    m += thumb("d", shell("open 'x-apple.systempreferences:com.apple.Displays-Settings.extension'"), "ctrl+alt")
     m += thumb("e", jump(r"tab --pick --open https://linear.app/ '^https://linear\.app/'"), "shift")
     m += thumb("f", jump(r"tab --pick --open https://www.messenger.com/ '^https://(www\.)?messenger\.com/'"), "ctrl")
     m += thumb("g", jump(r"tab --open https://meet.google.com/ '^https://meet\.google\.com/'"), "shift")

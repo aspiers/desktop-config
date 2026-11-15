@@ -369,6 +369,7 @@ Both need IT approval on the work Mac; Karabiner is assumed allowed.
 | Thumb+Ctrl+`s` / `w` | Screenshot of a region / window |
 | Thumb+Ctrl+Space | App launcher |
 | Thumb+Ctrl+Alt+`l` | Lock screen |
+| Thumb+Ctrl+Alt+`d` | Display settings (Linux: `xfce4-display-settings`; macOS: System Settings > Displays) |
 | Thumb+`=` | Clear notifications |
 | Thumb+Alt+Shift+`/` | Search every key binding |
 | Thumb+Ctrl+`8` | Push-to-talk recording (dictation) |
