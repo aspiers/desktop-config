@@ -326,6 +326,16 @@ path never depended on any of it.
   need one profile per input used. Its DisplayPort profile wildcards
   volatile bytes 352–383 while retaining the stable manufacturer,
   model, serial, timing data, and final 16-byte suffix.
+- The G75F can also change its **base EDID block** on the same input. In
+  November 2026 it began reporting product code `0x7968` instead of
+  `0x7967`, with a 30 Hz rather than 48 Hz vertical-rate floor and
+  different standard timings. A wildcard can't cover this: the
+  controller's base-identity fallback and the desktop planner both need
+  the whole 128-byte base block fixed. So each base variant gets its own
+  profile (`celtic+Samsung-Odyssey-G75F-7968`), mapped to the same
+  layout. If a reconnect logs `no eligible profile or probe candidate`,
+  compare the product code in `/sys/class/drm/*/edid` with the saved
+  profiles first.
 - The G75F DisplayPort EDID itself marks its first detailed timing,
   `3440x1440@59.97`, as preferred even though CTA VIC 126/193 advertise
   `5120x2160@60/120` and the same EDID advertises VESA DSC 1.2a. Therefore
