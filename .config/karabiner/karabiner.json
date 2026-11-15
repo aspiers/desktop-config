@@ -4047,7 +4047,7 @@
                                 },
                                 "to": [
                                     {
-                                        "shell_command": "/opt/homebrew/bin/aerospace focus-monitor left"
+                                        "shell_command": "/opt/homebrew/bin/aerospace focus-monitor --wrap-around prev"
                                     }
                                 ],
                                 "conditions": [
@@ -4071,7 +4071,7 @@
                                 },
                                 "to": [
                                     {
-                                        "shell_command": "/opt/homebrew/bin/aerospace move-node-to-monitor --focus-follows-window left"
+                                        "shell_command": "/opt/homebrew/bin/aerospace move-node-to-monitor --wrap-around --focus-follows-window prev"
                                     }
                                 ],
                                 "conditions": [
@@ -4094,7 +4094,7 @@
                                 },
                                 "to": [
                                     {
-                                        "shell_command": "/opt/homebrew/bin/aerospace focus-monitor right"
+                                        "shell_command": "/opt/homebrew/bin/aerospace focus-monitor --wrap-around next"
                                     }
                                 ],
                                 "conditions": [
@@ -4118,7 +4118,7 @@
                                 },
                                 "to": [
                                     {
-                                        "shell_command": "/opt/homebrew/bin/aerospace move-node-to-monitor --focus-follows-window right"
+                                        "shell_command": "/opt/homebrew/bin/aerospace move-node-to-monitor --wrap-around --focus-follows-window next"
                                     }
                                 ],
                                 "conditions": [

@@ -304,8 +304,8 @@ the Linux target, bound where that app is installed.
 | Thumb+`,` / `.` | Previous / next workspace |
 | Thumb+Alt+`1` .. `6` | Take window to workspace 1 to 6 |
 | Thumb+Alt+`,` / `.` | Take window to previous / next workspace |
-| Thumb+Shift+`,` / `.` | Move focus to the monitor on the left / right |
-| Thumb+Alt+Shift+`,` / `.` | Move window to the monitor on the left / right |
+| Thumb+Shift+`,` / `.` | Move focus to the monitor on the left / right (macOS: previous / next monitor, wrapping round, however the monitors are arranged; Adam, 2026-11-15) |
+| Thumb+Alt+Shift+`,` / `.` | Move window to the monitor on the left / right (macOS: previous / next, as above) |
 | Thumb+Alt+Shift+`1` / `2` / `3` | Move window to monitor 1 / 2 / 3 |
 | Thumb+Space | Raise |
 | Thumb+`l` | Lower |
