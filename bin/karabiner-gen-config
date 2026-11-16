@@ -459,6 +459,9 @@ def other_bindings() -> list[Json]:
     # Linux: Shift+Control+Alt+Super+l runs xflock4 (.fluxbox/keys.erb);
     # the spec first left out Shift (Adam, 2026-11-16).
     m += thumb("l", key("q", "control", "command"), "ctrl+alt+shift")
+    # Linux: Control+Alt+Super+b runs blank-all-screens. macOS sleeps the
+    # displays without suspending (Adam, 2026-11-16).
+    m += thumb("b", shell("pmset displaysleepnow"), "ctrl+alt")
     m += dictation_bindings()
     return m
 
@@ -479,6 +482,17 @@ def dictation_bindings() -> list[Json]:
     # (Adam, 2026-11-14), so vk_none goes last to make it a tap.
     tap = [{"consumer_key_code": "dictation"}, {"key_code": "vk_none"}]
     return [{**manip, "to_after_key_up": tap[:1]} for manip in thumb("8", tap)] + thumb("9", tap)
+
+
+def kinesis_end_rule() -> Json:
+    """Spec 2.4: the Kinesis End key sends Esc (firmware), and with Thumb
+    gives End, which was in the spec but never built (Adam, 2026-11-16).
+    End as PC-style editing has it (2.5): Cmd+Right in ordinary apps, End
+    in the exception apps, Shift selecting."""
+    kinesis = [device(*ADVANTAGE2, *ADVANTAGE_360)]
+    m = manipulators("escape", key("right_arrow", "command"), conditions=[THUMB] + kinesis + [apps(CONTROL_APPS, negate=True, paths=CONTROL_APP_PATHS)], optional=["shift"])
+    m += manipulators("escape", key("end"), conditions=[THUMB] + kinesis, optional=["shift"])
+    return rule("Kinesis: Thumb+End key (which sends Esc) gives End (spec 2.4)", m)
 
 
 def block_unbound() -> Json:
@@ -843,6 +857,7 @@ def configuration() -> Json:
     rules = [
         passthrough_rule(),
         thumb_trigger_rule(),
+        kinesis_end_rule(),
         rule("Thumb layer: app jumps, window management, volume and more (spec 3)", bound),
         block_unbound(),
         reorganise_rule(),

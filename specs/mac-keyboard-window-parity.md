@@ -180,7 +180,9 @@ The base layout is US, with UK changes:
 Source: keyd partials `kinesis-left-thumb-pad`, `kinesis-right-thumb-pad`.
 
 - Left pad: Delete key = Alt, Alt key = Delete, Home key = AltGr (with
-  Thumb, Home), End key = Esc (with Thumb, End).
+  Thumb, Home), End key = Esc (with Thumb, End). On the Mac, Thumb+End
+  gives End as 2.5 has it, `Cmd+Right` outside the exception apps (built
+  2026-11-16; Adam noticed it was missing).
 - Right pad: Right Ctrl = **Thumb**, Right Alt = Compose.
 
 ### 2.5 PC-style editing on macOS
@@ -398,6 +400,7 @@ than shown, and it cannot do Neru's hints.
 | Thumb+Ctrl+`s` / `w` | Screenshot of a region / window |
 | Thumb+Ctrl+Space | App launcher |
 | Thumb+Ctrl+Alt+Shift+`l` | Lock screen (`xflock4`; Shift was first left out here, Adam, 2026-11-16) |
+| Thumb+Ctrl+Alt+`b` | Blank the screens (`blank-all-screens`; macOS: `pmset displaysleepnow`; Adam, 2026-11-16) |
 | Thumb+Ctrl+Alt+`d` | Display settings (Linux: `xfce4-display-settings`; macOS: System Settings > Displays, toggled) |
 | Thumb+`=` | Clear notifications |
 | Thumb+Alt+Shift+`/` | Search every key binding |
