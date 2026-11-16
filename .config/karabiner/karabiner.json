@@ -726,6 +726,30 @@
                                 },
                                 "to": [
                                     {
+                                        "shell_command": "~/bin/mac-jump cycle --toggle '^com\\.microsoft\\.Outlook$'"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_if",
+                                        "name": "thumb",
+                                        "value": 1
+                                    },
+                                    {
+                                        "type": "frontmost_application_if",
+                                        "bundle_identifiers": [
+                                            "^com\\.microsoft\\.Outlook$"
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "m"
+                                },
+                                "to": [
+                                    {
                                         "shell_command": "~/bin/mac-jump outlook mail"
                                     }
                                 ],

@@ -250,7 +250,7 @@ Thumb+letter, Linux and the agreed Mac / Windows targets:
 | `h` | Picker of GitHub tabs in Chrome | same |
 | `j` | Jump menu | **Jira** web app (C, T; Adam, 2026-11-16) |
 | `k` | Emacs: `org-capture` | same |
-| `m` | Mail menu (`rofi-mail-menu`) | **Outlook mail** |
+| `m` | Mail menu (`rofi-mail-menu`) | **Outlook mail**; with Outlook in front, cycles its windows and hides it after the last (C, T; Adam, 2026-11-16) |
 | `n` | Emacs: personal note | same |
 | `o` | Org menu (`rofi-org-menu`) | **Teams Planner** (focus or launch) |
 | `p` | Volume control (`pavucontrol`) (T) | Sound settings (T) |

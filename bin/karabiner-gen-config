@@ -325,6 +325,10 @@ def jumps() -> list[Json]:
     # bundle ID is Chrome's ID for it (Adam, 2026-11-16).
     m += thumb("j", jump(rf"cycle --toggle --launch {JIRA_APP} '^{re.escape(JIRA_APP)}$'"))
     m += thumb("k", jump("emacs '(org-capture)'"))
+    # With Outlook in front, cycle its windows and hide it after the last;
+    # otherwise go to its mail (Adam, 2026-11-16).
+    outlook = r"^com\.microsoft\.Outlook$"
+    m += thumb("m", jump(f"cycle --toggle '{outlook}'"), extra=[apps([outlook])])
     m += thumb("m", jump("outlook mail"))
     m += thumb("n", jump("emacs '(as-find-personal-note)'"))
     m += thumb("o", jump("teams planner"))
