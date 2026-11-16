@@ -7,7 +7,7 @@
 #
 # Usage:
 #   mac-jump cycle [--launch BUNDLE_ID] BUNDLE_ID_REGEX
-#   mac-jump tab [--pick|--toggle] [--app-window] [--open URL] URL_REGEX
+#   mac-jump tab [--pick|--toggle] [--app-window] [--profile DIR] [--open URL] URL_REGEX
 #   mac-jump emacs ELISP|FILE
 #   mac-jump outlook mail|calendar
 #   mac-jump teams chat|planner|meeting
@@ -152,13 +152,17 @@ pick() {
 }
 
 tab() {
-    local mode=focus open_url='' app_window=''
+    local mode=focus open_url='' app_window='' profile=''
     while [ $# -gt 1 ]; do
         case $1 in
             --pick) mode=pick ;;
             --toggle) mode=toggle ;;
             --app-window) app_window=1 ;;
             --open) open_url=$2; shift ;;
+            # Chrome profile folder to open the URL in, such as "Profile 1".
+            # Finding an existing tab still searches every profile: Chrome's
+            # AppleScript does not say which profile a window belongs to.
+            --profile) profile=$2; shift ;;
             *) die "tab: unknown option $1" ;;
         esac
         shift
@@ -180,8 +184,13 @@ tab() {
             ;;
     esac
     [ "$result" = none ] && [ -n "$open_url" ] || return 0
-    if [ -n "$app_window" ]; then
+    # No arrays: an empty one is "unbound" under set -u in macOS's bash 3.2.
+    if [ -n "$app_window" ] && [ -n "$profile" ]; then
+        open -na "$CHROME" --args --profile-directory="$profile" --app="$open_url"
+    elif [ -n "$app_window" ]; then
         open -na "$CHROME" --args --app="$open_url"
+    elif [ -n "$profile" ]; then
+        open -na "$CHROME" --args --profile-directory="$profile" "$open_url"
     else
         open -a "$CHROME" "$open_url"
     fi

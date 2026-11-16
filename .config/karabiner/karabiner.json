@@ -1527,7 +1527,7 @@
                                 },
                                 "to": [
                                     {
-                                        "shell_command": "~/bin/mac-jump tab --open https://calendar.google.com/calendar/u/0 '^https://calendar\\.google\\.com/calendar/u/0'"
+                                        "shell_command": "~/bin/mac-jump tab --profile 'Profile 1' --open https://calendar.google.com/calendar/u/0 '^https://calendar\\.google\\.com/calendar/u/0'"
                                     }
                                 ],
                                 "conditions": [
@@ -1550,7 +1550,7 @@
                                 },
                                 "to": [
                                     {
-                                        "shell_command": "~/bin/mac-jump tab --open https://calendar.google.com/calendar/u/0 '^https://calendar\\.google\\.com/calendar/u/0'"
+                                        "shell_command": "~/bin/mac-jump tab --profile 'Profile 1' --open https://calendar.google.com/calendar/u/0 '^https://calendar\\.google\\.com/calendar/u/0'"
                                     }
                                 ],
                                 "conditions": [

@@ -241,6 +241,10 @@ def rule(description: str, manips: list[Json]) -> Json:
 
 THUMB = variable("thumb")
 
+# Adam's personal Chrome profile folder, from chrome://version; the other
+# is work's (Adam, 2026-11-16).
+PERSONAL_CHROME_PROFILE = "Profile 1"
+
 # What Thumb+8 (push-to-talk) and Thumb+9 (toggle) dictate with:
 # "macos" for macOS Dictation, "sussurro" to send Sussurro's hotkeys.
 DICTATION = "macos"
@@ -321,7 +325,11 @@ def jumps() -> list[Json]:
     m += thumb("a", shell("open -a Anytype"), "shift")
     m += thumb("a", jump(r"tab --toggle --app-window --open https://open.spotify.com/ '^https://open\.spotify\.com/'"), "ctrl")
     m += thumb("b", jump(r"tab --toggle --app-window --open http://localhost:19847/ '^http://localhost:19847/'"), "ctrl")
-    m += thumb("c", jump(r"tab --open https://calendar.google.com/calendar/u/0 '^https://calendar\.google\.com/calendar/u/0'"), "shift")
+    m += thumb(
+        "c",
+        jump(rf"tab --profile '{PERSONAL_CHROME_PROFILE}' --open https://calendar.google.com/calendar/u/0 '^https://calendar\.google\.com/calendar/u/0'"),
+        "shift",
+    )
     m += thumb("c", jump("outlook calendar"), "ctrl")
     m += thumb("d", shell("open -a Discord"), "ctrl")
     # Linux: xfce4-display-settings.
