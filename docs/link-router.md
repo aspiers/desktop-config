@@ -1,0 +1,54 @@
+# link-router: open links in the right Chrome profile
+
+Chrome opens links from other apps in whichever profile was used last.
+link-router is set as the default browser instead.  It opens each link
+in the Chrome profile its rules give, and asks about links that match
+no rule.
+
+## Rules
+
+[`.config/link-router/rules.yaml`](../.config/link-router/rules.yaml)
+is shared by both versions.  It lists the profiles to offer, each with
+a label and Chrome's folder for it (`dir`, as on `chrome://version`),
+then the rules, first match wins.  Its header comments describe the
+patterns.  Running `link-router` (or `link-router.ps1`) with no link
+opens the file for editing.
+
+A link matching no rule brings up a picker.  Choosing a profile opens
+the link there once.  Adding a rule appends it to the rules file, so it
+shows up in `git diff` and travels to the other machines from there.
+
+## macOS
+
+- `bin/link-router` (Bash 3.2) matches, asks and opens.  The pickers
+  are `osascript` dialogs, the only kind a shell script can show
+  without extra software.
+- `.local/lib/link-router/install-macos` builds
+  `~/Applications/LinkRouter.app` and offers to make it the default
+  browser.  The app is an `osacompile` applet that only passes each link
+  to `~/bin/link-router`, because macOS delivers links to apps as Apple
+  Events, which a shell script cannot receive.  It needs no rebuild when
+  the script or rules change.  `--uninstall` removes it.
+- Errors go to `~/Library/Logs/link-router.log`.
+
+Needs `yq` (and `defaultbrowser` to set the default from the command
+line); the installer gets both from Homebrew.
+
+## Windows
+
+- `.local/lib/link-router/windows/link-router.ps1` (Windows PowerShell
+  5.1) does the same, with a WinForms picker.  It reads the rules from
+  the checkout it lives in, as this repository is not stowed on Windows.
+- `install.ps1` in the same folder registers it as a browser for the
+  current user and opens Settings at Default apps, where Windows insists
+  the default is chosen by hand.  `-Uninstall` removes it.
+- Errors go to `%LOCALAPPDATA%\link-router\link-router.log`.
+
+Needs `yq` (`winget install MikeFarah.yq`); the installer gets it.
+
+## Tests
+
+`bin/test-link-router` and `windows/test-link-router.ps1` check the
+matching and the picker's outcomes, with the dialogs replaced by canned
+answers.  Both run on Linux too.  Keep `matches()` in the Bash script
+and `Test-Match` in the PowerShell one in step.

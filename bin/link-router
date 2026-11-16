@@ -1,0 +1,204 @@
+#!/bin/bash
+#
+# Open links in the right Chrome profile on macOS, by the rules in
+# ~/.config/link-router/rules.yaml.  A link matching no rule brings up
+# a picker: open it once in a chosen profile, or add a rule for it.
+#
+# The default browser is LinkRouter.app, a small handler built by
+# .local/lib/link-router/install-macos, which runs this script with
+# each link.  .local/lib/link-router/windows/link-router.ps1 is the
+# Windows version and reads the same rules file.  See docs/link-router.md.
+#
+# Usage:
+#   link-router URL...
+#   link-router --match URL    print the profile id the rules give URL
+#   link-router                open the rules file for editing
+#
+# Environment:
+#   LINK_ROUTER_RULES    rules file (default ~/.config/link-router/rules.yaml)
+#   LINK_ROUTER_CHROME   app to open links in (default "Google Chrome")
+#   LINK_ROUTER_DRY_RUN  if set, print what would be opened instead
+#
+# Needs yq (https://github.com/mikefarah/yq).
+# Written for macOS's /bin/bash 3.2: no mapfile or associative arrays.
+
+set -u
+
+# LinkRouter.app runs this without Homebrew on PATH.
+PATH="/opt/homebrew/bin:$HOME/.homebrew/bin:/usr/local/bin:$PATH"
+RULES=${LINK_ROUTER_RULES:-$HOME/.config/link-router/rules.yaml}
+CHROME=${LINK_ROUTER_CHROME:-Google Chrome}
+LOG=${LINK_ROUTER_LOG:-$HOME/Library/Logs/link-router.log}
+ADD_RULE='Add a rule…'
+
+# Nothing shows output when run from LinkRouter.app, so keep errors
+# where they can be found.
+if ! [ -t 2 ]; then
+    mkdir -p "$(dirname "$LOG")" && exec 2>>"$LOG"
+fi
+
+die() {
+    echo "$(date '+%F %T') link-router: $*" >&2
+    exit 1
+}
+
+command -v yq >/dev/null || die "yq not found; brew install yq"
+[ -r "$RULES" ] || die "cannot read $RULES"
+
+# The host of URL $1, lower-cased, without user info or port.
+url_host() {
+    printf '%s\n' "$1" |
+        sed -E 's#^[A-Za-z][A-Za-z0-9+.-]*://##; s#[/?\#].*##; s#^.*@##; s#:[0-9]*$##' |
+        tr '[:upper:]' '[:lower:]'
+}
+
+# The path of URL $1, without query or fragment; "/" when empty.
+url_path() {
+    local path
+    path=$(printf '%s\n' "$1" |
+        sed -E 's#^[A-Za-z][A-Za-z0-9+.-]*://[^/?\#]*##; s#[?\#].*##')
+    echo "${path:-/}"
+}
+
+# Whether rule pattern $1 (lower-cased) matches host $2 and path $3.
+# Keep in step with Test-Match in windows/link-router.ps1.
+matches() {
+    local pattern=$1 host=$2 path=$3 target=$2
+    case $pattern in
+        */*) target=$host$path ;;
+    esac
+    case $pattern in
+        *[*?[]* | */*)
+            # Unquoted on the right of == so it is a glob.
+            # shellcheck disable=SC2053
+            [[ $target == $pattern ]] ;;
+        *)
+            # A bare domain covers its subdomains too.
+            [ "$host" = "$pattern" ] || [[ $host == *."$pattern" ]] ;;
+    esac
+}
+
+# Print the profile id of the first rule matching URL $1, if any.
+route() {
+    local host path pattern profile
+    host=$(url_host "$1")
+    path=$(url_path "$1")
+    while IFS=$'\t' read -r pattern profile; do
+        [ -n "$pattern" ] || continue
+        if matches "$pattern" "$host" "$path"; then
+            echo "$profile"
+            return 0
+        fi
+    done < <(yq -r '.rules // [] | .[] | [.match, .profile] | @tsv' "$RULES" |
+        awk -F'\t' -v OFS='\t' '{ $1 = tolower($1) } 1')
+    return 1
+}
+
+# Chrome's folder for the profile with id $1; dir_mac overrides dir.
+profile_dir() {
+    LR_ID=$1 yq -r '.profiles[] | select(.id == strenv(LR_ID)) | (.dir_mac // .dir)' "$RULES"
+}
+
+profile_id_for_label() {
+    LR_LABEL=$1 yq -r '.profiles[] | select(.label == strenv(LR_LABEL)) | .id' "$RULES" | head -1
+}
+
+# Ask which profile's label to use, offering $ADD_RULE too when $2 is
+# set.  Prints nothing when cancelled.  The texts go to osascript as
+# arguments, so links need no quoting.
+choose_label() {
+    local prompt=$1 offer_add=$2 label labels=()
+    while IFS= read -r label; do
+        labels[${#labels[@]}]=$label
+    done < <(yq -r '.profiles[].label' "$RULES")
+    [ ${#labels[@]} -gt 0 ] || die "no profiles in $RULES"
+    [ -n "$offer_add" ] && labels[${#labels[@]}]=$ADD_RULE
+    osascript \
+        -e 'on run argv' \
+        -e 'activate' \
+        -e 'set picked to choose from list (rest of argv) with title "Link router" with prompt (item 1 of argv) default items {item 2 of argv}' \
+        -e 'if picked is false then return ""' \
+        -e 'return item 1 of picked' \
+        -e 'end run' \
+        "$prompt" "${labels[@]}"
+}
+
+# Ask for a rule pattern, suggesting $1.  Fails when cancelled.
+ask_pattern() {
+    osascript \
+        -e 'on run argv' \
+        -e 'activate' \
+        -e 'set answer to display dialog "Open links matching:" & return & return & "A bare domain covers its subdomains too; * and ? are wildcards." default answer (item 1 of argv) with title "Link router: new rule" buttons {"Cancel", "Next"} default button "Next" cancel button "Cancel"' \
+        -e 'return text returned of answer' \
+        -e 'end run' \
+        "$1" 2>/dev/null
+}
+
+# Follow symlinks to the real file, so that yq -i, which replaces the
+# file, does not replace the symlink Stow made.
+real_path() {
+    local path=$1 link
+    while link=$(readlink "$path"); do
+        case $link in
+            /*) path=$link ;;
+            *) path=$(dirname "$path")/$link ;;
+        esac
+    done
+    echo "$path"
+}
+
+add_rule() {
+    LR_MATCH=$1 LR_PROFILE=$2 yq -i \
+        '.rules = (.rules // []) + [{"match": strenv(LR_MATCH), "profile": strenv(LR_PROFILE)}]' \
+        "$(real_path "$RULES")" || die "could not add rule $1 -> $2 to $RULES"
+}
+
+# Print the profile id URL $1 should open in, asking when no rule
+# matches.  Prints nothing when the user cancels.
+pick_profile() {
+    local url=$1 host label pattern
+    host=$(url_host "$url")
+    label=$(choose_label "No rule matches ${host:-this link}. Open it in:" yes)
+    case $label in
+        '') return 0 ;;
+        "$ADD_RULE")
+            pattern=$(ask_pattern "${host#www.}") || return 0
+            [ -n "$pattern" ] || return 0
+            label=$(choose_label "Open links matching $pattern in:" '')
+            [ -n "$label" ] || return 0
+            add_rule "$pattern" "$(profile_id_for_label "$label")"
+            ;;
+    esac
+    profile_id_for_label "$label"
+}
+
+open_in() {
+    local profile=$1 url=$2 dir
+    dir=$(profile_dir "$profile")
+    [ -n "$dir" ] || die "no profile '$profile' in $RULES (for $url)"
+    if [ -n "${LINK_ROUTER_DRY_RUN:-}" ]; then
+        printf 'open %s %s\n' "$dir" "$url"
+    else
+        open -na "$CHROME" --args --profile-directory="$dir" "$url"
+    fi
+}
+
+main() {
+    if [ "${1:-}" = --match ]; then
+        [ $# -eq 2 ] || die "usage: link-router --match URL"
+        route "$2"
+        return
+    fi
+    if [ $# -eq 0 ]; then
+        open -t "$(real_path "$RULES")"
+        return
+    fi
+    local url profile
+    for url in "$@"; do
+        profile=$(route "$url") || profile=$(pick_profile "$url")
+        [ -n "$profile" ] && open_in "$profile" "$url"
+    done
+    return 0
+}
+
+main "$@"

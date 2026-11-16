@@ -1,0 +1,79 @@
+#!/bin/bash
+#
+# Build ~/Applications/LinkRouter.app, which macOS can use as the
+# default browser, and offer to make it so.  The app only hands each
+# link to ~/bin/link-router, which does all the work, so editing that
+# script or the rules needs no rebuild.  See docs/link-router.md.
+#
+# The app is an AppleScript applet because a shell script cannot be an
+# app that receives links: macOS sends them as Apple Events, not as
+# arguments.  Everything used here comes with macOS, except yq and
+# defaultbrowser, which come from Homebrew.
+#
+# Usage: install-macos [--uninstall]
+
+set -eu
+
+PATH="/opt/homebrew/bin:$HOME/.homebrew/bin:/usr/local/bin:$PATH"
+APP=$HOME/Applications/LinkRouter.app
+ROUTER=$HOME/bin/link-router
+BUNDLE_ID=org.adamspiers.LinkRouter
+LSREGISTER=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+
+die() {
+    echo "install-macos: $*" >&2
+    exit 1
+}
+
+[ "$(uname)" = Darwin ] || die "this is for macOS; see windows/install.ps1 for Windows"
+
+if [ "${1:-}" = --uninstall ]; then
+    [ -d "$APP" ] && "$LSREGISTER" -u "$APP" && rm -rf "$APP"
+    echo "Removed $APP.  Choose another default browser in System Settings → Desktop & Dock."
+    exit 0
+fi
+
+[ -x "$ROUTER" ] || die "$ROUTER is missing: stow desktop-config first (mr stow)"
+command -v yq >/dev/null || brew install yq
+
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+build=$tmp/LinkRouter.app
+
+# Hand the link on in the background, so the app quits at once rather
+# than holding up the next link while the picker is open.
+osacompile -o "$build" \
+    -e 'on open location theURL' \
+    -e "do shell script quoted form of \"$ROUTER\" & \" \" & quoted form of theURL & \" >/dev/null 2>&1 &\"" \
+    -e 'end open location'
+
+plist=$build/Contents/Info.plist
+pb() { /usr/libexec/PlistBuddy "$@" "$plist"; }
+pb -c "Delete :CFBundleIdentifier" 2>/dev/null || true
+pb -c "Add :CFBundleIdentifier string $BUNDLE_ID"
+pb -c "Delete :CFBundleURLTypes" 2>/dev/null || true
+pb -c "Add :CFBundleURLTypes array" \
+   -c "Add :CFBundleURLTypes:0 dict" \
+   -c "Add :CFBundleURLTypes:0:CFBundleURLName string WebSiteURL" \
+   -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" \
+   -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string http" \
+   -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:1 string https"
+# No Dock icon each time a link passes through.
+pb -c "Delete :LSUIElement" 2>/dev/null || true
+pb -c "Add :LSUIElement bool true"
+
+# Editing Info.plist broke osacompile's ad-hoc signature; sign again.
+codesign --force --deep --sign - "$build"
+
+mkdir -p "$(dirname "$APP")"
+rm -rf "$APP"
+mv "$build" "$APP"
+"$LSREGISTER" -f "$APP"
+echo "Installed $APP"
+
+# defaultbrowser names a browser by the last part of its bundle ID.
+# macOS asks for confirmation before changing the default.
+command -v defaultbrowser >/dev/null || brew install defaultbrowser ||
+    die "set the default browser to LinkRouter in System Settings → Desktop & Dock"
+defaultbrowser linkrouter ||
+    die "set the default browser to LinkRouter in System Settings → Desktop & Dock"
