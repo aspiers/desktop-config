@@ -708,7 +708,18 @@ still work inside the mode. Command syntax checked against AeroSpace's
 
 ## 6. Open questions
 
-None. Adam chose editing approach A2 (5.2).
+Adam chose editing approach A2 (5.2).
+
+To do later (Adam, 2026-11-16):
+
+- **Mode indicator**: reorganise and pass-through mode show Karabiner's
+  notification window, which with two screens leaves a bare Karabiner
+  icon stuck in the middle of one of them. Once JankyBorders is built
+  from source and running, show the modes by changing its border colour
+  instead (say orange in reorganise mode, by running `borders` with a new
+  `active_color` on entering and the normal one on leaving), and turn
+  Karabiner's notification window off. Until then,
+  `killall Karabiner-NotificationWindow` clears the stuck icon.
 
 ## 7. Installing and testing on the Mac
 
