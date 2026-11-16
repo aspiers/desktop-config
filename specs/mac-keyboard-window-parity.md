@@ -397,7 +397,7 @@ than shown, and it cannot do Neru's hints.
 | Thumb+Ctrl+`[` / `]` | Brightness down / up (Adam, 2026-11-14: Ctrl, not Shift) |
 | Thumb+Ctrl+`s` / `w` | Screenshot of a region / window |
 | Thumb+Ctrl+Space | App launcher |
-| Thumb+Ctrl+Alt+`l` | Lock screen |
+| Thumb+Ctrl+Alt+Shift+`l` | Lock screen (`xflock4`; Shift was first left out here, Adam, 2026-11-16) |
 | Thumb+Ctrl+Alt+`d` | Display settings (Linux: `xfce4-display-settings`; macOS: System Settings > Displays, toggled) |
 | Thumb+`=` | Clear notifications |
 | Thumb+Alt+Shift+`/` | Search every key binding |

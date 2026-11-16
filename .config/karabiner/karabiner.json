@@ -5451,7 +5451,8 @@
                                     "modifiers": {
                                         "mandatory": [
                                             "command",
-                                            "option"
+                                            "option",
+                                            "shift"
                                         ]
                                     }
                                 },
@@ -5479,7 +5480,8 @@
                                     "modifiers": {
                                         "mandatory": [
                                             "control",
-                                            "option"
+                                            "option",
+                                            "shift"
                                         ]
                                     }
                                 },

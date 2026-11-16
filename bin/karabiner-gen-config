@@ -456,7 +456,9 @@ def other_bindings() -> list[Json]:
     m += thumb("s", key("4", "command", "shift"), "ctrl")
     m += thumb("w", shell("screencapture -iWo \"$HOME/Desktop/Screenshot $(date '+%F at %H.%M.%S').png\""), "ctrl")
     m += thumb("spacebar", key("spacebar", "command"), "ctrl")
-    m += thumb("l", key("q", "control", "command"), "ctrl+alt")
+    # Linux: Shift+Control+Alt+Super+l runs xflock4 (.fluxbox/keys.erb);
+    # the spec first left out Shift (Adam, 2026-11-16).
+    m += thumb("l", key("q", "control", "command"), "ctrl+alt+shift")
     m += dictation_bindings()
     return m
 
