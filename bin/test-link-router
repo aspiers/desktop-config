@@ -99,6 +99,18 @@ check "rules file still a symlink" yes "$([ -L "$tmp/home/rules.yaml" ] && echo 
 check "comment kept" yes \
     "$(grep -q '^# A comment that must survive' "$tmp/repo/rules.yaml" && echo yes)"
 
+# The steps LinkRouter.app runs when it shows the picker itself.
+check "app: matched link opens" "open Default https://example.com/" \
+    "$("$router" --route https://example.com/)"
+check "app: no rule asks" "ask
+example.net" "$("$router" --route https://www.example.net/x)"
+check "app: labels" "Work
+Personal" "$("$router" --labels)"
+check "app: open as" "open Profile 2 https://example.net/" \
+    "$("$router" --open-as Personal https://example.net/)"
+"$router" --add-rule example.net Personal
+check "app: add rule" personal "$(match https://example.net/)"
+
 if [ $failures -gt 0 ]; then
     echo "$failures failed"
     [ -s "$tmp/log" ] && sed 's/^/log: /' "$tmp/log"

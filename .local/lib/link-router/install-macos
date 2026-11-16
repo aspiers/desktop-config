@@ -40,12 +40,59 @@ tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 build=$tmp/LinkRouter.app
 
-# Hand the link on in the background, so the app quits at once rather
-# than holding up the next link while the picker is open.
-osacompile -o "$build" \
-    -e 'on open location theURL' \
-    -e "do shell script quoted form of \"$ROUTER\" & \" \" & quoted form of theURL & \" >/dev/null 2>&1 &\"" \
-    -e 'end open location'
+# The app shows the picker itself rather than leaving it to the
+# script's osascript: an osascript process takes ~2s to load the GUI
+# frameworks and is often refused the keyboard focus, whereas this app
+# is already running and was launched to handle the link.  The script
+# still does the matching, opening and rule-writing, so the dialogs
+# here are the only part that needs a rebuild when changed.
+cat >"$tmp/LinkRouter.applescript" <<EOF
+property router : "$ROUTER"
+property addRule : "Add a rule…"
+
+on open location theURL
+	set answer to paragraphs of (run_router("--route " & quoted form of theURL))
+	if answer is {} or item 1 of answer is not "ask" then return
+	set suggestion to ""
+	if (count of answer) > 1 then set suggestion to item 2 of answer
+	set labels to paragraphs of run_router("--labels")
+	activate
+	set picked to choose from list (labels & {addRule}) with title "Link router" ¬
+		with prompt "No rule matches " & suggestion & ". Open it in:" ¬
+		default items {item 1 of labels}
+	if picked is false then return
+	set label to item 1 of picked
+	if label is addRule then
+		try
+			set reply to display dialog "Open links matching:" & return & return & ¬
+				"A bare domain covers its subdomains too; * and ? are wildcards." ¬
+				default answer suggestion with title "Link router: new rule" ¬
+				buttons {"Cancel", "Next"} default button "Next" cancel button "Cancel"
+		on error number -128
+			return
+		end try
+		set pattern to text returned of reply
+		if pattern is "" then return
+		set picked to choose from list labels with title "Link router: new rule" ¬
+			with prompt "Open links matching " & pattern & " in:" ¬
+			default items {item 1 of labels}
+		if picked is false then return
+		set label to item 1 of picked
+		run_router("--add-rule " & quoted form of pattern & " " & quoted form of label)
+	end if
+	run_router("--open-as " & quoted form of label & " " & quoted form of theURL)
+end open location
+
+-- Errors are logged by the script, so are not shown here too.
+on run_router(args)
+	try
+		return do shell script quoted form of router & " " & args
+	on error
+		return ""
+	end try
+end run_router
+EOF
+osacompile -o "$build" "$tmp/LinkRouter.applescript"
 
 plist=$build/Contents/Info.plist
 pb() { /usr/libexec/PlistBuddy "$@" "$plist"; }

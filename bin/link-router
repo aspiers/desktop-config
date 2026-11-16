@@ -13,6 +13,9 @@
 #   link-router URL...
 #   link-router --match URL    print the profile id the rules give URL
 #   link-router                open the rules file for editing
+#   link-router --route URL | --labels | --open-as LABEL URL |
+#               --add-rule PATTERN LABEL
+#                              steps for LinkRouter.app; see main()
 #
 # Environment:
 #   LINK_ROUTER_RULES    rules file (default ~/.config/link-router/rules.yaml)
@@ -184,11 +187,40 @@ open_in() {
 }
 
 main() {
-    if [ "${1:-}" = --match ]; then
-        [ $# -eq 2 ] || die "usage: link-router --match URL"
-        route "$2"
-        return
-    fi
+    case ${1:-} in
+        --match)
+            [ $# -eq 2 ] || die "usage: link-router --match URL"
+            route "$2"
+            return ;;
+        # The rest serve LinkRouter.app, which shows the picker itself:
+        # osascript run from here takes ~2s to show a dialog, and macOS
+        # often will not give it the keyboard focus.
+        --route)
+            # Open URL $2 if a rule matches it, else print "ask" and
+            # the pattern to suggest for a new rule.
+            [ $# -eq 2 ] || die "usage: link-router --route URL"
+            local profile host
+            if profile=$(route "$2"); then
+                open_in "$profile" "$2"
+            else
+                host=$(url_host "$2")
+                printf 'ask\n%s\n' "${host#www.}"
+            fi
+            return ;;
+        --labels)
+            yq -r '.profiles[].label' "$RULES"
+            return ;;
+        --open-as)
+            # Open URL $3 in the profile labelled $2.
+            [ $# -eq 3 ] || die "usage: link-router --open-as LABEL URL"
+            open_in "$(profile_id_for_label "$2")" "$3"
+            return ;;
+        --add-rule)
+            # Add a rule sending pattern $2 to the profile labelled $3.
+            [ $# -eq 3 ] || die "usage: link-router --add-rule PATTERN LABEL"
+            add_rule "$2" "$(profile_id_for_label "$3")"
+            return ;;
+    esac
     if [ $# -eq 0 ]; then
         open -t "$(real_path "$RULES")"
         return
