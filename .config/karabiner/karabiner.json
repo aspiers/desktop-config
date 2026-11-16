@@ -690,7 +690,7 @@
                                 },
                                 "to": [
                                     {
-                                        "shell_command": "~/bin/mac-jump cycle --toggle --launch com.google.Chrome.app.dlipgkhhhafidbfnjnbnpnfphpfckpoc '^com\\.google\\.Chrome\\.app\\.dlipgkhhhafidbfnjnbnpnfphpfckpoc$'"
+                                        "shell_command": "~/bin/mac-jump tab --pick --open https://example.atlassian.net/jira/ '^https://example\\.atlassian\\.net/'"
                                     }
                                 ],
                                 "conditions": [

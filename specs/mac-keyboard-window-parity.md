@@ -253,7 +253,7 @@ Thumb+letter, Linux and the agreed Mac / Windows targets:
 | `f` | Firefox | same |
 | `g` | Telegram | same |
 | `h` | Picker of GitHub tabs in Chrome | same |
-| `j` | Jump menu | **Jira** web app (C, T; Adam, 2026-11-16) |
+| `j` | Jump menu | **Picker of Jira tabs** in Chrome, like `h` (Adam, 2026-11-16) |
 | `k` | Emacs: `org-capture` | same |
 | `m` | Mail menu (`rofi-mail-menu`) | **Outlook mail**; with Outlook in front, cycles its windows and hides it after the last (C, T; Adam, 2026-11-16) |
 | `n` | Emacs: personal note | same |
