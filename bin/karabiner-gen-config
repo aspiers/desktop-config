@@ -264,6 +264,15 @@ def toggle(typed: str, bundle: str, mods: str = "") -> list[Json]:
     )
 
 
+def settings_toggle(typed: str, pane: str, mods: str = "") -> list[Json]:
+    """Open a System Settings pane, or hide System Settings if it is
+    frontmost, as toggle() does for apps (Adam, 2026-11-16). Karabiner cannot
+    tell which pane is showing, so any settings key hides it."""
+    return thumb(typed, key("h", "command"), mods, [apps([r"^com\.apple\.systempreferences$"])]) + thumb(
+        typed, shell(f"open 'x-apple.systempreferences:{pane}'"), mods
+    )
+
+
 def thumb_trigger_rule() -> Json:
     # Thumb (spec 5.1): right Command on every keyboard, plus the key in
     # Thumb's position on keyboards that send something else there: the
@@ -307,12 +316,12 @@ def jumps() -> list[Json]:
     m += thumb("m", jump("outlook mail"))
     m += thumb("n", jump("emacs '(as-find-personal-note)'"))
     m += thumb("o", jump("teams planner"))
-    m += thumb("p", shell("open 'x-apple.systempreferences:com.apple.Sound-Settings.extension'"))
+    m += settings_toggle("p", "com.apple.Sound-Settings.extension")
     m += thumb("s", open_bundle("com.tinyspeck.slackmacgap"))
     m += thumb("t", jump("teams chat"))
-    m += thumb("u", shell("open 'x-apple.systempreferences:com.apple.BluetoothSettings'"))
+    m += settings_toggle("u", "com.apple.BluetoothSettings")
     m += thumb("v", jump("emacs ~/lib/emacs/shortcuts/org-agenda-daily-review.el"))
-    m += thumb("w", shell("open 'x-apple.systempreferences:com.apple.wifi-settings-extension'"))
+    m += settings_toggle("w", "com.apple.wifi-settings-extension")
     terminals = "|".join(p.strip("^$") for p in TERMINALS)
     m += thumb("x", jump(f"cycle --launch com.apple.Terminal '^({terminals})$'"))
     m += thumb("y", jump(r"tab --pick --open https://www.youtube.com/ '^https://(www\.)?youtube\.com/'"))
@@ -333,7 +342,7 @@ def jumps() -> list[Json]:
     m += thumb("c", jump("outlook calendar"), "ctrl")
     m += thumb("d", shell("open -a Discord"), "ctrl")
     # Linux: xfce4-display-settings.
-    m += thumb("d", shell("open 'x-apple.systempreferences:com.apple.Displays-Settings.extension'"), "ctrl+alt")
+    m += settings_toggle("d", "com.apple.Displays-Settings.extension", "ctrl+alt")
     m += thumb("e", jump(r"tab --pick --open https://linear.app/ '^https://linear\.app/'"), "shift")
     m += thumb("f", jump(r"tab --pick --open https://www.messenger.com/ '^https://(www\.)?messenger\.com/'"), "ctrl")
     m += thumb("g", jump(r"tab --open https://meet.google.com/ '^https://meet\.google\.com/'"), "shift")

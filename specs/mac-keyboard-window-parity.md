@@ -253,12 +253,12 @@ Thumb+letter, Linux and the agreed Mac / Windows targets:
 | `m` | Mail menu (`rofi-mail-menu`) | **Outlook mail** |
 | `n` | Emacs: personal note | same |
 | `o` | Org menu (`rofi-org-menu`) | **Teams Planner** (focus or launch) |
-| `p` | Volume control (`pavucontrol`) (T) | Sound settings |
+| `p` | Volume control (`pavucontrol`) (T) | Sound settings (T) |
 | `s` | **Slack** | **Slack** |
 | `t` | Terminal menu (`rofi-terminal-menu`) | **Teams chat** (Linux has no Teams); no terminal menu on the Mac |
-| `u` | Bluetooth TUI (T) | Bluetooth settings |
+| `u` | Bluetooth TUI (T) | Bluetooth settings (T) |
 | `v` | Emacs: daily review agenda | same |
-| `w` | Wi-Fi menu | Wi-Fi menu |
+| `w` | Wi-Fi menu | Wi-Fi settings (T) |
 | `x` | Terminal windows (C) | same |
 | `y` | Picker of YouTube tabs | same |
 | `z` | Zulip | same |
@@ -292,7 +292,10 @@ Thumb+modifier+letter jumps:
 | Thumb+Shift+`u` | Bluetooth manager (T) | unbound (Linux-only tool) |
 | Thumb+Ctrl+`2` / `5` / `7` | Emacs: personal todo / Toucan todo / weekly review | same |
 
-Mac / Windows targets were agreed with Adam on 2026-11-14. "same" means
+Mac / Windows targets were agreed with Adam on 2026-11-14. On the Mac,
+the System Settings keys toggle (Adam, 2026-11-16): any of them hides
+System Settings when it is frontmost, since Karabiner cannot tell which
+pane is showing. "same" means
 the Linux target, bound where that app is installed.
 
 ### 3.2 Window operations
@@ -372,7 +375,7 @@ Both need IT approval on the work Mac; Karabiner is assumed allowed.
 | Thumb+Ctrl+`s` / `w` | Screenshot of a region / window |
 | Thumb+Ctrl+Space | App launcher |
 | Thumb+Ctrl+Alt+`l` | Lock screen |
-| Thumb+Ctrl+Alt+`d` | Display settings (Linux: `xfce4-display-settings`; macOS: System Settings > Displays) |
+| Thumb+Ctrl+Alt+`d` | Display settings (Linux: `xfce4-display-settings`; macOS: System Settings > Displays, toggled) |
 | Thumb+`=` | Clear notifications |
 | Thumb+Alt+Shift+`/` | Search every key binding |
 | Thumb+Ctrl+`8` | Push-to-talk recording (dictation) |
