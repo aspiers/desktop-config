@@ -269,7 +269,17 @@ outlook() {
     # Outlook for Mac: Cmd+1 is Mail, Cmd+2 is Calendar.
     case ${1:-} in
         mail) activate_and_press com.microsoft.Outlook 1 ;;
-        calendar) activate_and_press com.microsoft.Outlook 2 ;;
+        calendar)
+            # Toggle (Adam, 2026-11-16): hide Outlook if it is already
+            # showing its calendar, judged by the focused window's title,
+            # which names the folder ("Inbox • ..."); "Calendar" is assumed.
+            if aerospace list-windows --focused --format '%{app-bundle-id} %{window-title}' 2>/dev/null |
+                grep -q '^com\.microsoft\.Outlook Calendar'; then
+                hide com.microsoft.Outlook
+            else
+                activate_and_press com.microsoft.Outlook 2
+            fi
+            ;;
         *) die "outlook: need mail or calendar" ;;
     esac
 }

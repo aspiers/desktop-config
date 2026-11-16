@@ -274,7 +274,7 @@ Thumb+modifier+letter jumps:
 | Thumb+Ctrl+`a` | Spotify web app (T) | same |
 | Thumb+Ctrl+`b` | "Bead Me Up, Scotty" web app (T) | same |
 | Thumb+Shift+`c` | Google Calendar tab, account 0 | same (personal Google Calendar) |
-| Thumb+Ctrl+`c` | Google Calendar tab, account 1 | **Outlook calendar** |
+| Thumb+Ctrl+`c` | Google Calendar tab, account 1 | **Outlook calendar** (T: hides Outlook when its calendar is showing; Adam, 2026-11-16) |
 | Thumb+Ctrl+`d` | Discord | same |
 | Thumb+Shift+`e` | Picker of Linear tabs | same |
 | Thumb+Ctrl+`f` | Picker of Messenger tabs | same |
