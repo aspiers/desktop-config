@@ -658,7 +658,7 @@ toggle floating?"), so it is the first candidate to revisit.
 | Thumb+Alt+Shift+arrows or `h` `j` `k` `l` | Move window 50 px | **`join-with <dir>`**: group with the neighbour in a new container |
 | Thumb+`/` (Shift: reverse) | Cycle windows on this monitor and workspace | `focus dfs-next` / `dfs-prev`, wrapping round the workspace |
 | Thumb+Space | Raise | **`layout floating tiling`**: float or tile the window |
-| Thumb+Ctrl+Shift+`m` | Maximise | `fullscreen` toggle |
+| Thumb+Ctrl+`m` | Maximise (Linux: Thumb+Ctrl+Shift+`m`; AeroSpace has no horizontal-only maximise to keep on Thumb+Ctrl+`m`; Adam, 2026-11-16) | `fullscreen` toggle |
 | Thumb+`i` | Minimise | `macos-native-minimize` |
 | Thumb+`q` / Thumb+Ctrl+`q` | Close / kill | `close` / `close --quit-if-last-window` |
 | Thumb+`1` .. `6`, Thumb+`,` / `.` | Workspaces | `workspace <n>`, `workspace prev` / `next` |
