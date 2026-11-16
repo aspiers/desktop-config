@@ -333,8 +333,8 @@ def jumps() -> list[Json]:
     m += thumb("n", jump("emacs '(as-find-personal-note)'"))
     m += thumb("o", jump("teams planner"))
     m += settings_toggle("p", "com.apple.Sound-Settings.extension")
-    # Cycles when Slack has several windows (Adam, 2026-11-16).
-    m += thumb("s", jump(r"cycle --launch com.tinyspeck.slackmacgap '^com\.tinyspeck\.slackmacgap$'"))
+    # Cycles when Slack has several windows, then hides it (Adam, 2026-11-16).
+    m += thumb("s", jump(r"cycle --toggle --launch com.tinyspeck.slackmacgap '^com\.tinyspeck\.slackmacgap$'"))
     # Hides Teams when it is frontmost, as toggle() does (Adam, 2026-11-16).
     m += hide_if_frontmost("t", "com.microsoft.teams2")
     m += thumb("t", jump("teams chat"))

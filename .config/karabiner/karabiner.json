@@ -846,7 +846,7 @@
                                 },
                                 "to": [
                                     {
-                                        "shell_command": "~/bin/mac-jump cycle --launch com.tinyspeck.slackmacgap '^com\\.tinyspeck\\.slackmacgap$'"
+                                        "shell_command": "~/bin/mac-jump cycle --toggle --launch com.tinyspeck.slackmacgap '^com\\.tinyspeck\\.slackmacgap$'"
                                     }
                                 ],
                                 "conditions": [
@@ -872,7 +872,7 @@
                                 },
                                 "to": [
                                     {
-                                        "shell_command": "~/bin/mac-jump cycle --launch com.tinyspeck.slackmacgap '^com\\.tinyspeck\\.slackmacgap$'"
+                                        "shell_command": "~/bin/mac-jump cycle --toggle --launch com.tinyspeck.slackmacgap '^com\\.tinyspeck\\.slackmacgap$'"
                                     }
                                 ],
                                 "conditions": [

@@ -254,7 +254,7 @@ Thumb+letter, Linux and the agreed Mac / Windows targets:
 | `n` | Emacs: personal note | same |
 | `o` | Org menu (`rofi-org-menu`) | **Teams Planner** (focus or launch) |
 | `p` | Volume control (`pavucontrol`) (T) | Sound settings (T) |
-| `s` | **Slack** | **Slack** (C; Adam, 2026-11-16) |
+| `s` | **Slack** | **Slack** (C, T: hides after the last window; Adam, 2026-11-16) |
 | `t` | Terminal menu (`rofi-terminal-menu`) | **Teams chat** (T; Linux has no Teams); no terminal menu on the Mac |
 | `u` | Bluetooth TUI (T) | Bluetooth settings (T) |
 | `v` | Emacs: daily review agenda | same |
