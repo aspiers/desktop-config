@@ -302,7 +302,8 @@ def thumb_trigger_rule() -> Json:
 def jumps() -> list[Json]:
     """Spec 3.1."""
     m: list[Json] = []
-    m += thumb("a", jump(r"cycle --launch com.anthropic.claudefordesktop '^(com\.anthropic\.claudefordesktop|com\.openai\.chat)$'"))
+    # Cycles, then hides after the last window (Adam, 2026-11-16).
+    m += thumb("a", jump(r"cycle --toggle --launch com.anthropic.claudefordesktop '^(com\.anthropic\.claudefordesktop|com\.openai\.chat)$'"))
     # shortcut: cycles every Chrome window, not just those on the main
     # monitor as on Linux; filter by %{monitor-id} if that matters.
     m += thumb("b", jump(r"cycle --launch com.google.Chrome '^com\.google\.Chrome$'"))
@@ -319,6 +320,8 @@ def jumps() -> list[Json]:
     m += settings_toggle("p", "com.apple.Sound-Settings.extension")
     # Cycles when Slack has several windows (Adam, 2026-11-16).
     m += thumb("s", jump(r"cycle --launch com.tinyspeck.slackmacgap '^com\.tinyspeck\.slackmacgap$'"))
+    # Hides Teams when it is frontmost, as toggle() does (Adam, 2026-11-16).
+    m += thumb("t", key("h", "command"), extra=[apps([r"^com\.microsoft\.teams2$"])])
     m += thumb("t", jump("teams chat"))
     m += settings_toggle("u", "com.apple.BluetoothSettings")
     m += thumb("v", jump("emacs ~/lib/emacs/shortcuts/org-agenda-daily-review.el"))

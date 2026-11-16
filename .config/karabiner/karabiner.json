@@ -230,7 +230,7 @@
                                 },
                                 "to": [
                                     {
-                                        "shell_command": "~/bin/mac-jump cycle --launch com.anthropic.claudefordesktop '^(com\\.anthropic\\.claudefordesktop|com\\.openai\\.chat)$'"
+                                        "shell_command": "~/bin/mac-jump cycle --toggle --launch com.anthropic.claudefordesktop '^(com\\.anthropic\\.claudefordesktop|com\\.openai\\.chat)$'"
                                     }
                                 ],
                                 "conditions": [
@@ -256,7 +256,7 @@
                                 },
                                 "to": [
                                     {
-                                        "shell_command": "~/bin/mac-jump cycle --launch com.anthropic.claudefordesktop '^(com\\.anthropic\\.claudefordesktop|com\\.openai\\.chat)$'"
+                                        "shell_command": "~/bin/mac-jump cycle --toggle --launch com.anthropic.claudefordesktop '^(com\\.anthropic\\.claudefordesktop|com\\.openai\\.chat)$'"
                                     }
                                 ],
                                 "conditions": [
@@ -853,6 +853,76 @@
                                         "type": "variable_if",
                                         "name": "thumb",
                                         "value": 1
+                                    },
+                                    {
+                                        "type": "device_if",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "t"
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "h",
+                                        "modifiers": [
+                                            "command"
+                                        ]
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_if",
+                                        "name": "thumb",
+                                        "value": 1
+                                    },
+                                    {
+                                        "type": "frontmost_application_if",
+                                        "bundle_identifiers": [
+                                            "^com\\.microsoft\\.teams2$"
+                                        ]
+                                    },
+                                    {
+                                        "type": "device_unless",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "r"
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "h",
+                                        "modifiers": [
+                                            "command"
+                                        ]
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_if",
+                                        "name": "thumb",
+                                        "value": 1
+                                    },
+                                    {
+                                        "type": "frontmost_application_if",
+                                        "bundle_identifiers": [
+                                            "^com\\.microsoft\\.teams2$"
+                                        ]
                                     },
                                     {
                                         "type": "device_if",

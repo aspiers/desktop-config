@@ -240,7 +240,7 @@ Thumb+letter, Linux and the agreed Mac / Windows targets:
 
 | Key | Linux | macOS / Windows |
 | --- | --- | --- |
-| `a` | ChatGPT / Claude desktop window (C) | same |
+| `a` | ChatGPT / Claude desktop window (C) | same, and after the last window the next press hides the app (C, T; Adam, 2026-11-16) |
 | `b` | Browser windows on the main monitor (C) | same |
 | `c` | Orca (T) | same |
 | `d` | Emacs: today's org agenda | same |
@@ -255,7 +255,7 @@ Thumb+letter, Linux and the agreed Mac / Windows targets:
 | `o` | Org menu (`rofi-org-menu`) | **Teams Planner** (focus or launch) |
 | `p` | Volume control (`pavucontrol`) (T) | Sound settings (T) |
 | `s` | **Slack** | **Slack** (C; Adam, 2026-11-16) |
-| `t` | Terminal menu (`rofi-terminal-menu`) | **Teams chat** (Linux has no Teams); no terminal menu on the Mac |
+| `t` | Terminal menu (`rofi-terminal-menu`) | **Teams chat** (T; Linux has no Teams); no terminal menu on the Mac |
 | `u` | Bluetooth TUI (T) | Bluetooth settings (T) |
 | `v` | Emacs: daily review agenda | same |
 | `w` | Wi-Fi menu | Wi-Fi settings (T) |
