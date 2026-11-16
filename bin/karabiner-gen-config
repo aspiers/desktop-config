@@ -527,6 +527,9 @@ def editing_rule() -> Json:
     # 2026-11-14). Unchecked: whether the app switcher stays open while
     # the key is held, as Karabiner may release Command after each Tab.
     add("tab", ctrl, key("tab", "control"))
+    # Ctrl+Page Up / Down switch tabs, as on Linux (Adam, 2026-11-16).
+    add("page_up", ctrl, key("page_up", "control"))
+    add("page_down", ctrl, key("page_down", "control"))
     add("tab", {"mandatory": ["right_control"], "optional": ["shift"]}, key("tab", "command"))
     return rule("PC-style editing outside terminals, Emacs, VMs and Orca (spec 2.5)", m)
 

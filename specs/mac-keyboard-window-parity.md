@@ -452,6 +452,9 @@ A needs rules only where the Mac differs from Linux:
   `Cmd+Up` / `Cmd+Down`;
 - `Ctrl+Tab` → `Control+Tab`, so it switches tabs as on Linux rather than
   apps;
+- `Ctrl+Page Up` / `Ctrl+Page Down` → `Control+Page Up` / `Control+Page
+  Down`, with or without Shift, to switch tabs as on Linux (Adam,
+  2026-11-16);
 - right `option`+Tab, which A2 makes `Control+Tab` in ordinary apps, →
   `Cmd+Tab` (Adam, 2026-11-14), so the two are swapped and the app
   switcher stays on the Compose-position key, as in the exception apps.

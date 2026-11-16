@@ -8034,6 +8034,100 @@
                             {
                                 "type": "basic",
                                 "from": {
+                                    "key_code": "page_up",
+                                    "modifiers": {
+                                        "mandatory": [
+                                            "left_command"
+                                        ],
+                                        "optional": [
+                                            "shift"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "page_up",
+                                        "modifiers": [
+                                            "control"
+                                        ]
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "frontmost_application_unless",
+                                        "bundle_identifiers": [
+                                            "^com\\.apple\\.Terminal$",
+                                            "^com\\.googlecode\\.iterm2$",
+                                            "^net\\.kovidgoyal\\.kitty$",
+                                            "^com\\.mitchellh\\.ghostty$",
+                                            "^org\\.alacritty$",
+                                            "^com\\.github\\.wez\\.wezterm$",
+                                            "^org\\.gnu\\.Emacs$",
+                                            "^com\\.stablyai\\.orca$",
+                                            "^org\\.senkbeil\\.choose$",
+                                            "^com\\.microsoft\\.rdc\\.macos$",
+                                            "^com\\.vmware\\.fusion$",
+                                            "^com\\.parallels\\.desktop\\.console$",
+                                            "^org\\.virtualbox\\.app\\.VirtualBoxVM$",
+                                            "^com\\.utmapp\\.UTM$",
+                                            "^com\\.citrix\\.receiver\\.icaviewer\\.mac$"
+                                        ],
+                                        "file_paths": [
+                                            "/choose$"
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "page_down",
+                                    "modifiers": {
+                                        "mandatory": [
+                                            "left_command"
+                                        ],
+                                        "optional": [
+                                            "shift"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "key_code": "page_down",
+                                        "modifiers": [
+                                            "control"
+                                        ]
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "frontmost_application_unless",
+                                        "bundle_identifiers": [
+                                            "^com\\.apple\\.Terminal$",
+                                            "^com\\.googlecode\\.iterm2$",
+                                            "^net\\.kovidgoyal\\.kitty$",
+                                            "^com\\.mitchellh\\.ghostty$",
+                                            "^org\\.alacritty$",
+                                            "^com\\.github\\.wez\\.wezterm$",
+                                            "^org\\.gnu\\.Emacs$",
+                                            "^com\\.stablyai\\.orca$",
+                                            "^org\\.senkbeil\\.choose$",
+                                            "^com\\.microsoft\\.rdc\\.macos$",
+                                            "^com\\.vmware\\.fusion$",
+                                            "^com\\.parallels\\.desktop\\.console$",
+                                            "^org\\.virtualbox\\.app\\.VirtualBoxVM$",
+                                            "^com\\.utmapp\\.UTM$",
+                                            "^com\\.citrix\\.receiver\\.icaviewer\\.mac$"
+                                        ],
+                                        "file_paths": [
+                                            "/choose$"
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
                                     "key_code": "tab",
                                     "modifiers": {
                                         "mandatory": [
