@@ -57,7 +57,7 @@ def holds(condition, keyboard, bundle):
 def sends(code, keyboard, bundle):
     """What a modifier key sends: the first matching manipulator wins."""
     for m in (m for r in rules for m in r["manipulators"]):
-        if m["from"]["key_code"] == code and "mandatory" not in m["from"].get("modifiers", {}) \
+        if m["from"].get("key_code") == code and "mandatory" not in m["from"].get("modifiers", {}) \
                 and all(holds(c, keyboard, bundle) for c in m.get("conditions", [])):
             event = m["to"][0]
             return "thumb" if event.get("set_variable", {}).get("name") == "thumb" else event["key_code"]

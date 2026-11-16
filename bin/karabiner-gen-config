@@ -633,6 +633,78 @@ def characters_rule() -> Json:
     )
 
 
+def chord(typed: tuple[str, str], to: list[Json], conditions: list[Json], options: Json | None = None) -> list[Json]:
+    """Manipulators for two keys pressed together, on each keyboard: the
+    built-in keyboard types some letters from other keys (spec 2.1)."""
+    result = []
+    for device_conditions in ([NOT_BUILT_IN], [BUILT_IN]):
+        built_in = device_conditions == [BUILT_IN]
+        keys = [TYPED_BY.get(t, t) if built_in else t for t in typed]
+        if not built_in and not any(t in ALPHA_SHIFT or t in TYPED_BY for t in typed):
+            device_conditions = []
+        result.append(
+            {
+                "type": "basic",
+                "from": {
+                    "simultaneous": [{"key_code": k} for k in keys],
+                    "simultaneous_options": {"key_down_order": "insensitive", **(options or {})},
+                },
+                "to": to,
+                "conditions": conditions + device_conditions,
+                # fievel's chord_timeout: short, so fast typing rarely chords.
+                "parameters": {"basic.simultaneous_threshold_milliseconds": 25},
+            }
+        )
+        if not device_conditions:
+            break
+    return result
+
+
+MOUSE_LAYERS = [variable("mouse"), variable("mouse_lock")]
+MOVE = 1536
+SCROLL = 64
+
+
+def mouse_rule() -> Json:
+    """Spec 3.4: fievel's free mouse mode, from Linux, in Karabiner, since
+    fievel itself needs IT approval on the work Mac (Adam, 2026-11-16: as
+    close to Linux as possible). Hold d+f, or press z while holding them
+    to lock the mode until z again."""
+    m: list[Json] = []
+    # Home and End: , + m and n + . together, before the single keys.
+    for layer in MOUSE_LAYERS:
+        m += chord(("comma", "m"), key("home"), [layer])
+        m += chord(("n", "period"), key("end"), [layer])
+    # z unlocks if locked, else locks.
+    m += manipulators("z", [set_var("mouse_lock", 0), set_var("mouse", 0)], conditions=[variable("mouse_lock")])
+    m += manipulators("z", [set_var("mouse_lock", 1)], conditions=[variable("mouse")])
+    layer_keys: list[tuple[str, list[Json]]] = [
+        ("j", [{"mouse_key": {"x": -MOVE}}]),
+        ("k", [{"mouse_key": {"y": MOVE}}]),
+        ("i", [{"mouse_key": {"y": -MOVE}}]),
+        ("l", [{"mouse_key": {"x": MOVE}}]),
+        ("spacebar", [{"pointing_button": "button1"}]),
+        ("semicolon", [{"pointing_button": "button2"}]),
+        ("a", [{"mouse_key": {"speed_multiplier": 0.33}}]),
+        ("s", [{"mouse_key": {"speed_multiplier": 3.0}}]),
+        ("n", [{"mouse_key": {"horizontal_wheel": SCROLL}}]),
+        ("m", [{"mouse_key": {"vertical_wheel": SCROLL}}]),
+        ("comma", [{"mouse_key": {"vertical_wheel": -SCROLL}}]),
+        ("period", [{"mouse_key": {"horizontal_wheel": -SCROLL}}]),
+    ]
+    for layer in MOUSE_LAYERS:
+        for typed, to in layer_keys:
+            m += manipulators(typed, to, conditions=[layer], optional=["any"])
+    # Hold d+f: the mode lasts until either is released.
+    m += chord(
+        ("d", "f"),
+        [set_var("mouse", 1)],
+        [variable("mouse", 0), variable("mouse_lock", 0)],
+        {"key_up_when": "any", "to_after_key_up": [set_var("mouse", 0)]},
+    )
+    return rule("Free mouse mode: hold d+f, as fievel on Linux (spec 3.4)", m)
+
+
 def alpha_shift_rule() -> Json:
     manips = [
         {
@@ -689,6 +761,7 @@ def configuration() -> Json:
         rule("Thumb layer: app jumps, window management, volume and more (spec 3)", bound),
         block_unbound(),
         reorganise_rule(),
+        mouse_rule(),
         control_app_rules(),
         editing_rule(),
         modifier_rules(),

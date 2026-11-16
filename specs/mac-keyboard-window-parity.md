@@ -367,6 +367,15 @@ Source: `.config/bindings-help.d/fievel.tsv`, `neru.tsv`.
 
 Both need IT approval on the work Mac; Karabiner is assumed allowed.
 
+On the Mac, Karabiner does fievel's free mouse mode itself (Adam,
+2026-11-16: as close to Linux as possible): hold `d`+`f`, `z` to lock it
+on and off, `j` `k` `i` `l` to move, Space and `;` to click, hold `a` /
+`s` to move slowly / fast, `n` `m` `,` `.` to scroll, and `,`+`m` /
+`n`+`.` together for Home / End, with fievel's 25 ms chord window.
+Differences: the pointer moves at a steady speed, without fievel's
+easing; F3 is not a trigger, since macOS takes F3 for Mission Control;
+and `e`+`r` for Neru's grid waits for Neru.
+
 ### 3.5 Other global bindings
 
 | Keys | Action |
