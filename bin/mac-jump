@@ -48,10 +48,14 @@ next_window() {
 # workspace if there is one, and otherwise come back to the workspace after.
 hide() {
     [ $# -eq 1 ] || die "hide: need one bundle ID"
-    local workspace other
+    local workspace visible other
     workspace=$(aerospace list-workspaces --focused)
+    # AeroSpace still lists a hidden app's windows, and focusing one would
+    # show the app again (Adam, 2026-11-16: hiding System Settings brought
+    # back the Claude window hidden just before), so skip apps not visible.
+    visible=$(osascript -e 'tell application "System Events" to get bundle identifier of every process whose visible is true')
     other=$(aerospace list-windows --workspace focused --format '%{window-id} %{app-bundle-id}' |
-        awk -v app="$1" '$2 != app { print $1; exit }')
+        awk -v app="$1" -v visible=", $visible, " '$2 != app && index(visible, ", " $2 ", ") { print $1; exit }')
     [ -n "$other" ] && aerospace focus --window-id "$other"
     osascript -e "tell application \"System Events\" to set visible of (first process whose bundle identifier is \"$1\") to false" \
         >/dev/null || die "could not hide $1"
