@@ -56,11 +56,23 @@ hide() {
     visible=$(osascript -e 'tell application "System Events" to get bundle identifier of every process whose visible is true')
     other=$(aerospace list-windows --workspace focused --format '%{window-id} %{app-bundle-id}' |
         awk -v app="$1" -v visible=", $visible, " '$2 != app && index(visible, ", " $2 ", ") { print $1; exit }')
-    [ -n "$other" ] && aerospace focus --window-id "$other"
+    local return_after=''
+    if [ -n "$other" ]; then
+        aerospace focus --window-id "$other"
+    elif [ "$(osascript -e 'tell application "Finder" to count Finder windows' 2>/dev/null)" = 0 ]; then
+        # Nothing else to focus here: make windowless Finder (the desktop)
+        # the active app first, so hiding activates no other app and
+        # AeroSpace has no window to follow (Adam, 2026-11-16: coming back
+        # afterwards made the screen flicker to another workspace).
+        osascript -e 'tell application "Finder" to activate' >/dev/null
+    else
+        return_after=1
+    fi
     osascript -e "tell application \"System Events\" to set visible of (first process whose bundle identifier is \"$1\") to false" \
         >/dev/null || die "could not hide $1"
-    if [ -z "$other" ]; then
-        # Let macOS activate its next app before coming back.
+    if [ -n "$return_after" ]; then
+        # Finder has windows, maybe elsewhere: let macOS activate its next
+        # app, then come back, which flickers.
         sleep 0.3
         aerospace workspace "$workspace" 2>/dev/null
     fi
