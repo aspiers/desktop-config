@@ -37240,7 +37240,13 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "vk_none"
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "a"
                                     }
                                 ],
                                 "conditions": [
@@ -37248,6 +37254,51 @@
                                         "type": "variable_unless",
                                         "name": "grid_level",
                                         "value": 0
+                                    },
+                                    {
+                                        "type": "device_unless",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "caps_lock",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "a"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    },
+                                    {
+                                        "type": "device_if",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
                                     }
                                 ]
                             },
@@ -37263,7 +37314,13 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "vk_none"
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "b"
                                     }
                                 ],
                                 "conditions": [
@@ -37286,513 +37343,13 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "vk_none"
-                                    }
-                                ],
-                                "conditions": [
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
                                     {
-                                        "type": "variable_unless",
-                                        "name": "grid_level",
-                                        "value": 0
-                                    }
-                                ]
-                            },
-                            {
-                                "type": "basic",
-                                "from": {
-                                    "key_code": "d",
-                                    "modifiers": {
-                                        "optional": [
-                                            "any"
-                                        ]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "vk_none"
-                                    }
-                                ],
-                                "conditions": [
-                                    {
-                                        "type": "variable_unless",
-                                        "name": "grid_level",
-                                        "value": 0
-                                    }
-                                ]
-                            },
-                            {
-                                "type": "basic",
-                                "from": {
-                                    "key_code": "e",
-                                    "modifiers": {
-                                        "optional": [
-                                            "any"
-                                        ]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "vk_none"
-                                    }
-                                ],
-                                "conditions": [
-                                    {
-                                        "type": "variable_unless",
-                                        "name": "grid_level",
-                                        "value": 0
-                                    }
-                                ]
-                            },
-                            {
-                                "type": "basic",
-                                "from": {
-                                    "key_code": "f",
-                                    "modifiers": {
-                                        "optional": [
-                                            "any"
-                                        ]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "vk_none"
-                                    }
-                                ],
-                                "conditions": [
-                                    {
-                                        "type": "variable_unless",
-                                        "name": "grid_level",
-                                        "value": 0
-                                    }
-                                ]
-                            },
-                            {
-                                "type": "basic",
-                                "from": {
-                                    "key_code": "g",
-                                    "modifiers": {
-                                        "optional": [
-                                            "any"
-                                        ]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "vk_none"
-                                    }
-                                ],
-                                "conditions": [
-                                    {
-                                        "type": "variable_unless",
-                                        "name": "grid_level",
-                                        "value": 0
-                                    }
-                                ]
-                            },
-                            {
-                                "type": "basic",
-                                "from": {
-                                    "key_code": "h",
-                                    "modifiers": {
-                                        "optional": [
-                                            "any"
-                                        ]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "vk_none"
-                                    }
-                                ],
-                                "conditions": [
-                                    {
-                                        "type": "variable_unless",
-                                        "name": "grid_level",
-                                        "value": 0
-                                    }
-                                ]
-                            },
-                            {
-                                "type": "basic",
-                                "from": {
-                                    "key_code": "i",
-                                    "modifiers": {
-                                        "optional": [
-                                            "any"
-                                        ]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "vk_none"
-                                    }
-                                ],
-                                "conditions": [
-                                    {
-                                        "type": "variable_unless",
-                                        "name": "grid_level",
-                                        "value": 0
-                                    }
-                                ]
-                            },
-                            {
-                                "type": "basic",
-                                "from": {
-                                    "key_code": "j",
-                                    "modifiers": {
-                                        "optional": [
-                                            "any"
-                                        ]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "vk_none"
-                                    }
-                                ],
-                                "conditions": [
-                                    {
-                                        "type": "variable_unless",
-                                        "name": "grid_level",
-                                        "value": 0
-                                    }
-                                ]
-                            },
-                            {
-                                "type": "basic",
-                                "from": {
-                                    "key_code": "k",
-                                    "modifiers": {
-                                        "optional": [
-                                            "any"
-                                        ]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "vk_none"
-                                    }
-                                ],
-                                "conditions": [
-                                    {
-                                        "type": "variable_unless",
-                                        "name": "grid_level",
-                                        "value": 0
-                                    }
-                                ]
-                            },
-                            {
-                                "type": "basic",
-                                "from": {
-                                    "key_code": "l",
-                                    "modifiers": {
-                                        "optional": [
-                                            "any"
-                                        ]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "vk_none"
-                                    }
-                                ],
-                                "conditions": [
-                                    {
-                                        "type": "variable_unless",
-                                        "name": "grid_level",
-                                        "value": 0
-                                    }
-                                ]
-                            },
-                            {
-                                "type": "basic",
-                                "from": {
-                                    "key_code": "m",
-                                    "modifiers": {
-                                        "optional": [
-                                            "any"
-                                        ]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "vk_none"
-                                    }
-                                ],
-                                "conditions": [
-                                    {
-                                        "type": "variable_unless",
-                                        "name": "grid_level",
-                                        "value": 0
-                                    }
-                                ]
-                            },
-                            {
-                                "type": "basic",
-                                "from": {
-                                    "key_code": "n",
-                                    "modifiers": {
-                                        "optional": [
-                                            "any"
-                                        ]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "vk_none"
-                                    }
-                                ],
-                                "conditions": [
-                                    {
-                                        "type": "variable_unless",
-                                        "name": "grid_level",
-                                        "value": 0
-                                    }
-                                ]
-                            },
-                            {
-                                "type": "basic",
-                                "from": {
-                                    "key_code": "o",
-                                    "modifiers": {
-                                        "optional": [
-                                            "any"
-                                        ]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "vk_none"
-                                    }
-                                ],
-                                "conditions": [
-                                    {
-                                        "type": "variable_unless",
-                                        "name": "grid_level",
-                                        "value": 0
-                                    }
-                                ]
-                            },
-                            {
-                                "type": "basic",
-                                "from": {
-                                    "key_code": "p",
-                                    "modifiers": {
-                                        "optional": [
-                                            "any"
-                                        ]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "vk_none"
-                                    }
-                                ],
-                                "conditions": [
-                                    {
-                                        "type": "variable_unless",
-                                        "name": "grid_level",
-                                        "value": 0
-                                    }
-                                ]
-                            },
-                            {
-                                "type": "basic",
-                                "from": {
-                                    "key_code": "q",
-                                    "modifiers": {
-                                        "optional": [
-                                            "any"
-                                        ]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "vk_none"
-                                    }
-                                ],
-                                "conditions": [
-                                    {
-                                        "type": "variable_unless",
-                                        "name": "grid_level",
-                                        "value": 0
-                                    }
-                                ]
-                            },
-                            {
-                                "type": "basic",
-                                "from": {
-                                    "key_code": "r",
-                                    "modifiers": {
-                                        "optional": [
-                                            "any"
-                                        ]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "vk_none"
-                                    }
-                                ],
-                                "conditions": [
-                                    {
-                                        "type": "variable_unless",
-                                        "name": "grid_level",
-                                        "value": 0
-                                    }
-                                ]
-                            },
-                            {
-                                "type": "basic",
-                                "from": {
-                                    "key_code": "s",
-                                    "modifiers": {
-                                        "optional": [
-                                            "any"
-                                        ]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "vk_none"
-                                    }
-                                ],
-                                "conditions": [
-                                    {
-                                        "type": "variable_unless",
-                                        "name": "grid_level",
-                                        "value": 0
-                                    }
-                                ]
-                            },
-                            {
-                                "type": "basic",
-                                "from": {
-                                    "key_code": "t",
-                                    "modifiers": {
-                                        "optional": [
-                                            "any"
-                                        ]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "vk_none"
-                                    }
-                                ],
-                                "conditions": [
-                                    {
-                                        "type": "variable_unless",
-                                        "name": "grid_level",
-                                        "value": 0
-                                    }
-                                ]
-                            },
-                            {
-                                "type": "basic",
-                                "from": {
-                                    "key_code": "u",
-                                    "modifiers": {
-                                        "optional": [
-                                            "any"
-                                        ]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "vk_none"
-                                    }
-                                ],
-                                "conditions": [
-                                    {
-                                        "type": "variable_unless",
-                                        "name": "grid_level",
-                                        "value": 0
-                                    }
-                                ]
-                            },
-                            {
-                                "type": "basic",
-                                "from": {
-                                    "key_code": "v",
-                                    "modifiers": {
-                                        "optional": [
-                                            "any"
-                                        ]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "vk_none"
-                                    }
-                                ],
-                                "conditions": [
-                                    {
-                                        "type": "variable_unless",
-                                        "name": "grid_level",
-                                        "value": 0
-                                    }
-                                ]
-                            },
-                            {
-                                "type": "basic",
-                                "from": {
-                                    "key_code": "w",
-                                    "modifiers": {
-                                        "optional": [
-                                            "any"
-                                        ]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "vk_none"
-                                    }
-                                ],
-                                "conditions": [
-                                    {
-                                        "type": "variable_unless",
-                                        "name": "grid_level",
-                                        "value": 0
-                                    }
-                                ]
-                            },
-                            {
-                                "type": "basic",
-                                "from": {
-                                    "key_code": "x",
-                                    "modifiers": {
-                                        "optional": [
-                                            "any"
-                                        ]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "vk_none"
-                                    }
-                                ],
-                                "conditions": [
-                                    {
-                                        "type": "variable_unless",
-                                        "name": "grid_level",
-                                        "value": 0
-                                    }
-                                ]
-                            },
-                            {
-                                "type": "basic",
-                                "from": {
-                                    "key_code": "y",
-                                    "modifiers": {
-                                        "optional": [
-                                            "any"
-                                        ]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "vk_none"
+                                        "key_code": "c"
                                     }
                                 ],
                                 "conditions": [
@@ -37815,7 +37372,13 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "vk_none"
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "c"
                                     }
                                 ],
                                 "conditions": [
@@ -37823,6 +37386,1213 @@
                                         "type": "variable_unless",
                                         "name": "grid_level",
                                         "value": 0
+                                    },
+                                    {
+                                        "type": "device_if",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "d",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "d"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    },
+                                    {
+                                        "type": "device_unless",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "s",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "d"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    },
+                                    {
+                                        "type": "device_if",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "e",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "e"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    },
+                                    {
+                                        "type": "device_unless",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "w",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "e"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    },
+                                    {
+                                        "type": "device_if",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "f",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "f"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    },
+                                    {
+                                        "type": "device_unless",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "d",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "f"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    },
+                                    {
+                                        "type": "device_if",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "g",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "g"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    },
+                                    {
+                                        "type": "device_unless",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "f",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "g"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    },
+                                    {
+                                        "type": "device_if",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "h",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "h"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "i",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "i"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "j",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "j"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "k",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "k"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "l",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "l"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "m",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "m"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "n",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "n"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "o",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "o"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "p",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "p"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "q",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "q"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    },
+                                    {
+                                        "type": "device_unless",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "non_us_backslash",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "q"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    },
+                                    {
+                                        "type": "device_if",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "r",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "r"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    },
+                                    {
+                                        "type": "device_unless",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "e",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "r"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    },
+                                    {
+                                        "type": "device_if",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "s",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "s"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    },
+                                    {
+                                        "type": "device_unless",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "a",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "s"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    },
+                                    {
+                                        "type": "device_if",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "t",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "t"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    },
+                                    {
+                                        "type": "device_unless",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "r",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "t"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    },
+                                    {
+                                        "type": "device_if",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "u",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "u"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "v",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "v"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "x",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "v"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    },
+                                    {
+                                        "type": "device_if",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "w",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "w"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    },
+                                    {
+                                        "type": "device_unless",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "q",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "w"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    },
+                                    {
+                                        "type": "device_if",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "x",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "x"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    },
+                                    {
+                                        "type": "device_unless",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "grave_accent_and_tilde",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "x"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    },
+                                    {
+                                        "type": "device_if",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "y",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "y"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "z",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "z"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    },
+                                    {
+                                        "type": "device_unless",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "fn",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "z"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    },
+                                    {
+                                        "type": "device_if",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
                                     }
                                 ]
                             },
@@ -37838,7 +38608,13 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "vk_none"
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "1"
                                     }
                                 ],
                                 "conditions": [
@@ -37861,7 +38637,13 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "vk_none"
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "2"
                                     }
                                 ],
                                 "conditions": [
@@ -37884,7 +38666,13 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "vk_none"
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "3"
                                     }
                                 ],
                                 "conditions": [
@@ -37907,7 +38695,13 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "vk_none"
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "4"
                                     }
                                 ],
                                 "conditions": [
@@ -37930,7 +38724,13 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "vk_none"
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "5"
                                     }
                                 ],
                                 "conditions": [
@@ -37953,7 +38753,13 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "vk_none"
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "6"
                                     }
                                 ],
                                 "conditions": [
@@ -37976,7 +38782,13 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "vk_none"
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "7"
                                     }
                                 ],
                                 "conditions": [
@@ -37999,7 +38811,13 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "vk_none"
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "8"
                                     }
                                 ],
                                 "conditions": [
@@ -38022,7 +38840,13 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "vk_none"
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "9"
                                     }
                                 ],
                                 "conditions": [
@@ -38045,7 +38869,13 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "vk_none"
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "0"
                                     }
                                 ],
                                 "conditions": [
@@ -38068,7 +38898,13 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "vk_none"
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "hyphen"
                                     }
                                 ],
                                 "conditions": [
@@ -38091,7 +38927,13 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "vk_none"
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "equal_sign"
                                     }
                                 ],
                                 "conditions": [
@@ -38114,7 +38956,13 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "vk_none"
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "open_bracket"
                                     }
                                 ],
                                 "conditions": [
@@ -38137,7 +38985,13 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "vk_none"
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "close_bracket"
                                     }
                                 ],
                                 "conditions": [
@@ -38160,7 +39014,13 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "vk_none"
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "backslash"
                                     }
                                 ],
                                 "conditions": [
@@ -38168,6 +39028,43 @@
                                         "type": "variable_unless",
                                         "name": "grid_level",
                                         "value": 0
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "g",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "backslash"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    },
+                                    {
+                                        "type": "device_if",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
                                     }
                                 ]
                             },
@@ -38183,7 +39080,13 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "vk_none"
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "semicolon"
                                     }
                                 ],
                                 "conditions": [
@@ -38206,7 +39109,13 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "vk_none"
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "quote"
                                     }
                                 ],
                                 "conditions": [
@@ -38229,7 +39138,13 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "vk_none"
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "grave_accent_and_tilde"
                                     }
                                 ],
                                 "conditions": [
@@ -38237,6 +39152,51 @@
                                         "type": "variable_unless",
                                         "name": "grid_level",
                                         "value": 0
+                                    },
+                                    {
+                                        "type": "device_unless",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "t",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "grave_accent_and_tilde"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    },
+                                    {
+                                        "type": "device_if",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
                                     }
                                 ]
                             },
@@ -38252,7 +39212,13 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "vk_none"
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "comma"
                                     }
                                 ],
                                 "conditions": [
@@ -38275,7 +39241,13 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "vk_none"
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "period"
                                     }
                                 ],
                                 "conditions": [
@@ -38298,7 +39270,13 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "vk_none"
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "slash"
                                     }
                                 ],
                                 "conditions": [
@@ -38321,7 +39299,13 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "vk_none"
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "non_us_backslash"
                                     }
                                 ],
                                 "conditions": [
@@ -38329,6 +39313,14 @@
                                         "type": "variable_unless",
                                         "name": "grid_level",
                                         "value": 0
+                                    },
+                                    {
+                                        "type": "device_unless",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
                                     }
                                 ]
                             },
@@ -38344,7 +39336,13 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "vk_none"
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "spacebar"
                                     }
                                 ],
                                 "conditions": [
@@ -38367,7 +39365,13 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "vk_none"
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "return_or_enter"
                                     }
                                 ],
                                 "conditions": [
@@ -38390,7 +39394,13 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "vk_none"
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "tab"
                                     }
                                 ],
                                 "conditions": [
@@ -38413,7 +39423,13 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "vk_none"
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "delete_or_backspace"
                                     }
                                 ],
                                 "conditions": [
@@ -38436,7 +39452,13 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "vk_none"
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "left_arrow"
                                     }
                                 ],
                                 "conditions": [
@@ -38459,7 +39481,13 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "vk_none"
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "right_arrow"
                                     }
                                 ],
                                 "conditions": [
@@ -38482,7 +39510,13 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "vk_none"
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "up_arrow"
                                     }
                                 ],
                                 "conditions": [
@@ -38505,7 +39539,158 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "vk_none"
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "down_arrow"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "home",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "home"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "end",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "end"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "page_up",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "page_up"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "page_down",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "page_down"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_unless",
+                                        "name": "grid_level",
+                                        "value": 0
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "delete_forward",
+                                    "modifiers": {
+                                        "optional": [
+                                            "any"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "grid_level",
+                                            "value": 0
+                                        }
+                                    },
+                                    {
+                                        "key_code": "delete_forward"
                                     }
                                 ],
                                 "conditions": [

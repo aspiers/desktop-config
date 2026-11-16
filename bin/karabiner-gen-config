@@ -717,7 +717,8 @@ def grid_point(cells: tuple[int, ...]) -> list[Json]:
 def grid_rule() -> Json:
     """Thumb+- enters grid mode; each grid key moves the pointer to a cell
     and the next narrows within it, GRID_DEPTH levels deep (the last level
-    can be re-picked). Space / ; click and leave; Return or Escape leave."""
+    can be re-picked). Space / ; click and leave; Return or Escape leave,
+    and so does any other key, which then acts as usual."""
     from itertools import product
 
     leave = [set_var("grid_level", 0)]
@@ -738,16 +739,12 @@ def grid_rule() -> Json:
                 if level < GRID_DEPTH:
                     to += [set_var(f"grid_cell{level}", cell), set_var("grid_level", level + 1)]
                 m += manipulators(code, to, conditions=conditions)
-    # Other keys do nothing in grid mode, as in the Thumb layer.
-    for code in PRINTABLE:
-        m.append(
-            {
-                "type": "basic",
-                "from": {"key_code": code, "modifiers": {"optional": ["any"]}},
-                "to": [{"key_code": "vk_none"}],
-                "conditions": [IN_GRID],
-            }
-        )
+    # Any other key leaves grid mode and does what it normally does (Adam,
+    # 2026-11-16). This rule's output skips later rules, so the key is sent
+    # as typed, from the built-in keyboard's moved letters too.
+    others = PRINTABLE + ["backslash", "home", "end", "page_up", "page_down", "delete_forward"]
+    for typed in dict.fromkeys(others):
+        m += manipulators(typed, leave + [{"key_code": typed}], conditions=[IN_GRID], optional=["any"])
     return rule("Grid mode: Thumb+- then u i o / j k l / m , . (spec 3.4)", m)
 
 

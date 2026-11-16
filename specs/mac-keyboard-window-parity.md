@@ -386,7 +386,7 @@ then `u` `i` `o` / `j` `k` `l` / `m` `,` `.` move the pointer to the
 middle of that third of the focused window (the screen if none is
 focused), and each further press narrows within it, three levels deep
 (about 4% of the window); Space and `;` click and leave, Return and
-Escape leave. Karabiner draws nothing, so the cells are learnt rather
+Escape leave, and any other key leaves and then acts as usual. Karabiner draws nothing, so the cells are learnt rather
 than shown, and it cannot do Neru's hints.
 
 ### 3.5 Other global bindings

@@ -50,6 +50,9 @@ def holds(condition, keyboard, bundle):
     if kind.startswith("frontmost"):
         hit = any(re.search(p, bundle) for p in condition["bundle_identifiers"])
         return hit == (kind == "frontmost_application_if")
+    # Every variable is 0: no layer or mode is on.
+    if kind == "variable_unless":
+        return condition["value"] != 0
     assert kind == "variable_if", condition
     return condition["value"] == 0
 
