@@ -1,0 +1,38 @@
+# Example rules for link-router: which Chrome profile opens which links.
+#
+# Copy to ~/.config/link-router/rules.yaml (kept out of this public
+# repository, as real rules name the sites you use) and edit.
+#
+# Shared by bin/link-router (macOS) and
+# .local/lib/link-router/windows/link-router.ps1 (Windows).  Links
+# matching no rule bring up a picker, which can also append a rule here.
+#
+# profiles: what the picker offers, in this order.
+#   id     name used by rules below
+#   label  what the picker shows
+#   dir    Chrome's folder for the profile, e.g. "Default" or "Profile 1":
+#          the last part of "Profile Path" on chrome://version.  It can
+#          differ between machines; set dir_mac / dir_windows to override
+#          it on one OS.
+#
+# rules: the first match wins.  A match is tested against the link's
+# host, lower-cased:
+#   example.com           the host or any subdomain of it
+#   *.google.com          glob: * and ? as in the shell
+#   docs.google.com/a/*   glob containing / is tested against host + path
+
+profiles:
+  - id: work
+    label: Work
+    dir: Default
+  - id: personal
+    label: Personal
+    dir: Profile 1
+
+rules:
+  - match: example.com
+    profile: work
+  - match: github.com/example-org*
+    profile: work
+  - match: "*.youtube.com"
+    profile: personal

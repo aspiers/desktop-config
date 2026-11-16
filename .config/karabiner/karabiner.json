@@ -809,7 +809,7 @@
                                 },
                                 "to": [
                                     {
-                                        "shell_command": "~/bin/mac-jump tab --pick --open https://example.atlassian.net/jira/ '^https://example\\.atlassian\\.net/'"
+                                        "shell_command": "~/bin/mac-jump tab --pick --site jira"
                                     }
                                 ],
                                 "conditions": [

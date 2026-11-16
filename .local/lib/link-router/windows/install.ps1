@@ -5,7 +5,8 @@ can be chosen as the default for http and https links.
 
 .DESCRIPTION
 Run from this checkout of desktop-config; the registration points at
-link-router.ps1 here, which reads the rules in the same checkout.
+link-router.ps1 here, which reads the rules in a desktop-config-private
+checkout beside it.
 Installs yq with winget if needed, then opens Settings at Default apps,
 where Windows requires the default browser to be chosen by hand.
 See docs/link-router.md.

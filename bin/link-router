@@ -46,7 +46,9 @@ die() {
 }
 
 command -v yq >/dev/null || die "yq not found; brew install yq"
-[ -r "$RULES" ] || die "cannot read $RULES"
+# Rules name the sites in use, so live outside this public repository.
+[ -r "$RULES" ] ||
+    die "cannot read $RULES; start from ~/.local/lib/link-router/rules.example.yaml"
 
 # The host of URL $1, lower-cased, without user info or port.
 url_host() {

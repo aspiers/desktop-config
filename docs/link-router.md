@@ -7,16 +7,22 @@ no rule.
 
 ## Rules
 
-[`.config/link-router/rules.yaml`](../.config/link-router/rules.yaml)
-is shared by both versions.  It lists the profiles to offer, each with
-a label and Chrome's folder for it (`dir`, as on `chrome://version`),
-then the rules, first match wins.  Its header comments describe the
-patterns.  Running `link-router` (or `link-router.ps1`) with no link
-opens the file for editing.
+The rules live in `~/.config/link-router/rules.yaml`, outside this
+public repository, as they name the sites in use.  Adam keeps his in a
+private `desktop-config-private` repository, linked into `~/.config`
+like this one.  Start from
+[`rules.example.yaml`](../.local/lib/link-router/rules.example.yaml).
+
+Both versions share the file.  It lists the profiles to offer, each
+with a label and Chrome's folder for it (`dir`, as on
+`chrome://version`), then the rules, first match wins.  Its header
+comments describe the patterns.  Running `link-router` (or
+`link-router.ps1`) with no link opens the file for editing.
 
 A link matching no rule brings up a picker.  Choosing a profile opens
-the link there once.  Adding a rule appends it to the rules file, so it
-shows up in `git diff` and travels to the other machines from there.
+the link there once.  Adding a rule appends it to the rules file,
+behind any symlink, so it shows up in `git diff` in the private
+repository and travels to the other machines from there.
 
 ## macOS
 
@@ -48,8 +54,9 @@ line); the installer gets both from Homebrew.
 ## Windows
 
 - `.local/lib/link-router/windows/link-router.ps1` (Windows PowerShell
-  5.1) does the same, with a WinForms picker.  It reads the rules from
-  the checkout it lives in, as this repository is not stowed on Windows.
+  5.1) does the same, with a WinForms picker.  Nothing is stowed on
+  Windows, so it reads the rules from a `desktop-config-private`
+  checkout beside this one, or from `LINK_ROUTER_RULES`.
 - `install.ps1` in the same folder registers it as a browser for the
   current user and opens Settings at Default apps, where Windows insists
   the default is chosen by hand.  `-Uninstall` removes it.

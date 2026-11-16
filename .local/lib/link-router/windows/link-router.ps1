@@ -4,7 +4,8 @@ Open links in the right Chrome profile on Windows.
 
 .DESCRIPTION
 The Windows version of bin/link-router, reading the same rules file
-(.config/link-router/rules.yaml in desktop-config).  A link matching no
+(.config/link-router/rules.yaml in a desktop-config-private checkout
+beside this one; rules.example.yaml in ..\ shows the format).  A link matching no
 rule brings up a picker: open it once in a chosen profile, or also save
 a rule for links like it.  install.ps1 registers this script as a
 browser, so it can be chosen as the default.  See docs/link-router.md.
@@ -15,7 +16,7 @@ Usage:
   link-router.ps1               open the rules file for editing
 
 Environment:
-  LINK_ROUTER_RULES    rules file (default: the copy in this checkout)
+  LINK_ROUTER_RULES    rules file (default: the private checkout's)
   LINK_ROUTER_CHROME   chrome.exe to open links with (default: from the registry)
   LINK_ROUTER_DRY_RUN  if set, print what would be opened instead
 
@@ -30,10 +31,11 @@ param(
 Set-StrictMode -Version 3
 $ErrorActionPreference = 'Stop'
 
-# This checkout is not stowed on Windows, so read the rules in place:
-# .local\lib\link-router\windows -> repository root.
+# Nothing is stowed on Windows, so read the rules in place, in the
+# private checkout beside this one: .local\lib\link-router\windows ->
+# desktop-config -> its parent.
 $Rules = if ($env:LINK_ROUTER_RULES) { $env:LINK_ROUTER_RULES } else {
-    Join-Path $PSScriptRoot '..\..\..\..\.config\link-router\rules.yaml'
+    Join-Path $PSScriptRoot '..\..\..\..\..\desktop-config-private\.config\link-router\rules.yaml'
 }
 $Log = if ($env:LINK_ROUTER_LOG) { $env:LINK_ROUTER_LOG } else {
     Join-Path $env:LOCALAPPDATA 'link-router\link-router.log'

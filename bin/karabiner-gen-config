@@ -243,7 +243,7 @@ def rule(description: str, manips: list[Json]) -> Json:
 THUMB = variable("thumb")
 
 # Adam's personal Chrome profile folder, from chrome://version; the other
-# is work's (Adam, 2026-11-16).
+# is for work (Adam, 2026-11-16).
 PERSONAL_CHROME_PROFILE = "Profile 1"
 
 # What Thumb+8 (push-to-talk) and Thumb+9 (toggle) dictate with:
@@ -320,8 +320,8 @@ def jumps() -> list[Json]:
     m += thumb("g", shell("open -a Telegram"))
     m += thumb("h", jump(r"tab --pick --open https://github.com/ '^https://github\.com/'"))
     # Jira in Chrome tabs, picked like GitHub's (Adam, 2026-11-16: no Jira
-    # web app any more).
-    m += thumb("j", jump(r"tab --pick --open https://example.atlassian.net/jira/ '^https://example\.atlassian\.net/'"))
+    # web app any more). Its URL is private: "jira" in ~/.config/mac-jump/sites.
+    m += thumb("j", jump("tab --pick --site jira"))
     m += thumb("k", jump("emacs '(org-capture)'"))
     # With Outlook in front, cycle its windows and hide it after the last;
     # otherwise go to its mail (Adam, 2026-11-16).
