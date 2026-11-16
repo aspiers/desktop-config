@@ -300,10 +300,7 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "h",
-                                        "modifiers": [
-                                            "command"
-                                        ]
+                                        "shell_command": "~/bin/mac-jump hide com.stablyai.orca"
                                     }
                                 ],
                                 "conditions": [
@@ -327,10 +324,7 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "h",
-                                        "modifiers": [
-                                            "command"
-                                        ]
+                                        "shell_command": "~/bin/mac-jump hide com.stablyai.orca"
                                     }
                                 ],
                                 "conditions": [
@@ -458,10 +452,7 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "h",
-                                        "modifiers": [
-                                            "command"
-                                        ]
+                                        "shell_command": "~/bin/mac-jump hide org.gnu.Emacs"
                                     }
                                 ],
                                 "conditions": [
@@ -493,10 +484,7 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "h",
-                                        "modifiers": [
-                                            "command"
-                                        ]
+                                        "shell_command": "~/bin/mac-jump hide org.gnu.Emacs"
                                     }
                                 ],
                                 "conditions": [
@@ -792,10 +780,7 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "h",
-                                        "modifiers": [
-                                            "command"
-                                        ]
+                                        "shell_command": "~/bin/mac-jump hide com.apple.systempreferences"
                                     }
                                 ],
                                 "conditions": [
@@ -889,10 +874,7 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "h",
-                                        "modifiers": [
-                                            "command"
-                                        ]
+                                        "shell_command": "~/bin/mac-jump hide com.microsoft.teams2"
                                     }
                                 ],
                                 "conditions": [
@@ -924,10 +906,7 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "h",
-                                        "modifiers": [
-                                            "command"
-                                        ]
+                                        "shell_command": "~/bin/mac-jump hide com.microsoft.teams2"
                                     }
                                 ],
                                 "conditions": [
@@ -1011,10 +990,7 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "h",
-                                        "modifiers": [
-                                            "command"
-                                        ]
+                                        "shell_command": "~/bin/mac-jump hide com.apple.systempreferences"
                                     }
                                 ],
                                 "conditions": [
@@ -1100,10 +1076,7 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "h",
-                                        "modifiers": [
-                                            "command"
-                                        ]
+                                        "shell_command": "~/bin/mac-jump hide com.apple.systempreferences"
                                     }
                                 ],
                                 "conditions": [
@@ -1135,10 +1108,7 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "h",
-                                        "modifiers": [
-                                            "command"
-                                        ]
+                                        "shell_command": "~/bin/mac-jump hide com.apple.systempreferences"
                                     }
                                 ],
                                 "conditions": [
@@ -1344,10 +1314,7 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "h",
-                                        "modifiers": [
-                                            "command"
-                                        ]
+                                        "shell_command": "~/bin/mac-jump hide com.apple.ActivityMonitor"
                                     }
                                 ],
                                 "conditions": [
@@ -1379,10 +1346,7 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "h",
-                                        "modifiers": [
-                                            "command"
-                                        ]
+                                        "shell_command": "~/bin/mac-jump hide com.apple.ActivityMonitor"
                                     }
                                 ],
                                 "conditions": [
@@ -2026,10 +1990,7 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "h",
-                                        "modifiers": [
-                                            "command"
-                                        ]
+                                        "shell_command": "~/bin/mac-jump hide com.apple.systempreferences"
                                     }
                                 ],
                                 "conditions": [
@@ -2067,10 +2028,7 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "h",
-                                        "modifiers": [
-                                            "command"
-                                        ]
+                                        "shell_command": "~/bin/mac-jump hide com.apple.systempreferences"
                                     }
                                 ],
                                 "conditions": [
@@ -2108,10 +2066,7 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "h",
-                                        "modifiers": [
-                                            "command"
-                                        ]
+                                        "shell_command": "~/bin/mac-jump hide com.apple.systempreferences"
                                     }
                                 ],
                                 "conditions": [
@@ -2149,10 +2104,7 @@
                                 },
                                 "to": [
                                     {
-                                        "key_code": "h",
-                                        "modifiers": [
-                                            "command"
-                                        ]
+                                        "shell_command": "~/bin/mac-jump hide com.apple.systempreferences"
                                     }
                                 ],
                                 "conditions": [

@@ -12,6 +12,7 @@
 #   mac-jump outlook mail|calendar
 #   mac-jump teams chat|planner|meeting
 #   mac-jump windows
+#   mac-jump hide BUNDLE_ID
 #
 # Simple focus-or-launch needs no helper: the Karabiner rules run
 # `open -b BUNDLE_ID` directly, and toggles send Cmd+H when the app is
@@ -40,10 +41,26 @@ next_window() {
     awk -v f="$1" '{ id[NR] = $1; if ($1 == f) at = NR } END { if (NR) print id[at % NR + 1] }'
 }
 
-# Hide the app with bundle ID $1, as Cmd+H would.
-hide_app() {
+# Hide the app with bundle ID $1, as Cmd+H would, but stay on the current
+# workspace. When an app hides, macOS activates another app, and AeroSpace
+# follows it to that app's workspace (Adam, 2026-11-16: hiding Claude on
+# workspace 3 jumped to Teams on 2). So first focus another window on this
+# workspace if there is one, and otherwise come back to the workspace after.
+hide() {
+    [ $# -eq 1 ] || die "hide: need one bundle ID"
+    local workspace other
+    workspace=$(aerospace list-workspaces --focused)
+    other=$(aerospace list-windows --workspace focused --format '%{window-id} %{app-bundle-id}' |
+        awk -v app="$1" '$2 != app { print $1; exit }')
+    [ -n "$other" ] && aerospace focus --window-id "$other"
     osascript -e "tell application \"System Events\" to set visible of (first process whose bundle identifier is \"$1\") to false" \
         >/dev/null || die "could not hide $1"
+    if [ -z "$other" ]; then
+        # Let macOS activate its next app before coming back.
+        sleep 0.3
+        aerospace workspace "$workspace" 2>/dev/null
+    fi
+    return 0
 }
 
 cycle() {
@@ -69,7 +86,7 @@ cycle() {
     fi
     focused=$(aerospace list-windows --focused --format '%{window-id}' 2>/dev/null)
     if [ -n "$toggle" ] && [ "$focused" = "$(printf '%s\n' "$windows" | tail -1)" ]; then
-        hide_app "$(printf '%s\n' "$list" | awk -v id="$focused" '$1 == id { print $2; exit }')"
+        hide "$(printf '%s\n' "$list" | awk -v id="$focused" '$1 == id { print $2; exit }')"
         return
     fi
     target=$(printf '%s\n' "$windows" | next_window "$focused")
@@ -266,7 +283,7 @@ windows() {
 }
 
 case ${1:-} in
-    cycle|tab|emacs|outlook|teams|windows)
+    cycle|tab|emacs|outlook|teams|windows|hide)
         cmd=$1
         shift
         "$cmd" "$@"

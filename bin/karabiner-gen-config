@@ -260,18 +260,23 @@ def thumb(typed: str, to: list[Json], mods: str = "", extra: list[Json] | None =
     return manipulators(typed, to, mods, [THUMB] + (extra or []))
 
 
+def hide_if_frontmost(typed: str, bundle: str, mods: str = "") -> list[Json]:
+    """Hide the app if it is frontmost. `mac-jump hide` rather than Cmd+H,
+    so AeroSpace stays on this workspace instead of following macOS to
+    whichever app it activates next (Adam, 2026-11-16)."""
+    return thumb(typed, jump(f"hide {bundle}"), mods, [apps([f"^{re.escape(bundle)}$"])])
+
+
 def toggle(typed: str, bundle: str, mods: str = "") -> list[Json]:
     """Hide the app if frontmost, else focus or launch it (spec 3.1, T)."""
-    return thumb(typed, key("h", "command"), mods, [apps([f"^{bundle}$".replace(".", r"\.")])]) + thumb(
-        typed, open_bundle(bundle), mods
-    )
+    return hide_if_frontmost(typed, bundle, mods) + thumb(typed, open_bundle(bundle), mods)
 
 
 def settings_toggle(typed: str, pane: str, mods: str = "") -> list[Json]:
     """Open a System Settings pane, or hide System Settings if it is
     frontmost, as toggle() does for apps (Adam, 2026-11-16). Karabiner cannot
     tell which pane is showing, so any settings key hides it."""
-    return thumb(typed, key("h", "command"), mods, [apps([r"^com\.apple\.systempreferences$"])]) + thumb(
+    return hide_if_frontmost(typed, "com.apple.systempreferences", mods) + thumb(
         typed, shell(f"open 'x-apple.systempreferences:{pane}'"), mods
     )
 
@@ -327,7 +332,7 @@ def jumps() -> list[Json]:
     # Cycles when Slack has several windows (Adam, 2026-11-16).
     m += thumb("s", jump(r"cycle --launch com.tinyspeck.slackmacgap '^com\.tinyspeck\.slackmacgap$'"))
     # Hides Teams when it is frontmost, as toggle() does (Adam, 2026-11-16).
-    m += thumb("t", key("h", "command"), extra=[apps([r"^com\.microsoft\.teams2$"])])
+    m += hide_if_frontmost("t", "com.microsoft.teams2")
     m += thumb("t", jump("teams chat"))
     m += settings_toggle("u", "com.apple.BluetoothSettings")
     m += thumb("v", jump("emacs ~/lib/emacs/shortcuts/org-agenda-daily-review.el"))
