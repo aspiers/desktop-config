@@ -158,7 +158,10 @@ Source: keyd partials `gb`, `gb-3`, `backslash-hash-tilde`,
 
 The base layout is US, with UK changes:
 
-- `Shift+2` types `"` and `Shift+'` types `@`.
+- `Shift+2` types `"` and `Shift+'` types `@`. macOS: a Karabiner rule
+  swaps the two on the "British" input source, which has them the US way
+  round; "British - PC" would swap them too but changes other keys
+  (Adam, 2026-11-16).
 - `Shift+3` types `£`; `Ctrl+Shift+3` types `€` (Framework). Keyboards
   without a spare key get `£` / `€` on another key (Kinesis: the `-` key or
   top-right key).

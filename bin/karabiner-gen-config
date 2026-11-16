@@ -573,6 +573,21 @@ def modifier_rules() -> Json:
     )
 
 
+def characters_rule() -> Json:
+    """Spec 2.3: Shift+2 types " and Shift+' types @, as on a UK PC. macOS's
+    "British" layout has them the US way round, and its "British - PC"
+    layout changes other keys too, so swap just these two (Adam,
+    2026-11-16)."""
+    shift = {"mandatory": ["shift"], "optional": ["caps_lock"]}
+    return rule(
+        'UK characters: Shift+2 types " and Shift+\' types @ (spec 2.3)',
+        [
+            {"type": "basic", "from": {"key_code": "2", "modifiers": shift}, "to": key("quote", "shift")},
+            {"type": "basic", "from": {"key_code": "quote", "modifiers": shift}, "to": key("2", "shift")},
+        ],
+    )
+
+
 def alpha_shift_rule() -> Json:
     manips = [
         {
@@ -632,6 +647,7 @@ def configuration() -> Json:
         control_app_rules(),
         editing_rule(),
         modifier_rules(),
+        characters_rule(),
         alpha_shift_rule(),
     ]
     return {
