@@ -364,7 +364,6 @@ def jumps() -> list[Json]:
     m += thumb("z", jump(r"tab --pick 'zoom\.us/'"), "shift")
     m += thumb("z", jump(r"tab 'zoom\.us/(wc|j)/'"), "ctrl")
     m += thumb("2", jump("emacs '(as-find-personal-todo)'"), "ctrl")
-    m += thumb("5", jump("emacs '(as-find-Toucan-todo)'"), "ctrl")
     m += thumb("7", jump("emacs ~/lib/emacs/shortcuts/org-agenda-weekly-review.el"), "ctrl")
     return m
 

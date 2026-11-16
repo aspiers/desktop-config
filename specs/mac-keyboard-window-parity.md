@@ -291,7 +291,7 @@ Thumb+modifier+letter jumps:
 | Thumb+Shift+`` ` `` | `ccmonitor` (T) | unbound |
 | Thumb+Shift+`p` | EasyEffects (T) | unbound (Linux-only tool) |
 | Thumb+Shift+`u` | Bluetooth manager (T) | unbound (Linux-only tool) |
-| Thumb+Ctrl+`2` / `5` / `7` | Emacs: personal todo / Toucan todo / weekly review | same |
+| Thumb+Ctrl+`2` / `5` / `7` | Emacs: personal todo / Toucan todo / weekly review | same, except `5`: no Toucan bindings on the work Mac (Adam, 2026-11-16) |
 
 Mac / Windows targets were agreed with Adam on 2026-11-14. On the Mac,
 the System Settings keys toggle (Adam, 2026-11-16): any of them hides

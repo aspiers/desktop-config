@@ -3226,52 +3226,6 @@
                             {
                                 "type": "basic",
                                 "from": {
-                                    "key_code": "5",
-                                    "modifiers": {
-                                        "mandatory": [
-                                            "command"
-                                        ]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "shell_command": "~/bin/mac-jump emacs '(as-find-Toucan-todo)'"
-                                    }
-                                ],
-                                "conditions": [
-                                    {
-                                        "type": "variable_if",
-                                        "name": "thumb",
-                                        "value": 1
-                                    }
-                                ]
-                            },
-                            {
-                                "type": "basic",
-                                "from": {
-                                    "key_code": "5",
-                                    "modifiers": {
-                                        "mandatory": [
-                                            "control"
-                                        ]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "shell_command": "~/bin/mac-jump emacs '(as-find-Toucan-todo)'"
-                                    }
-                                ],
-                                "conditions": [
-                                    {
-                                        "type": "variable_if",
-                                        "name": "thumb",
-                                        "value": 1
-                                    }
-                                ]
-                            },
-                            {
-                                "type": "basic",
-                                "from": {
                                     "key_code": "7",
                                     "modifiers": {
                                         "mandatory": [
