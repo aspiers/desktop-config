@@ -352,6 +352,14 @@ def jumps() -> list[Json]:
     m += thumb("n", jump(r"tab --pick --open https://www.notion.so/ '^https://(www|app)\.notion\.(so|com)/'"), "shift")
     m += thumb("r", jump(r"tab --open https://app.reclaim.ai/ '^https://app\.reclaim\.ai/'"), "shift")
     m += thumb("t", jump("teams meeting"), "ctrl")
+    # Light / dark mode: Linux has it as T in the terminal menu
+    # (set-colour-theme --toggle); the Mac has no terminal menu (Adam,
+    # 2026-11-16). Needs Automation permission for System Events.
+    m += thumb(
+        "t",
+        shell("osascript -e 'tell application \"System Events\" to tell appearance preferences to set dark mode to not dark mode'"),
+        "shift",
+    )
     m += thumb("w", jump(r"tab --open https://web.whatsapp.com/ '^https://web\.whatsapp\.com/'"), "alt")
     m += thumb("z", jump(r"tab --pick 'zoom\.us/'"), "shift")
     m += thumb("z", jump(r"tab 'zoom\.us/(wc|j)/'"), "ctrl")

@@ -284,6 +284,7 @@ Thumb+modifier+letter jumps:
 | Thumb+Alt+`n` / Thumb+Shift+`n` | Notion app / picker of Notion tabs | same |
 | Thumb+Shift+`r` | Reclaim tab | same |
 | Thumb+Ctrl+`t` | (none) | **Teams meeting window** |
+| Thumb+Shift+`t` | (none: T in the terminal menu, `set-colour-theme --toggle`) | **Light / dark mode** (Adam, 2026-11-16) |
 | Thumb+Alt+`w` | WhatsApp tab | same |
 | Thumb+Ctrl+`y` | Syncthing web UI | unbound |
 | Thumb+Shift+`z` / Thumb+Ctrl+`z` | Picker of Zoom tabs / Zoom meeting window | same |
