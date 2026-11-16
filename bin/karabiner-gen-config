@@ -317,7 +317,8 @@ def jumps() -> list[Json]:
     m += thumb("n", jump("emacs '(as-find-personal-note)'"))
     m += thumb("o", jump("teams planner"))
     m += settings_toggle("p", "com.apple.Sound-Settings.extension")
-    m += thumb("s", open_bundle("com.tinyspeck.slackmacgap"))
+    # Cycles when Slack has several windows (Adam, 2026-11-16).
+    m += thumb("s", jump(r"cycle --launch com.tinyspeck.slackmacgap '^com\.tinyspeck\.slackmacgap$'"))
     m += thumb("t", jump("teams chat"))
     m += settings_toggle("u", "com.apple.BluetoothSettings")
     m += thumb("v", jump("emacs ~/lib/emacs/shortcuts/org-agenda-daily-review.el"))
