@@ -438,6 +438,7 @@ def window_operations() -> list[Json]:
     # Modes. Thumb's own variable resets when Thumb is released.
     m += thumb("p", [set_var("passthrough", 1), PASSTHROUGH_ON], "ctrl")
     m += thumb("r", [set_var("reorganise", 1), REORGANISE_ON])
+    m += thumb("hyphen", [set_var("grid_level", 1)])
     return m
 
 
@@ -688,6 +689,68 @@ MOVE = 1536
 SCROLL = 64
 
 
+# Grid mode (spec 3.4, Neru's grid on Linux): Karabiner can place the
+# pointer but draw nothing, so the cells are learnt, laid out like a
+# numpad: u i o / j k l / m , . (Adam, 2026-11-16).
+GRID_KEYS = ["u", "i", "o", "j", "k", "l", "m", "comma", "period"]
+GRID_DEPTH = 3
+# Relative to the focused window, which picks the monitor too, or the
+# screen when no window is focused. Set to None for the whole screen.
+GRID_RELATIVE_TO: str | None = "focused_window"
+IN_GRID = {"type": "variable_unless", "name": "grid_level", "value": 0}
+
+
+def grid_point(cells: tuple[int, ...]) -> list[Json]:
+    """Pointer to the middle of the cell picked by `cells`, outermost first."""
+    x = y = 0.0
+    size = 1.0
+    for cell in cells:
+        size /= 3
+        x += (cell % 3) * size
+        y += (cell // 3) * size
+    position: Json = {"x": f"{round((x + size / 2) * 100)}%", "y": f"{round((y + size / 2) * 100)}%"}
+    if GRID_RELATIVE_TO:
+        position |= {"relative_to": GRID_RELATIVE_TO, "fallback_to": "screen"}
+    return [{"software_function": {"set_mouse_cursor_position": position}}]
+
+
+def grid_rule() -> Json:
+    """Thumb+- enters grid mode; each grid key moves the pointer to a cell
+    and the next narrows within it, GRID_DEPTH levels deep (the last level
+    can be re-picked). Space / ; click and leave; Return or Escape leave."""
+    from itertools import product
+
+    leave = [set_var("grid_level", 0)]
+    m: list[Json] = []
+    for code, to in [
+        ("spacebar", [{"pointing_button": "button1"}]),
+        ("semicolon", [{"pointing_button": "button2"}]),
+        ("return_or_enter", []),
+        ("escape", []),
+    ]:
+        m += manipulators(code, to + leave, conditions=[IN_GRID])
+    for level in range(1, GRID_DEPTH + 1):
+        for chosen in product(range(9), repeat=level - 1):
+            conditions = [variable("grid_level", level)]
+            conditions += [variable(f"grid_cell{i + 1}", c) for i, c in enumerate(chosen)]
+            for cell, code in enumerate(GRID_KEYS):
+                to = grid_point(chosen + (cell,))
+                if level < GRID_DEPTH:
+                    to += [set_var(f"grid_cell{level}", cell), set_var("grid_level", level + 1)]
+                m += manipulators(code, to, conditions=conditions)
+    # Other keys do nothing in grid mode, as in the Thumb layer.
+    for code in PRINTABLE:
+        m.append(
+            {
+                "type": "basic",
+                "from": {"key_code": code, "modifiers": {"optional": ["any"]}},
+                "to": [{"key_code": "vk_none"}],
+                "conditions": [IN_GRID],
+            }
+        )
+    return rule("Grid mode: Thumb+- then u i o / j k l / m , . (spec 3.4)", m)
+
+
 def mouse_rule() -> Json:
     """Spec 3.4: fievel's free mouse mode, from Linux, in Karabiner, since
     fievel itself needs IT approval on the work Mac (Adam, 2026-11-16: as
@@ -784,6 +847,7 @@ def configuration() -> Json:
         rule("Thumb layer: app jumps, window management, volume and more (spec 3)", bound),
         block_unbound(),
         reorganise_rule(),
+        grid_rule(),
         mouse_rule(),
         control_app_rules(),
         editing_rule(),
