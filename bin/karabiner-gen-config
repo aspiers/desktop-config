@@ -633,6 +633,31 @@ def characters_rule() -> Json:
     )
 
 
+def advantage_360_characters_rule() -> Json:
+    """The Advantage 360 as on Linux (keyd kinesis-advantage-360.conf, US
+    base with UK keys): Shift+3 types #, the key right of P (the firmware
+    sends 102nd) types \\ and |, and the top right key (which sends \\)
+    types £ and €. On macOS's "British" layout # is Option+3 and € is
+    Option+2, sent with right Option so terminals that treat left Option as
+    Meta still type them (Adam, 2026-11-16)."""
+    on_360 = [device(*ADVANTAGE_360)]
+    shift = {"mandatory": ["shift"], "optional": ["caps_lock"]}
+    plain = {"optional": ["caps_lock"]}
+
+    def remap(code: str, modifiers: Json, to: list[Json]) -> Json:
+        return {"type": "basic", "from": {"key_code": code, "modifiers": modifiers}, "to": to, "conditions": on_360}
+
+    return rule(
+        "Advantage 360: Shift+3 types #, right of P types \\ |, top right types £ € (spec 2.3)",
+        [
+            remap("3", shift, key("3", "right_option")),
+            remap("non_us_backslash", {"optional": ["shift", "caps_lock"]}, key("backslash")),
+            remap("backslash", shift, key("2", "right_option")),
+            remap("backslash", plain, key("3", "shift")),
+        ],
+    )
+
+
 def chord(typed: tuple[str, str], to: list[Json], conditions: list[Json], options: Json | None = None) -> list[Json]:
     """Manipulators for two keys pressed together, on each keyboard: the
     built-in keyboard types some letters from other keys (spec 2.1)."""
@@ -765,6 +790,7 @@ def configuration() -> Json:
         control_app_rules(),
         editing_rule(),
         modifier_rules(),
+        advantage_360_characters_rule(),
         characters_rule(),
         alpha_shift_rule(),
     ]

@@ -166,6 +166,11 @@ The base layout is US, with UK changes:
   without a spare key get `£` / `€` on another key (Kinesis: the `-` key or
   top-right key).
 - The `\` key types `#`, and `~` with Shift (laptops).
+- Advantage 360, on the Mac as on Linux (Adam, 2026-11-16): `Shift+3`
+  types `#`, the key right of `P` types `\` / `|`, and the top right key
+  types `£` / `€`. On the "British" input source `#` and `€` are Option
+  combinations, so Karabiner sends them with right Option, which
+  terminals using left Option as Meta still treat as Option.
 - Compose (2.2) types other characters.
 - In Emacs, which ignores Compose, the `£` / `€` keys send Emacs's own
   `C-x 8 L` / `C-x 8 E` instead.
