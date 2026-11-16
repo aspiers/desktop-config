@@ -698,6 +698,24 @@
                             {
                                 "type": "basic",
                                 "from": {
+                                    "key_code": "j"
+                                },
+                                "to": [
+                                    {
+                                        "shell_command": "~/bin/mac-jump cycle --toggle --launch com.google.Chrome.app.dlipgkhhhafidbfnjnbnpnfphpfckpoc '^com\\.google\\.Chrome\\.app\\.dlipgkhhhafidbfnjnbnpnfphpfckpoc$'"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_if",
+                                        "name": "thumb",
+                                        "value": 1
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
                                     "key_code": "k"
                                 },
                                 "to": [

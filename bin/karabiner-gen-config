@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -241,6 +242,8 @@ def rule(description: str, manips: list[Json]) -> Json:
 
 THUMB = variable("thumb")
 
+JIRA_APP = "com.google.Chrome.app.dlipgkhhhafidbfnjnbnpnfphpfckpoc"
+
 # Adam's personal Chrome profile folder, from chrome://version; the other
 # is work's (Adam, 2026-11-16).
 PERSONAL_CHROME_PROFILE = "Profile 1"
@@ -313,6 +316,9 @@ def jumps() -> list[Json]:
     m += thumb("f", open_bundle("org.mozilla.firefox"))
     m += thumb("g", shell("open -a Telegram"))
     m += thumb("h", jump(r"tab --pick --open https://github.com/ '^https://github\.com/'"))
+    # The Jira web app Chrome installed (~/Applications/Chrome Apps), whose
+    # bundle ID is Chrome's ID for it (Adam, 2026-11-16).
+    m += thumb("j", jump(rf"cycle --toggle --launch {JIRA_APP} '^{re.escape(JIRA_APP)}$'"))
     m += thumb("k", jump("emacs '(org-capture)'"))
     m += thumb("m", jump("outlook mail"))
     m += thumb("n", jump("emacs '(as-find-personal-note)'"))

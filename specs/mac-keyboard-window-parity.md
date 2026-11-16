@@ -248,7 +248,7 @@ Thumb+letter, Linux and the agreed Mac / Windows targets:
 | `f` | Firefox | same |
 | `g` | Telegram | same |
 | `h` | Picker of GitHub tabs in Chrome | same |
-| `j` | Jump menu | unbound for now |
+| `j` | Jump menu | **Jira** web app (C, T; Adam, 2026-11-16) |
 | `k` | Emacs: `org-capture` | same |
 | `m` | Mail menu (`rofi-mail-menu`) | **Outlook mail** |
 | `n` | Emacs: personal note | same |
