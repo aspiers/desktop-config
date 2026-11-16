@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AeroSpace Thumb Keys</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: a modifier legend up top, then a two-column grid of binding tables, then where apps land. */
+:root {
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --ink: #1b1f27;
+  --muted: #5d6573;
+  --line: #dde0e6;
+  --accent: #2f55c4;
+  --thumb: #b8620f;
+  --thumb-bg: #fdf0e1;
+  --key-bg: #eef0f4;
+  --key-edge: #c5cad3;
+  --font-body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-key: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14171d;
+    --surface: #1c2028;
+    --ink: #e6e8ee;
+    --muted: #9aa2b1;
+    --line: #2c323d;
+    --accent: #8aa6ff;
+    --thumb: #f2a65a;
+    --thumb-bg: #3a2814;
+    --key-bg: #262b35;
+    --key-edge: #3c4352;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14171d;
+  --surface: #1c2028;
+  --ink: #e6e8ee;
+  --muted: #9aa2b1;
+  --line: #2c323d;
+  --accent: #8aa6ff;
+  --thumb: #f2a65a;
+  --thumb-bg: #3a2814;
+  --key-bg: #262b35;
+  --key-edge: #3c4352;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+}
+main {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 32px 20px 48px;
+  display: grid;
+  gap: 24px;
+}
+header { display: grid; gap: 6px; }
+h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.lede { margin: 0; color: var(--muted); max-width: 70ch; }
+h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.legend {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+  display: grid;
+  gap: 12px;
+}
+.legend-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 28px;
+}
+.legend-item { display: flex; align-items: center; gap: 10px; }
+.legend-item span { color: var(--muted); }
+.legend p { margin: 0; color: var(--muted); font-size: 14px; max-width: 95ch; }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 480px), 1fr));
+  gap: 20px;
+  align-items: start;
+}
+section.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px 8px;
+  display: grid;
+  gap: 8px;
+}
+section.card.mode { border-top: 3px solid var(--thumb); }
+.card .note { margin: 0; color: var(--muted); font-size: 14px; }
+
+table { width: 100%; border-collapse: collapse; }
+td {
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+  vertical-align: top;
+}
+tr:first-child td { border-top: 0; }
+td.keys { width: 52%; padding-right: 14px; }
+td.what { color: var(--ink); }
+td.what small { display: block; color: var(--muted); font-size: 13px; }
+
+.combo { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.combo + .combo::before { content: "or"; color: var(--muted); font-size: 12px; margin: 0 6px 0 2px; }
+.alt-sep { color: var(--muted); font-size: 12px; margin: 0 2px; }
+kbd {
+  font-family: var(--font-key);
+  font-size: 12.5px;
+  font-weight: 500;
+  min-width: 24px;
+  padding: 1px 7px;
+  text-align: center;
+  background: var(--key-bg);
+  border: 1px solid var(--key-edge);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  color: var(--ink);
+  white-space: nowrap;
+}
+kbd.thumb {
+  background: var(--thumb-bg);
+  border-color: var(--thumb);
+  color: var(--thumb);
+  font-weight: 600;
+}
+.plus { color: var(--muted); font-size: 12px; }
+h2 kbd { text-transform: none; letter-spacing: 0; }
+
+.ws {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+  display: grid;
+  gap: 12px;
+}
+.ws-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+  gap: 10px;
+}
+.ws-cell {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: grid;
+  gap: 4px;
+  align-content: start;
+}
+.ws-cell .num {
+  font-family: var(--font-key);
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--accent);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.ws-cell .num span {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 12px;
+  color: var(--muted);
+}
+.ws-cell .apps { font-size: 14px; }
+.ws-cell .empty { font-size: 14px; color: var(--muted); }
+.ws p { margin: 0; color: var(--muted); font-size: 14px; max-width: 95ch; }
+
+footer { color: var(--muted); font-size: 13px; }
+footer code { font-family: var(--font-key); font-size: 12px; }
+
+@media (max-width: 520px) {
+  td.keys { width: auto; display: block; padding-bottom: 2px; }
+  td.what { display: block; border-top: 0; padding-top: 0; }
+}
+</style>
+</head>
+<body>
+<main>
+
+<header>
+  <h1>AeroSpace Thumb Keys</h1>
+  <p class="lede">Every AeroSpace binding runs through Karabiner’s Thumb layer, which calls the <code>aerospace</code> command. AeroSpace itself has no key bindings in this setup.</p>
+</header>
+
+<div class="legend" aria-label="Modifier keys">
+  <h2>Modifiers on the MacBook keyboard</h2>
+  <div class="legend-row">
+    <div class="legend-item"><kbd class="thumb">Thumb</kbd><span>hold right ⌘</span></div>
+    <div class="legend-item"><kbd>Ctrl</kbd><span>left ⌘ (the Control position)</span></div>
+    <div class="legend-item"><kbd>Alt</kbd><span>left ⌥</span></div>
+    <div class="legend-item"><kbd>Shift</kbd><span>either ⇧</span></div>
+  </div>
+  <p>Letters mean the letter typed, not the label on the key: on the built-in keyboard the left-hand letters sit one key to the left, so <kbd>Q</kbd> is the § key, <kbd>A</kbd> is Caps Lock, <kbd>R</kbd> is the E key. On the Advantage 360, Thumb is the key with the Windows keycap on the right thumb pad and Ctrl is its left Ctrl key.</p>
+  <p><strong>Known issue:</strong> Thumb + Ctrl bindings do nothing from the laptop keyboard while an ordinary app such as Chrome is in front. They work from the Kinesis, and from the laptop in terminals, Emacs and Orca.</p>
+</div>
+
+<div class="grid">
+
+  <section class="card">
+    <h2>Focus and move windows</h2>
+    <table>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd></span></td>
+        <td class="what">Focus the window in that direction<small>Thumb + Ctrl + arrows does the same</small></td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Shift</kbd><span class="plus">+</span><kbd>←↑↓→</kbd></span> <span class="combo"><kbd>H</kbd><kbd>J</kbd><kbd>K</kbd><kbd>L</kbd></span></td>
+        <td class="what">Move the window one tile that way</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Alt</kbd><span class="plus">+</span><kbd>Shift</kbd><span class="plus">+</span><kbd>←↑↓→</kbd></span> <span class="combo"><kbd>H</kbd><kbd>J</kbd><kbd>K</kbd><kbd>L</kbd></span></td>
+        <td class="what">Join with the neighbour<small>Puts both windows in a new container</small></td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>/</kbd></span></td>
+        <td class="what">Next window on the workspace, wrapping round<small>Thumb + Ctrl + / does the same</small></td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Shift</kbd><span class="plus">+</span><kbd>/</kbd></span></td>
+        <td class="what">Previous window on the workspace</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Alt</kbd><span class="plus">+</span><kbd>Return</kbd></span></td>
+        <td class="what">Window picker<small>From <code>mac-jump</code>, not AeroSpace</small></td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Tab</kbd></span></td>
+        <td class="what">Chrome tab picker, every tab<small>From <code>mac-jump</code>, not AeroSpace</small></td>
+      </tr>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>Workspaces</h2>
+    <table>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>1</kbd><span class="alt-sep">–</span><kbd>6</kbd></span></td>
+        <td class="what">Go to workspace 1–6</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Alt</kbd><span class="plus">+</span><kbd>1</kbd><span class="alt-sep">–</span><kbd>6</kbd></span></td>
+        <td class="what">Send the window to workspace 1–6 and follow it</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>,</kbd></span> <span class="combo"><kbd>.</kbd></span></td>
+        <td class="what">Previous / next workspace<small>Steps through 1–6, empty ones included, stopping at either end</small></td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Alt</kbd><span class="plus">+</span><kbd>,</kbd></span> <span class="combo"><kbd>.</kbd></span></td>
+        <td class="what">Send the window to the previous / next workspace and follow it</td>
+      </tr>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>Monitors</h2>
+    <table>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Shift</kbd><span class="plus">+</span><kbd>,</kbd></span> <span class="combo"><kbd>.</kbd></span></td>
+        <td class="what">Focus the other monitor<small>Previous / next, wrapping round, however the monitors are arranged</small></td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Alt</kbd><span class="plus">+</span><kbd>Shift</kbd><span class="plus">+</span><kbd>,</kbd></span> <span class="combo"><kbd>.</kbd></span></td>
+        <td class="what">Send the window to the other monitor and follow it<small>Previous / next, as above</small></td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Alt</kbd><span class="plus">+</span><kbd>Shift</kbd><span class="plus">+</span><kbd>1</kbd><span class="alt-sep">–</span><kbd>3</kbd></span></td>
+        <td class="what">Send the window to monitor 1–3 and follow it</td>
+      </tr>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>Window state</h2>
+    <table>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Space</kbd></span></td>
+        <td class="what">Toggle floating / tiling</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Ctrl</kbd><span class="plus">+</span><kbd>M</kbd></span></td>
+        <td class="what">Toggle AeroSpace fullscreen</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>I</kbd></span></td>
+        <td class="what">Minimise<small>AeroSpace can’t focus minimised windows again</small></td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Q</kbd></span></td>
+        <td class="what">Close the window</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Ctrl</kbd><span class="plus">+</span><kbd>Q</kbd></span></td>
+        <td class="what">Close the window, and quit the app if it was the last one</td>
+      </tr>
+    </table>
+  </section>
+
+  <section class="card mode">
+    <h2>Reorganise mode: <kbd class="thumb">Thumb</kbd> + <kbd>R</kbd></h2>
+    <p class="note">No Thumb needed once you’re in. <kbd>Q</kbd>, <kbd>Esc</kbd> or <kbd>Space</kbd> leaves.</p>
+    <table>
+      <tr>
+        <td class="keys"><span class="combo"><kbd>H</kbd><kbd>J</kbd><kbd>K</kbd><kbd>L</kbd></span></td>
+        <td class="what">Focus left / down / up / right</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd>←</kbd><kbd>↑</kbd><kbd>↓</kbd><kbd>→</kbd></span></td>
+        <td class="what">Move the window</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd>Shift</kbd><span class="plus">+</span><kbd>←↑↓→</kbd></span></td>
+        <td class="what">Join with the neighbour</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd>Ctrl</kbd><span class="plus">+</span><kbd>←↑↓→</kbd></span></td>
+        <td class="what">Resize by 50 px<small>← narrower, → wider, ↑ shorter, ↓ taller</small></td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd>Ctrl</kbd><span class="plus">+</span><kbd>Shift</kbd><span class="plus">+</span><kbd>←↑↓→</kbd></span></td>
+        <td class="what">Resize by 200 px</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd>T</kbd></span></td>
+        <td class="what">Tiles layout, toggling horizontal / vertical</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd>A</kbd></span></td>
+        <td class="what">Accordion layout, toggling horizontal / vertical</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd>Shift</kbd><span class="plus">+</span><kbd>2</kbd></span></td>
+        <td class="what">Whole workspace side by side (root horizontal tiles)</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd>Shift</kbd><span class="plus">+</span><kbd>;</kbd></span></td>
+        <td class="what">Whole workspace stacked (root vertical tiles)</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd>F</kbd></span></td>
+        <td class="what">Toggle floating / tiling</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd>M</kbd></span></td>
+        <td class="what">Toggle fullscreen</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd>B</kbd></span></td>
+        <td class="what">Balance sizes</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd>0</kbd></span></td>
+        <td class="what">Flatten the workspace tree</td>
+      </tr>
+    </table>
+  </section>
+
+  <section class="card mode">
+    <h2>Pass-through mode: <kbd class="thumb">Thumb</kbd> + <kbd>Ctrl</kbd> + <kbd>P</kbd></h2>
+    <p class="note">Right ⌘ stops being Thumb and reaches apps as plain ⌘, for apps that need it. Press <kbd>Q</kbd> to leave.</p>
+    <h2 style="margin-top:12px">Also on Thumb</h2>
+    <table>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>[</kbd></span> <span class="combo"><kbd>]</kbd></span> <span class="combo"><kbd>0</kbd></span></td>
+        <td class="what">Volume down / up / mute</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Ctrl</kbd><span class="plus">+</span><kbd>[</kbd></span> <span class="combo"><kbd>]</kbd></span></td>
+        <td class="what">Screen brightness down / up</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Ctrl</kbd><span class="plus">+</span><kbd>S</kbd></span></td>
+        <td class="what">Screenshot of an area</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Ctrl</kbd><span class="plus">+</span><kbd>W</kbd></span></td>
+        <td class="what">Screenshot of a window, saved to the Desktop</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Ctrl</kbd><span class="plus">+</span><kbd>Space</kbd></span></td>
+        <td class="what">Spotlight</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Ctrl</kbd><span class="plus">+</span><kbd>Alt</kbd><span class="plus">+</span><kbd>L</kbd></span></td>
+        <td class="what">Lock the screen</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Ctrl</kbd><span class="plus">+</span><kbd>Alt</kbd><span class="plus">+</span><kbd>D</kbd></span></td>
+        <td class="what">Display settings</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>8</kbd></span></td>
+        <td class="what">Dictate while held (push-to-talk)</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>9</kbd></span></td>
+        <td class="what">Dictation on / off</td>
+      </tr>
+    </table>
+    <p class="note">Unbound Thumb keys do nothing, so Thumb never types.</p>
+  </section>
+
+</div>
+
+<div class="grid">
+
+  <section class="card">
+    <h2>App jumps: Thumb + key</h2>
+    <p class="note">Focus the app, or launch it. Toggles hide it when it is already in front, staying on the same workspace. Pickers open a fuzzy list when several tabs match.</p>
+    <table>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>A</kbd></span></td>
+        <td class="what">Claude / ChatGPT windows, cycling<small>After the last window, hides the app</small></td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>B</kbd></span></td>
+        <td class="what">Chrome windows, cycling</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>C</kbd></span></td>
+        <td class="what">Orca (toggle)</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>D</kbd></span></td>
+        <td class="what">Emacs: today's agenda</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>E</kbd></span></td>
+        <td class="what">Emacs (toggle)</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>F</kbd></span></td>
+        <td class="what">Firefox</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>G</kbd></span></td>
+        <td class="what">Telegram</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>H</kbd></span></td>
+        <td class="what">Picker of GitHub tabs</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>J</kbd></span></td>
+        <td class="what">Jira web app windows, cycling<small>After the last window, hides the app</small></td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>K</kbd></span></td>
+        <td class="what">Emacs: org-capture</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>M</kbd></span></td>
+        <td class="what">Outlook mail<small>With Outlook in front: cycles its windows, then hides it</small></td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>N</kbd></span></td>
+        <td class="what">Emacs: personal note</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>O</kbd></span></td>
+        <td class="what">Teams<small>Planner itself is not reachable yet</small></td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>P</kbd></span></td>
+        <td class="what">Sound settings (toggle)</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>S</kbd></span></td>
+        <td class="what">Slack windows, cycling<small>After the last window, hides the app</small></td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>T</kbd></span></td>
+        <td class="what">Teams chat (toggle)</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>U</kbd></span></td>
+        <td class="what">Bluetooth settings (toggle)</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>V</kbd></span></td>
+        <td class="what">Emacs: daily review</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>W</kbd></span></td>
+        <td class="what">Wi-Fi settings (toggle)</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>X</kbd></span></td>
+        <td class="what">Terminal windows, cycling</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Y</kbd></span></td>
+        <td class="what">Picker of YouTube tabs</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Z</kbd></span></td>
+        <td class="what">Zulip</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>`</kbd></span></td>
+        <td class="what">Activity Monitor (toggle)</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>'</kbd></span></td>
+        <td class="what">Beeper</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Tab</kbd></span></td>
+        <td class="what">Picker of every Chrome tab</td>
+      </tr>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>App jumps with a modifier</h2>
+    <table>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Shift</kbd><span class="plus">+</span><kbd>A</kbd></span></td>
+        <td class="what">Anytype</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Ctrl</kbd><span class="plus">+</span><kbd>A</kbd></span></td>
+        <td class="what">Spotify web app (toggle)</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Ctrl</kbd><span class="plus">+</span><kbd>B</kbd></span></td>
+        <td class="what">"Bead Me Up, Scotty" web app (toggle)</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Shift</kbd><span class="plus">+</span><kbd>C</kbd></span></td>
+        <td class="what">Google Calendar, personal Chrome profile</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Ctrl</kbd><span class="plus">+</span><kbd>C</kbd></span></td>
+        <td class="what">Outlook calendar (toggle)</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Ctrl</kbd><span class="plus">+</span><kbd>D</kbd></span></td>
+        <td class="what">Discord</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Shift</kbd><span class="plus">+</span><kbd>E</kbd></span></td>
+        <td class="what">Picker of Linear tabs</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Ctrl</kbd><span class="plus">+</span><kbd>F</kbd></span></td>
+        <td class="what">Picker of Messenger tabs</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Shift</kbd><span class="plus">+</span><kbd>G</kbd></span></td>
+        <td class="what">Google Meet tab</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Ctrl</kbd><span class="plus">+</span><kbd>G</kbd></span></td>
+        <td class="what">Google Meet meeting tab</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Ctrl</kbd><span class="plus">+</span><kbd>H</kbd></span></td>
+        <td class="what">Octobox web app (toggle)</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Alt</kbd><span class="plus">+</span><kbd>N</kbd></span></td>
+        <td class="what">Notion app</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Shift</kbd><span class="plus">+</span><kbd>N</kbd></span></td>
+        <td class="what">Picker of Notion tabs</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Shift</kbd><span class="plus">+</span><kbd>R</kbd></span></td>
+        <td class="what">Reclaim tab</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Ctrl</kbd><span class="plus">+</span><kbd>T</kbd></span></td>
+        <td class="what">Teams meeting window<small>For now cycles through all Teams windows</small></td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Shift</kbd><span class="plus">+</span><kbd>T</kbd></span></td>
+        <td class="what">Light / dark mode</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Alt</kbd><span class="plus">+</span><kbd>W</kbd></span></td>
+        <td class="what">WhatsApp tab</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Shift</kbd><span class="plus">+</span><kbd>Z</kbd></span></td>
+        <td class="what">Picker of Zoom tabs</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Ctrl</kbd><span class="plus">+</span><kbd>Z</kbd></span></td>
+        <td class="what">Zoom meeting tab</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Ctrl</kbd><span class="plus">+</span><kbd>2</kbd></span></td>
+        <td class="what">Emacs: personal todo</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd class="thumb">Thumb</kbd><span class="plus">+</span><kbd>Ctrl</kbd><span class="plus">+</span><kbd>7</kbd></span></td>
+        <td class="what">Emacs: weekly review</td>
+      </tr>
+    </table>
+  </section>
+
+  <section class="card mode">
+    <h2>Free mouse mode: hold <kbd>D</kbd> + <kbd>F</kbd></h2>
+    <p class="note">As fievel on Linux, without Thumb. The keys below work while the mode is on.</p>
+    <table>
+      <tr>
+        <td class="keys"><span class="combo"><kbd>D</kbd><span class="plus">+</span><kbd>F</kbd></span></td>
+        <td class="what">hold: free mouse mode, while held</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd>Z</kbd></span></td>
+        <td class="what">lock the mode on / off, so D + F can be let go</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd>J</kbd> <kbd>K</kbd> <kbd>I</kbd> <kbd>L</kbd></span></td>
+        <td class="what">move left, down, up, right</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd>Space</kbd></span></td>
+        <td class="what">left click</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd>;</kbd></span></td>
+        <td class="what">right click</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd>A</kbd></span></td>
+        <td class="what">hold: move slowly</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd>S</kbd></span></td>
+        <td class="what">hold: move fast</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd>N</kbd> <kbd>M</kbd> <kbd>,</kbd> <kbd>.</kbd></span></td>
+        <td class="what">scroll left, down, up, right</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd>,</kbd><span class="plus">+</span><kbd>M</kbd></span></td>
+        <td class="what">together: Home</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd>N</kbd><span class="plus">+</span><kbd>.</kbd></span></td>
+        <td class="what">together: End</td>
+      </tr>
+    </table>
+  </section>
+
+  <section class="card">
+    <h2>Advantage 360 characters</h2>
+    <table>
+      <tr>
+        <td class="keys"><span class="combo"><kbd>Shift</kbd><span class="plus">+</span><kbd>3</kbd></span></td>
+        <td class="what">#</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd>key right of P</kbd></span></td>
+        <td class="what">\ (with Shift: |)</td>
+      </tr>
+      <tr>
+        <td class="keys"><span class="combo"><kbd>top right key</kbd></span></td>
+        <td class="what">£ (with Shift: €)</td>
+      </tr>
+    </table>
+    <p class="note">On every keyboard, Shift + 2 types " and Shift + ' types @.</p>
+  </section>
+
+</div>
+
+<div class="ws">
+  <h2>Where new windows land</h2>
+  <div class="ws-grid">
+    <div class="ws-cell"><div class="num">1 <span>main monitor</span></div><div class="apps">Orca, Emacs, Chrome, Terminal, iTerm2, kitty, Ghostty</div></div>
+    <div class="ws-cell"><div class="num">2 <span>main monitor</span></div><div class="empty">Nothing automatic. Chrome windows for 2 land on 1: send them with Thumb + Alt + 2</div></div>
+    <div class="ws-cell"><div class="num">3 <span>main monitor</span></div><div class="apps">Firefox, Notion, LM Studio</div></div>
+    <div class="ws-cell"><div class="num">4 <span>main monitor</span></div><div class="apps">Slack, Telegram, Discord, Beeper, Zulip, Teams, Outlook</div></div>
+    <div class="ws-cell"><div class="num">5 <span>main monitor</span></div><div class="empty">Nothing automatic. Chrome windows for 5 land on 1: send them with Thumb + Alt + 5</div></div>
+    <div class="ws-cell"><div class="num">6 <span>main monitor</span></div><div class="apps">Activity Monitor, Chrysalis</div></div>
+    <div class="ws-cell"><div class="num">S <span>secondary monitor</span></div><div class="empty">Stands in for Linux’s sticky windows. No number key: reach it with Thumb + Shift + , or .</div></div>
+  </div>
+  <p>When docked, the external monitor is the main one (the display with the menu bar) and the laptop screen is secondary. Undocked, every workspace is on the laptop screen. System Settings windows always float.</p>
+</div>
+
+<footer>From <code>bin/karabiner-gen-config</code> and <code>.config/aerospace/aerospace.toml</code> in aspiers/desktop-config, 16 November 2026. This page is kept in the same repository as <code>docs/mac-thumb-keys.html</code>.</footer>
+
+</main>
+</body>
+</html>
