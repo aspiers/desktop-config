@@ -43,45 +43,118 @@ build=$tmp/LinkRouter.app
 # The app shows the picker itself rather than leaving it to the
 # script's osascript: an osascript process takes ~2s to load the GUI
 # frameworks and is often refused the keyboard focus, whereas this app
-# is already running and was launched to handle the link.  The script
-# still does the matching, opening and rule-writing, so the dialogs
-# here are the only part that needs a rebuild when changed.
+# is already running and was launched to handle the link.
+#
+# The picker is a single window with a button per profile, then an
+# "always" box with a pattern field (like the Windows version),
+# rather than a series of dialogs: AeroSpace moves the focus back to
+# another window whenever one closes, a moment later, so a second
+# dialog lost the keyboard however the app tried to take it back.
+#
+# The script still does the matching, opening and rule-writing, so the
+# picker here is the only part that needs a rebuild when changed.
 cat >"$tmp/LinkRouter.applescript" <<EOF
+use AppleScript version "2.4"
+use framework "Foundation"
+use framework "AppKit"
+use scripting additions
+
 property router : "$ROUTER"
-property addRule : "Add a rule…"
 
 on open location theURL
+	try
+		route_link(theURL)
+	on error msg number num
+		-- Errors from here would otherwise vanish with the app.
+		do shell script "echo \"\$(date '+%F %T') LinkRouter.app: \"" & quoted form of (msg & " (" & num & ")") & " >> ~/Library/Logs/link-router.log"
+	end try
+end open location
+
+on route_link(theURL)
 	set answer to paragraphs of (run_router("--route " & quoted form of theURL))
 	if answer is {} or item 1 of answer is not "ask" then return
 	set suggestion to ""
 	if (count of answer) > 1 then set suggestion to item 2 of answer
 	set labels to paragraphs of run_router("--labels")
-	activate
-	set picked to choose from list (labels & {addRule}) with title "Link router" ¬
-		with prompt "No rule matches " & suggestion & ". Open it in:" ¬
-		default items {item 1 of labels}
-	if picked is false then return
-	set label to item 1 of picked
-	if label is addRule then
-		try
-			set reply to display dialog "Open links matching:" & return & return & ¬
-				"A bare domain covers its subdomains too; * and ? are wildcards." ¬
-				default answer suggestion with title "Link router: new rule" ¬
-				buttons {"Cancel", "Next"} default button "Next" cancel button "Cancel"
-		on error number -128
-			return
-		end try
-		set pattern to text returned of reply
-		if pattern is "" then return
-		set picked to choose from list labels with title "Link router: new rule" ¬
-			with prompt "Open links matching " & pattern & " in:" ¬
-			default items {item 1 of labels}
-		if picked is false then return
-		set label to item 1 of picked
+	if labels is {} then return
+	set {label, pattern} to pick_profile(suggestion, labels)
+	if label is "" then return
+	if pattern is not "" then
 		run_router("--add-rule " & quoted form of pattern & " " & quoted form of label)
 	end if
 	run_router("--open-as " & quoted form of label & " " & quoted form of theURL)
-end open location
+end route_link
+
+-- Ask which profile to open the link in, and whether to add a rule.
+-- Returns {label, pattern}: label "" when cancelled, pattern "" when
+-- no rule is wanted.  A panel rather than an NSAlert, which would put
+-- the rule option above the profiles.  Cmd-1 and on pick a profile,
+-- Cmd-R ticks the box, Escape cancels.
+on pick_profile(suggestion, labels)
+	set cmd to current application's NSEventModifierFlagCommand
+	set app_ to current application's NSApp
+	set n to count of labels
+	set W to 380
+	set H to 20 + 20 + 12 + n * 34 + 14 + 22 + 6 + 24 + 20 + 28 + 16
+	set panel to current application's NSPanel's alloc()'s initWithContentRect:{{0, 0}, {W, H}} styleMask:(current application's NSWindowStyleMaskTitled) backing:(current application's NSBackingStoreBuffered) defer:false
+	panel's setTitle:"Link router"
+	set content to panel's contentView()
+
+	set y to H - 20 - 20
+	set msg to current application's NSTextField's labelWithString:("No rule matches " & suggestion & ". Open it in:")
+	msg's setFrame:{{20, y}, {W - 40, 20}}
+	content's addSubview:msg
+	set y to y - 12
+
+	-- Each button stops the modal loop; a toggle button stays "on",
+	-- which tells which one was pressed.
+	set profileButtons to {}
+	repeat with i from 1 to n
+		set y to y - 34
+		set b to current application's NSButton's buttonWithTitle:("⌘" & i & "    " & (item i of labels)) target:app_ action:"stopModal"
+		b's setAlignment:(current application's NSTextAlignmentLeft)
+		b's setButtonType:(current application's NSButtonTypeToggle)
+		b's setFrame:{{20, y}, {W - 40, 30}}
+		if i ≤ 9 then
+			b's setKeyEquivalent:(i as text)
+			b's setKeyEquivalentModifierMask:cmd
+		end if
+		content's addSubview:b
+		set end of profileButtons to b
+	end repeat
+
+	set y to y - 14 - 22
+	set box to current application's NSButton's checkboxWithTitle:"⌘R    Always use it for links matching:" target:(missing value) action:(missing value)
+	box's setKeyEquivalent:"r"
+	box's setKeyEquivalentModifierMask:cmd
+	box's setFrame:{{20, y}, {W - 40, 22}}
+	content's addSubview:box
+	set y to y - 6 - 24
+	set field to current application's NSTextField's textFieldWithString:suggestion
+	field's setPlaceholderString:"a bare domain covers its subdomains; * and ? are wildcards"
+	field's setFrame:{{20, y}, {W - 40, 24}}
+	content's addSubview:field
+
+	set cancelButton to current application's NSButton's buttonWithTitle:"Cancel" target:app_ action:"stopModal"
+	cancelButton's setKeyEquivalent:(character id 27)
+	cancelButton's setFrame:{{W - 20 - 100, 16}, {100, 28}}
+	content's addSubview:cancelButton
+
+	panel's setInitialFirstResponder:field
+	panel's |center|()
+	tell current application to activate
+	app_'s runModalForWindow:panel
+	panel's orderOut:(missing value)
+
+	repeat with i from 1 to n
+		if ((item i of profileButtons)'s state()) as integer is 1 then
+			set pattern to ""
+			if (box's state()) as integer is 1 then set pattern to (field's stringValue()) as text
+			return {item i of labels, pattern}
+		end if
+	end repeat
+	return {"", ""}
+end pick_profile
 
 -- Errors are logged by the script, so are not shown here too.
 on run_router(args)

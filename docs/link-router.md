@@ -28,14 +28,19 @@ shows up in `git diff` and travels to the other machines from there.
   browser.  The app is an `osacompile` applet, because macOS delivers
   links to apps as Apple Events, which a shell script cannot receive.
   It asks `~/bin/link-router --route` to open each link, and shows the
-  picker itself when no rule matches: osascript run from the script
-  took over 2s to show a dialog and often did not get the keyboard
-  focus, while the app is up front in about 0.3s.  The script still
-  does the matching, opening and rule-writing, so only changes to the
-  dialogs need a rebuild.  `--uninstall` removes it.
-- Run from a terminal, `link-router URL` shows the same picker through
-  osascript.
-- Errors go to `~/Library/Logs/link-router.log`.
+  picker itself when no rule matches: one panel with a button per
+  profile (⌘1, ⌘2, …), then an "Always use it for links matching" box
+  (⌘R) with the pattern to save; Esc cancels.  A dialog shown by
+  osascript from the script took over 2s and often did not get the
+  keyboard focus; the app is up front in about 0.3s.  It is one panel,
+  not a series of dialogs, because AeroSpace moves the focus elsewhere
+  whenever a window closes, so a second dialog lost the keyboard.  The
+  script still does the matching, opening and rule-writing, so only
+  changes to the picker need a rebuild.  `--uninstall` removes it.
+- Run from a terminal, `link-router URL` shows an older picker, as a
+  series of osascript dialogs.
+- Errors, from the script or the app, go to
+  `~/Library/Logs/link-router.log`.
 
 Needs `yq` (and `defaultbrowser` to set the default from the command
 line); the installer gets both from Homebrew.
