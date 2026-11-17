@@ -68,36 +68,67 @@ sticky() {
     aerospace move-node-to-workspace --focus-follows-window "$target"
 }
 
+# One osascript run for the whole of hide(): each run costs 100-300 ms,
+# and the System Events / Finder version took four (Adam, 2026-11-17:
+# hiding took 500-1000 ms). AppKit answers which apps are visible and
+# hides one directly. Arguments: bundle ID to hide, this workspace's
+# windows as "ID BUNDLE_ID" lines, path to aerospace. Prints "return" when
+# the caller should come back to the workspace afterwards.
+read -r -d '' HIDE_JXA <<'EOF'
+function run(argv) {
+    const [bundle, windows, aerospace] = argv;
+    ObjC.import('AppKit');
+    const running = ObjC.unwrap($.NSWorkspace.sharedWorkspace.runningApplications);
+    // AeroSpace still lists a hidden app's windows, and focusing one would
+    // show the app again (Adam, 2026-11-16), so only pick visible apps'.
+    const visible = new Set();
+    for (const app of running) {
+        if (!app.hidden && app.activationPolicy === $.NSApplicationActivationPolicyRegular) {
+            visible.add(ObjC.unwrap(app.bundleIdentifier));
+        }
+    }
+    let other = '';
+    for (const line of windows.split('\n')) {
+        const [id, owner] = line.split(' ');
+        if (id && owner !== bundle && visible.has(owner)) { other = id; break; }
+    }
+    const shell = Application.currentApplication();
+    shell.includeStandardAdditions = true;
+    let result = 'ok';
+    if (other) {
+        // Focus another window here first, so macOS has no app to hand
+        // focus to and AeroSpace stays on this workspace.
+        shell.doShellScript(`'${aerospace}' focus --window-id ${other}`);
+    } else if (Application('Finder').windows.length === 0) {
+        // Nothing else here: make windowless Finder (the desktop) active
+        // first, so hiding activates no other app (Adam, 2026-11-16).
+        Application('Finder').activate();
+    } else {
+        result = 'return';
+    }
+    for (const app of ObjC.unwrap($.NSRunningApplication.runningApplicationsWithBundleIdentifier(bundle))) {
+        app.hide;
+    }
+    return result;
+}
+EOF
+
 # Hide the app with bundle ID $1, as Cmd+H would, but stay on the current
-# workspace. When an app hides, macOS activates another app, and AeroSpace
-# follows it to that app's workspace (Adam, 2026-11-16: hiding Claude on
-# workspace 3 jumped to Teams on 2). So first focus another window on this
-# workspace if there is one, and otherwise come back to the workspace after.
+# workspace: when an app hides, macOS activates another and AeroSpace
+# follows it (Adam, 2026-11-16: hiding Claude on workspace 3 jumped to
+# Teams on 2).
 hide() {
     [ $# -eq 1 ] || die "hide: need one bundle ID"
-    local workspace visible other
+    local workspace windows result
     workspace=$(aerospace list-workspaces --focused)
-    # AeroSpace still lists a hidden app's windows, and focusing one would
-    # show the app again (Adam, 2026-11-16: hiding System Settings brought
-    # back the Claude window hidden just before), so skip apps not visible.
-    visible=$(osascript -e 'tell application "System Events" to get bundle identifier of every process whose visible is true')
-    other=$(aerospace list-windows --workspace focused --format '%{window-id} %{app-bundle-id}' |
-        awk -v app="$1" -v visible=", $visible, " '$2 != app && index(visible, ", " $2 ", ") { print $1; exit }')
-    local return_after=''
-    if [ -n "$other" ]; then
-        aerospace focus --window-id "$other"
-    elif [ "$(osascript -e 'tell application "Finder" to count Finder windows' 2>/dev/null)" = 0 ]; then
-        # Nothing else to focus here: make windowless Finder (the desktop)
-        # the active app first, so hiding activates no other app and
-        # AeroSpace has no window to follow (Adam, 2026-11-16: coming back
-        # afterwards made the screen flicker to another workspace).
-        osascript -e 'tell application "Finder" to activate' >/dev/null
-    else
-        return_after=1
+    windows=$(aerospace list-windows --workspace focused --format '%{window-id} %{app-bundle-id}')
+    if ! result=$(osascript -l JavaScript -e "$HIDE_JXA" "$1" "$windows" "$(command -v aerospace)"); then
+        # Fall back to the slower System Events way, then come back.
+        osascript -e "tell application \"System Events\" to set visible of (first process whose bundle identifier is \"$1\") to false" \
+            >/dev/null || die "could not hide $1"
+        result=return
     fi
-    osascript -e "tell application \"System Events\" to set visible of (first process whose bundle identifier is \"$1\") to false" \
-        >/dev/null || die "could not hide $1"
-    if [ -n "$return_after" ]; then
+    if [ "$result" = return ]; then
         # Finder has windows, maybe elsewhere: let macOS activate its next
         # app, then come back, which flickers.
         sleep 0.3
