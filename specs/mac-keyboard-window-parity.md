@@ -325,7 +325,7 @@ the Linux target, bound where that app is installed.
 | Thumb+`l` | Lower |
 | Thumb+`i` / Thumb+Ctrl+`i` | Minimise / restore |
 | Thumb+Ctrl+Shift+`m` | Maximise (Shift+`m`: vertically; Ctrl+`m`: horizontally) |
-| Thumb+Shift+`s` | Make window sticky (on all workspaces) |
+| Thumb+Shift+`s` | Make window sticky (on all workspaces). macOS: toggles the window onto workspace S, pinned to the secondary monitor, and back to where it came from, since AeroSpace has no sticky windows (Adam, 2026-11-17) |
 | Thumb+`q` / Thumb+Ctrl+`q` | Close / kill window |
 | Thumb+Ctrl+`p` | Pass-through mode: window-manager keys go to the app until `q` |
 | Thumb+`r` | Reorganise mode (below) |

@@ -14,6 +14,7 @@
 #   mac-jump teams chat|planner|meeting
 #   mac-jump windows
 #   mac-jump hide BUNDLE_ID
+#   mac-jump sticky
 #
 # Simple focus-or-launch needs no helper: the Karabiner rules run
 # `open -b BUNDLE_ID` directly, and toggles send Cmd+H when the app is
@@ -43,6 +44,28 @@ die() {
 # stdin, wrapping round; the first ID when focus is elsewhere.
 next_window() {
     awk -v f="$1" '{ id[NR] = $1; if ($1 == f) at = NR } END { if (NR) print id[at % NR + 1] }'
+}
+
+# Thumb+Shift+s: AeroSpace has no sticky windows, so stand in with the S
+# workspace, which the AeroSpace config pins to the secondary monitor and
+# the 1-6 keys never switch away. Toggle the focused window onto S, and
+# back to the workspace it came from (Adam, 2026-11-17), or else to the
+# other visible workspace.
+STICKY_STATE=${XDG_CACHE_HOME:-$HOME/.cache}/mac-jump/sticky
+sticky() {
+    local id workspace target
+    id=$(aerospace list-windows --focused --format '%{window-id}') || die "sticky: no focused window"
+    workspace=$(aerospace list-windows --focused --format '%{workspace}')
+    if [ "$workspace" != S ]; then
+        mkdir -p "$STICKY_STATE" && echo "$workspace" >"$STICKY_STATE/$id"
+        aerospace move-node-to-workspace --focus-follows-window S
+        return
+    fi
+    target=$(cat "$STICKY_STATE/$id" 2>/dev/null)
+    [ -n "$target" ] || target=$(aerospace list-workspaces --monitor all --visible | grep -vx S | head -1)
+    [ -n "$target" ] || target=1
+    rm -f "$STICKY_STATE/$id"
+    aerospace move-node-to-workspace --focus-follows-window "$target"
 }
 
 # Hide the app with bundle ID $1, as Cmd+H would, but stay on the current
@@ -325,7 +348,7 @@ windows() {
 }
 
 case ${1:-} in
-    cycle|tab|emacs|outlook|teams|windows|hide)
+    cycle|tab|emacs|outlook|teams|windows|hide|sticky)
         cmd=$1
         shift
         "$cmd" "$@"

@@ -428,6 +428,8 @@ def window_operations() -> list[Json]:
     for n in range(1, 4):
         m += thumb(str(n), aerospace(f"move-node-to-monitor --focus-follows-window {n}"), "alt+shift")
     m += thumb("i", aerospace("macos-native-minimize"))
+    # Sticky, as near as AeroSpace gets: toggle onto workspace S (spec 3.2).
+    m += thumb("s", jump("sticky"), "shift")
     # Thumb+Ctrl+m, not Linux's Thumb+Ctrl+Shift+m: AeroSpace has no
     # horizontal-only maximise for Ctrl+m to keep (Adam, 2026-11-16).
     m += thumb("m", aerospace("fullscreen"), "ctrl")
