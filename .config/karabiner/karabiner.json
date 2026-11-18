@@ -5696,7 +5696,7 @@
                                 },
                                 "to": [
                                     {
-                                        "shell_command": "pmset displaysleepnow"
+                                        "shell_command": "~/bin/mac-jump blank"
                                     }
                                 ],
                                 "conditions": [
@@ -5720,7 +5720,7 @@
                                 },
                                 "to": [
                                     {
-                                        "shell_command": "pmset displaysleepnow"
+                                        "shell_command": "~/bin/mac-jump blank"
                                     }
                                 ],
                                 "conditions": [

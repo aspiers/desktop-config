@@ -400,7 +400,7 @@ than shown, and it cannot do Neru's hints.
 | Thumb+Ctrl+`s` / `w` | Screenshot of a region / window |
 | Thumb+Ctrl+Space | App launcher |
 | Thumb+Ctrl+Alt+Shift+`l` | Lock screen (`xflock4`; Shift was first left out here, Adam, 2026-11-16) |
-| Thumb+Ctrl+Alt+`b` | Blank the screens (`blank-all-screens`; macOS: `pmset displaysleepnow`; Adam, 2026-11-16) |
+| Thumb+Ctrl+Alt+`b` | Blank the screens (`blank-all-screens`). macOS: a black window on every screen until a key or the mouse (`lib/mac-blank`), since switching the displays off locks the work Mac, whose password-on-display-off setting is fixed by IT (Adam, 2026-11-18) |
 | Thumb+Ctrl+Alt+`d` | Display settings (Linux: `xfce4-display-settings`; macOS: System Settings > Displays, toggled) |
 | Thumb+`=` | Clear notifications |
 | Thumb+Alt+Shift+`/` | Search every key binding |

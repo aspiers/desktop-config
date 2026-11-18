@@ -15,6 +15,7 @@
 #   mac-jump windows
 #   mac-jump hide BUNDLE_ID
 #   mac-jump sticky
+#   mac-jump blank
 #
 # Simple focus-or-launch needs no helper: the Karabiner rules run
 # `open -b BUNDLE_ID` directly, and toggles send Cmd+H when the app is
@@ -112,6 +113,23 @@ function run(argv) {
     return result;
 }
 EOF
+
+# Thumb+Ctrl+Alt+b: black out every screen until a key or the mouse, with
+# lib/mac-blank/mac-blank.swift, compiled on first use and again whenever
+# the source changes. ~/bin links into the repository, so its real
+# directory finds the source.
+blank() {
+    local repo src bin
+    repo=$(cd -P "$(dirname "$0")" && cd .. && pwd)
+    src=$repo/lib/mac-blank/mac-blank.swift
+    bin=${XDG_CACHE_HOME:-$HOME/.cache}/mac-jump/mac-blank
+    if [ ! -x "$bin" ] || [ "$src" -nt "$bin" ]; then
+        mkdir -p "$(dirname "$bin")"
+        swiftc -O "$src" -o "$bin" || die "blank: could not compile $src"
+    fi
+    # Detached, so it outlives this script and Karabiner's next command.
+    nohup "$bin" >/dev/null 2>&1 &
+}
 
 # Hide the app with bundle ID $1, as Cmd+H would, but stay on the current
 # workspace: when an app hides, macOS activates another and AeroSpace
@@ -379,7 +397,7 @@ windows() {
 }
 
 case ${1:-} in
-    cycle|tab|emacs|outlook|teams|windows|hide|sticky)
+    cycle|tab|emacs|outlook|teams|windows|hide|sticky|blank)
         cmd=$1
         shift
         "$cmd" "$@"

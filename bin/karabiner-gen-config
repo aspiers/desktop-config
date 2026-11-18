@@ -462,9 +462,10 @@ def other_bindings() -> list[Json]:
     # Linux: Shift+Control+Alt+Super+l runs xflock4 (.fluxbox/keys.erb);
     # the spec first left out Shift (Adam, 2026-11-16).
     m += thumb("l", key("q", "control", "command"), "ctrl+alt+shift")
-    # Linux: Control+Alt+Super+b runs blank-all-screens. macOS sleeps the
-    # displays without suspending (Adam, 2026-11-16).
-    m += thumb("b", shell("pmset displaysleepnow"), "ctrl+alt")
+    # Linux: Control+Alt+Super+b runs blank-all-screens. Sleeping the
+    # displays would lock this Mac, so black them out instead (Adam,
+    # 2026-11-18; lib/mac-blank).
+    m += thumb("b", jump("blank"), "ctrl+alt")
     m += dictation_bindings()
     return m
 
