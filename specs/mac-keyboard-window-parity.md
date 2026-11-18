@@ -258,7 +258,7 @@ Thumb+letter, Linux and the agreed Mac / Windows targets:
 | `j` | Jump menu | **Picker of Jira tabs** in Chrome, like `h` (Adam, 2026-11-16) |
 | `k` | Emacs: `org-capture` | same |
 | `m` | Mail menu (`rofi-mail-menu`) | **Outlook mail**; with Outlook in front, cycles its windows and hides it after the last (C, T; Adam, 2026-11-16) |
-| `n` | Emacs: personal note | same |
+| `n` | Emacs: personal note | **Picker of Confluence tabs** in Chrome, like `j` (Adam, 2026-11-18) |
 | `o` | Org menu (`rofi-org-menu`) | **Teams Planner** (focus or launch) |
 | `p` | Volume control (`pavucontrol`) (T) | Sound settings (T) |
 | `s` | **Slack** | **Slack** (C, T: hides after the last window; Adam, 2026-11-16) |

@@ -887,7 +887,7 @@
                                 },
                                 "to": [
                                     {
-                                        "shell_command": "~/bin/mac-jump emacs '(as-find-personal-note)'"
+                                        "shell_command": "~/bin/mac-jump tab --pick --site confluence"
                                     }
                                 ],
                                 "conditions": [

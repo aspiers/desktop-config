@@ -328,7 +328,9 @@ def jumps() -> list[Json]:
     outlook = r"^com\.microsoft\.Outlook$"
     m += thumb("m", jump(f"cycle --toggle '{outlook}'"), extra=[apps([outlook])])
     m += thumb("m", jump("outlook mail"))
-    m += thumb("n", jump("emacs '(as-find-personal-note)'"))
+    # Confluence tabs, like Jira's on Thumb+j (Adam, 2026-11-18), instead
+    # of Linux's Emacs personal note.
+    m += thumb("n", jump("tab --pick --site confluence"))
     m += thumb("o", jump("teams planner"))
     m += settings_toggle("p", "com.apple.Sound-Settings.extension")
     # Cycles when Slack has several windows, then hides it (Adam, 2026-11-16).
