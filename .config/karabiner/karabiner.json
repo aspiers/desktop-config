@@ -1676,7 +1676,155 @@
                                 },
                                 "to": [
                                     {
-                                        "shell_command": "~/bin/mac-jump tab --toggle --app-window --open https://open.spotify.com/ '^https://open\\.spotify\\.com/'"
+                                        "shell_command": "~/bin/mac-jump hide com.spotify.client"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_if",
+                                        "name": "thumb",
+                                        "value": 1
+                                    },
+                                    {
+                                        "type": "frontmost_application_if",
+                                        "bundle_identifiers": [
+                                            "^com\\.spotify\\.client$"
+                                        ]
+                                    },
+                                    {
+                                        "type": "device_unless",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "a",
+                                    "modifiers": {
+                                        "mandatory": [
+                                            "control"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "shell_command": "~/bin/mac-jump hide com.spotify.client"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_if",
+                                        "name": "thumb",
+                                        "value": 1
+                                    },
+                                    {
+                                        "type": "frontmost_application_if",
+                                        "bundle_identifiers": [
+                                            "^com\\.spotify\\.client$"
+                                        ]
+                                    },
+                                    {
+                                        "type": "device_unless",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "caps_lock",
+                                    "modifiers": {
+                                        "mandatory": [
+                                            "command"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "shell_command": "~/bin/mac-jump hide com.spotify.client"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_if",
+                                        "name": "thumb",
+                                        "value": 1
+                                    },
+                                    {
+                                        "type": "frontmost_application_if",
+                                        "bundle_identifiers": [
+                                            "^com\\.spotify\\.client$"
+                                        ]
+                                    },
+                                    {
+                                        "type": "device_if",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "caps_lock",
+                                    "modifiers": {
+                                        "mandatory": [
+                                            "control"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "shell_command": "~/bin/mac-jump hide com.spotify.client"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_if",
+                                        "name": "thumb",
+                                        "value": 1
+                                    },
+                                    {
+                                        "type": "frontmost_application_if",
+                                        "bundle_identifiers": [
+                                            "^com\\.spotify\\.client$"
+                                        ]
+                                    },
+                                    {
+                                        "type": "device_if",
+                                        "identifiers": [
+                                            {
+                                                "is_built_in_keyboard": true
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "a",
+                                    "modifiers": {
+                                        "mandatory": [
+                                            "command"
+                                        ]
+                                    }
+                                },
+                                "to": [
+                                    {
+                                        "shell_command": "open -b com.spotify.client"
                                     }
                                 ],
                                 "conditions": [
@@ -1707,7 +1855,7 @@
                                 },
                                 "to": [
                                     {
-                                        "shell_command": "~/bin/mac-jump tab --toggle --app-window --open https://open.spotify.com/ '^https://open\\.spotify\\.com/'"
+                                        "shell_command": "open -b com.spotify.client"
                                     }
                                 ],
                                 "conditions": [
@@ -1738,7 +1886,7 @@
                                 },
                                 "to": [
                                     {
-                                        "shell_command": "~/bin/mac-jump tab --toggle --app-window --open https://open.spotify.com/ '^https://open\\.spotify\\.com/'"
+                                        "shell_command": "open -b com.spotify.client"
                                     }
                                 ],
                                 "conditions": [
@@ -1769,7 +1917,7 @@
                                 },
                                 "to": [
                                     {
-                                        "shell_command": "~/bin/mac-jump tab --toggle --app-window --open https://open.spotify.com/ '^https://open\\.spotify\\.com/'"
+                                        "shell_command": "open -b com.spotify.client"
                                     }
                                 ],
                                 "conditions": [

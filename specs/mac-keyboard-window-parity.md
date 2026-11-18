@@ -278,7 +278,7 @@ Thumb+modifier+letter jumps:
 | Keys | Linux | macOS / Windows |
 | --- | --- | --- |
 | Thumb+Shift+`a` | Anytype | same |
-| Thumb+Ctrl+`a` | Spotify web app (T) | same |
+| Thumb+Ctrl+`a` | Spotify web app (T) | **Spotify desktop app** (T; Adam, 2026-11-18) |
 | Thumb+Ctrl+`b` | "Bead Me Up, Scotty" web app (T) | same |
 | Thumb+Shift+`c` | Google Calendar tab, account 0 | same (personal Google Calendar) |
 | Thumb+Ctrl+`c` | Google Calendar tab, account 1 | **Outlook calendar** (T: hides Outlook when its calendar is showing; Adam, 2026-11-16) |
@@ -618,7 +618,7 @@ Built as Karabiner rules (`bin/karabiner-gen-config`, `jumps()`) and
   AppleScript dictionary and picks among several with `choose`
   (Homebrew `choose-gui`), a fuzzy finder in its own dialog, as rofi
   does on Linux. Thumb+Tab picks from every tab. Web apps
-  (Spotify, Octobox, "Bead Me Up, Scotty") open as `--app` windows.
+  (Octobox, "Bead Me Up, Scotty") open as `--app` windows.
 - **Emacs**: `emacsclient -e`, as `switch-emacs-eval` does on Linux.
 - **Outlook** mail and calendar: activate Outlook, then `Cmd+1` /
   `Cmd+2` through System Events, which needs the Accessibility permission.

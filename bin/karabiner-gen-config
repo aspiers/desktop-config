@@ -351,7 +351,8 @@ def jumps() -> list[Json]:
     m += thumb("tab", jump("tab --pick '.'"))
 
     m += thumb("a", shell("open -a Anytype"), "shift")
-    m += thumb("a", jump(r"tab --toggle --app-window --open https://open.spotify.com/ '^https://open\.spotify\.com/'"), "ctrl")
+    # The Spotify desktop app, not the web app (Adam, 2026-11-18).
+    m += toggle("a", "com.spotify.client", "ctrl")
     m += thumb("b", jump(r"tab --toggle --app-window --open http://localhost:19847/ '^http://localhost:19847/'"), "ctrl")
     m += thumb(
         "c",
