@@ -259,7 +259,7 @@ Thumb+letter, Linux and the agreed Mac / Windows targets:
 | `k` | Emacs: `org-capture` | same |
 | `m` | Mail menu (`rofi-mail-menu`) | **Outlook mail**; with Outlook in front, cycles its windows and hides it after the last (C, T; Adam, 2026-11-16) |
 | `n` | Emacs: personal note | **Picker of Confluence tabs** in Chrome, like `j` (Adam, 2026-11-18) |
-| `o` | Org menu (`rofi-org-menu`) | **Teams Planner** (focus or launch) |
+| `o` | Org menu (`rofi-org-menu`) | **Teams Planner** (focus or launch; T, Adam, 2026-11-18) |
 | `p` | Volume control (`pavucontrol`) (T) | Sound settings (T) |
 | `s` | **Slack** | **Slack** (C, T: hides after the last window; Adam, 2026-11-16) |
 | `t` | Terminal menu (`rofi-terminal-menu`) | **Teams chat** (T; Linux has no Teams); no terminal menu on the Mac |

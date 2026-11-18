@@ -905,6 +905,30 @@
                                 },
                                 "to": [
                                     {
+                                        "shell_command": "~/bin/mac-jump hide com.microsoft.teams2"
+                                    }
+                                ],
+                                "conditions": [
+                                    {
+                                        "type": "variable_if",
+                                        "name": "thumb",
+                                        "value": 1
+                                    },
+                                    {
+                                        "type": "frontmost_application_if",
+                                        "bundle_identifiers": [
+                                            "^com\\.microsoft\\.teams2$"
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "from": {
+                                    "key_code": "o"
+                                },
+                                "to": [
+                                    {
                                         "shell_command": "~/bin/mac-jump teams planner"
                                     }
                                 ],
