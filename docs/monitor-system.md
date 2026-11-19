@@ -258,6 +258,35 @@ known-limitations section of that document.
 
 [autorandr-new]: autorandr-monitor-management.md#plugging-in-a-new-monitor-for-the-first-time
 
+### Switch a monitor off but leave it plugged in
+
+Switch it off in `xfce4-display-settings` or with `xrandr --output <name>
+--off`. The Python controller notices within a few seconds and treats that
+monitor as unplugged. It applies the saved profile for the screens still on,
+which sets the primary output, and lays the desktop out again. A notification
+says "<output> stays off".
+
+The monitor stays off through suspend, resume and screen blanking. It comes
+back when you switch it on again, or when you unplug it and plug it back in.
+A resume that drops the link for under 90 seconds does not count as a replug.
+The controller records switched-off monitors, by EDID, in
+`~/.local/state/monitor-controller/active/suppressed-outputs.json`.
+
+If no saved profile fits the screens still on, the controller saves one called
+`<host>+auto-<hash>` in `~/.config/autorandr`. It keeps the arrangement you
+left, borrows the window layout most profiles with that many screens share,
+and gives primary to the screen in that layout's primary role. To keep a
+different arrangement, set it up and run the `autorandr --save --force` command
+from the notification. This is the checkout's `.config/autorandr`, so the new
+profile shows up there as an untracked file: commit it, rename it, or delete
+it.
+
+The journal records each step:
+
+```bash
+journalctl --user -u monitor-controller | grep -E 'by hand|no longer masked|fallback profile'
+```
+
 ### Switch which watcher is running
 
 ```bash
