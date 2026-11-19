@@ -7,7 +7,7 @@ import threading
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass, replace
 from hashlib import sha256
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from monitor_controller.observer.xrandr import (
     XConnectionState,
@@ -67,6 +67,9 @@ from .drm import (
 from .evidence import ParseIssue, ParseIssueCode, TextCommandEvidence
 from .mapping import AmbiguousBijectionError, unique_bijection
 from .topology import derive_canonical_topology
+
+if TYPE_CHECKING:
+    from .suppression import OutputSuppression
 
 _JOURNAL = service_logger("monitor_controller.journal")
 
@@ -325,6 +328,7 @@ class CanonicalSnapshotCoordinator:
         commands: ObserverCommands = DEFAULT_OBSERVER_COMMANDS,
         command_timeout_seconds: float = DEFAULT_OBSERVER_TIMEOUT_SECONDS,
         autorandr_environment: Mapping[str, str] | None = None,
+        suppression: OutputSuppression | None = None,
     ) -> None:
         """Bind every I/O authority explicitly and retain only a local sequence."""
         if not 0 < command_timeout_seconds <= MAX_COMMAND_TIMEOUT_SECONDS:
@@ -355,6 +359,7 @@ class CanonicalSnapshotCoordinator:
             command_timeout_seconds,
         )
         self._command_runner = command_runner
+        self._suppression = suppression
 
     def observe(self) -> CanonicalObservation:
         """Sample both fences, reject tears, and return normalized evidence."""
@@ -368,6 +373,13 @@ class CanonicalSnapshotCoordinator:
         end_drm = sample_drm(self._drm_tree)
         end_generation = self._event_generation_source.current_generation()
         observed_at_ms = self._clock.monotonic_ms()
+        if self._suppression is not None:
+            try:
+                begin_drm, end_drm, xrandr, autorandr = self._suppression.mask(
+                    begin_drm, end_drm, xrandr, autorandr, profiles
+                )
+            except Exception:  # noqa: BLE001 - masking must never stop observing
+                _JOURNAL.exception("display suppression failed; observing unmasked")
         self._observation_generation = ObservationGeneration(
             self._observation_generation.value + 1
         )

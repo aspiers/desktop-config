@@ -7,7 +7,7 @@ import os
 import subprocess
 import sys
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import cast
 from uuid import UUID
@@ -16,6 +16,7 @@ import pytest
 
 from monitor_controller.model import (
     BootId,
+    CanonicalObservation,
     ConfigurationContentHash,
     DisplayPower,
     EventGeneration,
@@ -36,6 +37,10 @@ from monitor_controller.observer.snapshot import (
     PlanningConfigurationCapture,
     PlanningConfigurationChangedError,
     StaticSavedProfiles,
+)
+from monitor_controller.observer.suppression import (
+    REPLUG_GRACE_SECONDS,
+    OutputSuppression,
 )
 from monitor_controller.runtime.commands import (
     BoundedCommandRunner,
@@ -837,3 +842,179 @@ def test_observation_records_blanked_screens_without_changing_its_key(
     # Blanking is not a topology change: keying on it would re-verify and
     # re-finalize the desktop every time the screens sleep or wake.
     assert asleep.observation_key == awake.observation_key
+
+
+@dataclass
+class _SuppressionWorld:
+    """Fixture sysfs and commands for the AOC being switched off by hand."""
+
+    root: Path
+    runner: _FixtureRunner
+    profiles: tuple[SavedAutorandrProfile, ...]
+    now: float = 1_000.0
+    suspends: int | None = 7
+    adopt: bool = True
+    notes: list[str] = field(default_factory=list[str])
+
+    def suppression(self, path: Path) -> OutputSuppression:
+        return OutputSuppression(
+            path,
+            may_adopt=lambda: self.adopt,
+            realtime=lambda: self.now,
+            suspend_count=lambda: self.suspends,
+            notify=lambda summary, _body: self.notes.append(summary),
+        )
+
+    def lit(self) -> None:
+        self.runner.commands["xrandr --query"] = FIXTURES / "xrandr/aoc-rename.query"
+        self.runner.commands["xrandr --props"] = FIXTURES / "xrandr/aoc-rename.props"
+        self.runner.commands["autorandr --match-edid --current"] = (
+            SNAPSHOTS / "exact-aoc.current"
+        )
+
+    def switched_off(self) -> None:
+        self.runner.commands["xrandr --query"] = (
+            FIXTURES / "xrandr/aoc-switched-off.query"
+        )
+        self.runner.commands["xrandr --props"] = (
+            FIXTURES / "xrandr/aoc-switched-off.props"
+        )
+        # autorandr still detects the profile with the AOC, and none is current.
+        self.runner.commands["autorandr --match-edid --current"] = (
+            SNAPSHOTS / "aoc-switched-off.current"
+        )
+
+    def unplugged(self) -> None:
+        connector = self.root / "card0-DP-3"
+        self._saved_edid = connector.joinpath("edid").read_bytes()
+        connector.joinpath("status").write_text("disconnected\n", encoding="ascii")
+        connector.joinpath("edid").write_bytes(b"")
+        self.runner.commands["xrandr --query"] = FIXTURES / "xrandr/aoc-unplugged.query"
+        self.runner.commands["xrandr --props"] = FIXTURES / "xrandr/aoc-unplugged.props"
+        self.runner.commands["autorandr --match-edid --fingerprint"] = (
+            FIXTURES / "autorandr/commands/laptop.fingerprint"
+        )
+        self.runner.commands["autorandr --match-edid --detected"] = (
+            SNAPSHOTS / "laptop.detected"
+        )
+
+    def replugged_off(self) -> None:
+        connector = self.root / "card0-DP-3"
+        connector.joinpath("status").write_text("connected\n", encoding="ascii")
+        connector.joinpath("edid").write_bytes(self._saved_edid)
+        self.runner.commands["autorandr --match-edid --fingerprint"] = (
+            FIXTURES / "autorandr/commands/aoc-renamed.fingerprint"
+        )
+        self.runner.commands["autorandr --match-edid --detected"] = (
+            SNAPSHOTS / "exact-aoc.detected"
+        )
+        self.switched_off()
+
+
+def _suppression_world(tmp_path: Path) -> _SuppressionWorld:
+    root, commands, profiles = load_manifest(tmp_path, "exact-aoc")
+    return _SuppressionWorld(
+        root, _FixtureRunner(commands), (*profiles, load_profile("celtic"))
+    )
+
+
+def _observe(
+    world: _SuppressionWorld, suppression: OutputSuppression
+) -> CanonicalObservation:
+    return CanonicalSnapshotCoordinator(
+        drm_tree=RootedSysfsReader(world.root),
+        command_runner=world.runner,
+        profiles=StaticSavedProfiles(world.profiles),
+        boot_id_source=_FakeBoot(),
+        clock=_FakeClock(),
+        event_generation_source=_FakeGeneration(),
+        suppression=suppression,
+    ).observe()
+
+
+def test_display_switched_off_by_hand_is_planned_as_unplugged(
+    tmp_path: Path,
+) -> None:
+    """The dark AOC must not keep the laptop profile ineligible (dc-8xns).
+
+    Unmasked, the reducer refuses an internal-only profile while external
+    hardware is connected, so the desktop kept the two-screen layout.
+    """
+    world = _suppression_world(tmp_path)
+    state = tmp_path / "suppressed.json"
+    suppression = world.suppression(state)
+    _observe(world, suppression)
+    world.switched_off()
+
+    observation = _observe(world, suppression)
+
+    assert observation.valid
+    assert observation.kernel_connected_outputs == ("eDP",)
+    assert observation.x_connected_outputs == ("eDP",)
+    assert not observation.has_external_hardware
+    assert [item.profile for item in observation.eligible_profiles] == ["celtic"]
+    assert observation.eligible_profiles[0].scope is ProfileScope.INTERNAL_ONLY
+    # eDP lost primary with the AOC, so the controller must apply the profile.
+    assert observation.exact_profile is None
+    assert world.notes == ["DisplayPort-7 stays off"]
+    assert json.loads(state.read_text(encoding="utf-8"))["outputs"]
+
+    # A later controller instance keeps the switch-off without seeing it happen.
+    observation = _observe(world, world.suppression(state))
+    assert observation.kernel_connected_outputs == ("eDP",)
+
+
+def test_switch_off_during_controller_action_is_not_adopted(tmp_path: Path) -> None:
+    world = _suppression_world(tmp_path)
+    world.adopt = False
+    suppression = world.suppression(tmp_path / "suppressed.json")
+    _observe(world, suppression)
+    world.switched_off()
+
+    observation = _observe(world, suppression)
+
+    assert observation.has_external_hardware
+    assert not suppression.suppressed
+
+
+def test_switching_the_display_back_on_ends_suppression(tmp_path: Path) -> None:
+    world = _suppression_world(tmp_path)
+    suppression = world.suppression(tmp_path / "suppressed.json")
+    _observe(world, suppression)
+    world.switched_off()
+    _observe(world, suppression)
+    world.lit()
+
+    observation = _observe(world, suppression)
+
+    assert observation.exact_profile == "celtic+AOC-U28G2G6B"
+    assert not suppression.suppressed
+
+
+@pytest.mark.parametrize(
+    ("suspended", "away_seconds", "released"),
+    [
+        (False, 5.0, True),  # a quick replug while awake
+        (True, 5.0, False),  # a resume briefly dropping the link
+        (True, REPLUG_GRACE_SECONDS, True),  # undocked across a suspend
+    ],
+)
+def test_replug_ends_suppression_but_resume_does_not(
+    tmp_path: Path, *, suspended: bool, away_seconds: float, released: bool
+) -> None:
+    world = _suppression_world(tmp_path)
+    suppression = world.suppression(tmp_path / "suppressed.json")
+    _observe(world, suppression)
+    world.switched_off()
+    _observe(world, suppression)
+    world.unplugged()
+    _observe(world, suppression)
+    if suspended:
+        world.suspends = 8
+    world.now += away_seconds
+    world.replugged_off()
+
+    observation = _observe(world, suppression)
+
+    assert bool(suppression.suppressed) is not released
+    assert observation.has_external_hardware is released

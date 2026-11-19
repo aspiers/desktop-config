@@ -25,6 +25,11 @@ from monitor_controller.observer.drm import (
     ReadOnlyTree,
     sample_drm,
 )
+from monitor_controller.observer.suppression import (
+    load_suppressions,
+    mask_hardware,
+    suppression_path,
+)
 from monitor_controller.observer.topology import (
     CanonicalTopologyEvidence,
     derive_canonical_topology,
@@ -268,6 +273,9 @@ def sample_exact_topology(
     begin_drm = sample_drm(drm_tree)
     xrandr = sample_xrandr(commands)
     end_drm = sample_drm(drm_tree)
+    begin_drm, end_drm, xrandr, _hidden = mask_hardware(
+        load_suppressions(suppression_path()), begin_drm, end_drm, xrandr
+    )
     if begin_drm != end_drm:
         stale("DRM evidence changed during the worker-local sample")
     if begin_drm.scan_state is not EvidenceState.AVAILABLE:

@@ -55,6 +55,7 @@ from monitor_controller.desktop.planner import (
 from monitor_controller.model import (
     BootId,
     ControllerInstanceId,
+    ControllerPhase,
     DisplayIdentity,
     EventGeneration,
     GraphicalSessionId,
@@ -62,6 +63,10 @@ from monitor_controller.model import (
 )
 from monitor_controller.observer.drm import RootedSysfsReader
 from monitor_controller.observer.snapshot import CanonicalSnapshotCoordinator
+from monitor_controller.observer.suppression import (
+    OutputSuppression,
+    suppression_path,
+)
 from monitor_controller.postswitch import (
     PostswitchNotification,
     PostswitchNotificationMonitor,
@@ -75,6 +80,7 @@ from monitor_controller.runtime.controller import (
 from monitor_controller.runtime.display_wake import DisplayWakeMonitor
 from monitor_controller.runtime.journal import service_logger
 from monitor_controller.runtime.persistence import AtomicStateStore, StateNamespace
+from monitor_controller.runtime.randr_wake import RandrWakeMonitor
 from monitor_controller.runtime.recovery import (
     WorkerNamespaceScanner,
     recover_state,
@@ -147,6 +153,12 @@ ACTIVE_OBSERVATION_TIMEOUT_SECONDS = SHADOW_OBSERVATION_TIMEOUT_SECONDS
 # authority is only ever taken by someone who meant to take it.
 _JOURNAL = service_logger("monitor_controller.journal")
 
+# Phases in which no controller action is changing the display, so a RandR
+# change or a newly dark output can only have come from the user.
+MANUAL_CHANGE_PHASES = frozenset(
+    {ControllerPhase.QUIESCENT, ControllerPhase.UNSUPPORTED}
+)
+
 CUTOVER_AUTHORIZATION_VARIABLE = "MONITOR_CONTROLLER_CUTOVER_AUTHORIZED"
 CUTOVER_AUTHORIZATION_VALUE = "i-have-run-preflight"
 
@@ -192,6 +204,11 @@ class ActivePaths:
     def state_file(self) -> Path:
         """Return the active-only authoritative state file."""
         return self.state_home / "monitor-controller" / "active" / "state.json"
+
+    @property
+    def suppressed_outputs(self) -> Path:
+        """Return the displays the user switched off while still plugged in."""
+        return suppression_path(self.state_home)
 
     @property
     def audit_log(self) -> Path:
@@ -411,6 +428,21 @@ class ActiveComposition:
     postswitch_monitor: PostswitchNotificationMonitor | None = None
     # Wakes the controller when screens blanked at bedtime come back on.
     display_wake_monitor: DisplayWakeMonitor | None = None
+    # Wakes the controller when a display is switched off or on by hand.
+    randr_wake_monitor: RandrWakeMonitor | None = None
+
+
+class _IdleGate:
+    """Say whether the controller is idle, once it exists to ask."""
+
+    def __init__(self) -> None:
+        self._state: Callable[[], State] | None = None
+
+    def bind(self, state: Callable[[], State]) -> None:
+        self._state = state
+
+    def __call__(self) -> bool:
+        return self._state is not None and self._state().phase in MANUAL_CHANGE_PHASES
 
 
 class NonStartingDispatcher:
@@ -737,6 +769,7 @@ def build_active_composition(
     # Recapture the live identity/application files for each observation.
     # Desktop planning captures its wider manifest through the coordinator.
     profiles = ReloadingSavedProfiles(paths.autorandr_profiles)
+    idle = _IdleGate()
     coordinator = CanonicalSnapshotCoordinator(
         drm_tree=RootedSysfsReader(Path("/sys/class/drm")),
         command_runner=BoundedCommandRunner(),
@@ -746,6 +779,7 @@ def build_active_composition(
         event_generation_source=bridge,
         planning_configuration_source=planning_source,
         initial_observation_generation=initial.observation_generation,
+        suppression=OutputSuppression(paths.suppressed_outputs, may_adopt=idle),
     )
     display_bridge.bind(SnapshotDesktopDisplaySource(coordinator))
     dispatcher: ActionDispatcher = SystemdDispatcher(
@@ -803,6 +837,7 @@ def build_active_composition(
         ),
     )
     controller = composition.controller
+    idle.bind(lambda: controller.state)
     return replace(
         composition,
         recovery=recovery,
@@ -812,6 +847,7 @@ def build_active_composition(
             latest_observation=lambda: controller.state.latest_observation,
             display_power=coordinator.display_power,
         ),
+        randr_wake_monitor=RandrWakeMonitor(may_hint=idle),
     )
 
 
@@ -851,6 +887,7 @@ async def run_active(
         for suffix, extra in (
             ("postswitch", composition.postswitch_monitor),
             ("display-wake", composition.display_wake_monitor),
+            ("randr", composition.randr_wake_monitor),
         )
         if extra is not None
     )

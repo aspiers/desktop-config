@@ -33,6 +33,11 @@ from monitor_controller.observer.autorandr import (
 )
 from monitor_controller.observer.drm import ReadOnlyTree, RootedSysfsReader, sample_drm
 from monitor_controller.observer.evidence import TextCommandEvidence
+from monitor_controller.observer.suppression import (
+    load_suppressions,
+    mask_hardware,
+    suppression_path,
+)
 from monitor_controller.observer.topology import derive_canonical_topology
 from monitor_controller.observer.xrandr import sample_xrandr
 from monitor_controller.runtime.transactions import (
@@ -1045,3 +1050,79 @@ def test_terminal_result_cannot_be_replaced_or_reexecuted(tmp_path: Path) -> Non
         )
     assert store.read_result(_ACTION) == first
     assert len(commands.loads) == 1
+
+
+def _suppress_samsung(tree: ReadOnlyTree) -> None:
+    """Record the Samsung as switched off by hand, as the controller would."""
+    samsung = next(
+        item for item in sample_drm(tree).connectors if item.kernel_name == "card0-DP-3"
+    )
+    assert samsung.edid.parsed is not None
+    path = suppression_path()
+    path.parent.mkdir(parents=True)
+    path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "outputs": {samsung.edid.parsed.base_hash: {"output": "DisplayPort-9"}},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
+def _laptop_request(
+    request: TransactionRequest, tree: ReadOnlyTree, commands: _FakeCommands
+) -> TransactionRequest:
+    """Admit the request against the masked topology the observer reported."""
+    begin, _end, xrandr, hidden = mask_hardware(
+        load_suppressions(suppression_path()),
+        sample_drm(tree),
+        sample_drm(tree),
+        sample_xrandr(commands),
+    )
+    assert hidden == {"DisplayPort-9"}
+    topology = derive_canonical_topology(begin, xrandr)
+    return replace(
+        request,
+        physical_token=topology.physical_token,
+        expected_topology=ExpectedTopology(
+            topology.kernel_connected_outputs,
+            topology.kernel_external_outputs,
+            topology.x_connected_outputs,
+            topology.x_active_outputs,
+        ),
+    )
+
+
+@pytest.mark.parametrize("suppressed", [True, False])
+def test_laptop_profile_applies_beside_a_display_switched_off_by_hand(
+    tmp_path: Path, *, suppressed: bool
+) -> None:
+    """The worker must mask the dark Samsung exactly as the observer did.
+
+    Otherwise its fresh sample sees the Samsung and refuses the laptop
+    profile the controller admitted for the remaining display (dc-8xns).
+    """
+    tree = RootedSysfsReader(_sysfs_tree(tmp_path / "sysfs"))
+    commands = _FakeCommands(evidence="eDP\n")
+    _suppress_samsung(tree)
+    startup, _store = _startup(
+        tmp_path,
+        tree,
+        commands,
+        profile=_profile("celtic"),
+        mapping=(OutputMapping("eDP", "eDP"),),
+        mutate_request=lambda request: _laptop_request(request, tree, commands),
+    )
+    if not suppressed:
+        suppression_path().unlink()
+
+    status = _execute(startup, tree, commands)
+
+    if suppressed:
+        assert status == 0
+        assert len(commands.loads) == 1
+    else:
+        assert status == STALE_EXIT_STATUS
+        assert commands.loads == []
