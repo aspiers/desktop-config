@@ -42,7 +42,14 @@ repository and travels to the other machines from there.
   not a series of dialogs, because AeroSpace moves the focus elsewhere
   whenever a window closes, so a second dialog lost the keyboard.  The
   script still does the matching, opening and rule-writing, so only
-  changes to the picker need a rebuild.  `--uninstall` removes it.
+  changes to the picker need a rebuild.
+- The app stays open, hidden, and a LaunchAgent
+  (`~/Library/LaunchAgents/org.adamspiers.LinkRouter.plist`) starts it
+  at login.  Launching it for each link took about 1s warm, and several
+  seconds cold, mostly AppleScriptObjC loading AppKit's bridging;
+  running already, it shows the picker in about 0.1s.  The installer
+  restarts it, so a rebuild takes effect at once.  `--uninstall`
+  removes the app and the LaunchAgent.
 - Run from a terminal, `link-router URL` shows an older picker, as a
   series of osascript dialogs.
 - Errors, from the script or the app, go to

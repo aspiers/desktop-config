@@ -16,6 +16,7 @@ set -eu
 
 PATH="/opt/homebrew/bin:$HOME/.homebrew/bin:/usr/local/bin:$PATH"
 APP=$HOME/Applications/LinkRouter.app
+AGENT=$HOME/Library/LaunchAgents/org.adamspiers.LinkRouter.plist
 ROUTER=$HOME/bin/link-router
 BUNDLE_ID=org.adamspiers.LinkRouter
 LSREGISTER=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
@@ -28,6 +29,9 @@ die() {
 [ "$(uname)" = Darwin ] || die "this is for macOS; see windows/install.ps1 for Windows"
 
 if [ "${1:-}" = --uninstall ]; then
+    launchctl bootout "gui/$(id -u)" "$AGENT" 2>/dev/null || true
+    rm -f "$AGENT"
+    pkill -f "$APP/Contents/MacOS/applet" || true
     [ -d "$APP" ] && "$LSREGISTER" -u "$APP" && rm -rf "$APP"
     echo "Removed $APP.  Choose another default browser in System Settings → Desktop & Dock."
     exit 0
@@ -165,7 +169,10 @@ on run_router(args)
 	end try
 end run_router
 EOF
-osacompile -o "$build" "$tmp/LinkRouter.applescript"
+# Stay open (-s), so a link costs no app launch, and AppleScriptObjC
+# loads AppKit's bridging once rather than per link: the picker then
+# shows in ~0.1s rather than ~1s warm and several seconds cold.
+osacompile -s -o "$build" "$tmp/LinkRouter.applescript"
 
 plist=$build/Contents/Info.plist
 pb() { /usr/libexec/PlistBuddy "$@" "$plist"; }
@@ -186,10 +193,30 @@ pb -c "Add :LSUIElement bool true"
 codesign --force --deep --sign - "$build"
 
 mkdir -p "$(dirname "$APP")"
+# A running copy would go on handling links with the old script.
+pkill -f "$APP/Contents/MacOS/applet" || true
 rm -rf "$APP"
 mv "$build" "$APP"
 "$LSREGISTER" -f "$APP"
 echo "Installed $APP"
+
+# Start it now and at each login, hidden (-g, -j), so even the first
+# link is quick.
+mkdir -p "$(dirname "$AGENT")"
+cat >"$AGENT" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key><string>org.adamspiers.LinkRouter</string>
+	<key>ProgramArguments</key>
+	<array><string>/usr/bin/open</string><string>-gj</string><string>$APP</string></array>
+	<key>RunAtLoad</key><true/>
+</dict>
+</plist>
+PLIST
+launchctl bootout "gui/$(id -u)" "$AGENT" 2>/dev/null || true
+launchctl bootstrap "gui/$(id -u)" "$AGENT" || open -gj "$APP"
 
 # defaultbrowser names a browser by the last part of its bundle ID.
 # macOS asks for confirmation before changing the default.
