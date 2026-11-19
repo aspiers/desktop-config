@@ -856,6 +856,8 @@ class _SuppressionWorld:
     adopt: bool = True
     notes: list[str] = field(default_factory=list[str])
 
+    fallbacks: list[tuple[str, ...]] = field(default_factory=list[tuple[str, ...]])
+
     def suppression(self, path: Path) -> OutputSuppression:
         return OutputSuppression(
             path,
@@ -863,6 +865,9 @@ class _SuppressionWorld:
             realtime=lambda: self.now,
             suspend_count=lambda: self.suspends,
             notify=lambda summary, _body: self.notes.append(summary),
+            fallback=lambda fingerprints, _x, _profiles: self.fallbacks.append(
+                tuple(item.output for item in fingerprints)
+            ),
         )
 
     def lit(self) -> None:
@@ -1018,3 +1023,19 @@ def test_replug_ends_suppression_but_resume_does_not(
 
     assert bool(suppression.suppressed) is not released
     assert observation.has_external_hardware is released
+
+
+@pytest.mark.parametrize("has_laptop_profile", [True, False])
+def test_fallback_profile_is_requested_only_when_nothing_fits(
+    tmp_path: Path, *, has_laptop_profile: bool
+) -> None:
+    world = _suppression_world(tmp_path)
+    if not has_laptop_profile:
+        world.profiles = tuple(item for item in world.profiles if item.name != "celtic")
+    suppression = world.suppression(tmp_path / "suppressed.json")
+    _observe(world, suppression)
+    world.switched_off()
+
+    _observe(world, suppression)
+
+    assert world.fallbacks == ([] if has_laptop_profile else [("eDP",)])

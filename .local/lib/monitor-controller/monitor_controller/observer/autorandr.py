@@ -299,7 +299,7 @@ def parse_saved_profile(
             setup=setup,
             config=config,
             layout=layout,
-            scope=_profile_scope(setup),
+            scope=profile_scope(setup),
             configuration_hashes=hashes,
         )
     return SavedProfileResult(profile, tuple(references), collector.issues)
@@ -627,8 +627,9 @@ def _parse_layout(
     return values[0]
 
 
-def _profile_scope(setup: tuple[Fingerprint, ...]) -> ProfileScope:
-    internal = tuple(item for item in setup if _is_internal_output(item.output))
+def profile_scope(setup: tuple[Fingerprint, ...]) -> ProfileScope:
+    """Classify a setup as laptop-only, external-only, or both."""
+    internal = tuple(item for item in setup if is_internal_output(item.output))
     if len(internal) == len(setup):
         return ProfileScope.INTERNAL_ONLY
     if not internal:
@@ -636,7 +637,8 @@ def _profile_scope(setup: tuple[Fingerprint, ...]) -> ProfileScope:
     return ProfileScope.MIXED
 
 
-def _is_internal_output(output: str) -> bool:
+def is_internal_output(output: str) -> bool:
+    """Return whether *output* names a built-in panel connector."""
     family = output.split("-", maxsplit=1)[0].casefold()
     return family in {"edp", "lvds", "dsi"}
 

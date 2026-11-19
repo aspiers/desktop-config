@@ -19,11 +19,12 @@ import json
 import os
 import subprocess
 import time
-from collections.abc import Callable, Collection
+from collections.abc import Callable, Collection, Sequence
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import cast
 
+from ..model import Fingerprint  # noqa: TID252
 from ..runtime.journal import service_logger  # noqa: TID252
 from .autorandr import (
     AutorandrObservation,
@@ -34,6 +35,11 @@ from .drm import ConnectorEdid, ConnectorStatus, DrmSnapshot, EvidenceState
 from .xrandr import XConnectionState, XrandrSnapshot
 
 _JOURNAL = service_logger("monitor_controller.journal")
+
+# Saves a profile for screens no saved profile fits; see fallback_profile.
+FallbackProfile = Callable[
+    [Sequence[Fingerprint], XrandrSnapshot, Sequence[SavedAutorandrProfile]], None
+]
 
 SCHEMA_VERSION = 1
 # A resume can leave a DisplayPort link down this long before it retrains;
@@ -84,7 +90,7 @@ class _Sample:
 class OutputSuppression:
     """Track manual switch-offs across samples and mask them out of evidence."""
 
-    def __init__(
+    def __init__(  # noqa: PLR0913 - keyword-only wiring
         self,
         path: Path,
         *,
@@ -92,9 +98,14 @@ class OutputSuppression:
         realtime: Callable[[], float] = time.time,
         suspend_count: Callable[[], int | None] = read_suspend_count,
         notify: Callable[[str, str], None] = desktop_notify,
+        fallback: FallbackProfile | None = None,
     ) -> None:
-        """Load persisted suppressions; *may_adopt* says no action is running."""
+        """Load persisted suppressions; *may_adopt* says no action is running.
+
+        *fallback* saves a profile when no saved one fits what is still lit.
+        """
         self._path = path
+        self._fallback = fallback
         self._may_adopt = may_adopt
         self._realtime = realtime
         self._suspend_count = suspend_count
@@ -117,19 +128,25 @@ class OutputSuppression:
     ) -> tuple[DrmSnapshot, DrmSnapshot, XrandrSnapshot, AutorandrObservation]:
         """Update suppressions from one sample, then return it masked."""
         # A torn or unreadable sample decides nothing; it is only masked.
-        if begin_drm == end_drm and xrandr.valid and autorandr.valid:
+        sound = begin_drm == end_drm and xrandr.valid and autorandr.valid
+        if sound:
             self._update(_sample(end_drm, xrandr))
         begin_drm, end_drm, masked_x, hidden = mask_hardware(
             self._entries, begin_drm, end_drm, xrandr
         )
         if not hidden:
             return begin_drm, end_drm, xrandr, autorandr
-        return (
-            begin_drm,
-            end_drm,
-            masked_x,
-            _mask_autorandr(autorandr, hidden, masked_x, profiles),
-        )
+        masked = _mask_autorandr(autorandr, hidden, masked_x, profiles)
+        if (
+            self._fallback is not None
+            and sound
+            and masked.fingerprints
+            and not masked.detected_profiles
+            and self._may_adopt()
+        ):
+            # The next observation loads the saved profile and applies it.
+            self._fallback(masked.fingerprints, masked_x, profiles)
+        return begin_drm, end_drm, masked_x, masked
 
     def _update(self, sample: _Sample) -> None:
         before = dict(self._entries)

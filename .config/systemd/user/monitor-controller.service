@@ -63,6 +63,10 @@ ProtectSystem=strict
 # be able to write the desktop configuration state its workers act on.
 ProtectHome=read-only
 ReadWritePaths=%h/.local/state/monitor-controller/active %t/monitor-controller/active
+# The observer saves a best-guess profile here when a display switched off by
+# hand leaves screens no saved profile fits (dc-8xns).  systemd resolves the
+# Stow symlink, so this opens the checkout's .config/autorandr and nothing else.
+ReadWritePaths=-%h/.config/autorandr
 ReadOnlyPaths=/sys/class/drm /proc/sys/kernel/random/boot_id
 InaccessiblePaths=-%h/.local/state/monitor-controller/shadow -%t/monitor-controller/shadow
 

@@ -62,9 +62,11 @@ from monitor_controller.model import (
     State,
 )
 from monitor_controller.observer.drm import RootedSysfsReader
+from monitor_controller.observer.fallback_profile import FallbackProfileWriter
 from monitor_controller.observer.snapshot import CanonicalSnapshotCoordinator
 from monitor_controller.observer.suppression import (
     OutputSuppression,
+    desktop_notify,
     suppression_path,
 )
 from monitor_controller.postswitch import (
@@ -680,6 +682,10 @@ def load_active_state(  # noqa: PLR0913
     )
 
 
+def _short_host_name() -> str:
+    return socket.gethostname().split(".", maxsplit=1)[0]
+
+
 def _desktop_configuration_root(paths: ActivePaths) -> Path:
     """Resolve the desktop configuration tree, refusing anything unusable."""
     return desktop_configuration_root(
@@ -760,7 +766,7 @@ def build_active_composition(
         root=_desktop_configuration_root(paths),
         display=display_bridge,
         context=ShadowDesktopContextSource(
-            host_name=socket.gethostname().split(".", maxsplit=1)[0],
+            host_name=_short_host_name(),
             # Read once here, not during planning: planning must be
             # reproducible, and set-layout-dpi moves this value mid-relayout.
             reference_dpi=read_reference_dpi(),
@@ -779,7 +785,13 @@ def build_active_composition(
         event_generation_source=bridge,
         planning_configuration_source=planning_source,
         initial_observation_generation=initial.observation_generation,
-        suppression=OutputSuppression(paths.suppressed_outputs, may_adopt=idle),
+        suppression=OutputSuppression(
+            paths.suppressed_outputs,
+            may_adopt=idle,
+            fallback=FallbackProfileWriter(
+                paths.autorandr_profiles, host=_short_host_name(), notify=desktop_notify
+            ),
+        ),
     )
     display_bridge.bind(SnapshotDesktopDisplaySource(coordinator))
     dispatcher: ActionDispatcher = SystemdDispatcher(
