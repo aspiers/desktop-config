@@ -332,6 +332,7 @@ def jumps() -> list[Json]:
     # of Linux's Emacs personal note.
     m += thumb("n", jump("tab --pick --site confluence"))
     m += thumb("o", jump("teams planner"))
+    m += thumb("o", jump("teams activity"), "shift")
     m += settings_toggle("p", "com.apple.Sound-Settings.extension")
     # Cycles when Slack has several windows, then hides it (Adam, 2026-11-16).
     m += thumb("s", jump(r"cycle --toggle --launch com.tinyspeck.slackmacgap '^com\.tinyspeck\.slackmacgap$'"))

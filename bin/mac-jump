@@ -11,7 +11,7 @@
 #   mac-jump tab [--pick|--toggle] [--app-window] [--profile DIR] --site NAME
 #   mac-jump emacs ELISP|FILE
 #   mac-jump outlook mail|calendar
-#   mac-jump teams chat|planner|meeting
+#   mac-jump teams chat|planner|activity|meeting
 #   mac-jump windows
 #   mac-jump hide BUNDLE_ID
 #   mac-jump sticky
@@ -373,7 +373,7 @@ outlook() {
 }
 
 # Teams numbers the apps in its left-hand bar from Cmd+1. Adam's order
-# (2026-11-18): Calendar, Chat, Planner. Each is a toggle: hide Teams if
+# (2026-11-19): Calendar, Chat, Planner, Activity. Each is a toggle: hide Teams if
 # its focused window already shows that app, judged by the window title,
 # which starts with the app's name ("Chat | ..." is assumed).
 teams_app() {
@@ -389,10 +389,11 @@ teams() {
     case ${1:-} in
         chat) teams_app Chat 2 ;;
         planner) teams_app Planner 3 ;;
+        activity) teams_app Activity 4 ;;
         # Stub: Teams gives a meeting its own window but no reliable way to
         # tell it from the main one, so this cycles all Teams windows.
         meeting) cycle --launch com.microsoft.teams2 '^com\.microsoft\.teams2$' ;;
-        *) die "teams: need chat, planner or meeting" ;;
+        *) die "teams: need chat, planner, activity or meeting" ;;
     esac
 }
 
