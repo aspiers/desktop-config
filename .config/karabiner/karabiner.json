@@ -905,30 +905,6 @@
                                 },
                                 "to": [
                                     {
-                                        "shell_command": "~/bin/mac-jump hide com.microsoft.teams2"
-                                    }
-                                ],
-                                "conditions": [
-                                    {
-                                        "type": "variable_if",
-                                        "name": "thumb",
-                                        "value": 1
-                                    },
-                                    {
-                                        "type": "frontmost_application_if",
-                                        "bundle_identifiers": [
-                                            "^com\\.microsoft\\.teams2$"
-                                        ]
-                                    }
-                                ]
-                            },
-                            {
-                                "type": "basic",
-                                "from": {
-                                    "key_code": "o"
-                                },
-                                "to": [
-                                    {
                                         "shell_command": "~/bin/mac-jump teams planner"
                                     }
                                 ],
@@ -1023,70 +999,6 @@
                                         "type": "variable_if",
                                         "name": "thumb",
                                         "value": 1
-                                    },
-                                    {
-                                        "type": "device_if",
-                                        "identifiers": [
-                                            {
-                                                "is_built_in_keyboard": true
-                                            }
-                                        ]
-                                    }
-                                ]
-                            },
-                            {
-                                "type": "basic",
-                                "from": {
-                                    "key_code": "t"
-                                },
-                                "to": [
-                                    {
-                                        "shell_command": "~/bin/mac-jump hide com.microsoft.teams2"
-                                    }
-                                ],
-                                "conditions": [
-                                    {
-                                        "type": "variable_if",
-                                        "name": "thumb",
-                                        "value": 1
-                                    },
-                                    {
-                                        "type": "frontmost_application_if",
-                                        "bundle_identifiers": [
-                                            "^com\\.microsoft\\.teams2$"
-                                        ]
-                                    },
-                                    {
-                                        "type": "device_unless",
-                                        "identifiers": [
-                                            {
-                                                "is_built_in_keyboard": true
-                                            }
-                                        ]
-                                    }
-                                ]
-                            },
-                            {
-                                "type": "basic",
-                                "from": {
-                                    "key_code": "r"
-                                },
-                                "to": [
-                                    {
-                                        "shell_command": "~/bin/mac-jump hide com.microsoft.teams2"
-                                    }
-                                ],
-                                "conditions": [
-                                    {
-                                        "type": "variable_if",
-                                        "name": "thumb",
-                                        "value": 1
-                                    },
-                                    {
-                                        "type": "frontmost_application_if",
-                                        "bundle_identifiers": [
-                                            "^com\\.microsoft\\.teams2$"
-                                        ]
                                     },
                                     {
                                         "type": "device_if",

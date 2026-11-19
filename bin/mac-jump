@@ -372,14 +372,23 @@ outlook() {
     esac
 }
 
+# Teams numbers the apps in its left-hand bar from Cmd+1. Adam's order
+# (2026-11-18): Calendar, Chat, Planner. Each is a toggle: hide Teams if
+# its focused window already shows that app, judged by the window title,
+# which starts with the app's name ("Chat | ..." is assumed).
+teams_app() {
+    if aerospace list-windows --focused --format '%{app-bundle-id} %{window-title}' 2>/dev/null |
+        grep -q "^com\.microsoft\.teams2 $1"; then
+        hide com.microsoft.teams2
+    else
+        activate_and_press com.microsoft.teams2 "$2"
+    fi
+}
+
 teams() {
     case ${1:-} in
-        # Teams numbers the apps in its left-hand bar from Cmd+1, so this
-        # assumes Chat is second, as it is by default.
-        chat) activate_and_press com.microsoft.teams2 2 ;;
-        # Stub: no reliable way found to open Planner inside Teams, so this
-        # only focuses Teams.
-        planner) open -b com.microsoft.teams2 ;;
+        chat) teams_app Chat 2 ;;
+        planner) teams_app Planner 3 ;;
         # Stub: Teams gives a meeting its own window but no reliable way to
         # tell it from the main one, so this cycles all Teams windows.
         meeting) cycle --launch com.microsoft.teams2 '^com\.microsoft\.teams2$' ;;
