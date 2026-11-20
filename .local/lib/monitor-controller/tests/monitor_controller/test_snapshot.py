@@ -982,6 +982,32 @@ def test_switch_off_during_controller_action_is_not_adopted(tmp_path: Path) -> N
     assert not suppression.suppressed
 
 
+def test_switch_off_seen_by_the_randr_watcher_is_adopted_after_its_wake(
+    tmp_path: Path,
+) -> None:
+    """The watcher's own hint leaves quiescent before the sample is taken.
+
+    Live on 2026-11-20 the Samsung was relit because the sample landed in
+    discover_fast, where *may_adopt* refuses; the watcher's latch must win.
+    """
+    world = _suppression_world(tmp_path)
+    suppression = world.suppression(tmp_path / "suppressed.json")
+    _observe(world, suppression)
+    world.switched_off()
+    suppression.expect_manual_change()
+    world.adopt = False
+
+    observation = _observe(world, suppression)
+
+    assert not observation.has_external_hardware
+    assert world.notes == ["DisplayPort-7 stays off"]
+    # The latch covers one sample only; the controller's own changes are not.
+    world.lit()
+    _observe(world, suppression)
+    world.switched_off()
+    assert _observe(world, suppression).has_external_hardware
+
+
 def test_switching_the_display_back_on_ends_suppression(tmp_path: Path) -> None:
     world = _suppression_world(tmp_path)
     suppression = world.suppression(tmp_path / "suppressed.json")

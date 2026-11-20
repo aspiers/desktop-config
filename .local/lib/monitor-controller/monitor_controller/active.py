@@ -447,6 +447,20 @@ class _IdleGate:
         return self._state is not None and self._state().phase in MANUAL_CHANGE_PHASES
 
 
+def _manual_change_tracking(
+    paths: ActivePaths,
+) -> tuple[_IdleGate, OutputSuppression]:
+    """Build the idle gate and the switch-off tracker that consults it."""
+    idle = _IdleGate()
+    return idle, OutputSuppression(
+        paths.suppressed_outputs,
+        may_adopt=idle,
+        fallback=FallbackProfileWriter(
+            paths.autorandr_profiles, host=_short_host_name(), notify=desktop_notify
+        ),
+    )
+
+
 class NonStartingDispatcher:
     """Wrap a real dispatcher so preflight can build one without using it.
 
@@ -775,7 +789,7 @@ def build_active_composition(
     # Recapture the live identity/application files for each observation.
     # Desktop planning captures its wider manifest through the coordinator.
     profiles = ReloadingSavedProfiles(paths.autorandr_profiles)
-    idle = _IdleGate()
+    idle, suppression = _manual_change_tracking(paths)
     coordinator = CanonicalSnapshotCoordinator(
         drm_tree=RootedSysfsReader(Path("/sys/class/drm")),
         command_runner=BoundedCommandRunner(),
@@ -785,13 +799,7 @@ def build_active_composition(
         event_generation_source=bridge,
         planning_configuration_source=planning_source,
         initial_observation_generation=initial.observation_generation,
-        suppression=OutputSuppression(
-            paths.suppressed_outputs,
-            may_adopt=idle,
-            fallback=FallbackProfileWriter(
-                paths.autorandr_profiles, host=_short_host_name(), notify=desktop_notify
-            ),
-        ),
+        suppression=suppression,
     )
     display_bridge.bind(SnapshotDesktopDisplaySource(coordinator))
     dispatcher: ActionDispatcher = SystemdDispatcher(
@@ -859,7 +867,9 @@ def build_active_composition(
             latest_observation=lambda: controller.state.latest_observation,
             display_power=coordinator.display_power,
         ),
-        randr_wake_monitor=RandrWakeMonitor(may_hint=idle),
+        randr_wake_monitor=RandrWakeMonitor(
+            may_hint=idle, on_hint=suppression.expect_manual_change
+        ),
     )
 
 

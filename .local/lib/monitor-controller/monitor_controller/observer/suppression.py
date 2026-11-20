@@ -112,11 +112,22 @@ class OutputSuppression:
         self._notify = notify
         self._entries = self._load()
         self._last_lit: frozenset[str] | None = None
+        self._manual_change = False
 
     @property
     def suppressed(self) -> dict[str, SuppressedOutput]:
         """Return a copy of the current suppressions by EDID base hash."""
         return dict(self._entries)
+
+    def expect_manual_change(self) -> None:
+        """Adopt switch-offs in the next sound sample, whatever the phase.
+
+        The RandR watcher calls this when it sees a layout change while the
+        controller is idle.  Its wake-up moves the controller out of
+        quiescent before that sample is taken, so *may_adopt* alone would
+        refuse the very change that woke it.
+        """
+        self._manual_change = True
 
     def mask(
         self,
@@ -129,8 +140,10 @@ class OutputSuppression:
         """Update suppressions from one sample, then return it masked."""
         # A torn or unreadable sample decides nothing; it is only masked.
         sound = begin_drm == end_drm and xrandr.valid and autorandr.valid
+        adopt = self._manual_change or self._may_adopt()
         if sound:
-            self._update(_sample(end_drm, xrandr))
+            self._manual_change = False
+            self._update(_sample(end_drm, xrandr), adopt=adopt)
         begin_drm, end_drm, masked_x, hidden = mask_hardware(
             self._entries, begin_drm, end_drm, xrandr
         )
@@ -142,18 +155,18 @@ class OutputSuppression:
             and sound
             and masked.fingerprints
             and not masked.detected_profiles
-            and self._may_adopt()
+            and adopt
         ):
             # The next observation loads the saved profile and applies it.
             self._fallback(masked.fingerprints, masked_x, profiles)
         return begin_drm, end_drm, masked_x, masked
 
-    def _update(self, sample: _Sample) -> None:
+    def _update(self, sample: _Sample, *, adopt: bool) -> None:
         before = dict(self._entries)
         now = self._realtime()
         for key, entry in before.items():
             self._age(key, entry, sample, now)
-        if self._last_lit is not None and sample.lit and self._may_adopt():
+        if self._last_lit is not None and sample.lit and adopt:
             for key in (self._last_lit & sample.present.keys()) - sample.lit:
                 if key not in self._entries:
                     self._suppress(key, sample.present[key][1])

@@ -28,12 +28,17 @@ class RandrWakeMonitor:
         self,
         *,
         may_hint: Callable[[], bool],
+        on_hint: Callable[[], object] = lambda: None,
         command: Sequence[str] = RANDR_EVENTS_COMMAND,
         settle_seconds: float = SETTLE_SECONDS,
         restart_seconds: float = RESTART_SECONDS,
     ) -> None:
-        """Bind the gate that keeps the controller's own changes from echoing."""
+        """Bind the gate that keeps the controller's own changes from echoing.
+
+        *on_hint* runs just before each hint, while the gate still says idle.
+        """
         self._may_hint = may_hint
+        self._on_hint = on_hint
         self._command = tuple(command)
         self._settle_seconds = settle_seconds
         self._restart_seconds = restart_seconds
@@ -64,6 +69,7 @@ class RandrWakeMonitor:
                 # A quiescent controller made no change, so this one was manual.
                 if self._may_hint():
                     _JOURNAL.info("X screen layout changed; re-observing")
+                    self._on_hint()
                     notify()
         finally:
             if process.returncode is None:

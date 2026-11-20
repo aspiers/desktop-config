@@ -18,23 +18,25 @@ _EVENTS = (
 )
 
 
-def _hints(*, may_hint: bool) -> int:
-    hints: list[None] = []
+def _hints(*, may_hint: bool) -> list[str]:
+    calls: list[str] = []
     monitor = RandrWakeMonitor(
         may_hint=lambda: may_hint,
+        on_hint=lambda: calls.append("on_hint"),
         command=("sh", "-c", _EVENTS),
         settle_seconds=0.1,
     )
-    asyncio.run(monitor.follow(lambda: hints.append(None)))
-    return len(hints)
+    asyncio.run(monitor.follow(lambda: calls.append("hint")))
+    return calls
 
 
 def test_each_burst_of_randr_events_hints_once() -> None:
-    assert _hints(may_hint=True) == 2
+    # on_hint must run first: the hint moves the controller out of quiescent.
+    assert _hints(may_hint=True) == ["on_hint", "hint"] * 2
 
 
 def test_busy_controller_is_not_hinted_by_its_own_changes() -> None:
-    assert _hints(may_hint=False) == 0
+    assert _hints(may_hint=False) == []
 
 
 def test_missing_listener_is_reported_as_os_error() -> None:
