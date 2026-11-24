@@ -791,7 +791,7 @@
                                 },
                                 "to": [
                                     {
-                                        "shell_command": "~/bin/mac-jump tab --pick --open https://github.com/ '^https://github\\.com/'"
+                                        "shell_command": "~/bin/mac-jump tab --pick --site github"
                                     }
                                 ],
                                 "conditions": [
