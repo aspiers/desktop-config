@@ -1,0 +1,226 @@
+#!/bin/bash
+#
+# Build ~/Applications/LinkRouter.app, which macOS can use as the
+# default browser, and offer to make it so.  The app only hands each
+# link to ~/bin/link-router, which does all the work, so editing that
+# script or the rules needs no rebuild.  See docs/link-router.md.
+#
+# The app is an AppleScript applet because a shell script cannot be an
+# app that receives links: macOS sends them as Apple Events, not as
+# arguments.  Everything used here comes with macOS, except yq and
+# defaultbrowser, which come from Homebrew.
+#
+# Usage: install-macos [--uninstall]
+
+set -eu
+
+PATH="/opt/homebrew/bin:$HOME/.homebrew/bin:/usr/local/bin:$PATH"
+APP=$HOME/Applications/LinkRouter.app
+AGENT=$HOME/Library/LaunchAgents/org.adamspiers.LinkRouter.plist
+ROUTER=$HOME/bin/link-router
+BUNDLE_ID=org.adamspiers.LinkRouter
+LSREGISTER=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+
+die() {
+    echo "install-macos: $*" >&2
+    exit 1
+}
+
+[ "$(uname)" = Darwin ] || die "this is for macOS; see windows/install.ps1 for Windows"
+
+if [ "${1:-}" = --uninstall ]; then
+    launchctl bootout "gui/$(id -u)" "$AGENT" 2>/dev/null || true
+    rm -f "$AGENT"
+    pkill -f "$APP/Contents/MacOS/applet" || true
+    [ -d "$APP" ] && "$LSREGISTER" -u "$APP" && rm -rf "$APP"
+    echo "Removed $APP.  Choose another default browser in System Settings → Desktop & Dock."
+    exit 0
+fi
+
+[ -x "$ROUTER" ] || die "$ROUTER is missing: stow desktop-config first (mr stow)"
+command -v yq >/dev/null || brew install yq
+
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+build=$tmp/LinkRouter.app
+
+# The app shows the picker itself rather than leaving it to the
+# script's osascript: an osascript process takes ~2s to load the GUI
+# frameworks and is often refused the keyboard focus, whereas this app
+# is already running and was launched to handle the link.
+#
+# The picker is a single window with a button per profile, then an
+# "always" box with a pattern field (like the Windows version),
+# rather than a series of dialogs: AeroSpace moves the focus back to
+# another window whenever one closes, a moment later, so a second
+# dialog lost the keyboard however the app tried to take it back.
+#
+# The script still does the matching, opening and rule-writing, so the
+# picker here is the only part that needs a rebuild when changed.
+cat >"$tmp/LinkRouter.applescript" <<EOF
+use AppleScript version "2.4"
+use framework "Foundation"
+use framework "AppKit"
+use scripting additions
+
+property router : "$ROUTER"
+
+on open location theURL
+	try
+		route_link(theURL)
+	on error msg number num
+		-- Errors from here would otherwise vanish with the app.
+		do shell script "echo \"\$(date '+%F %T') LinkRouter.app: \"" & quoted form of (msg & " (" & num & ")") & " >> ~/Library/Logs/link-router.log"
+	end try
+end open location
+
+on route_link(theURL)
+	set answer to paragraphs of (run_router("--route " & quoted form of theURL))
+	if answer is {} or item 1 of answer is not "ask" then return
+	set suggestion to ""
+	if (count of answer) > 1 then set suggestion to item 2 of answer
+	set labels to paragraphs of run_router("--labels")
+	if labels is {} then return
+	set {label, pattern} to pick_profile(suggestion, labels)
+	if label is "" then return
+	if pattern is not "" then
+		run_router("--add-rule " & quoted form of pattern & " " & quoted form of label)
+	end if
+	run_router("--open-as " & quoted form of label & " " & quoted form of theURL)
+end route_link
+
+-- Ask which profile to open the link in, and whether to add a rule.
+-- Returns {label, pattern}: label "" when cancelled, pattern "" when
+-- no rule is wanted.  A panel rather than an NSAlert, which would put
+-- the rule option above the profiles.  Cmd-1 and on pick a profile,
+-- Cmd-R ticks the box, Escape cancels.
+on pick_profile(suggestion, labels)
+	set cmd to current application's NSEventModifierFlagCommand
+	set app_ to current application's NSApp
+	set n to count of labels
+	set W to 380
+	set H to 20 + 20 + 12 + n * 34 + 14 + 22 + 6 + 24 + 20 + 28 + 16
+	set panel to current application's NSPanel's alloc()'s initWithContentRect:{{0, 0}, {W, H}} styleMask:(current application's NSWindowStyleMaskTitled) backing:(current application's NSBackingStoreBuffered) defer:false
+	panel's setTitle:"Link router"
+	set content to panel's contentView()
+
+	set y to H - 20 - 20
+	set msg to current application's NSTextField's labelWithString:("No rule matches " & suggestion & ". Open it in:")
+	msg's setFrame:{{20, y}, {W - 40, 20}}
+	content's addSubview:msg
+	set y to y - 12
+
+	-- Each button stops the modal loop; a toggle button stays "on",
+	-- which tells which one was pressed.
+	set profileButtons to {}
+	repeat with i from 1 to n
+		set y to y - 34
+		set b to current application's NSButton's buttonWithTitle:("⌘" & i & "    " & (item i of labels)) target:app_ action:"stopModal"
+		b's setAlignment:(current application's NSTextAlignmentLeft)
+		b's setButtonType:(current application's NSButtonTypeToggle)
+		b's setFrame:{{20, y}, {W - 40, 30}}
+		if i ≤ 9 then
+			b's setKeyEquivalent:(i as text)
+			b's setKeyEquivalentModifierMask:cmd
+		end if
+		content's addSubview:b
+		set end of profileButtons to b
+	end repeat
+
+	set y to y - 14 - 22
+	set box to current application's NSButton's checkboxWithTitle:"⌘R    Always use it for links matching:" target:(missing value) action:(missing value)
+	box's setKeyEquivalent:"r"
+	box's setKeyEquivalentModifierMask:cmd
+	box's setFrame:{{20, y}, {W - 40, 22}}
+	content's addSubview:box
+	set y to y - 6 - 24
+	set field to current application's NSTextField's textFieldWithString:suggestion
+	field's setPlaceholderString:"a bare domain covers its subdomains; * and ? are wildcards"
+	field's setFrame:{{20, y}, {W - 40, 24}}
+	content's addSubview:field
+
+	set cancelButton to current application's NSButton's buttonWithTitle:"Cancel" target:app_ action:"stopModal"
+	cancelButton's setKeyEquivalent:(character id 27)
+	cancelButton's setFrame:{{W - 20 - 100, 16}, {100, 28}}
+	content's addSubview:cancelButton
+
+	panel's setInitialFirstResponder:field
+	panel's |center|()
+	tell current application to activate
+	app_'s runModalForWindow:panel
+	panel's orderOut:(missing value)
+
+	repeat with i from 1 to n
+		if ((item i of profileButtons)'s state()) as integer is 1 then
+			set pattern to ""
+			if (box's state()) as integer is 1 then set pattern to (field's stringValue()) as text
+			return {item i of labels, pattern}
+		end if
+	end repeat
+	return {"", ""}
+end pick_profile
+
+-- Errors are logged by the script, so are not shown here too.
+on run_router(args)
+	try
+		return do shell script quoted form of router & " " & args
+	on error
+		return ""
+	end try
+end run_router
+EOF
+# Stay open (-s), so a link costs no app launch, and AppleScriptObjC
+# loads AppKit's bridging once rather than per link: the picker then
+# shows in ~0.1s rather than ~1s warm and several seconds cold.
+osacompile -s -o "$build" "$tmp/LinkRouter.applescript"
+
+plist=$build/Contents/Info.plist
+pb() { /usr/libexec/PlistBuddy "$@" "$plist"; }
+pb -c "Delete :CFBundleIdentifier" 2>/dev/null || true
+pb -c "Add :CFBundleIdentifier string $BUNDLE_ID"
+pb -c "Delete :CFBundleURLTypes" 2>/dev/null || true
+pb -c "Add :CFBundleURLTypes array" \
+   -c "Add :CFBundleURLTypes:0 dict" \
+   -c "Add :CFBundleURLTypes:0:CFBundleURLName string WebSiteURL" \
+   -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" \
+   -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string http" \
+   -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:1 string https"
+# No Dock icon each time a link passes through.
+pb -c "Delete :LSUIElement" 2>/dev/null || true
+pb -c "Add :LSUIElement bool true"
+
+# Editing Info.plist broke osacompile's ad-hoc signature; sign again.
+codesign --force --deep --sign - "$build"
+
+mkdir -p "$(dirname "$APP")"
+# A running copy would go on handling links with the old script.
+pkill -f "$APP/Contents/MacOS/applet" || true
+rm -rf "$APP"
+mv "$build" "$APP"
+"$LSREGISTER" -f "$APP"
+echo "Installed $APP"
+
+# Start it now and at each login, hidden (-g, -j), so even the first
+# link is quick.
+mkdir -p "$(dirname "$AGENT")"
+cat >"$AGENT" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key><string>org.adamspiers.LinkRouter</string>
+	<key>ProgramArguments</key>
+	<array><string>/usr/bin/open</string><string>-gj</string><string>$APP</string></array>
+	<key>RunAtLoad</key><true/>
+</dict>
+</plist>
+PLIST
+launchctl bootout "gui/$(id -u)" "$AGENT" 2>/dev/null || true
+launchctl bootstrap "gui/$(id -u)" "$AGENT" || open -gj "$APP"
+
+# defaultbrowser names a browser by the last part of its bundle ID.
+# macOS asks for confirmation before changing the default.
+command -v defaultbrowser >/dev/null || brew install defaultbrowser ||
+    die "set the default browser to LinkRouter in System Settings → Desktop & Dock"
+defaultbrowser linkrouter ||
+    die "set the default browser to LinkRouter in System Settings → Desktop & Dock"

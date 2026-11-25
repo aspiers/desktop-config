@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -70,7 +71,13 @@ VMS_AND_REMOTE_DESKTOPS = [
     r"^com\.citrix\.receiver\.icaviewer\.mac$",
 ]
 # Apps where Control stays Control (spec 2.5).
-CONTROL_APPS = TERMINALS + [EMACS, ORCA] + VMS_AND_REMOTE_DESKTOPS
+# choose (mac-jump's picker) is fzf-like, so it takes Control as a terminal
+# does: Ctrl+C / Ctrl+G cancel, Ctrl+N / Ctrl+P move (Adam, 2026-11-14).
+CHOOSE = r"^org\.senkbeil\.choose$"
+CONTROL_APPS = TERMINALS + [EMACS, ORCA, CHOOSE] + VMS_AND_REMOTE_DESKTOPS
+# choose is a bare executable, not an .app, so Karabiner may not see its
+# bundle ID; match its path too (Adam, 2026-11-14: Ctrl+C still copied).
+CONTROL_APP_PATHS = [r"/choose$"]
 
 # USB IDs from .config/keyd/daemon/*.conf.
 ADVANTAGE2 = [(0x29EA, 0x0102), (0x29EA, 0x0103)]
@@ -81,12 +88,12 @@ ATREUS = [(0x1209, 0x2302)]
 MODEL_01 = [(0x1209, 0x2301)]
 
 # Left-hand alpha shift on the built-in keyboard (spec 2.1): physical key
-# -> key it types. Karabiner is assumed to report the ISO key left of `1`
-# (labelled §) as grave_accent_and_tilde and the key left of Z as
-# non_us_backslash, as Linux does; unchecked, as Karabiner's ISO handling
-# has swapped these two before. Check in Karabiner-EventViewer.
+# -> key it types. On the MacBook's ISO keyboard Karabiner reports the key
+# left of `1` (labelled §) as non_us_backslash and the key left of Z as
+# grave_accent_and_tilde, the other way round from Linux (checked on the
+# Mac, 2026-11-14: the Linux-style mapping typed q and x swapped).
 ALPHA_SHIFT = {
-    "grave_accent_and_tilde": "q",
+    "non_us_backslash": "q",
     "q": "w",
     "w": "e",
     "e": "r",
@@ -99,7 +106,7 @@ ALPHA_SHIFT = {
     "f": "g",
     "g": "backslash",
     "fn": "z",
-    "non_us_backslash": "x",
+    "grave_accent_and_tilde": "x",
     "z": "c",
     "x": "v",
 }
@@ -146,9 +153,22 @@ def set_var(name: str, value: int) -> Json:
     return {"set_variable": {"name": name, "value": value}}
 
 
-def apps(patterns: list[str], negate: bool = False) -> Json:
+def notify(name: str, text: str = "") -> Json:
+    """Show Karabiner's on-screen notification `name`, or clear it with no
+    text. Marks the modes, which change what keys do (Adam, 2026-11-14)."""
+    return {"set_notification_message": {"id": f"desktop-config.{name}", "text": text}}
+
+
+PASSTHROUGH_ON = notify("passthrough", "Pass-through mode: Q leaves")
+REORGANISE_ON = notify("reorganise", "Reorganise mode: Q, Esc or Space leaves")
+
+
+def apps(patterns: list[str], negate: bool = False, paths: list[str] | None = None) -> Json:
     kind = "frontmost_application_unless" if negate else "frontmost_application_if"
-    return {"type": kind, "bundle_identifiers": patterns}
+    condition: Json = {"type": kind, "bundle_identifiers": patterns}
+    if paths:
+        condition["file_paths"] = paths
+    return condition
 
 
 def shell(command: str) -> list[Json]:
@@ -222,15 +242,40 @@ def rule(description: str, manips: list[Json]) -> Json:
 
 THUMB = variable("thumb")
 
+# Adam's personal Chrome profile folder, from chrome://version; the other
+# is for work (Adam, 2026-11-16).
+PERSONAL_CHROME_PROFILE = "Profile 1"
+
+# What Thumb+8 (push-to-talk) and Thumb+9 (toggle) dictate with:
+# "macos" for macOS Dictation, "sussurro" to send Sussurro's hotkeys.
+DICTATION = "macos"
+# Sussurro's hotkeys on the Mac: its Linux super+8 / super+9, with Super
+# as Command. Match these to ~/.sussurro/config.yaml there.
+SUSSURRO_HOTKEYS = {"8": ("8", "command"), "9": ("9", "command")}
+
 
 def thumb(typed: str, to: list[Json], mods: str = "", extra: list[Json] | None = None) -> list[Json]:
     return manipulators(typed, to, mods, [THUMB] + (extra or []))
 
 
+def hide_if_frontmost(typed: str, bundle: str, mods: str = "") -> list[Json]:
+    """Hide the app if it is frontmost. `mac-jump hide` rather than Cmd+H,
+    so AeroSpace stays on this workspace instead of following macOS to
+    whichever app it activates next (Adam, 2026-11-16)."""
+    return thumb(typed, jump(f"hide {bundle}"), mods, [apps([f"^{re.escape(bundle)}$"])])
+
+
 def toggle(typed: str, bundle: str, mods: str = "") -> list[Json]:
     """Hide the app if frontmost, else focus or launch it (spec 3.1, T)."""
-    return thumb(typed, key("h", "command"), mods, [apps([f"^{bundle}$".replace(".", r"\.")])]) + thumb(
-        typed, open_bundle(bundle), mods
+    return hide_if_frontmost(typed, bundle, mods) + thumb(typed, open_bundle(bundle), mods)
+
+
+def settings_toggle(typed: str, pane: str, mods: str = "") -> list[Json]:
+    """Open a System Settings pane, or hide System Settings if it is
+    frontmost, as toggle() does for apps (Adam, 2026-11-16). Karabiner cannot
+    tell which pane is showing, so any settings key hides it."""
+    return hide_if_frontmost(typed, "com.apple.systempreferences", mods) + thumb(
+        typed, shell(f"open 'x-apple.systempreferences:{pane}'"), mods
     )
 
 
@@ -263,7 +308,8 @@ def thumb_trigger_rule() -> Json:
 def jumps() -> list[Json]:
     """Spec 3.1."""
     m: list[Json] = []
-    m += thumb("a", jump(r"cycle --launch com.anthropic.claudefordesktop '^(com\.anthropic\.claudefordesktop|com\.openai\.chat)$'"))
+    # Cycles, then hides after the last window (Adam, 2026-11-16).
+    m += thumb("a", jump(r"cycle --toggle --launch com.anthropic.claudefordesktop '^(com\.anthropic\.claudefordesktop|com\.openai\.chat)$'"))
     # shortcut: cycles every Chrome window, not just those on the main
     # monitor as on Linux; filter by %{monitor-id} if that matters.
     m += thumb("b", jump(r"cycle --launch com.google.Chrome '^com\.google\.Chrome$'"))
@@ -272,30 +318,52 @@ def jumps() -> list[Json]:
     m += toggle("e", "org.gnu.Emacs")
     m += thumb("f", open_bundle("org.mozilla.firefox"))
     m += thumb("g", shell("open -a Telegram"))
-    m += thumb("h", jump(r"tab --pick --open https://github.com/ '^https://github\.com/'"))
+    # The URL to open with no GitHub tab is site-specific, so it lives in
+    # the private sites file (Adam, 2026-11-24).
+    m += thumb("h", jump("tab --pick --site github"))
+    # Jira in Chrome tabs, picked like GitHub's (Adam, 2026-11-16: no Jira
+    # web app any more). Its URL is private: "jira" in ~/.config/mac-jump/sites.
+    m += thumb("j", jump("tab --pick --site jira"))
     m += thumb("k", jump("emacs '(org-capture)'"))
+    # With Outlook in front, cycle its windows and hide it after the last;
+    # otherwise go to its mail (Adam, 2026-11-16).
+    outlook = r"^com\.microsoft\.Outlook$"
+    m += thumb("m", jump(f"cycle --toggle '{outlook}'"), extra=[apps([outlook])])
     m += thumb("m", jump("outlook mail"))
-    m += thumb("n", jump("emacs '(as-find-personal-note)'"))
+    # Confluence tabs, like Jira's on Thumb+j (Adam, 2026-11-18), instead
+    # of Linux's Emacs personal note.
+    m += thumb("n", jump("tab --pick --site confluence"))
     m += thumb("o", jump("teams planner"))
-    m += thumb("p", shell("open 'x-apple.systempreferences:com.apple.Sound-Settings.extension'"))
-    m += thumb("s", open_bundle("com.tinyspeck.slackmacgap"))
+    m += thumb("o", jump("teams activity"), "shift")
+    m += settings_toggle("p", "com.apple.Sound-Settings.extension")
+    # Cycles when Slack has several windows, then hides it (Adam, 2026-11-16).
+    m += thumb("s", jump(r"cycle --toggle --launch com.tinyspeck.slackmacgap '^com\.tinyspeck\.slackmacgap$'"))
     m += thumb("t", jump("teams chat"))
-    m += thumb("u", shell("open 'x-apple.systempreferences:com.apple.BluetoothSettings'"))
+    m += settings_toggle("u", "com.apple.BluetoothSettings")
     m += thumb("v", jump("emacs ~/lib/emacs/shortcuts/org-agenda-daily-review.el"))
-    m += thumb("w", shell("open 'x-apple.systempreferences:com.apple.wifi-settings-extension'"))
+    m += settings_toggle("w", "com.apple.wifi-settings-extension")
     terminals = "|".join(p.strip("^$") for p in TERMINALS)
     m += thumb("x", jump(f"cycle --launch com.apple.Terminal '^({terminals})$'"))
     m += thumb("y", jump(r"tab --pick --open https://www.youtube.com/ '^https://(www\.)?youtube\.com/'"))
     m += thumb("z", shell("open -a Zulip"))
     m += toggle("grave_accent_and_tilde", "com.apple.ActivityMonitor")
     m += thumb("quote", shell("open -a Beeper"))
+    # Linux: chrome-session-rofi, a fuzzy picker of every Chrome tab.
+    m += thumb("tab", jump("tab --pick '.'"))
 
     m += thumb("a", shell("open -a Anytype"), "shift")
-    m += thumb("a", jump(r"tab --toggle --app-window --open https://open.spotify.com/ '^https://open\.spotify\.com/'"), "ctrl")
+    # The Spotify desktop app, not the web app (Adam, 2026-11-18).
+    m += toggle("a", "com.spotify.client", "ctrl")
     m += thumb("b", jump(r"tab --toggle --app-window --open http://localhost:19847/ '^http://localhost:19847/'"), "ctrl")
-    m += thumb("c", jump(r"tab --open https://calendar.google.com/calendar/u/0 '^https://calendar\.google\.com/calendar/u/0'"), "shift")
+    m += thumb(
+        "c",
+        jump(rf"tab --profile '{PERSONAL_CHROME_PROFILE}' --open https://calendar.google.com/calendar/u/0 '^https://calendar\.google\.com/calendar/u/0'"),
+        "shift",
+    )
     m += thumb("c", jump("outlook calendar"), "ctrl")
     m += thumb("d", shell("open -a Discord"), "ctrl")
+    # Linux: xfce4-display-settings.
+    m += settings_toggle("d", "com.apple.Displays-Settings.extension", "ctrl+alt")
     m += thumb("e", jump(r"tab --pick --open https://linear.app/ '^https://linear\.app/'"), "shift")
     m += thumb("f", jump(r"tab --pick --open https://www.messenger.com/ '^https://(www\.)?messenger\.com/'"), "ctrl")
     m += thumb("g", jump(r"tab --open https://meet.google.com/ '^https://meet\.google\.com/'"), "shift")
@@ -305,11 +373,18 @@ def jumps() -> list[Json]:
     m += thumb("n", jump(r"tab --pick --open https://www.notion.so/ '^https://(www|app)\.notion\.(so|com)/'"), "shift")
     m += thumb("r", jump(r"tab --open https://app.reclaim.ai/ '^https://app\.reclaim\.ai/'"), "shift")
     m += thumb("t", jump("teams meeting"), "ctrl")
+    # Light / dark mode: Linux has it as T in the terminal menu
+    # (set-colour-theme --toggle); the Mac has no terminal menu (Adam,
+    # 2026-11-16). Needs Automation permission for System Events.
+    m += thumb(
+        "t",
+        shell("osascript -e 'tell application \"System Events\" to tell appearance preferences to set dark mode to not dark mode'"),
+        "shift",
+    )
     m += thumb("w", jump(r"tab --open https://web.whatsapp.com/ '^https://web\.whatsapp\.com/'"), "alt")
     m += thumb("z", jump(r"tab --pick 'zoom\.us/'"), "shift")
     m += thumb("z", jump(r"tab 'zoom\.us/(wc|j)/'"), "ctrl")
     m += thumb("2", jump("emacs '(as-find-personal-todo)'"), "ctrl")
-    m += thumb("5", jump("emacs '(as-find-Toucan-todo)'"), "ctrl")
     m += thumb("7", jump("emacs ~/lib/emacs/shortcuts/org-agenda-weekly-review.el"), "ctrl")
     return m
 
@@ -337,23 +412,39 @@ def window_operations() -> list[Json]:
     for n in range(1, 7):
         m += thumb(str(n), aerospace(f"workspace {n}"))
         m += thumb(str(n), aerospace(f"move-node-to-workspace --focus-follows-window {n}"), "alt")
+    # next/prev step through workspaces 1-6 in order, empty ones included,
+    # stopping at either end (Adam, 2026-11-14: no wrapping round). The list
+    # goes on stdin, which AeroSpace 0.20 reads only with --stdin.
+    numbered = "printf '%s\\n' 1 2 3 4 5 6 | " + AEROSPACE
     for code, step in {"comma": "prev", "period": "next"}.items():
-        m += thumb(code, aerospace(f"workspace {step}"))
-        m += thumb(code, aerospace(f"move-node-to-workspace --focus-follows-window {step}"), "alt")
-    for code, side in {"comma": "left", "period": "right"}.items():
-        m += thumb(code, aerospace(f"focus-monitor {side}"), "shift")
-        m += thumb(code, aerospace(f"move-node-to-monitor --focus-follows-window {side}"), "alt+shift")
+        m += thumb(code, shell(f"{numbered} workspace --stdin {step}"))
+        m += thumb(
+            code,
+            shell(f"{numbered} move-node-to-workspace --stdin --focus-follows-window {step}"),
+            "alt",
+        )
+    # Previous / next monitor, wrapping round, not left / right: with the
+    # laptop below the external monitor, left and right found nothing
+    # (Adam, 2026-11-15). With two monitors either key reaches the other.
+    for code, step in {"comma": "prev", "period": "next"}.items():
+        m += thumb(code, aerospace(f"focus-monitor --wrap-around {step}"), "shift")
+        m += thumb(code, aerospace(f"move-node-to-monitor --wrap-around --focus-follows-window {step}"), "alt+shift")
     for n in range(1, 4):
         m += thumb(str(n), aerospace(f"move-node-to-monitor --focus-follows-window {n}"), "alt+shift")
     m += thumb("i", aerospace("macos-native-minimize"))
-    m += thumb("m", aerospace("fullscreen"), "ctrl+shift")
+    # Sticky, as near as AeroSpace gets: toggle onto workspace S (spec 3.2).
+    m += thumb("s", jump("sticky"), "shift")
+    # Thumb+Ctrl+m, not Linux's Thumb+Ctrl+Shift+m: AeroSpace has no
+    # horizontal-only maximise for Ctrl+m to keep (Adam, 2026-11-16).
+    m += thumb("m", aerospace("fullscreen"), "ctrl")
     # Raise means nothing when tiling; Adam chose float/tile instead (5.7).
     m += thumb("spacebar", aerospace("layout floating tiling"))
     m += thumb("q", aerospace("close"))
     m += thumb("q", aerospace("close --quit-if-last-window"), "ctrl")
     # Modes. Thumb's own variable resets when Thumb is released.
-    m += thumb("p", [set_var("passthrough", 1)], "ctrl")
-    m += thumb("r", [set_var("reorganise", 1)])
+    m += thumb("p", [set_var("passthrough", 1), PASSTHROUGH_ON], "ctrl")
+    m += thumb("r", [set_var("reorganise", 1), REORGANISE_ON])
+    m += thumb("hyphen", [set_var("grid_level", 1)])
     return m
 
 
@@ -363,13 +454,53 @@ def other_bindings() -> list[Json]:
     m += thumb("open_bracket", [{"consumer_key_code": "volume_decrement"}])
     m += thumb("close_bracket", [{"consumer_key_code": "volume_increment"}])
     m += thumb("0", [{"consumer_key_code": "mute"}])
-    m += thumb("open_bracket", [{"consumer_key_code": "display_brightness_decrement"}], "shift")
-    m += thumb("close_bracket", [{"consumer_key_code": "display_brightness_increment"}], "shift")
+    # Ctrl, not Shift (Adam, 2026-11-14). The same brightness keys F1 / F2
+    # send, which MonitorControl also picks up for external displays. (The
+    # laptop keyboard cannot send Thumb+Ctrl+[ at all: it drops the key with
+    # both Command keys held.)
+    m += thumb("open_bracket", [{"consumer_key_code": "display_brightness_decrement"}], "ctrl")
+    m += thumb("close_bracket", [{"consumer_key_code": "display_brightness_increment"}], "ctrl")
     m += thumb("s", key("4", "command", "shift"), "ctrl")
     m += thumb("w", shell("screencapture -iWo \"$HOME/Desktop/Screenshot $(date '+%F at %H.%M.%S').png\""), "ctrl")
     m += thumb("spacebar", key("spacebar", "command"), "ctrl")
-    m += thumb("l", key("q", "control", "command"), "ctrl+alt")
+    # Linux: Shift+Control+Alt+Super+l runs xflock4 (.fluxbox/keys.erb);
+    # the spec first left out Shift (Adam, 2026-11-16).
+    m += thumb("l", key("q", "control", "command"), "ctrl+alt+shift")
+    # Linux: Control+Alt+Super+b runs blank-all-screens. Sleeping the
+    # displays would lock this Mac, so black them out instead (Adam,
+    # 2026-11-18; lib/mac-blank).
+    m += thumb("b", jump("blank"), "ctrl+alt")
+    m += dictation_bindings()
     return m
+
+
+def dictation_bindings() -> list[Json]:
+    """Thumb+8 push-to-talk, Thumb+9 toggle, as Sussurro's super+8 /
+    super+9 on Linux. DICTATION picks the engine (Adam, 2026-11-14:
+    macOS Dictation for now, keeping Sussurro a one-line switch)."""
+    if DICTATION == "sussurro":
+        # Karabiner holds the hotkey down for as long as Thumb+8 is held,
+        # so Sussurro's own push-to-talk sees a held key.
+        return [m for n, (code, *mods) in SUSSURRO_HOTKEYS.items() for m in thumb(n, key(code, *mods))]
+    if DICTATION != "macos":
+        sys.exit(f"DICTATION must be macos or sussurro, not {DICTATION!r}")
+    # The Dictation key toggles macOS Dictation, so push-to-talk presses
+    # it again on release. Karabiner holds the last key of `to` until
+    # Thumb+8/9 is released, and held, the key brought up Siri instead
+    # (Adam, 2026-11-14), so vk_none goes last to make it a tap.
+    tap = [{"consumer_key_code": "dictation"}, {"key_code": "vk_none"}]
+    return [{**manip, "to_after_key_up": tap[:1]} for manip in thumb("8", tap)] + thumb("9", tap)
+
+
+def kinesis_end_rule() -> Json:
+    """Spec 2.4: the Kinesis End key sends Esc (firmware), and with Thumb
+    gives End, which was in the spec but never built (Adam, 2026-11-16).
+    End as PC-style editing has it (2.5): Cmd+Right in ordinary apps, End
+    in the exception apps, Shift selecting."""
+    kinesis = [device(*ADVANTAGE2, *ADVANTAGE_360)]
+    m = manipulators("escape", key("right_arrow", "command"), conditions=[THUMB] + kinesis + [apps(CONTROL_APPS, negate=True, paths=CONTROL_APP_PATHS)], optional=["shift"])
+    m += manipulators("escape", key("end"), conditions=[THUMB] + kinesis, optional=["shift"])
+    return rule("Kinesis: Thumb+End key (which sends Esc) gives End (spec 2.4)", m)
 
 
 def block_unbound() -> Json:
@@ -389,7 +520,7 @@ def passthrough_rule() -> Json:
     # Thumb+Ctrl+p: Thumb reaches apps as plain right Command until q.
     return rule(
         "Pass-through mode: q leaves it (spec 3.2)",
-        manipulators("q", [set_var("passthrough", 0)], conditions=[variable("passthrough")]),
+        manipulators("q", [set_var("passthrough", 0), notify("passthrough")], conditions=[variable("passthrough")]),
     )
 
 
@@ -398,7 +529,7 @@ def reorganise_rule() -> Json:
     mode = [variable("reorganise")]
     m: list[Json] = []
     for code in ["q", "escape", "spacebar"]:
-        m += manipulators(code, [set_var("reorganise", 0)], conditions=mode)
+        m += manipulators(code, [set_var("reorganise", 0), notify("reorganise")], conditions=mode)
     for code, direction in VIM.items():
         m += manipulators(code, aerospace(f"focus {direction}"), conditions=mode)
     for code, direction in ARROWS.items():
@@ -441,7 +572,7 @@ def editing_rule() -> Json:
     """Spec 2.5, approach A2 (spec 5.2): the Control-position key sends
     Command in ordinary apps, so Cmd+C etc. need no rules; only keys whose
     Mac equivalent differs are translated."""
-    ordinary = [apps(CONTROL_APPS, negate=True)]
+    ordinary = [apps(CONTROL_APPS, negate=True, paths=CONTROL_APP_PATHS)]
     # left_command is the Control-position key. In ordinary apps the
     # Compose-position key sends Control, never Command (spec 5.2).
     ctrl = {"mandatory": ["left_command"], "optional": ["shift"]}
@@ -464,6 +595,9 @@ def editing_rule() -> Json:
     # 2026-11-14). Unchecked: whether the app switcher stays open while
     # the key is held, as Karabiner may release Command after each Tab.
     add("tab", ctrl, key("tab", "control"))
+    # Ctrl+Page Up / Down switch tabs, as on Linux (Adam, 2026-11-16).
+    add("page_up", ctrl, key("page_up", "control"))
+    add("page_down", ctrl, key("page_down", "control"))
     add("tab", {"mandatory": ["right_control"], "optional": ["shift"]}, key("tab", "command"))
     return rule("PC-style editing outside terminals, Emacs, VMs and Orca (spec 2.5)", m)
 
@@ -471,8 +605,8 @@ def editing_rule() -> Json:
 def modifier_rules() -> Json:
     """Spec 2.2 bottom-row roles."""
     any_mods = {"optional": ["any"]}
-    control_apps = apps(CONTROL_APPS)
-    ordinary = apps(CONTROL_APPS, negate=True)
+    control_apps = apps(CONTROL_APPS, paths=CONTROL_APP_PATHS)
+    ordinary = apps(CONTROL_APPS, negate=True, paths=CONTROL_APP_PATHS)
 
     def remap(code: str, to: str, conditions: list[Json]) -> Json:
         return {
@@ -507,6 +641,177 @@ def modifier_rules() -> Json:
     )
 
 
+def characters_rule() -> Json:
+    """Spec 2.3: Shift+2 types " and Shift+' types @, as on a UK PC. macOS's
+    "British" layout has them the US way round, and its "British - PC"
+    layout changes other keys too, so swap just these two (Adam,
+    2026-11-16)."""
+    shift = {"mandatory": ["shift"], "optional": ["caps_lock"]}
+    return rule(
+        'UK characters: Shift+2 types " and Shift+\' types @ (spec 2.3)',
+        [
+            {"type": "basic", "from": {"key_code": "2", "modifiers": shift}, "to": key("quote", "shift")},
+            {"type": "basic", "from": {"key_code": "quote", "modifiers": shift}, "to": key("2", "shift")},
+        ],
+    )
+
+
+def advantage_360_characters_rule() -> Json:
+    """The Advantage 360 as on Linux (keyd kinesis-advantage-360.conf, US
+    base with UK keys): Shift+3 types #, the key right of P (the firmware
+    sends 102nd) types \\ and |, and the top right key (which sends \\)
+    types £ and €. On macOS's "British" layout # is Option+3 and € is
+    Option+2, sent with right Option so terminals that treat left Option as
+    Meta still type them (Adam, 2026-11-16)."""
+    on_360 = [device(*ADVANTAGE_360)]
+    shift = {"mandatory": ["shift"], "optional": ["caps_lock"]}
+    plain = {"optional": ["caps_lock"]}
+
+    def remap(code: str, modifiers: Json, to: list[Json]) -> Json:
+        return {"type": "basic", "from": {"key_code": code, "modifiers": modifiers}, "to": to, "conditions": on_360}
+
+    return rule(
+        "Advantage 360: Shift+3 types #, right of P types \\ |, top right types £ € (spec 2.3)",
+        [
+            remap("3", shift, key("3", "right_option")),
+            remap("non_us_backslash", {"optional": ["shift", "caps_lock"]}, key("backslash")),
+            remap("backslash", shift, key("2", "right_option")),
+            remap("backslash", plain, key("3", "shift")),
+        ],
+    )
+
+
+def chord(typed: tuple[str, str], to: list[Json], conditions: list[Json], options: Json | None = None) -> list[Json]:
+    """Manipulators for two keys pressed together, on each keyboard: the
+    built-in keyboard types some letters from other keys (spec 2.1)."""
+    result = []
+    for device_conditions in ([NOT_BUILT_IN], [BUILT_IN]):
+        built_in = device_conditions == [BUILT_IN]
+        keys = [TYPED_BY.get(t, t) if built_in else t for t in typed]
+        if not built_in and not any(t in ALPHA_SHIFT or t in TYPED_BY for t in typed):
+            device_conditions = []
+        result.append(
+            {
+                "type": "basic",
+                "from": {
+                    "simultaneous": [{"key_code": k} for k in keys],
+                    "simultaneous_options": {"key_down_order": "insensitive", **(options or {})},
+                },
+                "to": to,
+                "conditions": conditions + device_conditions,
+                # fievel's chord_timeout: short, so fast typing rarely chords.
+                "parameters": {"basic.simultaneous_threshold_milliseconds": 25},
+            }
+        )
+        if not device_conditions:
+            break
+    return result
+
+
+MOUSE_LAYERS = [variable("mouse"), variable("mouse_lock")]
+MOVE = 1536
+SCROLL = 64
+
+
+# Grid mode (spec 3.4, Neru's grid on Linux): Karabiner can place the
+# pointer but draw nothing, so the cells are learnt, laid out like a
+# numpad: u i o / j k l / m , . (Adam, 2026-11-16).
+GRID_KEYS = ["u", "i", "o", "j", "k", "l", "m", "comma", "period"]
+GRID_DEPTH = 3
+# Relative to the focused window, which picks the monitor too, or the
+# screen when no window is focused. Set to None for the whole screen.
+GRID_RELATIVE_TO: str | None = "focused_window"
+IN_GRID = {"type": "variable_unless", "name": "grid_level", "value": 0}
+
+
+def grid_point(cells: tuple[int, ...]) -> list[Json]:
+    """Pointer to the middle of the cell picked by `cells`, outermost first."""
+    x = y = 0.0
+    size = 1.0
+    for cell in cells:
+        size /= 3
+        x += (cell % 3) * size
+        y += (cell // 3) * size
+    position: Json = {"x": f"{round((x + size / 2) * 100)}%", "y": f"{round((y + size / 2) * 100)}%"}
+    if GRID_RELATIVE_TO:
+        position |= {"relative_to": GRID_RELATIVE_TO, "fallback_to": "screen"}
+    return [{"software_function": {"set_mouse_cursor_position": position}}]
+
+
+def grid_rule() -> Json:
+    """Thumb+- enters grid mode; each grid key moves the pointer to a cell
+    and the next narrows within it, GRID_DEPTH levels deep (the last level
+    can be re-picked). Space / ; click and leave; Return or Escape leave,
+    and so does any other key, which then acts as usual."""
+    from itertools import product
+
+    leave = [set_var("grid_level", 0)]
+    m: list[Json] = []
+    for code, to in [
+        ("spacebar", [{"pointing_button": "button1"}]),
+        ("semicolon", [{"pointing_button": "button2"}]),
+        ("return_or_enter", []),
+        ("escape", []),
+    ]:
+        m += manipulators(code, to + leave, conditions=[IN_GRID])
+    for level in range(1, GRID_DEPTH + 1):
+        for chosen in product(range(9), repeat=level - 1):
+            conditions = [variable("grid_level", level)]
+            conditions += [variable(f"grid_cell{i + 1}", c) for i, c in enumerate(chosen)]
+            for cell, code in enumerate(GRID_KEYS):
+                to = grid_point(chosen + (cell,))
+                if level < GRID_DEPTH:
+                    to += [set_var(f"grid_cell{level}", cell), set_var("grid_level", level + 1)]
+                m += manipulators(code, to, conditions=conditions)
+    # Any other key leaves grid mode and does what it normally does (Adam,
+    # 2026-11-16). This rule's output skips later rules, so the key is sent
+    # as typed, from the built-in keyboard's moved letters too.
+    others = PRINTABLE + ["backslash", "home", "end", "page_up", "page_down", "delete_forward"]
+    for typed in dict.fromkeys(others):
+        m += manipulators(typed, leave + [{"key_code": typed}], conditions=[IN_GRID], optional=["any"])
+    return rule("Grid mode: Thumb+- then u i o / j k l / m , . (spec 3.4)", m)
+
+
+def mouse_rule() -> Json:
+    """Spec 3.4: fievel's free mouse mode, from Linux, in Karabiner, since
+    fievel itself needs IT approval on the work Mac (Adam, 2026-11-16: as
+    close to Linux as possible). Hold d+f, or press z while holding them
+    to lock the mode until z again."""
+    m: list[Json] = []
+    # Home and End: , + m and n + . together, before the single keys.
+    for layer in MOUSE_LAYERS:
+        m += chord(("comma", "m"), key("home"), [layer])
+        m += chord(("n", "period"), key("end"), [layer])
+    # z unlocks if locked, else locks.
+    m += manipulators("z", [set_var("mouse_lock", 0), set_var("mouse", 0)], conditions=[variable("mouse_lock")])
+    m += manipulators("z", [set_var("mouse_lock", 1)], conditions=[variable("mouse")])
+    layer_keys: list[tuple[str, list[Json]]] = [
+        ("j", [{"mouse_key": {"x": -MOVE}}]),
+        ("k", [{"mouse_key": {"y": MOVE}}]),
+        ("i", [{"mouse_key": {"y": -MOVE}}]),
+        ("l", [{"mouse_key": {"x": MOVE}}]),
+        ("spacebar", [{"pointing_button": "button1"}]),
+        ("semicolon", [{"pointing_button": "button2"}]),
+        ("a", [{"mouse_key": {"speed_multiplier": 0.33}}]),
+        ("s", [{"mouse_key": {"speed_multiplier": 3.0}}]),
+        ("n", [{"mouse_key": {"horizontal_wheel": SCROLL}}]),
+        ("m", [{"mouse_key": {"vertical_wheel": SCROLL}}]),
+        ("comma", [{"mouse_key": {"vertical_wheel": -SCROLL}}]),
+        ("period", [{"mouse_key": {"horizontal_wheel": -SCROLL}}]),
+    ]
+    for layer in MOUSE_LAYERS:
+        for typed, to in layer_keys:
+            m += manipulators(typed, to, conditions=[layer], optional=["any"])
+    # Hold d+f: the mode lasts until either is released.
+    m += chord(
+        ("d", "f"),
+        [set_var("mouse", 1)],
+        [variable("mouse", 0), variable("mouse_lock", 0)],
+        {"key_up_when": "any", "to_after_key_up": [set_var("mouse", 0)]},
+    )
+    return rule("Free mouse mode: hold d+f, as fievel on Linux (spec 3.4)", m)
+
+
 def alpha_shift_rule() -> Json:
     manips = [
         {
@@ -533,18 +838,44 @@ def check_no_clashes(manips: list[Json]) -> None:
         seen[signature] = manip
 
 
+def modified_devices() -> list[Json]:
+    """Make Karabiner modify the external keyboards' events. It leaves some
+    devices alone by default, such as ones that also report a mouse, and
+    left the Advantage 360's alone, so its Thumb key did nothing (Adam,
+    2026-11-15). Device entries must match exactly, pointing device or not,
+    so each ID gets both."""
+    return [
+        {
+            "identifiers": {
+                "vendor_id": vendor,
+                "product_id": product,
+                "is_keyboard": True,
+                "is_pointing_device": pointing,
+            },
+            "ignore": False,
+        }
+        for vendor, product in ADVANTAGE2 + ADVANTAGE_360 + ATREUS + MODEL_01
+        for pointing in (False, True)
+    ]
+
+
 def configuration() -> Json:
     bound = jumps() + window_operations() + other_bindings()
     check_no_clashes(bound)
     rules = [
         passthrough_rule(),
         thumb_trigger_rule(),
+        kinesis_end_rule(),
         rule("Thumb layer: app jumps, window management, volume and more (spec 3)", bound),
         block_unbound(),
         reorganise_rule(),
+        grid_rule(),
+        mouse_rule(),
         control_app_rules(),
         editing_rule(),
         modifier_rules(),
+        advantage_360_characters_rule(),
+        characters_rule(),
         alpha_shift_rule(),
     ]
     return {
@@ -552,8 +883,12 @@ def configuration() -> Json:
             {
                 "name": "Default profile",
                 "selected": True,
-                "virtual_hid_keyboard": {"keyboard_type_v2": "iso"},
+                # ANSI, not ISO: with ISO, macOS types § for
+                # grave_accent_and_tilde (Adam, 2026-11-14: "I don't think
+                # we should be using the ISO setting").
+                "virtual_hid_keyboard": {"keyboard_type_v2": "ansi"},
                 "complex_modifications": {"rules": rules},
+                "devices": modified_devices(),
             }
         ]
     }

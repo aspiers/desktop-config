@@ -6,12 +6,16 @@
 # chrome-session-tabs and switch-emacs-eval.
 #
 # Usage:
-#   mac-jump cycle [--launch BUNDLE_ID] BUNDLE_ID_REGEX
-#   mac-jump tab [--pick|--toggle] [--app-window] [--open URL] URL_REGEX
+#   mac-jump cycle [--toggle] [--launch BUNDLE_ID] BUNDLE_ID_REGEX
+#   mac-jump tab [--pick|--toggle] [--app-window] [--profile DIR] [--open URL] URL_REGEX
+#   mac-jump tab [--pick|--toggle] [--app-window] [--profile DIR] --site NAME
 #   mac-jump emacs ELISP|FILE
 #   mac-jump outlook mail|calendar
-#   mac-jump teams chat|planner|meeting
+#   mac-jump teams chat|planner|activity|meeting
 #   mac-jump windows
+#   mac-jump hide BUNDLE_ID
+#   mac-jump sticky
+#   mac-jump blank
 #
 # Simple focus-or-launch needs no helper: the Karabiner rules run
 # `open -b BUNDLE_ID` directly, and toggles send Cmd+H when the app is
@@ -24,6 +28,9 @@ set -u
 # Karabiner runs shell_command without Homebrew on PATH.
 PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 CHROME=${MAC_JUMP_CHROME:-Google Chrome}
+# Named sites for `tab --site`: lines of NAME OPEN_URL URL_REGEX.  Kept
+# outside this public repository, as they name the sites in use.
+SITES=${MAC_JUMP_SITES:-$HOME/.config/mac-jump/sites}
 LOG="$HOME/Library/Logs/mac-jump.log"
 
 # Karabiner discards output, so keep errors where they can be found.
@@ -40,23 +47,144 @@ next_window() {
     awk -v f="$1" '{ id[NR] = $1; if ($1 == f) at = NR } END { if (NR) print id[at % NR + 1] }'
 }
 
-cycle() {
-    local launch=''
-    if [ "${1:-}" = --launch ]; then
-        launch=$2
-        shift 2
+# Thumb+Shift+s: AeroSpace has no sticky windows, so stand in with the S
+# workspace, which the AeroSpace config pins to the secondary monitor and
+# the 1-6 keys never switch away. Toggle the focused window onto S, and
+# back to the workspace it came from (Adam, 2026-11-17), or else to the
+# other visible workspace.
+STICKY_STATE=${XDG_CACHE_HOME:-$HOME/.cache}/mac-jump/sticky
+sticky() {
+    local id workspace target
+    id=$(aerospace list-windows --focused --format '%{window-id}') || die "sticky: no focused window"
+    workspace=$(aerospace list-windows --focused --format '%{workspace}')
+    if [ "$workspace" != S ]; then
+        mkdir -p "$STICKY_STATE" && echo "$workspace" >"$STICKY_STATE/$id"
+        aerospace move-node-to-workspace --focus-follows-window S
+        return
     fi
+    target=$(cat "$STICKY_STATE/$id" 2>/dev/null)
+    [ -n "$target" ] || target=$(aerospace list-workspaces --monitor all --visible | grep -vx S | head -1)
+    [ -n "$target" ] || target=1
+    rm -f "$STICKY_STATE/$id"
+    aerospace move-node-to-workspace --focus-follows-window "$target"
+}
+
+# One osascript run for the whole of hide(): each run costs 100-300 ms,
+# and the System Events / Finder version took four (Adam, 2026-11-17:
+# hiding took 500-1000 ms). AppKit answers which apps are visible and
+# hides one directly. Arguments: bundle ID to hide, this workspace's
+# windows as "ID BUNDLE_ID" lines, path to aerospace. Prints "return" when
+# the caller should come back to the workspace afterwards.
+read -r -d '' HIDE_JXA <<'EOF'
+function run(argv) {
+    const [bundle, windows, aerospace] = argv;
+    ObjC.import('AppKit');
+    const running = ObjC.unwrap($.NSWorkspace.sharedWorkspace.runningApplications);
+    // AeroSpace still lists a hidden app's windows, and focusing one would
+    // show the app again (Adam, 2026-11-16), so only pick visible apps'.
+    const visible = new Set();
+    for (const app of running) {
+        if (!app.hidden && app.activationPolicy === $.NSApplicationActivationPolicyRegular) {
+            visible.add(ObjC.unwrap(app.bundleIdentifier));
+        }
+    }
+    let other = '';
+    for (const line of windows.split('\n')) {
+        const [id, owner] = line.split(' ');
+        if (id && owner !== bundle && visible.has(owner)) { other = id; break; }
+    }
+    const shell = Application.currentApplication();
+    shell.includeStandardAdditions = true;
+    let result = 'ok';
+    if (other) {
+        // Focus another window here first, so macOS has no app to hand
+        // focus to and AeroSpace stays on this workspace.
+        shell.doShellScript(`'${aerospace}' focus --window-id ${other}`);
+    } else if (Application('Finder').windows.length === 0) {
+        // Nothing else here: make windowless Finder (the desktop) active
+        // first, so hiding activates no other app (Adam, 2026-11-16).
+        Application('Finder').activate();
+    } else {
+        result = 'return';
+    }
+    for (const app of ObjC.unwrap($.NSRunningApplication.runningApplicationsWithBundleIdentifier(bundle))) {
+        app.hide;
+    }
+    return result;
+}
+EOF
+
+# Thumb+Ctrl+Alt+b: black out every screen until a key or the mouse, with
+# lib/mac-blank/mac-blank.swift, compiled on first use and again whenever
+# the source changes. ~/bin links into the repository, so its real
+# directory finds the source.
+blank() {
+    local repo src bin
+    repo=$(cd -P "$(dirname "$0")" && cd .. && pwd)
+    src=$repo/lib/mac-blank/mac-blank.swift
+    bin=${XDG_CACHE_HOME:-$HOME/.cache}/mac-jump/mac-blank
+    if [ ! -x "$bin" ] || [ "$src" -nt "$bin" ]; then
+        mkdir -p "$(dirname "$bin")"
+        swiftc -O "$src" -o "$bin" || die "blank: could not compile $src"
+    fi
+    # Detached, so it outlives this script and Karabiner's next command.
+    nohup "$bin" >/dev/null 2>&1 &
+}
+
+# Hide the app with bundle ID $1, as Cmd+H would, but stay on the current
+# workspace: when an app hides, macOS activates another and AeroSpace
+# follows it (Adam, 2026-11-16: hiding Claude on workspace 3 jumped to
+# Teams on 2).
+hide() {
+    [ $# -eq 1 ] || die "hide: need one bundle ID"
+    local workspace windows result
+    workspace=$(aerospace list-workspaces --focused)
+    windows=$(aerospace list-windows --workspace focused --format '%{window-id} %{app-bundle-id}')
+    if ! result=$(osascript -l JavaScript -e "$HIDE_JXA" "$1" "$windows" "$(command -v aerospace)"); then
+        # Fall back to the slower System Events way, then come back.
+        osascript -e "tell application \"System Events\" to set visible of (first process whose bundle identifier is \"$1\") to false" \
+            >/dev/null || die "could not hide $1"
+        result=return
+    fi
+    if [ "$result" = return ]; then
+        # Finder has windows, maybe elsewhere: let macOS activate its next
+        # app, then come back, which flickers.
+        sleep 0.3
+        aerospace workspace "$workspace" 2>/dev/null
+    fi
+    return 0
+}
+
+cycle() {
+    local launch='' toggle=''
+    while [ $# -gt 1 ]; do
+        case $1 in
+            # After the last matching window, hide its app rather than
+            # wrapping round to the first (Adam, 2026-11-16).
+            --toggle) toggle=1 ;;
+            --launch) launch=$2; shift ;;
+            *) die "cycle: unknown option $1" ;;
+        esac
+        shift
+    done
     [ $# -eq 1 ] || die "cycle: need one bundle ID regex"
-    local windows focused target
+    local list windows focused target
+    list=$(aerospace list-windows --all --format '%{window-id} %{app-bundle-id}')
     # ENVIRON, unlike awk -v, passes the regex's backslashes through.
-    windows=$(aerospace list-windows --all --format '%{window-id} %{app-bundle-id}' |
-        re=$1 awk '$2 ~ ENVIRON["re"] { print $1 }')
+    windows=$(printf '%s\n' "$list" | re=$1 awk '$2 ~ ENVIRON["re"] { print $1 }')
     if [ -z "$windows" ]; then
         [ -n "$launch" ] && open -b "$launch"
         return
     fi
     focused=$(aerospace list-windows --focused --format '%{window-id}' 2>/dev/null)
+    if [ -n "$toggle" ] && [ "$focused" = "$(printf '%s\n' "$windows" | tail -1)" ]; then
+        hide "$(printf '%s\n' "$list" | awk -v id="$focused" '$1 == id { print $2; exit }')"
+        return
+    fi
     target=$(printf '%s\n' "$windows" | next_window "$focused")
+    # With --toggle the app may be hidden, and a hidden app's windows
+    # cannot take focus until the app is shown again.
+    [ -n "$toggle" ] && open -b "$(printf '%s\n' "$list" | awk -v id="$target" '$1 == id { print $2; exit }')"
     aerospace focus --window-id "$target"
 }
 
@@ -79,47 +207,130 @@ function run(argv) {
     const urls = chrome.windows.tabs.url();
     const titles = chrome.windows.tabs.title();
     const ids = chrome.windows.id();
+    // Windows named with Chrome's "Name window...", else "Win #N", as
+    // chrome-session-tabs labels them on Linux.
+    let names;
+    try { names = chrome.windows.givenName(); } catch (e) { names = []; }
     const matches = [];
     urls.forEach((tabs, w) => tabs.forEach((url, t) => {
-        if (re.test(url)) matches.push({ id: ids[w], tab: t + 1, label: titles[w][t] + '  ' + url });
+        if (re.test(url)) {
+            matches.push({ id: ids[w], tab: t + 1, win: names[w] || 'Win #' + w, title: titles[w][t] || url, url: url });
+        }
     }));
     if (matches.length === 0) return 'none';
-    let chosen = matches[0];
+    // Several matches to pick from: hand them to choose, one per line, in
+    // Linux's "window / tab number -~- title | URL" layout.
     if (mode === 'pick' && matches.length > 1) {
-        chrome.includeStandardAdditions = true;
-        chrome.activate();
-        const labels = matches.map((m, i) => (i + 1) + '. ' + m.label);
-        const answer = chrome.chooseFromList(labels, { withPrompt: 'Tab', defaultItems: [labels[0]] });
-        if (!answer) return 'cancelled';
-        chosen = matches[parseInt(answer[0], 10) - 1];
+        const width = Math.max(...matches.map((m) => m.win.length));
+        return ['pick'].concat(matches.map((m) => {
+            const label = m.win.padEnd(width) + ' / ' + String(m.tab).padStart(2) + ' -~- ' + m.title + ' | ' + m.url;
+            return [m.id, m.tab, label.replace(/[\t\n]/g, ' ')].join('\t');
+        })).join('\n');
     }
-    const win = chrome.windows.byId(chosen.id);
-    win.activeTabIndex = chosen.tab;
+    const win = chrome.windows.byId(matches[0].id);
+    win.activeTabIndex = matches[0].tab;
     win.index = 1;
     chrome.activate();
     return 'focused';
 }
 EOF
 
+# Focus tab number $2 of Chrome window ID $1, for a tab chosen by pick.
+read -r -d '' TAB_FOCUS_JXA <<'EOF'
+function run(argv) {
+    const [windowId, tab, appName] = argv;
+    const chrome = Application(appName);
+    const win = chrome.windows.byId(parseInt(windowId, 10));
+    win.activeTabIndex = parseInt(tab, 10);
+    win.index = 1;
+    chrome.activate();
+    return 'focused';
+}
+EOF
+
+# choose's query font size in points; its default is 26, and the list
+# uses 70% of it (Adam, 2026-11-14: slightly smaller).
+CHOOSE_FONT_SIZE=20
+
+# Rows for a choose list 90% of the screen high. choose sizes its window
+# by rows, not percent: its query line is Menlo at CHOOSE_FONT_SIZE and each
+# row Menlo at 70% of that, 1.2 lines high plus 2pt of spacing (choose's
+# SDAppDelegate.m).
+read -r -d '' ROWS_JXA <<'EOF'
+function run(argv) {
+    ObjC.import('AppKit');
+    const size = parseFloat(argv[0]);
+    const screen = $.NSScreen.mainScreen.visibleFrame.size.height;
+    const query = $.NSFont.fontWithNameSize('Menlo', size).boundingRectForFont.size.height;
+    const row = $.NSFont.fontWithNameSize('Menlo', size * 0.7).boundingRectForFont.size.height * 1.2 + 2;
+    return Math.max(5, Math.floor((screen * 0.9 - query) / row));
+}
+EOF
+
+# Fuzzy-pick a line from stdin with choose (brew install choose-gui) and
+# print its 0-based index; fails when cancelled. The window takes 90% of
+# the screen's width and height (Adam, 2026-11-14).
+pick() {
+    local index rows
+    rows=$(osascript -l JavaScript -e "$ROWS_JXA" "$CHOOSE_FONT_SIZE" 2>/dev/null)
+    case $rows in '' | *[!0-9]*) rows=25 ;; esac
+    index=$(choose -i -w 90 -n "$rows" -s "$CHOOSE_FONT_SIZE" -p "$1") || return 1
+    [ "$index" -ge 0 ] 2>/dev/null || return 1
+    echo "$index"
+}
+
 tab() {
-    local mode=focus open_url='' app_window=''
-    while [ $# -gt 1 ]; do
+    local mode=focus open_url='' app_window='' profile='' site=''
+    while [ $# -gt 0 ]; do
         case $1 in
             --pick) mode=pick ;;
             --toggle) mode=toggle ;;
             --app-window) app_window=1 ;;
             --open) open_url=$2; shift ;;
-            *) die "tab: unknown option $1" ;;
+            # Chrome profile folder to open the URL in, such as "Profile 1".
+            # Finding an existing tab still searches every profile: Chrome's
+            # AppleScript does not say which profile a window belongs to.
+            --profile) profile=$2; shift ;;
+            --site) site=$2; shift ;;
+            -*) die "tab: unknown option $1" ;;
+            *) break ;;
         esac
         shift
     done
+    if [ -n "$site" ]; then
+        [ $# -eq 0 ] || die "tab: --site takes no URL regex"
+        local name url regex
+        while read -r name url regex; do
+            [ "$name" = "$site" ] && break
+        done < "$SITES" 2>/dev/null
+        [ "$name" = "$site" ] && [ -n "$regex" ] || die "tab: no site $site in $SITES"
+        open_url=$url
+        set -- "$regex"
+    fi
     [ $# -eq 1 ] || die "tab: need one URL regex"
     local result
     result=$(osascript -l JavaScript -e "$TAB_JXA" "$mode" "$1" "$CHROME") ||
         die "tab: osascript failed for $1"
+    case $result in
+        pick*)
+            local matches index line
+            matches=$(printf '%s\n' "$result" | sed 1d)
+            index=$(printf '%s\n' "$matches" | cut -f3- | pick Tab) || return 0
+            line=$(printf '%s\n' "$matches" | sed -n "$((index + 1))p")
+            osascript -l JavaScript -e "$TAB_FOCUS_JXA" \
+                "$(printf '%s' "$line" | cut -f1)" "$(printf '%s' "$line" | cut -f2)" "$CHROME" >/dev/null ||
+                die "tab: could not focus the chosen tab"
+            return 0
+            ;;
+    esac
     [ "$result" = none ] && [ -n "$open_url" ] || return 0
-    if [ -n "$app_window" ]; then
+    # No arrays: an empty one is "unbound" under set -u in macOS's bash 3.2.
+    if [ -n "$app_window" ] && [ -n "$profile" ]; then
+        open -na "$CHROME" --args --profile-directory="$profile" --app="$open_url"
+    elif [ -n "$app_window" ]; then
         open -na "$CHROME" --args --app="$open_url"
+    elif [ -n "$profile" ]; then
+        open -na "$CHROME" --args --profile-directory="$profile" "$open_url"
     else
         open -a "$CHROME" "$open_url"
     fi
@@ -146,47 +357,57 @@ outlook() {
     # Outlook for Mac: Cmd+1 is Mail, Cmd+2 is Calendar.
     case ${1:-} in
         mail) activate_and_press com.microsoft.Outlook 1 ;;
-        calendar) activate_and_press com.microsoft.Outlook 2 ;;
+        calendar)
+            # Toggle (Adam, 2026-11-16): hide Outlook if it is already
+            # showing its calendar, judged by the focused window's title,
+            # which names the folder ("Inbox • ..."); "Calendar" is assumed.
+            if aerospace list-windows --focused --format '%{app-bundle-id} %{window-title}' 2>/dev/null |
+                grep -q '^com\.microsoft\.Outlook Calendar'; then
+                hide com.microsoft.Outlook
+            else
+                activate_and_press com.microsoft.Outlook 2
+            fi
+            ;;
         *) die "outlook: need mail or calendar" ;;
     esac
 }
 
+# Teams numbers the apps in its left-hand bar from Cmd+1. Adam's order
+# (2026-11-19): Calendar, Chat, Planner, Activity. Each is a toggle: hide Teams if
+# its focused window already shows that app, judged by the window title,
+# which starts with the app's name ("Chat | ..." is assumed).
+teams_app() {
+    if aerospace list-windows --focused --format '%{app-bundle-id} %{window-title}' 2>/dev/null |
+        grep -q "^com\.microsoft\.teams2 $1"; then
+        hide com.microsoft.teams2
+    else
+        activate_and_press com.microsoft.teams2 "$2"
+    fi
+}
+
 teams() {
     case ${1:-} in
-        # Teams numbers the apps in its left-hand bar from Cmd+1, so this
-        # assumes Chat is second, as it is by default.
-        chat) activate_and_press com.microsoft.teams2 2 ;;
-        # Stub: no reliable way found to open Planner inside Teams, so this
-        # only focuses Teams.
-        planner) open -b com.microsoft.teams2 ;;
+        chat) teams_app Chat 2 ;;
+        planner) teams_app Planner 3 ;;
+        activity) teams_app Activity 4 ;;
         # Stub: Teams gives a meeting its own window but no reliable way to
         # tell it from the main one, so this cycles all Teams windows.
         meeting) cycle --launch com.microsoft.teams2 '^com\.microsoft\.teams2$' ;;
-        *) die "teams: need chat, planner or meeting" ;;
+        *) die "teams: need chat, planner, activity or meeting" ;;
     esac
 }
 
-read -r -d '' WINDOWS_JXA <<'EOF'
-function run(argv) {
-    const lines = argv[0].split('\n').filter((l) => l);
-    const ui = Application('System Events');
-    ui.includeStandardAdditions = true;
-    ui.activate();
-    const answer = ui.chooseFromList(lines, { withPrompt: 'Window' });
-    return answer ? answer[0] : '';
-}
-EOF
-
 # Thumb+Alt+Return: pick any window by app and title.
 windows() {
-    local list choice
+    local list index
     list=$(aerospace list-windows --all --format '%{window-id} | %{app-name} | %{window-title}')
-    choice=$(osascript -l JavaScript -e "$WINDOWS_JXA" "$list") || return
-    [ -n "$choice" ] && aerospace focus --window-id "${choice%% *}"
+    [ -n "$list" ] || return 0
+    index=$(printf '%s\n' "$list" | sed 's/^[0-9]* | //' | pick Window) || return 0
+    aerospace focus --window-id "$(printf '%s\n' "$list" | sed -n "$((index + 1))s/ .*//p")"
 }
 
 case ${1:-} in
-    cycle|tab|emacs|outlook|teams|windows)
+    cycle|tab|emacs|outlook|teams|windows|hide|sticky|blank)
         cmd=$1
         shift
         "$cmd" "$@"

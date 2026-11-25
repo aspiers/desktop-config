@@ -158,11 +158,19 @@ Source: keyd partials `gb`, `gb-3`, `backslash-hash-tilde`,
 
 The base layout is US, with UK changes:
 
-- `Shift+2` types `"` and `Shift+'` types `@`.
+- `Shift+2` types `"` and `Shift+'` types `@`. macOS: a Karabiner rule
+  swaps the two on the "British" input source, which has them the US way
+  round; "British - PC" would swap them too but changes other keys
+  (Adam, 2026-11-16).
 - `Shift+3` types `£`; `Ctrl+Shift+3` types `€` (Framework). Keyboards
   without a spare key get `£` / `€` on another key (Kinesis: the `-` key or
   top-right key).
 - The `\` key types `#`, and `~` with Shift (laptops).
+- Advantage 360, on the Mac as on Linux (Adam, 2026-11-16): `Shift+3`
+  types `#`, the key right of `P` types `\` / `|`, and the top right key
+  types `£` / `€`. On the "British" input source `#` and `€` are Option
+  combinations, so Karabiner sends them with right Option, which
+  terminals using left Option as Meta still treat as Option.
 - Compose (2.2) types other characters.
 - In Emacs, which ignores Compose, the `£` / `€` keys send Emacs's own
   `C-x 8 L` / `C-x 8 E` instead.
@@ -172,7 +180,9 @@ The base layout is US, with UK changes:
 Source: keyd partials `kinesis-left-thumb-pad`, `kinesis-right-thumb-pad`.
 
 - Left pad: Delete key = Alt, Alt key = Delete, Home key = AltGr (with
-  Thumb, Home), End key = Esc (with Thumb, End).
+  Thumb, Home), End key = Esc (with Thumb, End). On the Mac, Thumb+End
+  gives End as 2.5 has it, `Cmd+Right` outside the exception apps (built
+  2026-11-16; Adam noticed it was missing).
 - Right pad: Right Ctrl = **Thumb**, Right Alt = Compose.
 
 ### 2.5 PC-style editing on macOS
@@ -203,7 +213,8 @@ existing behaviour.
 **Exceptions**, where Control stays Control because `Ctrl+C` means
 interrupt and `Ctrl+Left` is the app's own binding (Adam, 2026-11-14):
 terminal emulators, Emacs, VM and remote desktop windows, and Orca's
-terminals.
+terminals. On the Mac, also the `choose` picker, which is fzf-like:
+`Ctrl+C` / `Ctrl+G` cancel it (Adam, 2026-11-14).
 
 ### 2.6 Per-app key bindings
 
@@ -236,7 +247,7 @@ Thumb+letter, Linux and the agreed Mac / Windows targets:
 
 | Key | Linux | macOS / Windows |
 | --- | --- | --- |
-| `a` | ChatGPT / Claude desktop window (C) | same |
+| `a` | ChatGPT / Claude desktop window (C) | same, and after the last window the next press hides the app (C, T; Adam, 2026-11-16) |
 | `b` | Browser windows on the main monitor (C) | same |
 | `c` | Orca (T) | same |
 | `d` | Emacs: today's org agenda | same |
@@ -244,32 +255,33 @@ Thumb+letter, Linux and the agreed Mac / Windows targets:
 | `f` | Firefox | same |
 | `g` | Telegram | same |
 | `h` | Picker of GitHub tabs in Chrome | same |
-| `j` | Jump menu | unbound for now |
+| `j` | Jump menu | **Picker of Jira tabs** in Chrome, like `h` (Adam, 2026-11-16) |
 | `k` | Emacs: `org-capture` | same |
-| `m` | Mail menu (`rofi-mail-menu`) | **Outlook mail** |
-| `n` | Emacs: personal note | same |
-| `o` | Org menu (`rofi-org-menu`) | **Teams Planner** (focus or launch) |
-| `p` | Volume control (`pavucontrol`) (T) | Sound settings |
-| `s` | **Slack** | **Slack** |
-| `t` | Terminal menu (`rofi-terminal-menu`) | **Teams chat** (Linux has no Teams); no terminal menu on the Mac |
-| `u` | Bluetooth TUI (T) | Bluetooth settings |
+| `m` | Mail menu (`rofi-mail-menu`) | **Outlook mail**; with Outlook in front, cycles its windows and hides it after the last (C, T; Adam, 2026-11-16) |
+| `n` | Emacs: personal note | **Picker of Confluence tabs** in Chrome, like `j` (Adam, 2026-11-18) |
+| `o` | Org menu (`rofi-org-menu`) | **Teams Planner**: `Cmd+3`, Planner being third in Teams' app bar (T; Adam, 2026-11-19) |
+| `p` | Volume control (`pavucontrol`) (T) | Sound settings (T) |
+| `s` | **Slack** | **Slack** (C, T: hides after the last window; Adam, 2026-11-16) |
+| `t` | Terminal menu (`rofi-terminal-menu`) | **Teams chat** (T; Linux has no Teams); no terminal menu on the Mac |
+| `u` | Bluetooth TUI (T) | Bluetooth settings (T) |
 | `v` | Emacs: daily review agenda | same |
-| `w` | Wi-Fi menu | Wi-Fi menu |
+| `w` | Wi-Fi menu | Wi-Fi settings (T) |
 | `x` | Terminal windows (C) | same |
 | `y` | Picker of YouTube tabs | same |
 | `z` | Zulip | same |
 | `` ` `` | `btop` (T) | Activity Monitor |
 | `'` | Beeper | same |
+| Tab | Picker of every Chrome tab (`chrome-session-rofi`) | same |
 
 Thumb+modifier+letter jumps:
 
 | Keys | Linux | macOS / Windows |
 | --- | --- | --- |
 | Thumb+Shift+`a` | Anytype | same |
-| Thumb+Ctrl+`a` | Spotify web app (T) | same |
+| Thumb+Ctrl+`a` | Spotify web app (T) | **Spotify desktop app** (T; Adam, 2026-11-18) |
 | Thumb+Ctrl+`b` | "Bead Me Up, Scotty" web app (T) | same |
 | Thumb+Shift+`c` | Google Calendar tab, account 0 | same (personal Google Calendar) |
-| Thumb+Ctrl+`c` | Google Calendar tab, account 1 | **Outlook calendar** |
+| Thumb+Ctrl+`c` | Google Calendar tab, account 1 | **Outlook calendar** (T: hides Outlook when its calendar is showing; Adam, 2026-11-16) |
 | Thumb+Ctrl+`d` | Discord | same |
 | Thumb+Shift+`e` | Picker of Linear tabs | same |
 | Thumb+Ctrl+`f` | Picker of Messenger tabs | same |
@@ -279,15 +291,20 @@ Thumb+modifier+letter jumps:
 | Thumb+Alt+`n` / Thumb+Shift+`n` | Notion app / picker of Notion tabs | same |
 | Thumb+Shift+`r` | Reclaim tab | same |
 | Thumb+Ctrl+`t` | (none) | **Teams meeting window** |
+| Thumb+Shift+`o` | (none) | **Teams Activity**: `Cmd+4` (T; Adam, 2026-11-19) |
+| Thumb+Shift+`t` | (none: T in the terminal menu, `set-colour-theme --toggle`) | **Light / dark mode** (Adam, 2026-11-16) |
 | Thumb+Alt+`w` | WhatsApp tab | same |
 | Thumb+Ctrl+`y` | Syncthing web UI | unbound |
 | Thumb+Shift+`z` / Thumb+Ctrl+`z` | Picker of Zoom tabs / Zoom meeting window | same |
 | Thumb+Shift+`` ` `` | `ccmonitor` (T) | unbound |
 | Thumb+Shift+`p` | EasyEffects (T) | unbound (Linux-only tool) |
 | Thumb+Shift+`u` | Bluetooth manager (T) | unbound (Linux-only tool) |
-| Thumb+Ctrl+`2` / `5` / `7` | Emacs: personal todo / Toucan todo / weekly review | same |
+| Thumb+Ctrl+`2` / `5` / `7` | Emacs: personal todo / Toucan todo / weekly review | same, except `5`: no Toucan bindings on the work Mac (Adam, 2026-11-16) |
 
-Mac / Windows targets were agreed with Adam on 2026-11-14. "same" means
+Mac / Windows targets were agreed with Adam on 2026-11-14. On the Mac,
+the System Settings keys toggle (Adam, 2026-11-16): any of them hides
+System Settings when it is frontmost, since Karabiner cannot tell which
+pane is showing. "same" means
 the Linux target, bound where that app is installed.
 
 ### 3.2 Window operations
@@ -302,14 +319,14 @@ the Linux target, bound where that app is installed.
 | Thumb+`,` / `.` | Previous / next workspace |
 | Thumb+Alt+`1` .. `6` | Take window to workspace 1 to 6 |
 | Thumb+Alt+`,` / `.` | Take window to previous / next workspace |
-| Thumb+Shift+`,` / `.` | Move focus to the monitor on the left / right |
-| Thumb+Alt+Shift+`,` / `.` | Move window to the monitor on the left / right |
+| Thumb+Shift+`,` / `.` | Move focus to the monitor on the left / right (macOS: previous / next monitor, wrapping round, however the monitors are arranged; Adam, 2026-11-15) |
+| Thumb+Alt+Shift+`,` / `.` | Move window to the monitor on the left / right (macOS: previous / next, as above) |
 | Thumb+Alt+Shift+`1` / `2` / `3` | Move window to monitor 1 / 2 / 3 |
 | Thumb+Space | Raise |
 | Thumb+`l` | Lower |
 | Thumb+`i` / Thumb+Ctrl+`i` | Minimise / restore |
 | Thumb+Ctrl+Shift+`m` | Maximise (Shift+`m`: vertically; Ctrl+`m`: horizontally) |
-| Thumb+Shift+`s` | Make window sticky (on all workspaces) |
+| Thumb+Shift+`s` | Make window sticky (on all workspaces). macOS: toggles the window onto workspace S, pinned to the secondary monitor, and back to where it came from, since AeroSpace has no sticky windows (Adam, 2026-11-17) |
 | Thumb+`q` / Thumb+Ctrl+`q` | Close / kill window |
 | Thumb+Ctrl+`p` | Pass-through mode: window-manager keys go to the app until `q` |
 | Thumb+`r` | Reorganise mode (below) |
@@ -358,18 +375,38 @@ Source: `.config/bindings-help.d/fievel.tsv`, `neru.tsv`.
 
 Both need IT approval on the work Mac; Karabiner is assumed allowed.
 
+On the Mac, Karabiner does fievel's free mouse mode itself (Adam,
+2026-11-16: as close to Linux as possible): hold `d`+`f`, `z` to lock it
+on and off, `j` `k` `i` `l` to move, Space and `;` to click, hold `a` /
+`s` to move slowly / fast, `n` `m` `,` `.` to scroll, and `,`+`m` /
+`n`+`.` together for Home / End, with fievel's 25 ms chord window.
+Differences: the pointer moves at a steady speed, without fievel's
+easing; F3 is not a trigger, since macOS takes F3 for Mission Control;
+and `e`+`r` for Neru's grid waits for Neru.
+
+Grid mode stands in for Neru's grid (Adam, 2026-11-16): Thumb+`-`,
+then `u` `i` `o` / `j` `k` `l` / `m` `,` `.` move the pointer to the
+middle of that third of the focused window (the screen if none is
+focused), and each further press narrows within it, three levels deep
+(about 4% of the window); Space and `;` click and leave, Return and
+Escape leave, and any other key leaves and then acts as usual. Karabiner draws nothing, so the cells are learnt rather
+than shown, and it cannot do Neru's hints.
+
 ### 3.5 Other global bindings
 
 | Keys | Action |
 | --- | --- |
 | Thumb+`[` / `]` / `0` | Volume down / up / mute |
-| Thumb+Shift+`[` / `]` | Brightness down / up |
+| Thumb+Ctrl+`[` / `]` | Brightness down / up (Adam, 2026-11-14: Ctrl, not Shift) |
 | Thumb+Ctrl+`s` / `w` | Screenshot of a region / window |
 | Thumb+Ctrl+Space | App launcher |
-| Thumb+Ctrl+Alt+`l` | Lock screen |
+| Thumb+Ctrl+Alt+Shift+`l` | Lock screen (`xflock4`; Shift was first left out here, Adam, 2026-11-16) |
+| Thumb+Ctrl+Alt+`b` | Blank the screens (`blank-all-screens`). macOS: a black window on every screen until a key or the mouse (`lib/mac-blank`), since switching the displays off locks the work Mac, whose password-on-display-off setting is fixed by IT (Adam, 2026-11-18) |
+| Thumb+Ctrl+Alt+`d` | Display settings (Linux: `xfce4-display-settings`; macOS: System Settings > Displays, toggled) |
 | Thumb+`=` | Clear notifications |
 | Thumb+Alt+Shift+`/` | Search every key binding |
 | Thumb+Ctrl+`8` | Push-to-talk recording (dictation) |
+| Thumb+`8` / Thumb+`9` | Dictation: push-to-talk / toggle on and off. Linux: Sussurro's own hotkeys. macOS: macOS Dictation, through its Dictation key, for now; `DICTATION` in the generator switches to sending Sussurro's hotkeys (Adam, 2026-11-14) |
 
 ## 4. Windows
 
@@ -448,6 +485,9 @@ A needs rules only where the Mac differs from Linux:
   `Cmd+Up` / `Cmd+Down`;
 - `Ctrl+Tab` → `Control+Tab`, so it switches tabs as on Linux rather than
   apps;
+- `Ctrl+Page Up` / `Ctrl+Page Down` → `Control+Page Up` / `Control+Page
+  Down`, with or without Shift, to switch tabs as on Linux (Adam,
+  2026-11-16);
 - right `option`+Tab, which A2 makes `Control+Tab` in ordinary apps, →
   `Cmd+Tab` (Adam, 2026-11-14), so the two are swapped and the app
   switcher stays on the Compose-position key, as in the exception apps.
@@ -508,6 +548,10 @@ Thumb on each keyboard, worked out from this repository:
 | Keyboardio Model 01 | right GUI, on the right thumb arc | Adam's `Model01-Firmware` fork, `aspiers` branch: the 2020 Chrysalis backup (`layer-0.json`, commit `8b4b6cd`) and the older sketch agree |
 | Keyboardio Preonic | a GUI key, side unknown | keyd leaves meta alone; no firmware export found |
 
+Karabiner remaps a keyboard only when its "Modify events" is on, and it
+left that off for the Advantage 360 (Adam, 2026-11-15), so the generator
+turns it on for every external keyboard listed here, by USB ID.
+
 So right `command` is Thumb on every keyboard, and left `command` is
 Thumb too on the 360 and the Atreus (matched by the USB IDs in their keyd
 configs). The Preonic's keyd ID is not a USB ID, so only its right GUI
@@ -545,10 +589,11 @@ Karabiner can give that role:
   Chrysalis.
 - **Model 01**: undecided; bead `dc-5ty3` (Decide: which Model 01 key sends Right Control for the Mac's A2 layout).
 
-The key codes Karabiner reports for the MacBook's ISO keys (§ left of
-`1`, `` ` `` left of `Z`) are unchecked: its ISO handling has swapped
-them before ([#3974][ke-3974]). The generator assumes
-`grave_accent_and_tilde` and `non_us_backslash`, as on Linux.
+Karabiner reports the MacBook's ISO keys the other way round from Linux
+(checked on the Mac, 2026-11-14; its ISO handling has swapped them before,
+[#3974][ke-3974]): § left of `1` is `non_us_backslash` and `` ` `` left
+of `Z` is `grave_accent_and_tilde`. The virtual keyboard is set to ANSI,
+not ISO: with ISO, macOS typed § for `grave_accent_and_tilde`.
 
 [ke-device]: https://karabiner-elements.pqrs.org/docs/json/complex-modifications-manipulator-definition/conditions/device/
 [ke-priority]: https://karabiner-elements.pqrs.org/docs/json/complex-modifications-manipulator-evaluation-priority/
@@ -571,9 +616,10 @@ Built as Karabiner rules (`bin/karabiner-gen-config`, `jumps()`) and
   with `aerospace focus --window-id`. Thumb+`b` cycles every Chrome
   window, not only those on the main monitor.
 - **Chrome tabs**: `mac-jump tab` finds tabs by URL through Chrome's
-  AppleScript dictionary and picks among several with AppleScript's
-  `choose from list`, which has no typed filter like rofi's. Web apps
-  (Spotify, Octobox, "Bead Me Up, Scotty") open as `--app` windows.
+  AppleScript dictionary and picks among several with `choose`
+  (Homebrew `choose-gui`), a fuzzy finder in its own dialog, as rofi
+  does on Linux. Thumb+Tab picks from every tab. Web apps
+  (Octobox, "Bead Me Up, Scotty") open as `--app` windows.
 - **Emacs**: `emacsclient -e`, as `switch-emacs-eval` does on Linux.
 - **Outlook** mail and calendar: activate Outlook, then `Cmd+1` /
   `Cmd+2` through System Events, which needs the Accessibility permission.
@@ -638,7 +684,7 @@ toggle floating?"), so it is the first candidate to revisit.
 | Thumb+Alt+Shift+arrows or `h` `j` `k` `l` | Move window 50 px | **`join-with <dir>`**: group with the neighbour in a new container |
 | Thumb+`/` (Shift: reverse) | Cycle windows on this monitor and workspace | `focus dfs-next` / `dfs-prev`, wrapping round the workspace |
 | Thumb+Space | Raise | **`layout floating tiling`**: float or tile the window |
-| Thumb+Ctrl+Shift+`m` | Maximise | `fullscreen` toggle |
+| Thumb+Ctrl+`m` | Maximise (Linux: Thumb+Ctrl+Shift+`m`; AeroSpace has no horizontal-only maximise to keep on Thumb+Ctrl+`m`; Adam, 2026-11-16) | `fullscreen` toggle |
 | Thumb+`i` | Minimise | `macos-native-minimize` |
 | Thumb+`q` / Thumb+Ctrl+`q` | Close / kill | `close` / `close --quit-if-last-window` |
 | Thumb+`1` .. `6`, Thumb+`,` / `.` | Workspaces | `workspace <n>`, `workspace prev` / `next` |
@@ -688,7 +734,18 @@ still work inside the mode. Command syntax checked against AeroSpace's
 
 ## 6. Open questions
 
-None. Adam chose editing approach A2 (5.2).
+Adam chose editing approach A2 (5.2).
+
+To do later (Adam, 2026-11-16):
+
+- **Mode indicator**: reorganise and pass-through mode show Karabiner's
+  notification window, which with two screens leaves a bare Karabiner
+  icon stuck in the middle of one of them. Once JankyBorders is built
+  from source and running, show the modes by changing its border colour
+  instead (say orange in reorganise mode, by running `borders` with a new
+  `active_color` on entering and the normal one on leaving), and turn
+  Karabiner's notification window off. Until then,
+  `killall Karabiner-NotificationWindow` clears the stuck icon.
 
 ## 7. Installing and testing on the Mac
 

@@ -1,0 +1,119 @@
+#!/bin/bash
+#
+# Checks for bin/link-router: rule matching, and the picker's two paths
+# (open once, add a rule) with osascript replaced by canned answers.
+# Runs on Linux too; needs yq.
+
+set -u
+
+# bin/link-router looks in Homebrew's prefixes too; so must this check.
+PATH="/opt/homebrew/bin:$HOME/.homebrew/bin:/usr/local/bin:$PATH"
+command -v yq >/dev/null || { echo "test-link-router: yq not found; brew install yq" >&2; exit 1; }
+
+here=$(cd "$(dirname "$0")" && pwd)
+router=$here/link-router
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+
+failures=0
+check() {
+    local name=$1 want=$2 got=$3
+    if [ "$want" = "$got" ]; then
+        echo "ok   $name"
+    else
+        echo "FAIL $name: want [$want], got [$got]"
+        failures=$((failures + 1))
+    fi
+}
+
+# The rules live behind a symlink, as when Stow installs them.
+mkdir -p "$tmp/repo" "$tmp/home"
+cat >"$tmp/repo/rules.yaml" <<'EOF'
+# A comment that must survive rule additions.
+profiles:
+  - id: work
+    label: Work
+    dir: Default
+  - id: personal
+    label: Personal
+    dir: Profile 1
+    dir_mac: Profile 2
+
+rules:
+  - match: example.com
+    profile: work
+  - match: "*.YouTube.com"
+    profile: personal
+  - match: docs.google.com/a/example.com/*
+    profile: work
+  - match: "*.google.com"
+    profile: personal
+EOF
+ln -s ../repo/rules.yaml "$tmp/home/rules.yaml"
+export LINK_ROUTER_RULES=$tmp/home/rules.yaml
+export LINK_ROUTER_LOG=$tmp/log
+export LINK_ROUTER_DRY_RUN=1
+
+match() { "$router" --match "$1"; }
+check "bare domain"             work     "$(match https://example.com/)"
+check "bare domain, subdomain"  work     "$(match https://app.example.com/x?y=1)"
+check "not a suffix of a word"  ''       "$(match https://notexample.com/)"
+check "case, port, user info"   personal "$(match 'https://me@WWW.youtube.com:443/watch')"
+check "glob with path"          work     "$(match https://docs.google.com/a/example.com/document/d/1)"
+check "first match wins"        personal "$(match https://docs.google.com/document/d/1)"
+check "no rule"                 ''       "$(match https://example.org/)"
+
+check "matched link opens"  "open Default https://example.com/a" \
+    "$("$router" https://example.com/a)"
+check "dir_mac overrides dir" "open Profile 2 https://www.youtube.com/" \
+    "$("$router" https://www.youtube.com/)"
+
+# osascript prints the next canned answer, or fails for "CANCEL" as
+# display dialog does when cancelled.
+mkdir "$tmp/bin"
+cat >"$tmp/bin/osascript" <<'EOF'
+#!/bin/bash
+answer=$(head -1 "$ANSWERS")
+sed -i.bak 1d "$ANSWERS"
+[ "$answer" = CANCEL ] && exit 1
+echo "$answer"
+EOF
+chmod +x "$tmp/bin/osascript"
+export PATH=$tmp/bin:$PATH ANSWERS=$tmp/answers
+
+printf 'Personal\n' >"$ANSWERS"
+check "pick once" "open Profile 2 https://example.org/" "$("$router" https://example.org/)"
+check "pick once adds no rule" '' "$(match https://example.org/)"
+
+printf '\n' >"$ANSWERS"
+check "cancel the picker" '' "$("$router" https://example.org/)"
+
+printf 'Add a rule…\nCANCEL\n' >"$ANSWERS"
+check "cancel the new rule" '' "$("$router" https://example.org/)"
+
+printf 'Add a rule…\nexample.org\nWork\n' >"$ANSWERS"
+check "add a rule, then open" "open Default https://www.example.org/" \
+    "$("$router" https://www.example.org/)"
+check "added rule matches" work "$(match https://sub.example.org/)"
+check "rules file still a symlink" yes "$([ -L "$tmp/home/rules.yaml" ] && echo yes)"
+check "comment kept" yes \
+    "$(grep -q '^# A comment that must survive' "$tmp/repo/rules.yaml" && echo yes)"
+
+# The steps LinkRouter.app runs when it shows the picker itself.
+check "app: matched link opens" "open Default https://example.com/" \
+    "$("$router" --route https://example.com/)"
+check "app: no rule asks" "ask
+example.net" "$("$router" --route https://www.example.net/x)"
+check "app: labels" "Work
+Personal" "$("$router" --labels)"
+check "app: open as" "open Profile 2 https://example.net/" \
+    "$("$router" --open-as Personal https://example.net/)"
+"$router" --add-rule example.net Personal
+check "app: add rule" personal "$(match https://example.net/)"
+
+if [ $failures -gt 0 ]; then
+    echo "$failures failed"
+    [ -s "$tmp/log" ] && sed 's/^/log: /' "$tmp/log"
+    exit 1
+fi
+echo "all passed"
